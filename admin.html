@@ -59,6 +59,18 @@
   <div id="container"></div>
 
   <script type="module">
+    function hardLog(message) {
+  const el = document.getElementById("hardLog");
+  if (!el) return;
+
+  const line = document.createElement("div");
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+  el.appendChild(line);
+
+  el.scrollTop = el.scrollHeight;
+}
+hardLog("ADMIN LOADED");
+
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
     const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
