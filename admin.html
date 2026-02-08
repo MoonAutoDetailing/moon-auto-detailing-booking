@@ -127,8 +127,14 @@
           `;
 
           card.querySelector(".confirm").onclick = async () => {
-            await updateStatus(b.id, "confirmed", card);
-          };
+  try {
+    await createCalendarEvent(b);
+    await updateStatus(b.id, "confirmed", card);
+  } catch (err) {
+    alert("Calendar creation failed. Booking NOT confirmed.");
+    console.error(err);
+  }
+};
 
           card.querySelector(".cancel").onclick = async () => {
             if (!confirm("Are you sure you want to deny this booking?")) return;
