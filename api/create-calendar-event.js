@@ -1,3 +1,7 @@
+export const config = {
+  runtime: "nodejs",
+};
+
 console.log(
   "ENV CHECK",
   !!process.env.GOOGLE_SERVICE_ACCOUNT_JSON,
