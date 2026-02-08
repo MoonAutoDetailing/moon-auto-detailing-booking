@@ -58,10 +58,11 @@ export default async function handler(req, res) {
     const privateKey = mustGetEnv("GOOGLE_PRIVATE_KEY").replace(/\\n/g, "\n");
 
     const auth = new google.auth.JWT({
-      email: clientEmail,
-      key: privateKey,
-      scopes: ["https://www.googleapis.com/auth/calendar"]
-    });
+  clientEmail: clientEmail,
+  privateKey: privateKey,
+  scopes: ["https://www.googleapis.com/auth/calendar"]
+});
+
     await auth.authorize();
 
     const calendar = google.calendar({ version: "v3", auth });
