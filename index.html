@@ -147,6 +147,8 @@
     // State
     let variantsCache = []; // {id, vehicle_size, price, duration_minutes, service:{category,level}}
     let selectedVariant = null;
+    let isSubmitting = false;
+
 
     function log(message, obj) {
       const ts = new Date().toISOString();
