@@ -182,20 +182,24 @@ async function createCalendarEvent(booking) {
 }
 
 
-    async function updateStatus(id, status, card) {
-      const { error } = await supabase
-        .from("bookings")
-        .update({ status })
-        .eq("id", id);
+    async function updateStatus(id, status, card, booking) {
+  if (status === "confirmed") {
+    await createCalendarEvent(booking);
+  }
 
-      if (error) {
-        alert("Failed to update booking status.");
-        console.error(error);
-        return;
-      }
+  const { error } = await supabase
+    .from("bookings")
+    .update({ status })
+    .eq("id", id);
 
-      card.remove();
-    }
+  if (error) {
+    alert("Failed to update booking status");
+    console.error(error);
+    return;
+  }
+
+  card.remove();
+}
 
     loadPendingBookings();
   </script>
