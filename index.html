@@ -394,13 +394,6 @@ const scheduled_start = startLocal.toISOString();
 const scheduled_end = endLocal.toISOString();
 // --- End Step 2 ---
 
-       if (!selectedVariant || !selectedVariant.duration_minutes) {
-  throw new Error("Service duration missing. Please re-select your service.");
-}
-
-const startLocal = requireNonEmpty("Scheduled start", elStart.value);
-const endLocal = computeScheduledEnd(startLocal, durationMinutes);
-
         if (new Date(scheduled_end) <= new Date(scheduled_start)) throw new Error("Scheduled end must be after scheduled start");
 
         // Calendar conflict check (block overlaps)
