@@ -313,7 +313,20 @@ isSubmitting = true;
         const service_address = requireNonEmpty("Service address", elServiceAddress.value);
 
         const scheduled_start = parseLocalDateTimeToISO(requireNonEmpty("Scheduled start", elStart.value));
-        const scheduled_end = parseLocalDateTimeToISO(requireNonEmpty("Scheduled end", elEnd.value));
+       if (!selectedVariant || !selectedVariant.duration_minutes) {
+  throw new Error("Service duration missing. Please re-select your service.");
+}
+
+const durationMinutes = Number(selectedVariant.duration_minutes);
+if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+  throw new Error("Invalid service duration. Please re-select your service.");
+}
+
+const startLocal = requireNonEmpty("Scheduled start", elStart.value);
+const endLocal = computeScheduledEnd(startLocal, durationMinutes);
+
+const scheduled_end = parseLocalDateTimeToISO(requireNonEmpty("Scheduled end", endLocal));
+
         if (new Date(scheduled_end) <= new Date(scheduled_start)) throw new Error("Scheduled end must be after scheduled start");
 
         // Calendar conflict check (block overlaps)
