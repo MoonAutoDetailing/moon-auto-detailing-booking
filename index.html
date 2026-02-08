@@ -382,6 +382,10 @@ const durationMinutes = Number(selectedVariant?.duration_minutes);
 if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
   throw new Error("Invalid service duration. Please re-select your service.");
 }
+      log("Duration minutes used", {
+  raw: selectedVariant?.duration_minutes,
+  coerced: durationMinutes
+});
 
 // Add duration in LOCAL time
 const endLocal = new Date(startLocal.getTime() + durationMinutes * 60_000);
