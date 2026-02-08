@@ -402,10 +402,6 @@ const scheduled_start = startLocal.toISOString();
 const scheduled_end = endLocal.toISOString();
 // --- End Step 2 ---
 
-const scheduled_end = new Date(
-  new Date(scheduled_start).getTime() + durationMinutes * 60 * 1000
-).toISOString();
-
        if (!selectedVariant || !selectedVariant.duration_minutes) {
   throw new Error("Service duration missing. Please re-select your service.");
 }
