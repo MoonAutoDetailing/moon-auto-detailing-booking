@@ -55,7 +55,8 @@ export default async function handler(req, res) {
     const calendarId = mustGetEnv("GOOGLE_CALENDAR_ID");
 
     const clientEmail = mustGetEnv("GOOGLE_SERVICE_ACCOUNT_EMAIL");
-    const privateKey = mustGetEnv("GOOGLE_PRIVATE_KEY");
+    const privateKey = Buffer.from(mustGetEnv("GOOGLE_PRIVATE_KEY"), "utf8").toString();
+
 
 
     const auth = new google.auth.JWT(
