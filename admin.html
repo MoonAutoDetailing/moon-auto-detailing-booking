@@ -148,6 +148,10 @@
       });
     }
 async function createCalendarEvent(booking) {
+  console.log("CALENDAR: function entered", booking);
+
+  console.log("CALENDAR: about to fetch");
+
   const res = await fetch("/api/create-calendar-event", {
     method: "POST",
     headers: {
@@ -165,7 +169,10 @@ async function createCalendarEvent(booking) {
     })
   });
 
+  console.log("CALENDAR: fetch returned", res.status);
+
   const data = await res.json();
+  console.log("CALENDAR: response JSON", data);
 
   if (!res.ok) {
     throw new Error(data.message || "Calendar creation failed");
@@ -173,6 +180,7 @@ async function createCalendarEvent(booking) {
 
   return data;
 }
+
 
     async function updateStatus(id, status, card) {
       const { error } = await supabase
