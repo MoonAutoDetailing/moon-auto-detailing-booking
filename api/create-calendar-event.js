@@ -114,15 +114,17 @@ await auth.authorize();
         google_event_id: created.data.id
       })
     );
-  } catch (err) {
-    console.error(err);
-    res.statusCode = 500;
-    res.setHeader("Content-Type", "application/json");
-    return res.end(
-      JSON.stringify({
-        ok: false,
-        message: err?.message || "Unknown error"
-      })
-    );
-  }
+} catch (err) {
+  console.error("CALENDAR ERROR:", err);
+
+  res.statusCode = 500;
+  res.setHeader("Content-Type", "application/json");
+  return res.end(
+    JSON.stringify({
+      ok: false,
+      message: err?.message || "Unknown error",
+      code: err?.code,
+      errors: err?.errors
+    })
+  );
 }
