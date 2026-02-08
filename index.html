@@ -208,11 +208,17 @@ function formatDateToDateTimeLocal(d) {
   return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
 }
 // === END ADD ===
-    function recalcEndTimePreview() {
+   function recalcEndTimePreview() {
   if (!elStart.value) return;
-  if (!selectedVariant || !selectedVariant.duration_minutes) return;
+  if (!selectedVariant?.duration_minutes) return;
 
+  const startLocal = parseDateTimeLocalToDate(elStart.value);
+  const durationMinutes = Number(selectedVariant.duration_minutes);
+
+  const endLocal = new Date(startLocal.getTime() + durationMinutes * 60_000);
+  elEnd.value = formatDateToDateTimeLocal(endLocal);
 }
+
 
 // 👇 ADD THIS FUNCTION DIRECTLY HERE
 function computeScheduledEnd(startLocal, durationMinutes) {
