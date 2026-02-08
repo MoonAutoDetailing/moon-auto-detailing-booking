@@ -319,6 +319,7 @@ if (conflict) {
         
         // Step 1: find existing customer by email (SELECT allowed only by email header policy)
         const customerLookupClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          auth: { persistSession: false },
           global: { headers: { "x-customer-email": email } }
         });
 
