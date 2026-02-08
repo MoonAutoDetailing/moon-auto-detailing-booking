@@ -396,10 +396,17 @@ if (conflict) {
             status: "pending"
           }]);
 
-        if (insBookErr) {
-          log("Booking insert error", insBookErr);
-          throw new Error("Booking creation failed. See log.");
-        }
+       if (insBookErr) {
+  log("Booking insert error", insBookErr);
+
+  // Handle overlap constraint cleanly
+  if (insBookErr.code === "23P01" || insBookErr.message?.includes("bookings_no_overlap")) {
+    throw new Error("Selected time is unavailable. Please choose another slot.");
+  }
+
+  throw new Error("Booking creation failed. Please try again.");
+}
+
 
         setStatus("ok", "Booking created successfully ✅");
         log("Booking created", { customer_id, vehicle_id, service_variant_id });
