@@ -1,3 +1,7 @@
+export const config = {
+  runtime: "nodejs"
+};
+
 import { google } from "googleapis";
 import fs from "fs";
 import path from "path";
