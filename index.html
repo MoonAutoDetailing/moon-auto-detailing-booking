@@ -378,7 +378,7 @@ const startLocal = parseDateTimeLocalToDate(
   requireNonEmpty("Scheduled start", elStart.value)
 );
 
-const durationMinutes = Number(selectedVariant.duration_minutes);
+const durationMinutes = Number(selectedVariant?.duration_minutes);
 if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
   throw new Error("Invalid service duration. Please re-select your service.");
 }
