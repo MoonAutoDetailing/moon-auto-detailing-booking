@@ -219,6 +219,32 @@ function formatDateToDateTimeLocal(d) {
 // =========================
 // BUSINESS HOURS VALIDATION
 // =========================
+function isBookingWithinBusinessRules(startLocal, endLocal) {
+  // Must be same calendar day
+  if (
+    startLocal.getFullYear() !== endLocal.getFullYear() ||
+    startLocal.getMonth() !== endLocal.getMonth() ||
+    startLocal.getDate() !== endLocal.getDate()
+  ) {
+    return false;
+  }
+
+  // Weekday check (Mon–Fri only)
+  const day = startLocal.getDay();
+  if (!BUSINESS_RULES.allowedWeekdays.includes(day)) {
+    return false;
+  }
+
+  // Time window check
+  const startHour = startLocal.getHours() + startLocal.getMinutes() / 60;
+  const endHour = endLocal.getHours() + endLocal.getMinutes() / 60;
+
+  if (startHour < BUSINESS_RULES.openHour) return false;
+  if (endHour > BUSINESS_RULES.closeHour) return false;
+
+  return true;
+}
+
 
   const pad = (n) => String(n).padStart(2, "0");
   const yyyy = d.getFullYear();
