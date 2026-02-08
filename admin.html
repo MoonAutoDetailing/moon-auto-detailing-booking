@@ -141,6 +141,32 @@
         container.appendChild(dayDiv);
       });
     }
+async function createCalendarEvent(booking) {
+  const res = await fetch("/api/create-calendar-event", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-admin-secret": ADMIN_SECRET
+    },
+    body: JSON.stringify({
+      customer_name: booking.customers.full_name,
+      customer_phone: booking.customers.phone,
+      address: booking.service_address,
+      vehicle_text: `${booking.vehicles.vehicle_year || ""} ${booking.vehicles.vehicle_make || ""} ${booking.vehicles.vehicle_model || ""}`.trim(),
+      service_text: `${booking.service_variants.services.category} Level ${booking.service_variants.services.level}`,
+      start_iso: booking.scheduled_start,
+      end_iso: booking.scheduled_end
+    })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(data.message || "Calendar creation failed");
+  }
+
+  return data;
+}
 
     async function updateStatus(id, status, card) {
       const { error } = await supabase
