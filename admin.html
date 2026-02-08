@@ -148,8 +148,8 @@
       });
     }
 async function createCalendarEvent(booking) {
-  console.log("CALENDAR: starting");
-
+   console.log("CALENDAR FN CALLED", booking.id);
+  
   const res = await fetch("/api/create-calendar-event", {
     method: "POST",
     headers: {
