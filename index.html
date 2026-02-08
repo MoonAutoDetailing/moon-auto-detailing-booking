@@ -293,6 +293,9 @@ async function hasBookingConflict(requestedStartISO, requestedEndISO) {
   return count > 0;
 }    
     async function submitBooking() {
+      if (isSubmitting) return;
+isSubmitting = true;
+
       elSubmit.disabled = true;
       setStatus("muted", "Submitting…");
 
