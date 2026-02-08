@@ -133,6 +133,7 @@
           `;
 
           card.querySelector(".confirm").onclick = async () => {
+            console.log("CONFIRM CLICKED — booking id:", b.id);
   try {
     await createCalendarEvent(b);
     await updateStatus(b.id, "confirmed", card, b);
