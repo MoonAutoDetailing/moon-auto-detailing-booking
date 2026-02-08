@@ -408,6 +408,7 @@ if (conflict) {
         setStatus("bad", e?.message || "Unknown error");
         log("Submit failure", { message: e?.message, stack: e?.stack });
       } finally {
+        isSubmitting = false;
         elSubmit.disabled = false;
       }
     }
