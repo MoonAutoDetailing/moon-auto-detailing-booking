@@ -1,3 +1,9 @@
+console.log(
+  "ENV CHECK",
+  !!process.env.GOOGLE_SERVICE_ACCOUNT_JSON,
+  process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.length
+);
+
 console.log("CALENDAR AUTH PATCH v1 LOADED");
 
 // /api/create-calendar-event.js
