@@ -1,17 +1,16 @@
-<script>
-  console.log("ADMIN.HTML VERSION 2026-02-08 — CALENDAR DEBUG");
-  alert("ADMIN FILE LOADED");
-</script>
-
-
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <title>Moon Auto Detailing — Admin</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+
   <style>
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 20px; max-width: 1000px; }
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      margin: 20px;
+      max-width: 1000px;
+    }
     h1 { margin-bottom: 10px; }
     .day { margin-top: 24px; }
     .card {
@@ -33,69 +32,91 @@
     .delay { background: #666; color: white; border: none; }
   </style>
 </head>
+
 <body>
+
+  <!-- HARD DEBUG PANEL -->
   <div
-  id="hardLog"
-  style="
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    max-height: 180px;
-    overflow-y: auto;
-    background: #111;
-    color: #0f0;
-    font-family: monospace;
-    font-size: 12px;
-    padding: 8px;
-    z-index: 9999;
-    border-top: 2px solid #0f0;
-  "
->
-  <strong>DEBUG LOG</strong><br />
-</div>
+    id="hardLog"
+    style="
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      max-height: 180px;
+      overflow-y: auto;
+      background: #111;
+      color: #0f0;
+      font-family: monospace;
+      font-size: 12px;
+      padding: 8px;
+      z-index: 9999;
+      border-top: 2px solid #0f0;
+    "
+  >
+    <strong>DEBUG LOG</strong>
+  </div>
 
   <h1>Pending Bookings — Admin</h1>
   <div id="container"></div>
 
   <script type="module">
-    function hardLog(message) {
-  const el = document.getElementById("hardLog");
-  if (!el) return;
-
-  const line = document.createElement("div");
-  line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-  el.appendChild(line);
-
-  el.scrollTop = el.scrollHeight;
-}
-hardLog("ADMIN LOADED");
-
+    /* =========================================================
+       IMPORTS — MUST BE FIRST IN ES MODULE
+    ========================================================= */
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
+    /* =========================================================
+       HARD LOGGING — VISUAL, UNAVOIDABLE
+    ========================================================= */
+    function hardLog(message) {
+      const el = document.getElementById("hardLog");
+      if (!el) return;
+
+      const line = document.createElement("div");
+      line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      el.appendChild(line);
+      el.scrollTop = el.scrollHeight;
+    }
+
+    hardLog("ADMIN LOADED");
+
+    /* =========================================================
+       SUPABASE SETUP
+    ========================================================= */
     const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
-    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbWh1Z3p0cnBpcHJucW1jeWFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MDk1NjMsImV4cCI6MjA4NjA4NTU2M30.Mo0uRGWCjU1fOa1br2P8j1ogEZf7mDm2JseV8DFnPwI";
+    const SUPABASE_ANON_KEY =
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbWh1Z3p0cnBpcHJucW1jeWFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MDk1NjMsImV4cCI6MjA4NjA4NTU2M30.Mo0uRGWCjU1fOa1br2P8j1ogEZf7mDm2JseV8DFnPwI";
 
     const ADMIN_SECRET = "moon-admin-2026";
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
       global: {
-        headers: {
-          "x-admin-secret": ADMIN_SECRET
-        }
+        headers: { "x-admin-secret": ADMIN_SECRET }
       }
     });
 
     const container = document.getElementById("container");
 
+    /* =========================================================
+       FORMAT HELPERS
+    ========================================================= */
     function formatDay(d) {
-      return d.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+      return d.toLocaleDateString(undefined, {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric"
+      });
     }
 
     function formatTime(d) {
       return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     }
 
+    /* =========================================================
+       LOAD BOOKINGS
+    ========================================================= */
     async function loadPendingBookings() {
       const { data, error } = await supabase
         .from("bookings")
@@ -124,6 +145,9 @@ hardLog("ADMIN LOADED");
       renderBookings(data);
     }
 
+    /* =========================================================
+       RENDER BOOKINGS
+    ========================================================= */
     function renderBookings(bookings) {
       container.innerHTML = "";
 
@@ -144,7 +168,7 @@ hardLog("ADMIN LOADED");
           const start = new Date(b.scheduled_start);
           const end = new Date(b.scheduled_end);
 
-          const service = b.service_variants?.services;
+          const service = b.service_variants.services;
           const vehicle = b.vehicles;
           const customer = b.customers;
 
@@ -165,17 +189,20 @@ hardLog("ADMIN LOADED");
             </div>
           `;
 
+          /* CONFIRM */
           card.querySelector(".confirm").onclick = async () => {
-            console.log("CONFIRM CLICKED — booking id:", b.id);
-  try {
-    await createCalendarEvent(b);
-    await updateStatus(b.id, "confirmed", card, b);
-  } catch (err) {
-    alert("Calendar creation failed. Booking NOT confirmed.");
-    console.error(err);
-  }
-};
+            hardLog(`CONFIRM CLICKED booking ${b.id}`);
 
+            try {
+              await createCalendarEvent(b);
+              await updateStatus(b.id, "confirmed", card);
+            } catch (err) {
+              alert("Calendar creation failed. Booking NOT confirmed.");
+              console.error(err);
+            }
+          };
+
+          /* CANCEL */
           card.querySelector(".cancel").onclick = async () => {
             if (!confirm("Are you sure you want to deny this booking?")) return;
             await updateStatus(b.id, "denied", card);
@@ -187,53 +214,57 @@ hardLog("ADMIN LOADED");
         container.appendChild(dayDiv);
       });
     }
-async function createCalendarEvent(booking) {
-   console.log("CALENDAR FN CALLED", booking.id);
-  
-  const res = await fetch("/api/create-calendar-event", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-admin-secret": ADMIN_SECRET
-    },
-    body: JSON.stringify({
-      customer_name: booking.customers.full_name,
-      customer_phone: booking.customers.phone,
-      address: booking.service_address,
-      vehicle_text: `${booking.vehicles.vehicle_year || ""} ${booking.vehicles.vehicle_make || ""} ${booking.vehicles.vehicle_model || ""}`.trim(),
-      service_text: `${booking.service_variants.services.category} Level ${booking.service_variants.services.level}`,
-      start_iso: booking.scheduled_start,
-      end_iso: booking.scheduled_end
-    })
-  });
 
-  console.log("CALENDAR: response status", res.status);
+    /* =========================================================
+       GOOGLE CALENDAR CALL
+    ========================================================= */
+    async function createCalendarEvent(booking) {
+      hardLog(`CALLING CALENDAR API for ${booking.id}`);
 
-  const text = await res.text();
-  console.log("CALENDAR: raw response", text);
+      const res = await fetch("/api/create-calendar-event", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret": ADMIN_SECRET
+        },
+        body: JSON.stringify({
+          customer_name: booking.customers.full_name,
+          customer_phone: booking.customers.phone,
+          address: booking.service_address,
+          vehicle_text: `${booking.vehicles.vehicle_year || ""} ${booking.vehicles.vehicle_make || ""} ${booking.vehicles.vehicle_model || ""}`.trim(),
+          service_text: `${booking.service_variants.services.category} Level ${booking.service_variants.services.level}`,
+          start_iso: booking.scheduled_start,
+          end_iso: booking.scheduled_end
+        })
+      });
 
-  if (!res.ok) {
-    throw new Error(`Calendar API failed: ${res.status} ${text}`);
-  }
+      const text = await res.text();
+      hardLog(`CALENDAR RESPONSE ${res.status}`);
 
-  return JSON.parse(text);
-}
+      if (!res.ok) {
+        throw new Error(text);
+      }
 
+      return JSON.parse(text);
+    }
 
+    /* =========================================================
+       STATUS UPDATE
+    ========================================================= */
     async function updateStatus(id, status, card) {
-  const { error } = await supabase
-    .from("bookings")
-    .update({ status })
-    .eq("id", id);
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status })
+        .eq("id", id);
 
-  if (error) {
-    alert("Failed to update booking status");
-    console.error(error);
-    return;
-  }
+      if (error) {
+        alert("Failed to update booking status");
+        console.error(error);
+        return;
+      }
 
-  card.remove();
-}
+      card.remove();
+    }
 
     loadPendingBookings();
   </script>
