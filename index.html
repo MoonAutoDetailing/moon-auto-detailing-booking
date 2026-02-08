@@ -384,7 +384,7 @@ if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
 }
 
 // Add duration in LOCAL time
-const endLocal = new Date(startLocal.getTime() + durationMinutes * 60_000);
+const endLocal = new Date(startLocal.getTime() + durationMinutes);
 
 // Autofill + lock the end-time input for UI consistency
 elEnd.value = formatDateToDateTimeLocal(endLocal);
