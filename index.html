@@ -311,6 +311,12 @@ async function hasBookingConflict(requestedStartISO, requestedEndISO) {
         const scheduled_end = parseLocalDateTimeToISO(requireNonEmpty("Scheduled end", elEnd.value));
         if (new Date(scheduled_end) <= new Date(scheduled_start)) throw new Error("Scheduled end must be after scheduled start");
 
+        // Calendar conflict check (block overlaps)
+const conflict = await hasBookingConflict(scheduled_start, scheduled_end);
+if (conflict) {
+  throw new Error("Selected time is unavailable. Please choose another slot.");
+}
+        
         // Step 1: find existing customer by email (SELECT allowed only by email header policy)
         const customerLookupClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
           global: { headers: { "x-customer-email": email } }
