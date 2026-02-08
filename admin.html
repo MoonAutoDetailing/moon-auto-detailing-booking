@@ -35,11 +35,6 @@
 
 <body>
 
-  <!-- HARD BODY PARSE PROOF -->
-  <div style="background:red;color:white;padding:10px;font-weight:bold">
-    🔴 ADMIN BODY PARSED
-  </div>
-
   <!-- HARD DEBUG PANEL -->
   <div
     id="hardLog"
@@ -66,18 +61,13 @@
   <div id="container"></div>
 
   <script type="module">
-    /* =========================================================
-       IMPORTS (MUST BE FIRST)
-    ========================================================= */
+    /* ===================== IMPORTS ===================== */
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-    /* =========================================================
-       HARD LOGGING
-    ========================================================= */
+    /* ===================== HARD LOG ===================== */
     function hardLog(message) {
       const el = document.getElementById("hardLog");
       if (!el) return;
-
       const line = document.createElement("div");
       line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
       el.appendChild(line);
@@ -86,9 +76,7 @@
 
     hardLog("ADMIN LOADED");
 
-    /* =========================================================
-       SUPABASE SETUP
-    ========================================================= */
+    /* ===================== SUPABASE ===================== */
     const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
     const SUPABASE_ANON_KEY =
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbWh1Z3p0cnBpcHJucW1jeWFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MDk1NjMsImV4cCI6MjA4NjA4NTU2M30.Mo0uRGWCjU1fOa1br2P8j1ogEZf7mDm2JseV8DFnPwI";
@@ -103,9 +91,7 @@
 
     const container = document.getElementById("container");
 
-    /* =========================================================
-       FORMAT HELPERS
-    ========================================================= */
+    /* ===================== FORMAT HELPERS ===================== */
     function formatDay(d) {
       return d.toLocaleDateString(undefined, {
         weekday: "long",
@@ -119,9 +105,7 @@
       return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
     }
 
-    /* =========================================================
-       LOAD BOOKINGS
-    ========================================================= */
+    /* ===================== LOAD BOOKINGS ===================== */
     async function loadPendingBookings() {
       const { data, error } = await supabase
         .from("bookings")
@@ -150,12 +134,9 @@
       renderBookings(data);
     }
 
-    /* =========================================================
-       RENDER BOOKINGS
-    ========================================================= */
+    /* ===================== RENDER BOOKINGS ===================== */
     function renderBookings(bookings) {
       container.innerHTML = "";
-
       const groups = {};
 
       bookings.forEach(b => {
@@ -196,7 +177,6 @@
 
           card.querySelector(".confirm").onclick = async () => {
             hardLog(`CONFIRM CLICKED booking ${b.id}`);
-
             try {
               await createCalendarEvent(b);
               await updateStatus(b.id, "confirmed", card);
@@ -218,9 +198,7 @@
       });
     }
 
-    /* =========================================================
-       CALENDAR API
-    ========================================================= */
+    /* ===================== CALENDAR API ===================== */
     async function createCalendarEvent(booking) {
       hardLog(`CALLING CALENDAR API for ${booking.id}`);
 
@@ -248,9 +226,7 @@
       return JSON.parse(text);
     }
 
-    /* =========================================================
-       STATUS UPDATE
-    ========================================================= */
+    /* ===================== STATUS UPDATE ===================== */
     async function updateStatus(id, status, card) {
       const { error } = await supabase
         .from("bookings")
