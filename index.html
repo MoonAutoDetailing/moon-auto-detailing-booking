@@ -337,6 +337,7 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       elServiceMeta.textContent = `Selected: ${cat} Level ${lvl} — ${selectedVariant.duration_minutes} minutes (cleanup +10 and travel NOT included)`;
       updateCalculatedEnd();
       elStart.addEventListener("change", updateCalculatedEnd);
+      recalcEndTimePreview();
     });
 
     // Core booking flow (no read-after-write after inserts)
