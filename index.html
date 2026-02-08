@@ -200,6 +200,21 @@ function formatDateToDateTimeLocal(d) {
   return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
 }
 // === END ADD ===
+    function recalcEndTimePreview() {
+  if (!elStart.value) return;
+  if (!selectedVariant || !selectedVariant.duration_minutes) return;
+
+  try {
+    const startLocal = parseDateTimeLocalToDate(elStart.value);
+    const durationMinutes = Number(selectedVariant.duration_minutes);
+    if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) return;
+
+    const endLocal = new Date(startLocal.getTime() + durationMinutes * 60_000);
+    elEnd.value = formatDateToDateTimeLocal(endLocal);
+  } catch {
+    // silently ignore preview errors
+  }
+}
     
     function updateCalculatedEnd() {
   if (!elStart.value || !selectedVariant?.duration_minutes) {
