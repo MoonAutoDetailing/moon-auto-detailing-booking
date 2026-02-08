@@ -148,6 +148,10 @@
     const elEnd = document.getElementById("end");
     const elServiceAddress = document.getElementById("serviceAddress");
 
+    // Hard-lock end time input (defensive)
+elEnd.addEventListener("keydown", (e) => e.preventDefault());
+elEnd.addEventListener("paste", (e) => e.preventDefault());
+
     // State
     let variantsCache = []; // {id, vehicle_size, price, duration_minutes, service:{category,level}}
     let selectedVariant = null;
