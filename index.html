@@ -180,6 +180,27 @@
       if (Number.isNaN(d.getTime())) throw new Error("Invalid date/time value");
       return d.toISOString();
     }
+// === ADD THESE TWO FUNCTIONS RIGHT HERE (step 1) ===
+function parseDateTimeLocalToDate(dtLocal) {
+  // dtLocal is "YYYY-MM-DDTHH:MM" from <input type="datetime-local">
+  const [datePart, timePart] = dtLocal.split("T");
+  const [y, m, d] = datePart.split("-").map(Number);
+  const [hh, mm] = timePart.split(":").map(Number);
+  // Create a LOCAL Date (no UTC conversion)
+  return new Date(y, m - 1, d, hh, mm, 0, 0);
+}
+
+function formatDateToDateTimeLocal(d) {
+  const pad = (n) => String(n).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const mm = pad(d.getMonth() + 1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const min = pad(d.getMinutes());
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+}
+// === END ADD ===
+    
     function updateCalculatedEnd() {
   if (!elStart.value || !selectedVariant?.duration_minutes) {
     elEnd.value = "";
