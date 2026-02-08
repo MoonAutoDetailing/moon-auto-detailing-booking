@@ -1,0 +1,8 @@
+{
+  "name": "moon-auto-detailing-booking",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "googleapis": "^144.0.0"
+  }
+}
