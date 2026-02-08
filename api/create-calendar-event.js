@@ -1,3 +1,5 @@
+console.log("CALENDAR AUTH PATCH v1 LOADED");
+
 // /api/create-calendar-event.js
 const { google } = require("googleapis");
 
