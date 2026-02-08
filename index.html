@@ -428,6 +428,14 @@ const scheduled_end = endLocal.toISOString();
 // --- End Step 2 ---
 
         if (new Date(scheduled_end) <= new Date(scheduled_start)) throw new Error("Scheduled end must be after scheduled start");
+        // --- Step 2.5: enforce business hours & weekdays ---
+if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
+  throw new Error(
+    "Bookings are available Monday–Friday only, between 8:00 AM and 6:00 PM. " +
+    "The selected service must fully complete by 6:00 PM."
+  );
+}
+// --- End Step 2.5 ---
 
         // Calendar conflict check (block overlaps)
 const conflict = await hasBookingConflict(scheduled_start, scheduled_end);
