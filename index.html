@@ -359,7 +359,31 @@ isSubmitting = true;
 
         const service_address = requireNonEmpty("Service address", elServiceAddress.value);
 
-        const scheduled_start = parseLocalDateTimeToISO(requireNonEmpty("Scheduled start", elStart.value));
+        // --- Step 2: derive end time from service duration (LOCAL time) ---
+const startLocal = parseDateTimeLocalToDate(
+  requireNonEmpty("Scheduled start", elStart.value)
+);
+
+if (!selectedVariant || !selectedVariant.duration_minutes) {
+  throw new Error("Service duration missing. Please re-select your service.");
+}
+
+const durationMinutes = Number(selectedVariant.duration_minutes);
+if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+  throw new Error("Invalid service duration. Please re-select your service.");
+}
+
+// Add duration in LOCAL time
+const endLocal = new Date(startLocal.getTime() + durationMinutes * 60_000);
+
+// Autofill + lock the end-time input for UI consistency
+elEnd.value = formatDateToDateTimeLocal(endLocal);
+
+// Convert to ISO ONLY for database usage
+const scheduled_start = startLocal.toISOString();
+const scheduled_end = endLocal.toISOString();
+// --- End Step 2 ---
+
         // Auto-calculate scheduled_end from service duration
 if (!selectedVariant || !selectedVariant.duration_minutes) {
   throw new Error("Service duration missing. Please re-select your service.");
