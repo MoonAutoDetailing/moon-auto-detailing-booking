@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Moon Auto Detailing — Admin</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 20px; max-width: 1000px; }
+    h1 { margin-bottom: 10px; }
+    .day { margin-top: 24px; }
+    .card {
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 12px;
+    }
+    .row { margin-bottom: 6px; }
+    .label { font-weight: 600; }
+    .actions button {
+      margin-right: 8px;
+      padding: 8px 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .confirm { background: #0a7a2f; color: white; border: none; }
+    .cancel { background: #b00020; color: white; border: none; }
+    .delay { background: #666; color: white; border: none; }
+  </style>
+</head>
+<body>
+  <h1>Pending Bookings — Admin</h1>
+  <div id="container"></div>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbWh1Z3p0cnBpcHJucW1jeWFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MDk1NjMsImV4cCI6MjA4NjA4NTU2M30.Mo0uRGWCjU1fOa1br2P8j1ogEZf7mDm2JseV8DFnPwI";
+
+    const ADMIN_SECRET = "moon-admin-2026";
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+      global: {
+        headers: {
+          "x-admin-secret": ADMIN_SECRET
+        }
+      }
+    });
+
+    const container = document.getElementById("container");
+
+    function formatDay(d) {
+      return d.toLocaleDateString(undefined, { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    }
+
+    function formatTime(d) {
+      return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    }
+
+    async function loadPendingBookings() {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select(`
+          id,
+          scheduled_start,
+          scheduled_end,
+          service_address,
+          status,
+          customers:customer_id ( full_name, phone ),
+          vehicles:vehicle_id ( vehicle_year, vehicle_make, vehicle_model ),
+          service_variants:service_variant_id (
+            duration_minutes,
+            services:service_id ( category, level )
+          )
+        `)
+        .eq("status", "pending")
+        .order("scheduled_start", { ascending: true });
+
+      if (error) {
+        container.textContent = "Failed to load bookings.";
+        console.error(error);
+        return;
+      }
+
+      renderBookings(data);
+    }
+
+    function renderBookings(bookings) {
+      container.innerHTML = "";
+
+      const groups = {};
+
+      bookings.forEach(b => {
+        const dayKey = new Date(b.scheduled_start).toDateString();
+        if (!groups[dayKey]) groups[dayKey] = [];
+        groups[dayKey].push(b);
+      });
+
+      Object.entries(groups).forEach(([day, items]) => {
+        const dayDiv = document.createElement("div");
+        dayDiv.className = "day";
+        dayDiv.innerHTML = `<h2>${formatDay(new Date(day))}</h2>`;
+
+        items.forEach(b => {
+          const start = new Date(b.scheduled_start);
+          const end = new Date(b.scheduled_end);
+
+          const service = b.service_variants?.services;
+          const vehicle = b.vehicles;
+          const customer = b.customers;
+
+          const card = document.createElement("div");
+          card.className = "card";
+
+          card.innerHTML = `
+            <div class="row"><span class="label">Client:</span> ${customer.full_name}</div>
+            <div class="row"><span class="label">Phone:</span> ${customer.phone || "—"}</div>
+            <div class="row"><span class="label">Address:</span> ${b.service_address}</div>
+            <div class="row"><span class="label">Vehicle:</span> ${vehicle.vehicle_year || ""} ${vehicle.vehicle_make || ""} ${vehicle.vehicle_model || ""}</div>
+            <div class="row"><span class="label">Service:</span> ${service.category} (Level ${service.level}) — ${b.service_variants.duration_minutes} min</div>
+            <div class="row"><span class="label">Time:</span> ${formatTime(start)} → ${formatTime(end)}</div>
+            <div class="actions">
+              <button class="confirm">Confirm</button>
+              <button class="delay">Delay</button>
+              <button class="cancel">Cancel</button>
+            </div>
+          `;
+
+          card.querySelector(".confirm").onclick = async () => {
+            await updateStatus(b.id, "confirmed", card);
+          };
+
+          card.querySelector(".cancel").onclick = async () => {
+            if (!confirm("Are you sure you want to deny this booking?")) return;
+            await updateStatus(b.id, "denied", card);
+          };
+
+          dayDiv.appendChild(card);
+        });
+
+        container.appendChild(dayDiv);
+      });
+    }
+
+    async function updateStatus(id, status, card) {
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status })
+        .eq("id", id);
+
+      if (error) {
+        alert("Failed to update booking status.");
+        console.error(error);
+        return;
+      }
+
+      card.remove();
+    }
+
+    loadPendingBookings();
+  </script>
+</body>
+</html>
