@@ -280,10 +280,10 @@
     // Core booking flow (no read-after-write after inserts)
 async function hasBookingConflict(requestedStartISO, requestedEndISO) {
   const { count, error } = await supabase
-    .from("bookings")
-    .select("id", { count: "exact", head: true })
-    .lt("scheduled_start", requestedEndISO)
-    .gt("scheduled_end", requestedStartISO);
+  .from("booking_time_windows")
+  .select("scheduled_start", { count: "exact", head: true })
+  .lt("scheduled_start", requestedEndISO)
+  .gt("scheduled_end", requestedStartISO);
 
   if (error) {
     log("Conflict check failed", error);
