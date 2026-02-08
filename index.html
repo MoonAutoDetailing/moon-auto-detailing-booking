@@ -276,6 +276,20 @@
     });
 
     // Core booking flow (no read-after-write after inserts)
+async function hasBookingConflict(requestedStartISO, requestedEndISO) {
+  const { count, error } = await supabase
+    .from("bookings")
+    .select("id", { count: "exact", head: true })
+    .lt("scheduled_start", requestedEndISO)
+    .gt("scheduled_end", requestedStartISO);
+
+  if (error) {
+    log("Conflict check failed", error);
+    throw new Error("Unable to verify availability. Please try again.");
+  }
+
+  return count > 0;
+}    
     async function submitBooking() {
       elSubmit.disabled = true;
       setStatus("muted", "Submitting…");
