@@ -62,6 +62,7 @@ export default async function handler(req, res) {
       key: privateKey,
       scopes: ["https://www.googleapis.com/auth/calendar"]
     });
+    await auth.authorize();
 
     const calendar = google.calendar({ version: "v3", auth });
 
