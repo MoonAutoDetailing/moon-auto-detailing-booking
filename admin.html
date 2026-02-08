@@ -186,10 +186,7 @@ async function createCalendarEvent(booking) {
 }
 
 
-    async function updateStatus(id, status, card, booking) {
-  if (status === "confirmed") {
-    await createCalendarEvent(booking);
-  }
+    async function updateStatus(id, status, card, booking) 
 
   const { error } = await supabase
     .from("bookings")
