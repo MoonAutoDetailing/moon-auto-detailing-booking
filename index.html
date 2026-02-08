@@ -117,6 +117,15 @@
     // =========================
     // CONFIG (REPLACE)
     // =========================
+// =========================
+// BUSINESS RULES (STEP 2)
+// =========================
+const BUSINESS_RULES = {
+  openHour: 8,     // 8:00 AM
+  closeHour: 18,  // 6:00 PM (hard stop)
+  allowedWeekdays: [1, 2, 3, 4, 5] // Monday–Friday (JS: 0 = Sunday)
+};
+    
     const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbWh1Z3p0cnBpcHJucW1jeWFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MDk1NjMsImV4cCI6MjA4NjA4NTU2M30.Mo0uRGWCjU1fOa1br2P8j1ogEZf7mDm2JseV8DFnPwI";
 
