@@ -148,9 +148,7 @@
       });
     }
 async function createCalendarEvent(booking) {
-  console.log("CALENDAR: function entered", booking);
-
-  console.log("CALENDAR: about to fetch");
+  console.log("CALENDAR: starting");
 
   const res = await fetch("/api/create-calendar-event", {
     method: "POST",
@@ -169,16 +167,16 @@ async function createCalendarEvent(booking) {
     })
   });
 
-  console.log("CALENDAR: fetch returned", res.status);
+  console.log("CALENDAR: response status", res.status);
 
-  const data = await res.json();
-  console.log("CALENDAR: response JSON", data);
+  const text = await res.text();
+  console.log("CALENDAR: raw response", text);
 
   if (!res.ok) {
-    throw new Error(data.message || "Calendar creation failed");
+    throw new Error(`Calendar API failed: ${res.status} ${text}`);
   }
 
-  return data;
+  return JSON.parse(text);
 }
 
 
