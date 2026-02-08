@@ -214,8 +214,6 @@ function formatDateToDateTimeLocal(d) {
 
   try {
     const startLocal = parseDateTimeLocalToDate(elStart.value);
-    const durationMinutes = Number(selectedVariant.duration_minutes);
-    if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) return;
 
     const endLocal = new Date(startLocal.getTime() + durationMinutes * 60_000);
     elEnd.value = formatDateToDateTimeLocal(endLocal);
@@ -403,12 +401,6 @@ elEnd.value = formatDateToDateTimeLocal(endLocal);
 const scheduled_start = startLocal.toISOString();
 const scheduled_end = endLocal.toISOString();
 // --- End Step 2 ---
-
-        // Auto-calculate scheduled_end from service duration
-const durationMinutes = Number(selectedVariant.duration_minutes);
-if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
-  throw new Error("Invalid service duration. Please re-select your service.");
-}
 
 const scheduled_end = new Date(
   new Date(scheduled_start).getTime() + durationMinutes * 60 * 1000
