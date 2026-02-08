@@ -35,6 +35,11 @@
 
 <body>
 
+  <!-- HARD BODY PARSE PROOF -->
+  <div style="background:red;color:white;padding:10px;font-weight:bold">
+    🔴 ADMIN BODY PARSED
+  </div>
+
   <!-- HARD DEBUG PANEL -->
   <div
     id="hardLog"
@@ -62,12 +67,12 @@
 
   <script type="module">
     /* =========================================================
-       IMPORTS — MUST BE FIRST IN ES MODULE
+       IMPORTS (MUST BE FIRST)
     ========================================================= */
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
     /* =========================================================
-       HARD LOGGING — VISUAL, UNAVOIDABLE
+       HARD LOGGING
     ========================================================= */
     function hardLog(message) {
       const el = document.getElementById("hardLog");
@@ -189,7 +194,6 @@
             </div>
           `;
 
-          /* CONFIRM */
           card.querySelector(".confirm").onclick = async () => {
             hardLog(`CONFIRM CLICKED booking ${b.id}`);
 
@@ -202,7 +206,6 @@
             }
           };
 
-          /* CANCEL */
           card.querySelector(".cancel").onclick = async () => {
             if (!confirm("Are you sure you want to deny this booking?")) return;
             await updateStatus(b.id, "denied", card);
@@ -216,7 +219,7 @@
     }
 
     /* =========================================================
-       GOOGLE CALENDAR CALL
+       CALENDAR API
     ========================================================= */
     async function createCalendarEvent(booking) {
       hardLog(`CALLING CALENDAR API for ${booking.id}`);
@@ -241,10 +244,7 @@
       const text = await res.text();
       hardLog(`CALENDAR RESPONSE ${res.status}`);
 
-      if (!res.ok) {
-        throw new Error(text);
-      }
-
+      if (!res.ok) throw new Error(text);
       return JSON.parse(text);
     }
 
