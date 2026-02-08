@@ -187,8 +187,7 @@ async function createCalendarEvent(booking) {
 }
 
 
-    async function updateStatus(id, status, card, booking) 
-
+    async function updateStatus(id, status, card) {
   const { error } = await supabase
     .from("bookings")
     .update({ status })
