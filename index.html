@@ -299,6 +299,8 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       const cat = selectedVariant.service?.category ?? "Unknown Category";
       const lvl = selectedVariant.service?.level ?? "?";
       elServiceMeta.textContent = `Selected: ${cat} Level ${lvl} — ${selectedVariant.duration_minutes} minutes (cleanup +10 and travel NOT included)`;
+      updateCalculatedEnd();
+      elStart.addEventListener("change", updateCalculatedEnd);
     });
 
     // Core booking flow (no read-after-write after inserts)
