@@ -213,19 +213,6 @@ function formatDateToDateTimeLocal(d) {
   if (!selectedVariant || !selectedVariant.duration_minutes) return;
 
 }
-    
-    function updateCalculatedEnd() {
-  if (!elStart.value || !selectedVariant?.duration_minutes) {
-    elEnd.value = "";
-    return;
-  }
-
-  const start = new Date(elStart.value);
-  start.setMinutes(start.getMinutes() + Number(selectedVariant.duration_minutes));
-
-  // datetime-local expects YYYY-MM-DDTHH:MM
-  elEnd.value = start.toISOString().slice(0, 16);
-}
 
 // 👇 ADD THIS FUNCTION DIRECTLY HERE
 function computeScheduledEnd(startLocal, durationMinutes) {
