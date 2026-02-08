@@ -1,4 +1,7 @@
 import { google } from "googleapis";
+import fs from "fs";
+import path from "path";
+import os from "os";
 
 function mustGetEnv(name) {
   const v = process.env[name];
@@ -53,20 +56,20 @@ export default async function handler(req, res) {
     }
 
     const calendarId = mustGetEnv("GOOGLE_CALENDAR_ID");
+const serviceAccountJson = Buffer.from(
+  mustGetEnv("GOOGLE_SERVICE_ACCOUNT_JSON"),
+  "base64"
+).toString("utf8");
 
-    const clientEmail = mustGetEnv("GOOGLE_SERVICE_ACCOUNT_EMAIL");
-    const privateKey = Buffer.from(mustGetEnv("GOOGLE_PRIVATE_KEY"), "utf8").toString();
+const tmpPath = path.join(os.tmpdir(), "gsa.json");
+fs.writeFileSync(tmpPath, serviceAccountJson);
 
+const auth = new google.auth.JWT({
+  keyFile: tmpPath,
+  scopes: ["https://www.googleapis.com/auth/calendar"]
+});
 
-
-    const auth = new google.auth.JWT(
-  clientEmail,
-  null,
-  privateKey,
-  ["https://www.googleapis.com/auth/calendar"]
-);
 await auth.authorize();
-
 
     const calendar = google.calendar({ version: "v3", auth });
 
