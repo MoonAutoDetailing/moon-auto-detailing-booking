@@ -1,0 +1,395 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Moon Auto Detailing — Booking</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 20px; max-width: 860px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    label { display:block; font-weight:600; margin: 10px 0 6px; }
+    input, select, button, textarea { width: 100%; padding: 10px; font-size: 16px; }
+    textarea { min-height: 70px; }
+    button { cursor: pointer; font-weight: 700; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 14px; margin-top: 14px; }
+    .muted { color: #555; font-size: 14px; }
+    .ok { color: #0a7a2f; font-weight: 700; }
+    .bad { color: #b00020; font-weight: 700; }
+    pre { background: #0b1020; color: #e7ecff; padding: 12px; border-radius: 10px; overflow:auto; }
+  </style>
+</head>
+<body>
+  <h1>Moon Auto Detailing — Booking</h1>
+  <p class="muted">Client-side only. Inserts only. No read-after-write after inserts.</p>
+
+  <div class="card">
+    <div class="row">
+      <div>
+        <label for="vehicleSize">Vehicle size (required)</label>
+        <select id="vehicleSize" required>
+          <option value="">Select size…</option>
+          <option value="compact">compact</option>
+          <option value="midsized">midsized</option>
+          <option value="oversized">oversized</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="serviceVariant">Service (required)</label>
+        <select id="serviceVariant" required disabled>
+          <option value="">Select vehicle size first…</option>
+        </select>
+        <div id="serviceMeta" class="muted"></div>
+      </div>
+    </div>
+
+    <h3>Customer</h3>
+    <div class="row">
+      <div>
+        <label for="fullName">Full name (required)</label>
+        <input id="fullName" type="text" placeholder="Darren Moon" required />
+      </div>
+      <div>
+        <label for="email">Email (required)</label>
+        <input id="email" type="email" placeholder="you@email.com" required />
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label for="phone">Phone</label>
+        <input id="phone" type="tel" placeholder="(518) 555-1234" />
+      </div>
+      <div>
+        <label for="address">Address (required)</label>
+        <input id="address" type="text" placeholder="Street, City, State ZIP" required />
+      </div>
+    </div>
+
+    <h3>Vehicle (a new record is created every booking)</h3>
+    <div class="row">
+      <div>
+        <label for="year">Year</label>
+        <input id="year" type="number" min="1900" max="2100" placeholder="2015" />
+      </div>
+      <div>
+        <label for="make">Make</label>
+        <input id="make" type="text" placeholder="GMC" />
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label for="model">Model</label>
+        <input id="model" type="text" placeholder="Sierra 1500" />
+      </div>
+      <div>
+        <label for="plate">License plate</label>
+        <input id="plate" type="text" placeholder="ABC-1234" />
+      </div>
+    </div>
+
+    <h3>Booking</h3>
+    <div class="row">
+      <div>
+        <label for="start">Scheduled start (required)</label>
+        <input id="start" type="datetime-local" required />
+      </div>
+      <div>
+        <label for="end">Scheduled end (required)</label>
+        <input id="end" type="datetime-local" required />
+      </div>
+    </div>
+    <label for="serviceAddress">Service address (required)</label>
+    <textarea id="serviceAddress" placeholder="If same as customer address, paste it here." required></textarea>
+
+    <button id="submitBtn">Create booking</button>
+
+    <div id="status" class="muted" style="margin-top:10px;"></div>
+    <pre id="log" style="margin-top:10px; display:none;"></pre>
+  </div>
+
+  <script type="module">
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+    // =========================
+    // CONFIG (REPLACE)
+    // =========================
+    const SUPABASE_URL = "YOUR_SUPABASE_URL";
+    const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY";
+
+    if (!SUPABASE_URL.startsWith("http")) {
+      throw new Error("Set SUPABASE_URL and SUPABASE_ANON_KEY in index.html");
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Elements
+    const elVehicleSize = document.getElementById("vehicleSize");
+    const elServiceVariant = document.getElementById("serviceVariant");
+    const elServiceMeta = document.getElementById("serviceMeta");
+    const elStatus = document.getElementById("status");
+    const elLog = document.getElementById("log");
+    const elSubmit = document.getElementById("submitBtn");
+
+    const elFullName = document.getElementById("fullName");
+    const elEmail = document.getElementById("email");
+    const elPhone = document.getElementById("phone");
+    const elAddress = document.getElementById("address");
+
+    const elYear = document.getElementById("year");
+    const elMake = document.getElementById("make");
+    const elModel = document.getElementById("model");
+    const elPlate = document.getElementById("plate");
+
+    const elStart = document.getElementById("start");
+    const elEnd = document.getElementById("end");
+    const elServiceAddress = document.getElementById("serviceAddress");
+
+    // State
+    let variantsCache = []; // {id, vehicle_size, price, duration_minutes, service:{category,level}}
+    let selectedVariant = null;
+
+    function log(message, obj) {
+      const ts = new Date().toISOString();
+      const line = obj ? `${ts}  ${message}\n${JSON.stringify(obj, null, 2)}\n` : `${ts}  ${message}\n`;
+      console.log(message, obj ?? "");
+      elLog.style.display = "block";
+      elLog.textContent = (elLog.textContent || "") + line;
+    }
+
+    function setStatus(type, text) {
+      elStatus.className = type === "ok" ? "ok" : type === "bad" ? "bad" : "muted";
+      elStatus.textContent = text;
+    }
+
+    function normalizeVehicleSize(v) {
+      return (v || "").trim().toLowerCase();
+    }
+
+    function requireNonEmpty(name, value) {
+      const v = (value || "").trim();
+      if (!v) throw new Error(`${name} is required`);
+      return v;
+    }
+
+    function parseLocalDateTimeToISO(dtLocal) {
+      // dtLocal is "YYYY-MM-DDTHH:MM"
+      // Interpret as local time, convert to ISO string with timezone.
+      const d = new Date(dtLocal);
+      if (Number.isNaN(d.getTime())) throw new Error("Invalid date/time value");
+      return d.toISOString();
+    }
+
+    function resetServiceDropdown(msg) {
+      elServiceVariant.innerHTML = `<option value="">${msg}</option>`;
+      elServiceVariant.disabled = true;
+      elServiceMeta.textContent = "";
+      selectedVariant = null;
+    }
+
+    function renderServiceDropdown(vehicleSize) {
+      const filtered = variantsCache
+        .filter(v => v.vehicle_size === vehicleSize)
+        .map(v => {
+          const cat = v.service?.category ?? "Unknown Category";
+          const lvl = (v.service?.level ?? "?");
+          const label = `${cat} — Level ${lvl} (${v.vehicle_size}) — ${v.duration_minutes} min — $${v.price}`;
+          return { id: v.id, label };
+        });
+
+      if (!filtered.length) {
+        resetServiceDropdown("No services available for this vehicle size");
+        log("No service variants found for vehicle size", { vehicleSize, totalVariants: variantsCache.length });
+        return;
+      }
+
+      elServiceVariant.disabled = false;
+      elServiceVariant.innerHTML = `<option value="">Select service…</option>` +
+        filtered.map(o => `<option value="${o.id}">${o.label}</option>`).join("");
+    }
+
+    async function loadServiceVariants() {
+      setStatus("muted", "Loading services…");
+      resetServiceDropdown("Loading…");
+
+      // Explicit embedded relation; DO NOT rely on implicit joins returning null silently
+      const { data, error } = await supabase
+        .from("service_variants")
+        .select("id, vehicle_size, price, duration_minutes, service:services(category, level)")
+        .eq("active", true);
+
+      if (error) {
+        setStatus("bad", "Failed to load services. See log.");
+        log("Service load error", error);
+        resetServiceDropdown("Failed to load services");
+        return;
+      }
+
+      if (!Array.isArray(data)) {
+        setStatus("bad", "Service data shape invalid. See log.");
+        log("Service data not array", data);
+        resetServiceDropdown("Service data invalid");
+        return;
+      }
+
+      // Validate minimum fields; log anomalies, don't crash
+      variantsCache = data.map(v => ({
+        id: v.id,
+        vehicle_size: normalizeVehicleSize(v.vehicle_size),
+        price: v.price,
+        duration_minutes: v.duration_minutes,
+        service: v.service || null
+      }));
+
+      setStatus("ok", `Loaded ${variantsCache.length} service variants.`);
+      log("Loaded service variants", { count: variantsCache.length });
+
+      // If user already selected vehicle size, render
+      const vs = normalizeVehicleSize(elVehicleSize.value);
+      if (vs) renderServiceDropdown(vs);
+      else resetServiceDropdown("Select vehicle size first…");
+    }
+
+    elVehicleSize.addEventListener("change", () => {
+      const vs = normalizeVehicleSize(elVehicleSize.value);
+      if (!vs) {
+        resetServiceDropdown("Select vehicle size first…");
+        return;
+      }
+      if (!["compact","midsized","oversized"].includes(vs)) {
+        resetServiceDropdown("Invalid vehicle size");
+        log("Invalid vehicle size selected", { vs });
+        return;
+      }
+      renderServiceDropdown(vs);
+    });
+
+    elServiceVariant.addEventListener("change", () => {
+      const id = elServiceVariant.value;
+      selectedVariant = variantsCache.find(v => v.id === id) || null;
+      if (!selectedVariant) {
+        elServiceMeta.textContent = "";
+        return;
+      }
+      const cat = selectedVariant.service?.category ?? "Unknown Category";
+      const lvl = selectedVariant.service?.level ?? "?";
+      elServiceMeta.textContent = `Selected: ${cat} Level ${lvl} — ${selectedVariant.duration_minutes} minutes (cleanup +10 and travel NOT included)`;
+    });
+
+    // Core booking flow (no read-after-write after inserts)
+    async function submitBooking() {
+      elSubmit.disabled = true;
+      setStatus("muted", "Submitting…");
+
+      try {
+        const vehicle_size = normalizeVehicleSize(requireNonEmpty("Vehicle size", elVehicleSize.value));
+        if (!["compact","midsized","oversized"].includes(vehicle_size)) throw new Error("Vehicle size must be compact, midsized, or oversized (lowercase)");
+
+        const service_variant_id = requireNonEmpty("Service", elServiceVariant.value);
+        const email = requireNonEmpty("Email", elEmail.value).toLowerCase();
+
+        const full_name = requireNonEmpty("Full name", elFullName.value);
+        const address = requireNonEmpty("Customer address", elAddress.value);
+        const phone = (elPhone.value || "").trim() || null;
+
+        const service_address = requireNonEmpty("Service address", elServiceAddress.value);
+
+        const scheduled_start = parseLocalDateTimeToISO(requireNonEmpty("Scheduled start", elStart.value));
+        const scheduled_end = parseLocalDateTimeToISO(requireNonEmpty("Scheduled end", elEnd.value));
+        if (new Date(scheduled_end) <= new Date(scheduled_start)) throw new Error("Scheduled end must be after scheduled start");
+
+        // Step 1: find existing customer by email (SELECT allowed only by email header policy)
+        const customerLookupClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          global: { headers: { "x-customer-email": email } }
+        });
+
+        const { data: existingCustomers, error: selErr } = await customerLookupClient
+          .from("customers")
+          .select("id,email")
+          .eq("email", email)
+          .limit(1);
+
+        if (selErr) {
+          // If RLS blocks this, you WILL see it here
+          log("Customer select error (RLS?)", selErr);
+          throw new Error("Customer lookup failed (likely RLS). See log.");
+        }
+
+        let customer_id;
+        if (existingCustomers && existingCustomers.length === 1) {
+          customer_id = existingCustomers[0].id;
+          log("Found existing customer", { customer_id, email });
+        } else {
+          // New customer: generate UUID client-side, insert WITHOUT .select()
+          customer_id = crypto.randomUUID();
+          const { error: insCustErr } = await supabase
+            .from("customers")
+            .insert([{ id: customer_id, full_name, email, phone, address }]);
+
+          if (insCustErr) {
+            log("Customer insert error", insCustErr);
+            throw new Error("Customer creation failed. See log.");
+          }
+          log("Created new customer (no select after insert)", { customer_id, email });
+        }
+
+        // Step 2: create vehicle record (new every booking), client-generated UUID, insert WITHOUT .select()
+        const vehicle_id = crypto.randomUUID();
+        const vehicle_year = elYear.value ? Number(elYear.value) : null;
+        const vehicle_make = (elMake.value || "").trim() || null;
+        const vehicle_model = (elModel.value || "").trim() || null;
+        const license_plate = (elPlate.value || "").trim() || null;
+
+        const { error: insVehErr } = await supabase
+          .from("vehicles")
+          .insert([{
+            id: vehicle_id,
+            customer_id,
+            vehicle_size,
+            vehicle_year,
+            vehicle_make,
+            vehicle_model,
+            license_plate
+          }]);
+
+        if (insVehErr) {
+          log("Vehicle insert error", insVehErr);
+          throw new Error("Vehicle creation failed. See log.");
+        }
+        log("Created vehicle (no select after insert)", { vehicle_id });
+
+        // Step 3: create booking (status pending), insert WITHOUT .select()
+        const { error: insBookErr } = await supabase
+          .from("bookings")
+          .insert([{
+            customer_id,
+            vehicle_id,
+            service_variant_id,
+            service_address,
+            scheduled_start,
+            scheduled_end,
+            status: "pending"
+          }]);
+
+        if (insBookErr) {
+          log("Booking insert error", insBookErr);
+          throw new Error("Booking creation failed. See log.");
+        }
+
+        setStatus("ok", "Booking created successfully ✅");
+        log("Booking created", { customer_id, vehicle_id, service_variant_id });
+
+      } catch (e) {
+        setStatus("bad", e?.message || "Unknown error");
+        log("Submit failure", { message: e?.message, stack: e?.stack });
+      } finally {
+        elSubmit.disabled = false;
+      }
+    }
+
+    elSubmit.addEventListener("click", submitBooking);
+
+    // Initial load
+    loadServiceVariants();
+  </script>
+</body>
+</html>
