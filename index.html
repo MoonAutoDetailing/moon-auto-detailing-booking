@@ -119,10 +119,10 @@ h3 {
 </p>
   <p class="muted">Client-side only. Inserts only. No read-after-write after inserts.</p>
 
-  <div class="card">
+  <div class="card booking-card">
     <div class="row">
-      <div>
-        <label for="vehicleSize">Vehicle size (required)</label>
+    <div>
+        <label for="vehicleSize">Vehicle size</label>
         <select id="vehicleSize" required>
           <option value="">Select size…</option>
           <option value="compact">compact</option>
@@ -132,7 +132,7 @@ h3 {
       </div>
 
       <div>
-        <label for="serviceVariant">Service (required)</label>
+        <label for="serviceVariant">Service</label>
         <select id="serviceVariant" required disabled>
           <option value="">Select vehicle size first…</option>
         </select>
@@ -143,11 +143,11 @@ h3 {
     <h3 class="section-title">1. Customer Information</h3>
     <div class="row">
       <div>
-        <label for="fullName">Full name (required)</label>
-        <input id="fullName" type="text" placeholder="Darren Moon" required />
+        <label for="fullName">Full name</label>
+        <input id="fullName" type="text" placeholder="First Last" required />
       </div>
       <div>
-        <label for="email">Email (required)</label>
+        <label for="email">Email</label>
         <input id="email" type="email" placeholder="you@email.com" required />
       </div>
     </div>
@@ -157,7 +157,7 @@ h3 {
         <input id="phone" type="tel" placeholder="(518) 555-1234" />
       </div>
       <div>
-        <label for="address">Address (required)</label>
+        <label for="address">Address</label>
         <input id="address" type="text" placeholder="Street, City, State ZIP" required />
       </div>
     </div>
@@ -170,13 +170,13 @@ h3 {
       </div>
       <div>
         <label for="make">Make</label>
-        <input id="make" type="text" placeholder="GMC" />
+        <input id="make" type="text" placeholder="Toyota" />
       </div>
     </div>
     <div class="row">
       <div>
         <label for="model">Model</label>
-        <input id="model" type="text" placeholder="Sierra 1500" />
+        <input id="model" type="text" placeholder="Corolla" />
       </div>
       <div>
         <label for="plate">License plate</label>
@@ -187,15 +187,15 @@ h3 {
     <h3 class="section-title">3. Appointment Time</h3>
     <div class="row">
       <div>
-        <label for="start">Scheduled start (required)</label>
+        <label for="start">Desired Start Time</label>
         <input id="start" type="datetime-local" required />
       </div>
       <div>
-        <label for="end">Scheduled end (required)</label>
+        <label for="end">Scheduled End Time</label>
        <input id="end" type="datetime-local" readonly />
       </div>
     </div>
-    <label for="serviceAddress">Service address (required)</label>
+    <label for="serviceAddress">Address where service will be performed </label>
     <textarea id="serviceAddress" placeholder="If same as customer address, paste it here." required></textarea>
 
     <button id="submitBtn" class="primary-btn">
