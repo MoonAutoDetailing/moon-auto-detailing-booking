@@ -22,7 +22,7 @@
   cursor: not-allowed;
 }
     /* =====================
-   UI POLISH (SAFE)
+   UI POLISH (SAFE)            /*DESKTOP DEFAULT/*
    ===================== */
 
 .page-wrap {
@@ -49,28 +49,51 @@ h1 {
   border-bottom: 1px solid #e5e7eb;
   padding-bottom: 4px;
 }
+    .row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+}
+
+/* Explicit single-column rows */
+.row.full {
+  grid-template-columns: 1fr;
+}
+
 
                                 /*Mobile Media Configuration*/
+/* =====================
+   MOBILE ONLY
+   ===================== */
 @media (max-width: 640px) {
+
   body {
     margin: 12px;
   }
-}
 
-  /* Stack all form rows */
+  /* Stack rows ONLY on mobile */
   .row {
     grid-template-columns: 1fr;
   }
 
-  /* Reduce card padding on mobile */
+  /* Reduce card padding */
   .booking-card {
     padding: 20px;
   }
 
-  /* Make datetime inputs fit */
+  /* Datetime inputs stay centered */
   input[type="datetime-local"] {
-    font-size: 14px;
+    width: 100%;
+    display: block;
   }
+
+  /* Center submit button on mobile only */
+  #submitBtn {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
 
   /* Prevent overflow issues, BOX INPUT SIZES AND STYLES */
   input,
