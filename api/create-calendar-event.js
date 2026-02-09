@@ -133,11 +133,22 @@ export default async function handler(req, res) {
     });
 
     // ─── Send confirmation email ────────────────────────
-    await sendConfirmationEmail({
-  to: booking.customers.email,
-  name: booking.customers.full_name,
-  booking,
+    console.log("EMAIL DEBUG → about to send", {
+  to: booking.customers?.email,
+  name: booking.customers?.full_name,
 });
+
+try {
+  const emailResult = await sendConfirmationEmail({
+    to: booking.customers.email,
+    name: booking.customers.full_name,
+    booking,
+  });
+
+  console.log("EMAIL DEBUG → resend response", emailResult);
+} catch (err) {
+  console.error("EMAIL ERROR → resend failed", err);
+}
 
 
     // ─── Mark booking confirmed ─────────────────────────
