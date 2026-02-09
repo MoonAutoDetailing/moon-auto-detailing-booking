@@ -211,18 +211,8 @@
       "x-admin-secret": ADMIN_SECRET
     },
     body: JSON.stringify({
-      summary,
-      location: booking.service_address,
-      description: [
-        `Customer: ${booking.customers.full_name}`,
-        `Phone: ${booking.customers.phone || "—"}`,
-        `Vehicle: ${booking.vehicles.vehicle_year || ""} ${booking.vehicles.vehicle_make || ""} ${booking.vehicles.vehicle_model || ""}`.trim(),
-        `Service: ${booking.service_variants.services.category} Level ${booking.service_variants.services.level}`
-      ].join("\n"),
-      startISO: booking.scheduled_start,
-      endISO: booking.scheduled_end
-    })
-  });
+  bookingId: booking.id
+})
 
   const text = await res.text();
   hardLog(`CALENDAR RESPONSE ${res.status}`);
