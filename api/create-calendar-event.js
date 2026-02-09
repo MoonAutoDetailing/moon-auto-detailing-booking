@@ -133,32 +133,12 @@ export default async function handler(req, res) {
     });
 
     // ─── Send confirmation email ────────────────────────
-    await resend.emails.send({
-      from: "Moon Auto Detailing <moonautodetailing@gmail.com>",
-      to: booking.customers.email,
-      subject: "Your Auto Detail Is Confirmed — Moon Auto Detailing",
-      html: `
-        <p>Hi ${booking.customers.full_name},</p>
+    await sendConfirmationEmail({
+  to: booking.customers.email,
+  name: booking.customers.full_name,
+  booking,
+});
 
-        <p>Your auto detailing appointment is confirmed.</p>
-
-        <p>
-          <strong>Date:</strong> ${new Date(
-            booking.scheduled_start
-          ).toLocaleDateString()}<br/>
-          <strong>Time:</strong> ${new Date(
-            booking.scheduled_start
-          ).toLocaleTimeString()} – ${new Date(
-            booking.scheduled_end
-          ).toLocaleTimeString()}<br/>
-          <strong>Address:</strong> ${booking.service_address}
-        </p>
-
-        <p>Your appointment has been added to our calendar.</p>
-
-        <p>— Moon Auto Detailing</p>
-      `,
-    });
 
     // ─── Mark booking confirmed ─────────────────────────
     await supabase
