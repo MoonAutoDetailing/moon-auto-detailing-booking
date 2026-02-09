@@ -1,3 +1,5 @@
+console.log("CONFIRM DEBUG bookingId", bookingId);
+
 import { google } from "googleapis";
 import { Resend } from "resend";
 import { createClient } from "@supabase/supabase-js";
