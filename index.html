@@ -128,27 +128,6 @@ h3 {
 </p>
   <p class="muted">Client-side only. Inserts only. No read-after-write after inserts.</p>
 
-  <div class="card booking-card">
-    <div class="row">
-    <div>
-        <label for="vehicleSize">Vehicle size</label>
-        <select id="vehicleSize" required>
-          <option value="">Select size…</option>
-          <option value="compact">compact</option>
-          <option value="midsized">midsized</option>
-          <option value="oversized">oversized</option>
-        </select>
-      </div>
-
-      <div>
-        <label for="serviceVariant">Service</label>
-        <select id="serviceVariant" required disabled>
-          <option value="">Select vehicle size first…</option>
-        </select>
-        <div id="serviceMeta" class="muted"></div>
-      </div>
-    </div>
-
     <h3 class="section-title">1. Customer Information</h3>
     <div class="row">
       <div>
@@ -171,8 +150,29 @@ h3 {
       </div>
     </div>
 
-    <h3 class="section-title">2. Vehicle Details</h3>
+    <h3 class="section-title">2. Vehicle Details</h3> <!--Vehicle-Details-->
+    <div class="card booking-card">
     <div class="row">
+    <div>
+        <label for="vehicleSize">Vehicle size</label> <!--Vehicle size-->
+        <select id="vehicleSize" required>
+          <option value="">Select size…</option>
+          <option value="compact">compact</option>
+          <option value="midsized">midsized</option>
+          <option value="oversized">oversized</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="serviceVariant">Service</label> <!--Select-service-->
+        <select id="serviceVariant" required disabled>
+          <option value="">Select vehicle size first…</option>
+        </select>
+        <div id="serviceMeta" class="muted"></div>
+      </div>
+    </div>
+      
+    <div class="row"> 
       <div>
         <label for="year">Year</label>
         <input id="year" type="number" min="1900" max="2100" placeholder="2015" />
