@@ -200,31 +200,36 @@
 
     /* ===================== CALENDAR API ===================== */
     async function createCalendarEvent(booking) {
-      hardLog(`CALLING CALENDAR API for ${booking.id}`);
+  hardLog(`CALLING CALENDAR API for ${booking.id}`);
 
-      const res = await fetch("/api/create-calendar-event", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-secret": ADMIN_SECRET
-        },
-        body: JSON.stringify({
-          customer_name: booking.customers.full_name,
-          customer_phone: booking.customers.phone,
-          address: booking.service_address,
-          vehicle_text: `${booking.vehicles.vehicle_year || ""} ${booking.vehicles.vehicle_make || ""} ${booking.vehicles.vehicle_model || ""}`.trim(),
-          service_text: `${booking.service_variants.services.category} Level ${booking.service_variants.services.level}`,
-          start_iso: booking.scheduled_start,
-          end_iso: booking.scheduled_end
-        })
-      });
+  const summary = `${booking.service_variants.services.category} Level ${booking.service_variants.services.level} — ${booking.customers.full_name}`;
 
-      const text = await res.text();
-      hardLog(`CALENDAR RESPONSE ${res.status}`);
+  const res = await fetch("/api/create-calendar-event", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-admin-secret": ADMIN_SECRET
+    },
+    body: JSON.stringify({
+      summary,
+      location: booking.service_address,
+      description: [
+        `Customer: ${booking.customers.full_name}`,
+        `Phone: ${booking.customers.phone || "—"}`,
+        `Vehicle: ${booking.vehicles.vehicle_year || ""} ${booking.vehicles.vehicle_make || ""} ${booking.vehicles.vehicle_model || ""}`.trim(),
+        `Service: ${booking.service_variants.services.category} Level ${booking.service_variants.services.level}`
+      ].join("\n"),
+      startISO: booking.scheduled_start,
+      endISO: booking.scheduled_end
+    })
+  });
 
-      if (!res.ok) throw new Error(text);
-      return JSON.parse(text);
-    }
+  const text = await res.text();
+  hardLog(`CALENDAR RESPONSE ${res.status}`);
+
+  if (!res.ok) throw new Error(text);
+  return JSON.parse(text);
+}
 
     /* ===================== STATUS UPDATE ===================== */
     async function updateStatus(id, status, card) {
