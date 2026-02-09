@@ -14,14 +14,15 @@ function requireEnv(name) {
 // This ensures reliability by preventing partial execution with missing config.
 const adminSecret = requireEnv("ADMIN_SECRET");
 const supabaseUrl = requireEnv("SUPABASE_URL");
-const supabaseKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
+const supabaseKey = requireEnv("SUPABASE_SERVICE_ROLE_KEY").trim();
 const resendApiKey = requireEnv("RESEND_API_KEY");
 const calendarId = requireEnv("GOOGLE_CALENDAR_ID").trim();
 const rawServiceAccount = requireEnv("GOOGLE_SERVICE_ACCOUNT_JSON");
 
 // Create Supabase client once per runtime to avoid per-invocation overhead and drift.
 // This improves reliability by keeping a single configured client for all requests.
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl.trim(), supabaseKey);
+console.log("SUPABASE KEY LENGTH:", supabaseKey.length);
 
 // Instantiate Resend once to reuse configuration across invocations.
 // This avoids reinitialization per request and keeps behavior consistent.
