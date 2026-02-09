@@ -48,12 +48,36 @@ h1 {
   padding-bottom: 4px;
 }
 
-/* Mobile */
-@media (max-width: 640px) {
+                                /*Mobile User Configuration*/
+@media (max-width: 640px) {       
+
   body {
     margin: 12px;
   }
+
+  /* Stack all form rows */
+  .row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Reduce card padding on mobile */
+  .booking-card {
+    padding: 20px;
+  }
+
+  /* Make datetime inputs fit */
+  input[type="datetime-local"] {
+    font-size: 14px;
+  }
+
+  /* Prevent overflow issues */
+  input,
+  select,
+  textarea {
+    max-width: 100%;
+  }
 }
+
     #log { display: none !important; }
     /* =========================
    MOON SITE TYPOGRAPHY + ALIGNMENT
@@ -129,12 +153,14 @@ h3 {
   border-radius: 14px;
 }
     
-  </style>
+  </style>                              <!--PAGE UI DESIGN END-->
+
+  
 </head>
 <body>
   <div class="page-wrap">
        <div class="card booking-card">
-  <h1>Moon Auto Detailing — Booking</h1>
+  <h1>Moon Auto Detailing — Booking</h1>          <!--ACTUAL PHYSICAL TEXT STARTS-->
     <p class="page-subtitle">
   Mobile Auto Detailing, WE come to YOU. Book in now, no payment required today.
 </p>
