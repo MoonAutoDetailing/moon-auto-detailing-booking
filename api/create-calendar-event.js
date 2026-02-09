@@ -1,4 +1,13 @@
 import { google } from "googleapis";
+import { Resend } from "resend";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -6,7 +15,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Admin auth
+    // ─── Admin auth ─────────────────────────────────────
     const adminSecret = process.env.ADMIN_SECRET;
     const providedSecret =
       req.headers["x-admin-secret"] || req.body?.adminSecret;
@@ -15,34 +24,62 @@ export default async function handler(req, res) {
       return res.status(401).json({ ok: false, message: "Unauthorized" });
     }
 
-    const calendarId = process.env.GOOGLE_CALENDAR_ID?.trim();
-    if (!calendarId) {
-      return res
-        .status(500)
-        .json({ ok: false, message: "Missing GOOGLE_CALENDAR_ID" });
-    }
-
-    const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-    if (!raw) {
-      return res.status(500).json({
+    const { bookingId } = req.body;
+    if (!bookingId) {
+      return res.status(400).json({
         ok: false,
-        message: "Missing GOOGLE_SERVICE_ACCOUNT_JSON",
+        message: "Missing bookingId",
       });
     }
 
-    // Decode + parse service account
-    const decoded = Buffer.from(raw, "base64").toString("utf8");
-    const creds = JSON.parse(decoded);
+    // ─── Load booking + customer ────────────────────────
+    const { data: booking, error: bookingError } = await supabase
+      .from("bookings")
+      .select(
+        `
+        id,
+        status,
+        service_address,
+        scheduled_start,
+        scheduled_end,
+        customers (
+          full_name,
+          email
+        )
+      `
+      )
+      .eq("id", bookingId)
+      .single();
+
+    if (bookingError || !booking) {
+      throw new Error("Failed to load booking and customer");
+    }
+
+    // Idempotency guard
+    if (booking.status === "confirmed") {
+      return res.status(200).json({
+        ok: true,
+        alreadyConfirmed: true,
+      });
+    }
+
+    // ─── Google Calendar auth ───────────────────────────
+    const calendarId = process.env.GOOGLE_CALENDAR_ID?.trim();
+    const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+
+    if (!calendarId || !raw) {
+      throw new Error("Missing Google Calendar configuration");
+    }
+
+    const creds = JSON.parse(
+      Buffer.from(raw, "base64").toString("utf8")
+    );
 
     const privateKey = creds.private_key?.replace(/\\n/g, "\n");
     if (!creds.client_email || !privateKey) {
-      return res.status(500).json({
-        ok: false,
-        message: "Invalid service account credentials",
-      });
+      throw new Error("Invalid Google service account credentials");
     }
 
-    // Google auth (JWT)
     const auth = new google.auth.JWT(
       creds.client_email,
       null,
@@ -54,38 +91,63 @@ export default async function handler(req, res) {
 
     const calendar = google.calendar({ version: "v3", auth });
 
-    const { summary, description, location, startISO, endISO } = req.body;
-
-    if (!summary || !startISO || !endISO) {
-      return res.status(400).json({
-        ok: false,
-        message: "Missing required fields",
-      });
-    }
-
+    // ─── Create calendar event ──────────────────────────
     const event = {
-      summary,
-      description: description || "",
-      location: location || "",
-      start: { dateTime: startISO },
-      end: { dateTime: endISO },
+      summary: "Auto Detailing Appointment",
+      description: `Customer: ${booking.customers.full_name}`,
+      location: booking.service_address,
+      start: { dateTime: booking.scheduled_start },
+      end: { dateTime: booking.scheduled_end },
     };
 
-    const response = await calendar.events.insert({
+    const calendarResponse = await calendar.events.insert({
       calendarId,
       requestBody: event,
     });
 
+    // ─── Send confirmation email ────────────────────────
+    await resend.emails.send({
+      from: "Moon Auto Detailing <moonautodetailing@gmail.com>",
+      to: booking.customers.email,
+      subject: "Your Auto Detail Is Confirmed — Moon Auto Detailing",
+      html: `
+        <p>Hi ${booking.customers.full_name},</p>
+
+        <p>Your auto detailing appointment is confirmed.</p>
+
+        <p>
+          <strong>Date:</strong> ${new Date(
+            booking.scheduled_start
+          ).toLocaleDateString()}<br/>
+          <strong>Time:</strong> ${new Date(
+            booking.scheduled_start
+          ).toLocaleTimeString()} – ${new Date(
+            booking.scheduled_end
+          ).toLocaleTimeString()}<br/>
+          <strong>Address:</strong> ${booking.service_address}
+        </p>
+
+        <p>Your appointment has been added to our calendar.</p>
+
+        <p>— Moon Auto Detailing</p>
+      `,
+    });
+
+    // ─── Mark booking confirmed ─────────────────────────
+    await supabase
+      .from("bookings")
+      .update({ status: "confirmed" })
+      .eq("id", bookingId);
+
     return res.status(200).json({
       ok: true,
-      eventId: response.data.id,
-      htmlLink: response.data.htmlLink,
+      eventId: calendarResponse.data.id,
     });
   } catch (err) {
-    console.error("CALENDAR ERROR:", err);
+    console.error("CONFIRM ERROR:", err);
     return res.status(500).json({
       ok: false,
-      message: err.message || "Calendar error",
+      message: err.message,
     });
   }
 }
