@@ -170,7 +170,17 @@ h3 {
   padding: 18px;
   border-radius: 14px;
 }
-    
+    /* Force rounded inputs everywhere (desktop + mobile) */
+input,
+select,
+textarea {
+  border-radius: 16px !important;
+}
+input[type="datetime-local"] {
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+
   </style>                              <!--PAGE UI DESIGN END-->
 
   
