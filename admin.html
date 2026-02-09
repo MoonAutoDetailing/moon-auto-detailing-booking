@@ -205,14 +205,16 @@
   const summary = `${booking.service_variants.services.category} Level ${booking.service_variants.services.level} — ${booking.customers.full_name}`;
 
   const res = await fetch("/api/create-calendar-event", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-admin-secret": ADMIN_SECRET
-    },
-    body: JSON.stringify({
-  bookingId: booking.id
-})
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "x-admin-secret": ADMIN_SECRET
+  },
+  body: JSON.stringify({
+    bookingId: booking.id
+  })
+});
+
 
   const text = await res.text();
   hardLog(`CALENDAR RESPONSE ${res.status}`);
