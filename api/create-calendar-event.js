@@ -15,7 +15,7 @@ export default async function handler(req, res) {
       return res.status(401).json({ ok: false, message: "Unauthorized" });
     }
 
-    const calendarId = process.env.GOOGLE_CALENDAR_ID;
+    const calendarId = process.env.GOOGLE_CALENDAR_ID?.trim();
     if (!calendarId) {
       return res
         .status(500)
