@@ -4,6 +4,7 @@
   "type": "module",
   "dependencies": {
     "googleapis": "^144.0.0",
-    "resend": "^3.2.0"
+    "resend": "^3.2.0",
+    "@supabase/supabase-js": "^2.43.4"
   }
 }
