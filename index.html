@@ -7,6 +7,8 @@
   <style>
     body {font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background-color: #000000;}
     .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    /* Force full-width rows when needed (desktop + mobile) */
+    .row.full {grid-template-columns: 1fr; }
     label { display:block; font-weight:600; margin: 10px 0 6px; }
     input, select, button, textarea { width: 100%; padding: 10px; font-size: 16px; }
     textarea { min-height: 70px; }
@@ -247,7 +249,7 @@ h3 {
     </div>
 
     <h3 class="section-title">3. Appointment Time</h3>
-    <div class="row">
+    <div class="row full">
       <div>
         <label for="start">Desired Start Time</label>
         <input id="start" type="datetime-local" required />
