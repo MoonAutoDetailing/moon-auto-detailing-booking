@@ -20,10 +20,63 @@
   background-color: #f3f4f6;
   cursor: not-allowed;
 }
+    /* =====================
+   UI POLISH (SAFE)
+   ===================== */
+
+.page-wrap {
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.page-subtitle {
+  text-align: center;
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.card {
+  background: #ffffff;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+}
+
+.section-title {
+  font-size: 18px;
+  margin-top: 18px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 4px;
+}
+
+.primary-btn {
+  background: #6fb3e8;
+  border-radius: 999px;
+  padding: 14px;
+}
+
+.primary-btn:hover {
+  background: #4f8de6;
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  body {
+    margin: 12px;
+  }
+}
   </style>
 </head>
 <body>
+  <div class="page-wrap">
   <h1>Moon Auto Detailing — Booking</h1>
+    <p class="page-subtitle">
+  Mobile auto detailing at your location. No payment required today.
+</p>
   <p class="muted">Client-side only. Inserts only. No read-after-write after inserts.</p>
 
   <div class="card">
@@ -47,7 +100,7 @@
       </div>
     </div>
 
-    <h3>Customer</h3>
+    <h3 class="section-title">1. Customer Information</h3>
     <div class="row">
       <div>
         <label for="fullName">Full name (required)</label>
@@ -69,7 +122,7 @@
       </div>
     </div>
 
-    <h3>Vehicle (a new record is created every booking)</h3>
+    <h3 class="section-title">2. Vehicle Details</h3>
     <div class="row">
       <div>
         <label for="year">Year</label>
@@ -91,7 +144,7 @@
       </div>
     </div>
 
-    <h3>Booking</h3>
+    <h3 class="section-title">3. Appointment Time</h3>
     <div class="row">
       <div>
         <label for="start">Scheduled start (required)</label>
@@ -105,7 +158,9 @@
     <label for="serviceAddress">Service address (required)</label>
     <textarea id="serviceAddress" placeholder="If same as customer address, paste it here." required></textarea>
 
-    <button id="submitBtn">Create booking</button>
+    <button id="submitBtn" class="primary-btn">
+  Submit Booking Request
+</button>
 
     <div id="status" class="muted" style="margin-top:10px;"></div>
     <pre id="log" style="margin-top:10px; display:none;"></pre>
@@ -546,5 +601,6 @@ if (conflict) {
     // Initial load
     loadServiceVariants();
   </script>
+    </div>
 </body>
 </html>
