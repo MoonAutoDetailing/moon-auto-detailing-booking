@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
   try {
     const result = await resend.emails.send({
-      from: "Moon Auto Detailing <moonautodetailing@gmail.com>",
+      from: "Moon Auto Detailing <onboarding@resend.dev>",
       to: ["moonautodetailing@gmail.com"], // send ONLY to yourself for now
       subject: "Resend test email ✅",
       html: "<p>This is a test email from Vercel via Resend.</p>",
