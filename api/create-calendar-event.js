@@ -10,7 +10,7 @@ const supabase = createClient(
 const resend = new Resend(process.env.RESEND_API_KEY);
 async function sendConfirmationEmail({ to, name, booking }) {
   return resend.emails.send({
-    from: "Moon Auto Detailing <moonautodetailing@gmail.com>",
+    from: "Moon Auto Detailing <onboarding@resend.dev>",
     to,
     subject: "Your Auto Detail Is Confirmed — Moon Auto Detailing",
     html: `
