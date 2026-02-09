@@ -43,9 +43,7 @@ async function sendConfirmationEmail({
     subject: "Your Auto Detail Is Confirmed — Moon Auto Detailing",
     html: `
       <p>Hi ${name},</p>
-
       <p>Your auto detailing appointment is confirmed.</p>
-
       <p>
         <strong>Date:</strong> ${new Date(
           booking.scheduled_start
