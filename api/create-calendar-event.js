@@ -8,6 +8,33 @@ const supabase = createClient(
 );
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+async function sendConfirmationEmail({ to, name, booking }) {
+  return resend.emails.send({
+    from: "Moon Auto Detailing <moonautodetailing@gmail.com>",
+    to,
+    subject: "Your Auto Detail Is Confirmed — Moon Auto Detailing",
+    html: `
+      <p>Hi ${name},</p>
+
+      <p>Your auto detailing appointment is confirmed.</p>
+
+      <p>
+        <strong>Date:</strong> ${new Date(
+          booking.scheduled_start
+        ).toLocaleDateString()}<br/>
+        <strong>Time:</strong> ${new Date(
+          booking.scheduled_start
+        ).toLocaleTimeString()} – ${new Date(
+          booking.scheduled_end
+        ).toLocaleTimeString()}<br/>
+        <strong>Address:</strong> ${booking.service_address}
+      </p>
+
+      <p>— Moon Auto Detailing</p>
+    `,
+  });
+}
+
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
