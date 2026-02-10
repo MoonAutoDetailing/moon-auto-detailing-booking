@@ -226,6 +226,15 @@ input[type="datetime-local"] {
     /* =====================
    WEEKLY CALENDAR (READ-ONLY)
    ===================== */
+    
+    /* Alternate day column shading for readability */
+.cal-day-even {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.cal-day-odd {
+  background: rgba(0, 0, 0, 0.06);
+}
 #weeklyCal {
   display: grid;
   grid-template-columns: 70px repeat(7, 1fr);
@@ -994,6 +1003,7 @@ async function loadCalendar() {
     for (let d=0;d<7;d++){
       const cell=document.createElement("div");
       cell.className="cal-cell";
+      cell.classList.add(d % 2 === 0 ? "cal-day-even" : "cal-day-odd");
 
       cell.onclick=()=>{
         const dt=new Date(
