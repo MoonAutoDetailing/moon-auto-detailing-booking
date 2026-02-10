@@ -508,7 +508,8 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       setStatus("muted", "Loading services…");
       resetServiceDropdown("Loading…");
 
-      // Explicit embedded relation; DO NOT rely on implicit joins returning null silently
+                                              // Explicit embedded relation; DO NOT rely on implicit joins returning null silently
+                                              //THIS IS SERVICE_VARIANTS NOT LOADING DEBUG 
       const { data, error } = await supabase
         .from("service_variants")
         .select("id, vehicle_size, price, duration_minutes, service:services(category, level)")
@@ -537,8 +538,8 @@ function computeScheduledEnd(startLocal, durationMinutes) {
         service: v.service || null
       }));
 
-      setStatus("ok", `Loaded ${variantsCache.length} service variants.`);
-      log("Loaded service variants", { count: variantsCache.length });
+      setStatus("muted", "");
+      log("Loaded service variants", { count: variantsCache.length });            //SERVICE VARIANTS DEBUG ENDS HERE
 
       // If user already selected vehicle size, render
       const vs = normalizeVehicleSize(elVehicleSize.value);
