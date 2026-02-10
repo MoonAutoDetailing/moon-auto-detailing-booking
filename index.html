@@ -420,8 +420,81 @@ input[type="datetime-local"] {
     Tap a time to prefill your start time. Grey blocks are confirmed bookings.
   </div>
 
-  <div id="weeklyCal"></div>
-</div>                                                  <!--Bookings Calendar End-->
+  <div id="hourlyCal"></div>
+</div>
+  /* =====================
+   HORIZONTAL HOURLY CALENDAR (NEW)
+   ===================== */
+
+#hourlyCal {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.hourly-header,
+.hourly-row {
+  display: grid;
+  grid-template-columns: 110px repeat(10, 1fr);
+}
+
+.hourly-header {
+  background: #f3f4f6;
+  font-weight: 700;
+}
+
+.hourly-header div,
+.hourly-row div {
+  padding: 14px 8px;
+  text-align: center;
+  border-right: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+.day-label {
+  background: #111;
+  color: #fff;
+  font-weight: 600;
+}
+
+.hour-slot {
+  cursor: pointer;
+  background: #ffffff;
+}
+
+.hour-slot:hover {
+  background: #e8f4ff;
+}
+
+.hour-slot.booked {
+  background: #e34b4b;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: not-allowed;
+}
+
+.hour-slot.booked span {
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+/* MOBILE */
+@media (max-width: 640px) {
+  .hourly-header,
+  .hourly-row {
+    grid-template-columns: 90px repeat(10, 1fr);
+  }
+
+  .hourly-header div,
+  .hourly-row div {
+    padding: 10px 4px;
+    font-size: 12px;
+  }
+}
+
+  <!--Bookings Calendar End-->
   </div> <!-- calendarContainer -->
 
     <div class="row full">
@@ -981,8 +1054,9 @@ function pad(n){ return String(n).padStart(2,"0"); }
 }
 
 async function loadCalendar() {
-  if (!elCal) return;
-  elCal.innerHTML = "";
+  const cal = document.getElementById("hourlyCal");
+  if (!cal) return;
+  cal.innerHTML = "";
 
   elCalLabel.textContent =
     calWeekStart.toLocaleDateString() + " – " +
@@ -996,9 +1070,69 @@ async function loadCalendar() {
     const res = await fetch(`/api/list-calendar-blocks?timeMin=${timeMin}&timeMax=${timeMax}`);
     const json = await res.json();
     blocks = json.blocks || [];
-  } catch {
-    // non-fatal
+  } catch {}
+
+  const hours = [];
+  for (let h = 8; h <= 17; h++) hours.push(h);
+
+  // HEADER
+  const header = document.createElement("div");
+  header.className = "hourly-header";
+  header.innerHTML =
+    `<div></div>` +
+    hours.map(h => `<div>${h}:00</div>`).join("");
+  cal.appendChild(header);
+
+  // ROWS (DATES)
+  for (let d = 0; d < 7; d++) {
+    const row = document.createElement("div");
+    row.className = "hourly-row";
+
+    const dayDate = addDays(calWeekStart, d);
+    row.innerHTML = `<div class="day-label">
+      ${dayDate.toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "numeric",
+        day: "numeric"
+      })}
+    </div>`;
+
+    hours.forEach(hour => {
+      const slotStart = new Date(
+        dayDate.getFullYear(),
+        dayDate.getMonth(),
+        dayDate.getDate(),
+        hour, 0, 0, 0
+      );
+      const slotEnd = new Date(slotStart);
+      slotEnd.setHours(hour + 1);
+
+      const isBooked = blocks.some(b => {
+        const bs = new Date(b.start);
+        const be = new Date(b.end);
+        return slotStart < be && slotEnd > bs;
+      });
+
+      const cell = document.createElement("div");
+      cell.className = "hour-slot" + (isBooked ? " booked" : "");
+
+      if (isBooked) {
+        cell.innerHTML = `<span>BOOKED</span>`;
+      }
+
+      cell.onclick = () => {
+        if (cell.classList.contains("booked")) return;
+        elStart.value = formatDateToDateTimeLocal(slotStart);
+        recalcEndTimePreview();
+      };
+
+      row.appendChild(cell);
+    });
+
+    cal.appendChild(row);
   }
+}
+
 
   // headers
   elCal.appendChild(document.createElement("div"));
