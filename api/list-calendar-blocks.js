@@ -93,7 +93,8 @@ export default async function handler(req, res) {
 
 
     return res.status(200).json({ blocks });
-  } catch (e) {
-    return res.status(500).json({ error: e?.message || "Server error" });
-  }
+} catch (e) {
+  console.error("list-calendar-blocks error:", e);
+  return res.status(500).json({ error: e?.message || "Server error" });
+}
 }
