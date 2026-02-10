@@ -76,17 +76,26 @@ h1 {
    ===================== */
 @media (max-width: 640px) {
 
-  body {
-    margin: 12px;
-  }
+ body {
+  margin: 0;
+}
+  .page-wrap {
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+}
 
   /* Stack rows ONLY on mobile */
   .row {
     grid-template-columns: 1fr;
   }
+  .booking-card .section-title {
+  margin-top: 32px;
+}
 
   /* Reduce card padding */
   .booking-card {
+    border-radius: 0;
     padding: 20px;
   }
 
