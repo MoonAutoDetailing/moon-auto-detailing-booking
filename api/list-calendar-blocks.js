@@ -1,3 +1,4 @@
+console.log("list-calendar-blocks: file loaded");
 import { google } from "googleapis";
 
 /**
@@ -23,6 +24,7 @@ function safeJsonParse(str, name) {
 }
 
 export default async function handler(req, res) {
+  console.log("list-calendar-blocks: handler entered");
   // CORS (same-origin use; permissive enough for your own site)
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
