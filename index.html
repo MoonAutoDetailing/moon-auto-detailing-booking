@@ -365,7 +365,17 @@ input[type="datetime-local"] {
 
     <h3 class="section-title">3. Appointment Time</h3>
                                                                  <!-- Confirmed Bookings Calendar (read-only reference) -->
-<div id="calWrap" style="margin-top:16px;">
+<button
+  type="button"
+  id="toggleCalendarBtn"
+  style="margin:12px auto; display:block;"
+>
+  View availability calendar
+</button>
+
+<div id="calendarContainer" style="display:none;">
+  <div id="calWrap" style="margin-top:16px;">
+
   <div class="muted" style="text-align:center; margin-bottom:10px;">
     <strong>Confirmed bookings (for reference)</strong><br />
     This calendar shows already-confirmed appointments.
@@ -387,6 +397,7 @@ input[type="datetime-local"] {
 
   <div id="weeklyCal"></div>
 </div>                                                  <!--Bookings Calendar End-->
+  </div> <!-- calendarContainer -->
 
     <div class="row full">
       <div>
@@ -1029,6 +1040,21 @@ document.getElementById("calPrev").onclick=()=>{ calWeekStart=addDays(calWeekSta
 document.getElementById("calNext").onclick=()=>{ calWeekStart=addDays(calWeekStart,7); loadCalendar(); };
 document.getElementById("calToday").onclick=()=>{ calWeekStart=new Date(); calWeekStart.setDate(calWeekStart.getDate()-calWeekStart.getDay()); loadCalendar(); };
 
+// =========================
+// CALENDAR TOGGLE (UI ONLY)
+// =========================
+const toggleBtn = document.getElementById("toggleCalendarBtn");
+const calContainer = document.getElementById("calendarContainer");
+
+if (toggleBtn && calContainer) {
+  toggleBtn.addEventListener("click", () => {
+    const isOpen = calContainer.style.display === "block";
+    calContainer.style.display = isOpen ? "none" : "block";
+    toggleBtn.textContent = isOpen
+      ? "View availability calendar"
+      : "Hide availability calendar";
+  });
+}
 
     // Initial load
 loadCalendar();
