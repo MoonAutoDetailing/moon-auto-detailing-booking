@@ -31,7 +31,8 @@ export default async function handler(req, res) {
 
     const calendarId = requireEnv("GOOGLE_CALENDAR_ID").trim();
     const saJson = requireEnv("GOOGLE_SERVICE_ACCOUNT_JSON");
-const creds = JSON.parse(saJson.replace(/\\n/g, "\n"));
+const decoded = Buffer.from(saJson, "base64").toString("utf-8");
+const creds = JSON.parse(decoded);
 
 
     const auth = new google.auth.JWT({
