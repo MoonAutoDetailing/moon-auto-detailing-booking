@@ -226,15 +226,7 @@ input[type="datetime-local"] {
     /* =====================
    WEEKLY CALENDAR (READ-ONLY)
    ===================== */
-    
-    /* Alternate day column shading for readability */
-.cal-day-even {
-  background: rgba(0, 0, 0, 0.02);
-}
 
-.cal-day-odd {
-  background: rgba(0, 0, 0, 0.06);
-}
 #weeklyCal {
   display: grid;
   grid-template-columns: 70px repeat(7, 1fr);
@@ -269,6 +261,30 @@ input[type="datetime-local"] {
   background: #fff;
   cursor: pointer;
 }
+    /* Alternate day column shading using overlay */
+.cal-day-even::before,
+.cal-day-odd::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  z-index: 0;
+}
+
+.cal-day-even::before {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.cal-day-odd::before {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+/* Ensure cell content stays above overlay */
+.cal-cell > * {
+  position: relative;
+  z-index: 1;
+}
+
 
 .cal-block {
   position: absolute;
