@@ -222,6 +222,63 @@ input[type="datetime-local"] {
 #log {
   display: none !important;
 }
+
+    /* =====================
+   WEEKLY CALENDAR (READ-ONLY)
+   ===================== */
+#weeklyCal {
+  display: grid;
+  grid-template-columns: 70px repeat(7, 1fr);
+  gap: 6px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(0,0,0,0.02);
+}
+
+.cal-head {
+  text-align: center;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.cal-time {
+  text-align: right;
+  font-size: 12px;
+  padding: 8px;
+  color: #6b7280;
+}
+
+.cal-cell {
+  position: relative;
+  height: 36px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.cal-block {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  background: rgba(107,114,128,0.35);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  #weeklyCal {
+    grid-template-columns: 58px repeat(7, 1fr);
+  }
+  .cal-cell {
+    height: 40px;
+  }
+}                                      
+
   </style>                              <!--PAGE UI DESIGN END-->
 
   
@@ -307,6 +364,30 @@ input[type="datetime-local"] {
     </div>
 
     <h3 class="section-title">3. Appointment Time</h3>
+                                                                 <!-- Confirmed Bookings Calendar (read-only reference) -->
+<div id="calWrap" style="margin-top:16px;">
+  <div class="muted" style="text-align:center; margin-bottom:10px;">
+    <strong>Confirmed bookings (for reference)</strong><br />
+    This calendar shows already-confirmed appointments.
+    Your request will still be reviewed and confirmed manually.
+  </div>
+
+  <div class="row full" style="margin-bottom:10px;">
+    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+      <button type="button" id="calPrev">← Prev</button>
+      <div id="calLabel" class="muted" style="font-weight:700;"></div>
+      <button type="button" id="calNext">Next →</button>
+      <button type="button" id="calToday">Today</button>
+    </div>
+  </div>
+
+  <div class="muted" style="text-align:center; margin-bottom:10px;">
+    Tap a time to prefill your start time. Grey blocks are confirmed bookings.
+  </div>
+
+  <div id="weeklyCal"></div>
+</div>                                                  <!--Bookings Calendar End-->
+
     <div class="row full">
       <div>
         <label for="start">Desired Start Time</label>
@@ -839,8 +920,119 @@ inputEl.classList.add("locked-address");
   if (serviceAddress) attachAutocomplete(serviceAddress);
 }
 
+    // =========================
+// READ-ONLY WEEKLY CALENDAR
+// =========================
+const CAL = { open: 8, close: 18, slot: 30 };
+
+const elCal = document.getElementById("weeklyCal");
+const elCalLabel = document.getElementById("calLabel");
+
+let calWeekStart = (() => {
+  const d = new Date();
+  d.setHours(0,0,0,0);
+  d.setDate(d.getDate() - d.getDay()); // Sunday
+  return d;
+})();
+
+function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function pad(n){ return String(n).padStart(2,"0"); }
+
+async function loadCalendar() {
+  if (!elCal) return;
+  elCal.innerHTML = "";
+
+  elCalLabel.textContent =
+    calWeekStart.toLocaleDateString() + " – " +
+    addDays(calWeekStart,6).toLocaleDateString();
+
+  const timeMin = calWeekStart.toISOString();
+  const timeMax = addDays(calWeekStart,7).toISOString();
+
+  let blocks = [];
+  try {
+    const res = await fetch(`/api/list-calendar-blocks?timeMin=${timeMin}&timeMax=${timeMax}`);
+    const json = await res.json();
+    blocks = json.blocks || [];
+  } catch {
+    // non-fatal
+  }
+
+  // headers
+  elCal.appendChild(document.createElement("div"));
+  ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"].forEach((d,i)=>{
+    const h=document.createElement("div");
+    h.className="cal-head";
+    const day=addDays(calWeekStart,i);
+    h.innerHTML=`${d}<br>${day.getMonth()+1}/${day.getDate()}`;
+    elCal.appendChild(h);
+  });
+
+  const rows = ((CAL.close-CAL.open)*60)/CAL.slot;
+
+  for (let r=0;r<rows;r++){
+    const m=r*CAL.slot;
+    const hh=CAL.open+Math.floor(m/60);
+    const mm=m%60;
+
+    const t=document.createElement("div");
+    t.className="cal-time";
+    t.textContent=`${pad(hh)}:${pad(mm)}`;
+    elCal.appendChild(t);
+
+    for (let d=0;d<7;d++){
+      const cell=document.createElement("div");
+      cell.className="cal-cell";
+
+      cell.onclick=()=>{
+        const dt=new Date(
+          calWeekStart.getFullYear(),
+          calWeekStart.getMonth(),
+          calWeekStart.getDate()+d,
+          hh,mm
+        );
+        elStart.value = formatDateToDateTimeLocal(dt);
+        recalcEndTimePreview();
+      };
+
+      elCal.appendChild(cell);
+    }
+  }
+
+  // overlay blocks
+  requestAnimationFrame(()=>{
+    const cells=[...elCal.querySelectorAll(".cal-cell")];
+    blocks.forEach(b=>{
+      const s=new Date(b.start), e=new Date(b.end);
+      cells.forEach(c=>{
+        const rect=c.getBoundingClientRect();
+        const d=new Date(
+          calWeekStart.getFullYear(),
+          calWeekStart.getMonth(),
+          calWeekStart.getDate()+((cells.indexOf(c)%7)),
+          CAL.open+(Math.floor(cells.indexOf(c)/7)*CAL.slot)/60,
+          (Math.floor(cells.indexOf(c)/7)*CAL.slot)%60
+        );
+        if (d>=s && d<e){
+          const blk=document.createElement("div");
+          blk.className="cal-block";
+          blk.style.top="2px";
+          blk.style.bottom="2px";
+          c.appendChild(blk);
+        }
+      });
+    });
+  });
+}
+
+document.getElementById("calPrev").onclick=()=>{ calWeekStart=addDays(calWeekStart,-7); loadCalendar(); };
+document.getElementById("calNext").onclick=()=>{ calWeekStart=addDays(calWeekStart,7); loadCalendar(); };
+document.getElementById("calToday").onclick=()=>{ calWeekStart=new Date(); calWeekStart.setDate(calWeekStart.getDate()-calWeekStart.getDay()); loadCalendar(); };
+
 
     // Initial load
+loadCalendar();
+    
     loadServiceVariants();
 function waitForGooglePlaces() {
   if (window.google && google.maps?.places) {
