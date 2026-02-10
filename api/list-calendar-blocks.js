@@ -15,14 +15,6 @@ function requireEnv(name) {
   return v;
 }
 
-function safeJsonParse(str, name) {
-  try {
-    return JSON.parse(str);
-  } catch (e) {
-    throw new Error(`Invalid JSON in ${name}`);
-  }
-}
-
 export default async function handler(req, res) {
   console.log("list-calendar-blocks: handler entered");
   // CORS (same-origin use; permissive enough for your own site)
@@ -39,12 +31,8 @@ export default async function handler(req, res) {
 
     const calendarId = requireEnv("GOOGLE_CALENDAR_ID").trim();
     const saJson = requireEnv("GOOGLE_SERVICE_ACCOUNT_JSON");
+const creds = JSON.parse(saJson.replace(/\\n/g, "\n"));
 
-    // Handle private key newlines if stored with escaped \n
-    const creds = safeJsonParse(saJson, "GOOGLE_SERVICE_ACCOUNT_JSON");
-    if (creds.private_key && typeof creds.private_key === "string") {
-      creds.private_key = creds.private_key.replace(/\\n/g, "\n");
-    }
 
     const auth = new google.auth.JWT({
       email: creds.client_email,
