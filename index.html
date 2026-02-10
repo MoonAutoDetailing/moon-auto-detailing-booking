@@ -1028,6 +1028,7 @@ async function loadCalendar() {
       cell.classList.add(d % 2 === 0 ? "cal-day-even" : "cal-day-odd");
 
       cell.onclick=()=>{
+        if (cell.classList.contains("blocked")) return;
         const dt=new Date(
           calWeekStart.getFullYear(),
           calWeekStart.getMonth(),
@@ -1062,6 +1063,7 @@ async function loadCalendar() {
           blk.style.top="2px";
           blk.style.bottom="2px";
           c.appendChild(blk);
+          c.classList.add("blocked");
         }
       });
     });
