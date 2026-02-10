@@ -1027,6 +1027,107 @@ inputEl.classList.add("locked-address");
   if (customerAddress) attachAutocomplete(customerAddress);
   if (serviceAddress) attachAutocomplete(serviceAddress);
 }
+// =========================
+// HOURLY CALENDAR (STATE + HELPERS)
+// =========================
+let calWeekStart = new Date();
+calWeekStart.setHours(0, 0, 0, 0);
+calWeekStart.setDate(calWeekStart.getDate() - calWeekStart.getDay()); // Sunday
+
+function addDays(d, n) {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+}
+
+// =========================
+// HOURLY CALENDAR (RENDER)
+// =========================
+async function loadCalendar() {
+  const hourlyCal = document.getElementById("hourlyCal");
+  const calLabel = document.getElementById("calLabel");
+  if (!hourlyCal) return;
+
+  hourlyCal.innerHTML = "";
+
+  const weekEnd = addDays(calWeekStart, 7);
+  calLabel.textContent =
+    calWeekStart.toLocaleDateString() +
+    " – " +
+    addDays(weekEnd, -1).toLocaleDateString();
+
+  // Header row
+  const header = document.createElement("div");
+  header.className = "hourly-header";
+  header.innerHTML = `<div></div>`;
+  for (let h = 8; h <= 17; h++) {
+    header.innerHTML += `<div>${h}:00</div>`;
+  }
+  hourlyCal.appendChild(header);
+
+  // Fetch confirmed bookings
+  const resp = await fetch(
+    `/api/list-calendar-blocks?timeMin=${calWeekStart.toISOString()}&timeMax=${weekEnd.toISOString()}`
+  );
+  const data = await resp.json();
+  const blocks = data.blocks || [];
+
+  for (let d = 0; d < 7; d++) {
+    const day = addDays(calWeekStart, d);
+    const row = document.createElement("div");
+    row.className = "hourly-row";
+
+    row.innerHTML = `<div class="day-label">${day.toLocaleDateString()}</div>`;
+
+    for (let h = 8; h <= 17; h++) {
+      const cell = document.createElement("div");
+      cell.className = "hour-slot";
+
+      const cellStart = new Date(day);
+      cellStart.setHours(h, 0, 0, 0);
+      const cellEnd = new Date(cellStart);
+      cellEnd.setHours(h + 1);
+
+      const booked = blocks.some(b =>
+        new Date(b.start) < cellEnd && new Date(b.end) > cellStart
+      );
+
+      if (booked) {
+        cell.classList.add("booked");
+        cell.innerHTML = `<span>BOOKED</span>`;
+      } else {
+        cell.onclick = () => {
+          elStart.value = formatDateToDateTimeLocal(cellStart);
+          recalcEndTimePreview();
+        };
+      }
+
+      row.appendChild(cell);
+    }
+
+    hourlyCal.appendChild(row);
+  }
+}
+
+// =========================
+// CALENDAR NAVIGATION
+// =========================
+document.getElementById("calPrev").onclick = () => {
+  calWeekStart = addDays(calWeekStart, -7);
+  loadCalendar();
+};
+
+document.getElementById("calNext").onclick = () => {
+  calWeekStart = addDays(calWeekStart, 7);
+  loadCalendar();
+};
+
+document.getElementById("calToday").onclick = () => {
+  calWeekStart = new Date();
+  calWeekStart.setHours(0,0,0,0);
+  calWeekStart.setDate(calWeekStart.getDate() - calWeekStart.getDay());
+  loadCalendar();
+};
 
 // =========================
 // CALENDAR TOGGLE (UI ONLY)
