@@ -303,7 +303,13 @@ input[type="datetime-local"] {
       </div>
     </div>
     <label for="serviceAddress">Address where service will be performed </label>
-    <textarea id="serviceAddress" placeholder="The address where the service will be completed." autocomplete="street-address" required></textarea>
+    <input
+  id="serviceAddress"
+  type="text"
+  placeholder="Start typing service address…"
+  autocomplete="off"
+  required
+/>
 
     <button id="submitBtn" class="primary-btn">
   Submit Booking Request
