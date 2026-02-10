@@ -66,14 +66,29 @@ export default async function handler(req, res) {
 
     // Return blocks only (start/end). If an all-day event exists, ignore it.
     const blocks = items
-      .filter((e) => e.status !== "cancelled")
-      .map((e) => {
-        const start = e.start?.dateTime;
-        const end = e.end?.dateTime;
-        if (!start || !end) return null;
-        return { start, end };
-      })
-      .filter(Boolean);
+  .filter((e) => e.status !== "cancelled")
+  .map((e) => {
+    // Timed events (normal case)
+    if (e.start?.dateTime && e.end?.dateTime) {
+      return {
+        start: e.start.dateTime,
+        end: e.end.dateTime
+      };
+    }
+
+    // All-day events → block full business day
+    if (e.start?.date && e.end?.date) {
+      const day = e.start.date; // YYYY-MM-DD
+      return {
+        start: `${day}T08:00:00`,
+        end: `${day}T18:00:00`
+      };
+    }
+
+    return null;
+  })
+  .filter(Boolean);
+
 
     return res.status(200).json({ blocks });
   } catch (e) {
