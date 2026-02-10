@@ -18,6 +18,14 @@
   background-color: #f3f4f6;
   cursor: not-allowed;
 }
+
+    /*LOCKING ADDRESS VALIDATION*/
+    
+    input.locked-address {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
     /* =====================
    UI POLISH (SAFE) - DESKTOP DEFAULT           
    ===================== */
@@ -815,6 +823,9 @@ function initAddressAutocomplete() {
     .join(", ");
 
   inputEl.value = fullAddress;
+      inputEl.readOnly = true;
+inputEl.classList.add("locked-address");
+
 });
   }
 
