@@ -302,7 +302,78 @@ input[type="datetime-local"] {
   .cal-cell {
     height: 40px;
   }
-}                                      
+}                     
+    /* =====================
+   HORIZONTAL HOURLY CALENDAR (NEW)
+   ===================== */
+
+#hourlyCal {
+  overflow-x: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.hourly-header,
+.hourly-row {
+  display: grid;
+  grid-template-columns: 110px repeat(10, 1fr);
+}
+
+.hourly-header {
+  background: #f3f4f6;
+  font-weight: 700;
+}
+
+.hourly-header div,
+.hourly-row div {
+  padding: 14px 8px;
+  text-align: center;
+  border-right: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 14px;
+}
+
+.day-label {
+  background: #111;
+  color: #fff;
+  font-weight: 600;
+}
+
+.hour-slot {
+  cursor: pointer;
+  background: #ffffff;
+}
+
+.hour-slot:hover {
+  background: #e8f4ff;
+}
+
+.hour-slot.booked {
+  background: #e34b4b;
+  color: #ffffff;
+  font-weight: 700;
+  cursor: not-allowed;
+}
+
+.hour-slot.booked span {
+  font-size: 12px;
+  letter-spacing: 0.5px;
+}
+
+/* MOBILE */
+@media (max-width: 640px) {
+  .hourly-header,
+  .hourly-row {
+    grid-template-columns: 90px repeat(10, 1fr);
+  }
+
+  .hourly-header div,
+  .hourly-row div {
+    padding: 10px 4px;
+    font-size: 12px;
+  }
+}
 
   </style>                              <!--PAGE UI DESIGN END-->
 
@@ -422,79 +493,7 @@ input[type="datetime-local"] {
 
   <div id="hourlyCal"></div>
 </div>
-  /* =====================
-   HORIZONTAL HOURLY CALENDAR (NEW)
-   ===================== */
-
-#hourlyCal {
-  overflow-x: auto;
-  border: 1px solid #e5e7eb;
-  border-radius: 16px;
-  background: #ffffff;
-}
-
-.hourly-header,
-.hourly-row {
-  display: grid;
-  grid-template-columns: 110px repeat(10, 1fr);
-}
-
-.hourly-header {
-  background: #f3f4f6;
-  font-weight: 700;
-}
-
-.hourly-header div,
-.hourly-row div {
-  padding: 14px 8px;
-  text-align: center;
-  border-right: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
-  font-size: 14px;
-}
-
-.day-label {
-  background: #111;
-  color: #fff;
-  font-weight: 600;
-}
-
-.hour-slot {
-  cursor: pointer;
-  background: #ffffff;
-}
-
-.hour-slot:hover {
-  background: #e8f4ff;
-}
-
-.hour-slot.booked {
-  background: #e34b4b;
-  color: #ffffff;
-  font-weight: 700;
-  cursor: not-allowed;
-}
-
-.hour-slot.booked span {
-  font-size: 12px;
-  letter-spacing: 0.5px;
-}
-
-/* MOBILE */
-@media (max-width: 640px) {
-  .hourly-header,
-  .hourly-row {
-    grid-template-columns: 90px repeat(10, 1fr);
-  }
-
-  .hourly-header div,
-  .hourly-row div {
-    padding: 10px 4px;
-    font-size: 12px;
-  }
-}
-
-  <!--Bookings Calendar End-->
+  
   </div> <!-- calendarContainer -->
 
     <div class="row full">
