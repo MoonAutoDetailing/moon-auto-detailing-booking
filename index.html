@@ -375,6 +375,47 @@ input[type="datetime-local"] {
   }
 }
 
+    .calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.nav-btn {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.nav-btn:hover {
+  background: #e5e7eb;
+}
+
+.today-btn {
+  background: #111;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.today-btn:hover {
+  opacity: 0.9;
+}
+
+#calLabel {
+  font-weight: 600;
+  min-width: 160px;
+  text-align: center;
+}
+
   </style>                              <!--PAGE UI DESIGN END-->
 
   
@@ -478,14 +519,12 @@ input[type="datetime-local"] {
     Your request will still be reviewed and confirmed manually.
   </div>
 
-  <div class="row full" style="margin-bottom:10px;">
-    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
-      <button type="button" id="calPrev">← Prev</button>
-      <div id="calLabel" class="muted" style="font-weight:700;"></div>
-      <button type="button" id="calNext">Next →</button>
-      <button type="button" id="calToday">Today</button>
-    </div>
-  </div>
+  <div class="calendar-toolbar">
+  <button type="button" id="calPrev" class="nav-btn">‹</button>
+  <div id="calLabel"></div>
+  <button type="button" id="calNext" class="nav-btn">›</button>
+  <button type="button" id="calToday" class="today-btn">Today</button>
+</div>
 
   <div class="muted" style="text-align:center; margin-bottom:10px;">
     Tap a time to prefill your start time. Grey blocks are confirmed bookings.
@@ -1039,6 +1078,12 @@ function addDays(d, n) {
   x.setDate(x.getDate() + n);
   return x;
 }
+    function formatHourLabel(hour) {
+  const h = hour % 12 || 12;
+  const ampm = hour < 12 ? "AM" : "PM";
+  return `${h}:00 ${ampm}`;
+}
+
 
 // =========================
 // HOURLY CALENDAR (RENDER)
@@ -1061,7 +1106,7 @@ async function loadCalendar() {
   header.className = "hourly-header";
   header.innerHTML = `<div></div>`;
   for (let h = 8; h <= 17; h++) {
-    header.innerHTML += `<div>${h}:00</div>`;
+    header.innerHTML += `<div>${formatHourLabel(h)}</div>`;
   }
   hourlyCal.appendChild(header);
 
@@ -1077,7 +1122,15 @@ async function loadCalendar() {
     const row = document.createElement("div");
     row.className = "hourly-row";
 
-    row.innerHTML = `<div class="day-label">${day.toLocaleDateString()}</div>`;
+    row.innerHTML = `
+  <div class="day-label">
+    ${day.toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "numeric",
+      day: "numeric"
+    })}
+  </div>
+`;
 
     for (let h = 8; h <= 17; h++) {
       const cell = document.createElement("div");
@@ -1147,6 +1200,7 @@ if (toggleBtn && calContainer) {
 
     // Initial load
 loadCalendar();
+    
     
     loadServiceVariants();
 function waitForGooglePlaces() {
