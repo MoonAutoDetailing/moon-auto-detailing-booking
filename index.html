@@ -415,6 +415,20 @@ input[type="datetime-local"] {
   min-width: 160px;
   text-align: center;
 }
+    /* Highlight today's column */
+.hour-slot.today {
+  background: #fff7cc;
+}
+
+.hour-slot.today:hover {
+  background: #ffef99;
+}
+
+.day-label.today {
+  background: #facc15;
+  color: #111;
+}
+
 
   </style>                              <!--PAGE UI DESIGN END-->
 
@@ -1119,11 +1133,13 @@ async function loadCalendar() {
 
   for (let d = 0; d < 7; d++) {
     const day = addDays(calWeekStart, d);
+    const isToday =
+  day.toDateString() === new Date().toDateString();
     const row = document.createElement("div");
     row.className = "hourly-row";
 
     row.innerHTML = `
-  <div class="day-label">
+  <div class="day-label ${isToday ? "today" : ""}">
     ${day.toLocaleDateString(undefined, {
       weekday: "long",
       month: "numeric",
@@ -1134,7 +1150,11 @@ async function loadCalendar() {
 
     for (let h = 8; h <= 17; h++) {
       const cell = document.createElement("div");
-      cell.className = "hour-slot";
+cell.className = "hour-slot";
+
+if (isToday) {
+  cell.classList.add("today");
+}
 
       const cellStart = new Date(day);
       cellStart.setHours(h, 0, 0, 0);
