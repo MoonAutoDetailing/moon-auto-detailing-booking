@@ -255,10 +255,12 @@ input[type="datetime-local"] {
         <input
   id="address"
   type="text"
-  autocomplete="off"
+  autocomplete="street-address"
+  inputmode="text"
   placeholder="Street, City, State ZIP"
   required
 />
+
       </div>
     </div>
 
@@ -319,7 +321,8 @@ input[type="datetime-local"] {
     <input
   id="serviceAddress"
   type="text"
-  autocomplete="off"
+  autocomplete="street-address"
+  inputmode="text"
   placeholder="Start typing service address…"
   required
 />
@@ -839,7 +842,14 @@ inputEl.classList.add("locked-address");
 
     // Initial load
     loadServiceVariants();
-initAddressAutocomplete();                                                                  //PLACES API LINK//
+function waitForGooglePlaces() {
+  if (window.google && google.maps?.places) {
+    initAddressAutocomplete();
+  } else {
+    setTimeout(waitForGooglePlaces, 100);
+  }
+}
+waitForGooglePlaces();                                                                  //PLACES API LINK//
   </script>
     <script
   src="https://maps.googleapis.com/maps/api/js?key=AIzaSyATTPIoF8zyQ7kYttesmmHvklxibeVQl9k&libraries=places&loading=async"
