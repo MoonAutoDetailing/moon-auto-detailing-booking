@@ -221,12 +221,11 @@ input[type="datetime-local"] {
 <body>
   <div class="page-wrap">
        <div class="card booking-card">
-  <h1>Moon Auto Detailing — Booking</h1>          <!--ACTUAL PHYSICAL TEXT STARTS-->
+  <h1>Moon Auto Detailing — Booking</h1>          <!--ACTUAL PHYSICAL TEXT STARTS-->                    
     <p class="page-subtitle">
-  Mobile Auto Detailing, WE come to YOU. Book in now, no payment required today.
+  Mobile Auto Detailing, WE come to YOU. Book in now, no payment required today.                      <!--ALL BOOKING CONTENT-->
 </p>
 
-    <div class="card booking-card">
     <h3 class="section-title">1. Customer Information</h3> <!--Customer-Information-->
     <div class="row">
       <div>
@@ -780,20 +779,43 @@ function initAddressAutocomplete() {
   const options = {
     types: ["address"],
     componentRestrictions: { country: "us" },
-    fields: ["formatted_address"]
+    fields: ["address_components"]
   };
 
   function attachAutocomplete(inputEl) {
     const autocomplete = new google.maps.places.Autocomplete(inputEl, options);
 
     autocomplete.addListener("place_changed", () => {
-      const place = autocomplete.getPlace();
+  const place = autocomplete.getPlace();
+  if (!place || !place.address_components) return;
 
-      if (!place || !place.formatted_address) return;
+  const components = {};
+  for (const c of place.address_components) {
+    for (const t of c.types) {
+      components[t] = c.long_name;
+    }
+  }
 
-      // Force full address (street + city + state + zip)
-      inputEl.value = place.formatted_address;
-    });
+  const street =
+    [components.street_number, components.route]
+      .filter(Boolean)
+      .join(" ");
+
+  const city =
+    components.locality ||
+    components.sublocality ||
+    components.postal_town ||
+    "";
+
+  const state = components.administrative_area_level_1 || "";
+  const zip = components.postal_code || "";
+
+  const fullAddress = [street, city, state, zip]
+    .filter(Boolean)
+    .join(", ");
+
+  inputEl.value = fullAddress;
+});
   }
 
   const customerAddress = document.getElementById("address");
