@@ -231,21 +231,21 @@ input[type="datetime-local"] {
     <div class="row">
       <div>
         <label for="fullName">Full name</label>
-        <input id="fullName" type="text" placeholder="First Last" required />
+        <input id="fullName" type="text" placeholder="First Last" autocomplete="name" required />
       </div>
       <div>
         <label for="email">Email</label>
-        <input id="email" type="email" placeholder="you@email.com" required />
+        <input id="email" type="email" placeholder="you@email.com" autocomplete="email" required />
       </div>
     </div>
     <div class="row">
       <div>
         <label for="phone">Phone</label>
-        <input id="phone" type="tel" placeholder="(518) 555-1234" />
+        <input id="phone" type="tel" placeholder="(518) 555-1234" autocomplete="tel" />
       </div>
       <div>
         <label for="address">Address</label>
-        <input id="address" type="text" placeholder="Street, City, State ZIP" required />
+        <input id="address" type="text" placeholder="Street, City, State ZIP" autocomplete="street-address" required />
       </div>
     </div>
 
@@ -303,7 +303,7 @@ input[type="datetime-local"] {
       </div>
     </div>
     <label for="serviceAddress">Address where service will be performed </label>
-    <textarea id="serviceAddress" placeholder="If same as customer address, paste it here." required></textarea>
+    <textarea id="serviceAddress" placeholder="The address where the service will be completed." autocomplete="street-address" required></textarea>
 
     <button id="submitBtn" class="primary-btn">
   Submit Booking Request
@@ -319,7 +319,10 @@ input[type="datetime-local"] {
   </div> <!-- page-wrap -->
 
   <script type="module">
+                                                                                                    //DEBUG SWITCH!!                                                                           
+
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+    const DEBUG = false;   //SWITCH HERE
 
     // =========================
     // CONFIG (REPLACE)
@@ -373,14 +376,19 @@ elEnd.addEventListener("paste", (e) => e.preventDefault());
     let selectedVariant = null;
     let isSubmitting = false;
 
-
+                                                                            //SWITCH CHANGES THIS DEBUG
     function log(message, obj) {
-      const ts = new Date().toISOString();
-      const line = obj ? `${ts}  ${message}\n${JSON.stringify(obj, null, 2)}\n` : `${ts}  ${message}\n`;
-      console.log(message, obj ?? "");
-      elLog.style.display = "block";
-      elLog.textContent = (elLog.textContent || "") + line;
-    }
+  if (!DEBUG) return;
+
+  const ts = new Date().toISOString();
+  const line = obj
+    ? `${ts}  ${message}\n${JSON.stringify(obj, null, 2)}\n`
+    : `${ts}  ${message}\n`;
+
+  console.log(message, obj ?? "");
+  elLog.textContent = (elLog.textContent || "") + line;
+}
+
 
     function setStatus(type, text) {
       elStatus.className = type === "ok" ? "ok" : type === "bad" ? "bad" : "muted";
