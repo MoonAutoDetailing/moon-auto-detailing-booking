@@ -306,6 +306,11 @@ input[type="datetime-local"] {
     /* =====================
    HORIZONTAL HOURLY CALENDAR (NEW)
    ===================== */
+    :root {
+  --hour-label-width: 90px;
+  --hour-col-width: 72px;
+  --hour-count: 10;
+}
 
 #hourlyCal {
   overflow-x: auto;
@@ -314,10 +319,18 @@ input[type="datetime-local"] {
   background: #ffffff;
 }
 
+/* Header row + each day row */
 .hourly-header,
 .hourly-row {
   display: grid;
-  grid-template-columns: 110px repeat(10, 1fr);
+  grid-template-columns:
+    var(--hour-label-width)
+    repeat(var(--hour-count), var(--hour-col-width));
+
+  width: calc(
+    var(--hour-label-width) +
+    (var(--hour-count) * var(--hour-col-width))
+  );
 }
 
 .hourly-header {
@@ -363,9 +376,9 @@ input[type="datetime-local"] {
 
 /* MOBILE */
 @media (max-width: 640px) {
-  .hourly-header,
-  .hourly-row {
-    grid-template-columns: 90px repeat(10, 1fr);
+    :root {
+    --hour-label-width: 90px;
+    --hour-col-width: 72px;
   }
 
   .hourly-header div,
