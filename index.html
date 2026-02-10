@@ -779,20 +779,30 @@ function initAddressAutocomplete() {
 
   const options = {
     types: ["address"],
-    componentRestrictions: { country: "us" }
+    componentRestrictions: { country: "us" },
+    fields: ["formatted_address"]
   };
+
+  function attachAutocomplete(inputEl) {
+    const autocomplete = new google.maps.places.Autocomplete(inputEl, options);
+
+    autocomplete.addListener("place_changed", () => {
+      const place = autocomplete.getPlace();
+
+      if (!place || !place.formatted_address) return;
+
+      // Force full address (street + city + state + zip)
+      inputEl.value = place.formatted_address;
+    });
+  }
 
   const customerAddress = document.getElementById("address");
   const serviceAddress = document.getElementById("serviceAddress");
 
-  if (customerAddress) {
-    new google.maps.places.Autocomplete(customerAddress, options);
-  }
-
-  if (serviceAddress) {
-    new google.maps.places.Autocomplete(serviceAddress, options);
-  }
+  if (customerAddress) attachAutocomplete(customerAddress);
+  if (serviceAddress) attachAutocomplete(serviceAddress);
 }
+
 
     // Initial load
     loadServiceVariants();
