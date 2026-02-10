@@ -759,8 +759,39 @@ if (conflict) {
     elStart.addEventListener("change", recalcEndTimePreview);
     elSubmit.addEventListener("click", submitBooking);
 
+    // =========================
+// GOOGLE PLACES AUTOCOMPLETE
+// =========================
+function initAddressAutocomplete() {
+  if (!window.google || !google.maps?.places) return;
+
+  const options = {
+    types: ["address"],
+    componentRestrictions: { country: "us" }
+  };
+
+  const customerAddress = document.getElementById("address");
+  const serviceAddress = document.getElementById("serviceAddress");
+
+  if (customerAddress) {
+    new google.maps.places.Autocomplete(customerAddress, options);
+  }
+
+  if (serviceAddress) {
+    new google.maps.places.Autocomplete(serviceAddress, options);
+  }
+}
+
     // Initial load
     loadServiceVariants();
+initAddressAutocomplete();                                                                  //PLACES API LINK//
   </script>
+    <script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyATTPIoF8zyQ7kYttesmmHvklxibeVQl9k&libraries=places"
+  async
+  defer
+></script>
+    
+
 </body>
 </html>
