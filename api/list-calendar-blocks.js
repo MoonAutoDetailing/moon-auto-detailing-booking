@@ -36,7 +36,7 @@ export default async function handler(req, res) {
     if (!timeMin || !timeMax) return res.status(400).json({ error: "timeMin and timeMax are required" });
 
     const calendarId = requireEnv("GOOGLE_CALENDAR_ID").trim();
-    const saJson = requireEnv("GOOGLE_SERVICE_ACCOUNT_JSON");
+    const saJson = requireEnv("GOOGLE_SERVICE_ACCOUNT_JSON_READONLY");
 
     // Handle private key newlines if stored with escaped \n
     const creds = safeJsonParse(saJson, "GOOGLE_SERVICE_ACCOUNT_JSON");
