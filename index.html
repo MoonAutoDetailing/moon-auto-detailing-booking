@@ -886,24 +886,7 @@ function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlo
 
   return exposed;
 }
-
-
-
-
-    // Rule 3: skipping would eliminate ability to fit service
-    const next = valid[i + 1];
-    const endIfSkipped = next
-      ? addMinutes(next, serviceDurationMinutes)
-      : addMinutes(start, serviceDurationMinutes);
-
-    if (endIfSkipped > closeTime) {
-  if (!passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate)) {
-    continue;
-  }
-  exposed.push(start);
-}
-
-  }
+    }
 
   return exposed;
 }
