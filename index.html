@@ -944,15 +944,23 @@ const gapLengthMinutes = (gapEnd - gapStart) / 60000;
 
 
 if (gapLengthMinutes > 240 && candidates.length > 1) {
-  const second = candidates[1].start;
 
-  // only expose if at least 60 minutes apart
-  if ((second - candidates[0].start) / 60000 >= 60) {
-    exposed.push(second);
+  const midpoint = gapStart.getTime() + (gapLengthMinutes / 2) * 60000;
+
+  let closest = null;
+  let smallestDiff = Infinity;
+
+  for (const c of candidates) {
+    const diff = Math.abs(c.start.getTime() - midpoint);
+    if (diff < smallestDiff) {
+      smallestDiff = diff;
+      closest = c.start;
+    }
   }
-}
+
+  if (closest && closest.getTime() !== candidates[0].start.getTime()) {
+    exposed.push(closest);
   }
-  return exposed;
 }
 
 
