@@ -133,6 +133,9 @@ h1 {
   #calWrap::before {
     width: 80px; /* mobile column width */
   }
+  .day-label {
+    width: 80px;
+  }
 
   .hourly-header,
   .hourly-row {
@@ -168,18 +171,23 @@ h1 {
   position: relative;
 }
 
+#calWrap {
+  position: relative;
+}
+
 #calWrap::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
-  width: 80px;   /* match your mobile first column width */
+  width: 100px;          /* desktop default */
   height: 100%;
   background: linear-gradient(to bottom, #ffffff, #f9fbff);
   box-shadow: 4px 0 8px rgba(0,0,0,0.08);
-  z-index: 10;
+  z-index: 1;            /* LOWER than pills */
   pointer-events: none;
 }
+
 
 
   /* Prevent overflow issues, BOX INPUT SIZES AND STYLES */
@@ -500,11 +508,12 @@ label[for="start"] {
   position: sticky;
   left: 0;
 
-  width: 100px;            /* match grid column */
-  box-sizing: border-box;
-  text-align: center;
+  width: 100px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-  z-index: 20;
+  z-index: 50;   /* WELL above overlay */
 
   background: #7fb8e6;
   color: white;
@@ -514,6 +523,7 @@ label[for="start"] {
   font-weight: 600;
   font-size: 12px;
 }
+
 
 .day-label.today {
   background: #facc15;
