@@ -984,6 +984,14 @@ async function resolveExposedStartTimesForDay(dayDate) {
     const data = await resp.json();
     const blocks = data.blocks || [];
     const expandedBlocks = blocks.map(b => expandBookingBlock(b));
+    if (DEBUG) {
+  console.log("RAW blocks", blocks);
+  console.log("EXPANDED blocks", expandedBlocks.map(b => ({
+    start: b.start.toLocaleString(),
+    end: b.end.toLocaleString()
+  })));
+}
+
 
     const duration = Number(selectedVariant.duration_minutes);
 
