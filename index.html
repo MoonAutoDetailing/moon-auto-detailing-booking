@@ -1620,75 +1620,48 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
 
   for (let h = BUSINESS_RULES.openHour; h < BUSINESS_RULES.closeHour; h++) {
 
-    const hourStart = new Date(day);
-    hourStart.setHours(h, 0, 0, 0);
+  const hourStart = new Date(day);
+  hourStart.setHours(h, 0, 0, 0);
 
-    const hourEnd = new Date(hourStart);
-    hourEnd.setHours(hourEnd.getHours() + 1);
+  const hourEnd = new Date(hourStart);
+  hourEnd.setHours(hourEnd.getHours() + 1);
 
-    const exposedInThisHour = (exposedByDay[dayKey] || [])
-      .filter(t => {
-        const d = new Date(t);
-        return d >= hourStart && d < hourEnd;
-      });
+  const exposedInThisHour = (exposedByDay[dayKey] || [])
+    .filter(t => {
+      const d = new Date(t);
+      return d >= hourStart && d < hourEnd;
+    });
 
-    // Determine if this hour needs 15-min resolution
-const hourHasNonHourExposure = exposedInThisHour.some(t => {
-  return new Date(t).getMinutes() !== 0;
-});
-
-const hourHasBooking = expandedBlocks.some(b =>
-  hourStart < b.end && hourEnd > b.start
-);
-
-if (hourHasNonHourExposure) {
-
-  for (let m = 0; m < 60; m += SLOT_MINUTES) {
-
-    const cellStart = new Date(day);
-    cellStart.setHours(h, m, 0, 0);
-    const cellEnd = addMinutes(cellStart, SLOT_MINUTES);
-
-    const cell = document.createElement("div");
-    cell.className = "hourly-cell";
-
-    const isBooked = expandedBlocks.some(b =>
-      cellStart < b.end && cellEnd > b.start
-    );
-
-    if (isBooked) {
-      cell.classList.add("booked");
-    } else if (exposedSet.has(cellStart.getTime())) {
-
-      cell.classList.add("exposed");
-
-      cell.addEventListener("click", () => {
-        document
-          .querySelectorAll(".hourly-cell.exposed.selected")
-          .forEach(el => el.classList.remove("selected"));
-
-        cell.classList.add("selected");
-
-        elStart.value = formatDateToDateTimeLocal(cellStart);
-        selectedStartISO = cellStart.toISOString();
-        recalcEndTimePreview();
-      });
-    }
-
-    row.appendChild(cell);
-  }
-
-} else {
+  const hourHasBooking = expandedBlocks.some(b =>
+    hourStart < b.end && hourEnd > b.start
+  );
 
   const cell = document.createElement("div");
   cell.className = "hourly-cell";
 
   if (hourHasBooking) {
     cell.classList.add("booked");
+  }
 
-  } else if (exposedSet.has(hourStart.getTime())) {
+  for (const t of exposedInThisHour) {
 
-    cell.classList.add("exposed");
+    const startTime = new Date(t);
+    const minute = startTime.getMinutes();
+
+    if (minute === 0) {
+      cell.classList.add("exposed");
+    } else {
+      const bubble = document.createElement("div");
+      bubble.style.width = "10px";
+      bubble.style.height = "10px";
+      bubble.style.background = "rgba(34,197,94,0.85)";
+      bubble.style.borderRadius = "50%";
+      bubble.style.position = "absolute";
+      bubble.style.bottom = "6px";
+      bubble.style.right = "6px";
+      cell.style.position = "relative";
+      cell.appendChild(bubble);
+    }
 
     cell.addEventListener("click", () => {
       document
@@ -1696,20 +1669,17 @@ if (hourHasNonHourExposure) {
         .forEach(el => el.classList.remove("selected"));
 
       cell.classList.add("selected");
-
-      elStart.value = formatDateToDateTimeLocal(hourStart);
-      selectedStartISO = hourStart.toISOString();
+      elStart.value = formatDateToDateTimeLocal(startTime);
+      selectedStartISO = startTime.toISOString();
       recalcEndTimePreview();
     });
   }
 
   row.appendChild(cell);
 }
-  }
 
-  // ✅ THIS WAS MISSING
-  hourlyCal.appendChild(row);
-}
+hourlyCal.appendChild(row);
+  }
 
 // ✅ Properly closes loadCalendar()
 }
