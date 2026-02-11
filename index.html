@@ -1624,6 +1624,9 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
 
   const hourEnd = new Date(hourStart);
   hourEnd.setHours(hourEnd.getHours() + 1);
+      const cell = document.createElement("div");
+  cell.className = "hourly-cell";
+
 
   const exposedInThisHour = (exposedByDay[dayKey] || [])
     .filter(t => {
