@@ -962,6 +962,9 @@ if (gapLengthMinutes > 240 && candidates.length > 1) {
     exposed.push(closest);
   }
 }
+  return exposed;
+} // <-- closes getExposedStartTimesForDay
+
 
 
 function selfTestExposedStarts(dayDate, serviceDurationMinutes, expandedBlocks) {
