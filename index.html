@@ -128,12 +128,6 @@ h1 {
 .hourly-row {
   grid-template-columns: 80px repeat(10, 1fr);
 }
-#hourlyCal::before {
-  width: 80px;
-}
-  #calWrap::before {
-  width: 80px;
-}
 
   .hourly-header,
   .hourly-row {
@@ -411,6 +405,7 @@ label[for="start"] {
    ===================== */
 #calWrap {
   position: relative;
+  overflow: hidden;
 }
 
 #calWrap::before {
