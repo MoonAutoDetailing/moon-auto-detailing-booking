@@ -783,6 +783,14 @@ function generateSlotsForDay(dayDate, openHour = BUSINESS_RULES.openHour, closeH
 function intervalsOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && aEnd > bStart;
 }
+    
+// Expand a booking block to include travel buffer
+function expandBookingBlock(block, bufferMinutes = TRAVEL_BUFFER_MINUTES) {
+  const start = new Date(block.start);
+  const end = addMinutes(new Date(block.end), bufferMinutes);
+  return { start, end };
+}
+
 
 // =========================
 // BUSINESS HOURS VALIDATION
@@ -1219,6 +1227,21 @@ async function loadCalendar() {
   );
   const data = await resp.json();
   const blocks = data.blocks || [];
+  const expandedBlocks = blocks.map(b => expandBookingBlock(b));
+  selfTestExpandedBlocks(expandedBlocks);
+
+  //Epand blocks helper function
+  function selfTestExpandedBlocks(blocks) {
+  if (!DEBUG) return;
+
+  blocks.forEach((b, i) => {
+    log(`Expanded block ${i}`, {
+      start: b.start.toString(),
+      end: b.end.toString()
+    });
+  });
+}
+
 
   for (let d = 0; d < 7; d++) {
     const day = addDays(calWeekStart, d);
