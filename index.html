@@ -931,7 +931,17 @@ candidates.sort((a, b) => {
 exposed.push(candidates[0].start);
 
 // If gap is large enough, take second-best if meaningful
-const gapLengthMinutes = (gap[gap.length - 1] - gap[0]) / 60000;
+const gapStart = gap[0];
+let gapEnd = businessClose;
+
+for (const b of expandedBlocks) {
+  if (b.start > gapStart && b.start < gapEnd) {
+    gapEnd = b.start;
+  }
+}
+
+const gapLengthMinutes = (gapEnd - gapStart) / 60000;
+
 
 if (gapLengthMinutes > 240 && candidates.length > 1) {
   const second = candidates[1].start;
