@@ -1488,6 +1488,7 @@ cell.onclick = async () => {
   }
 
   const first = currentExposedStarts[0];
+  console.log("FIRST EXPOSED RAW:", first);
   elStart.value = formatDateToDateTimeLocal(first);
   selectedStartISO = first.toISOString();
 
