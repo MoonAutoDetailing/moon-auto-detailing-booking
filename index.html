@@ -962,10 +962,12 @@ if (gapLengthMinutes > 240 && candidates.length > 1) {
   exposed.push(closest);
 }
 
+} // closes if (gapLengthMinutes > 240 ...)
+
 } // closes for (const gap of gaps)
 
 return exposed;
-} // closes getExposedStartTimesForDay
+}
 
 
 
