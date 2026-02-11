@@ -1463,28 +1463,71 @@ for (let d = 0; d < 7; d++) {
 
 
   for (let d = 0; d < 7; d++) {
-    const day = addDays(calWeekStart, d);
-    const isToday =
-  day.toDateString() === new Date().toDateString();
-    const row = document.createElement("div");
-    row.className = "exposed-day-row";
+  const day = addDays(calWeekStart, d);
+  const isToday = day.toDateString() === new Date().toDateString();
 
-    row.innerHTML = `
-  <div class="day-label ${isToday ? "today" : ""}">
-    ${day.toLocaleDateString(undefined, {
-      weekday: "long",
-      month: "numeric",
-      day: "numeric"
-    })}
-  </div>
-`;
-  // ============================
-  // EXPOSED ANCHOR RENDERING
-  // ============================
+  const row = document.createElement("div");
+  row.className = "exposed-day-row";
+
+  row.innerHTML = `
+    <div class="day-label ${isToday ? "today" : ""}">
+      ${day.toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "numeric",
+        day: "numeric"
+      })}
+    </div>
+  `;
+
+  const wrap = document.createElement("div");
+  wrap.className = "exposed-times-wrap";
 
   const dayKey = day.toDateString();
   const exposedTimes = exposedByDay[dayKey] || [];
+
+  if (!selectedVariant) {
+    const muted = document.createElement("div");
+    muted.className = "exposed-muted";
+    muted.textContent = "Select a service to view availability";
+    wrap.appendChild(muted);
+  } else if (!exposedTimes.length) {
+    const muted = document.createElement("div");
+    muted.className = "exposed-muted";
+    muted.textContent = "No availability";
+    wrap.appendChild(muted);
+  } else {
+    exposedTimes.forEach(ms => {
+      const dateObj = new Date(ms);
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "exposed-slot-btn";
+      btn.textContent = dateObj.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit"
+      });
+
+      btn.onclick = () => {
+        const localStr = formatDateToDateTimeLocal(dateObj);
+        elStart.value = localStr;
+        recalcEndTimePreview();
+        selectedStartISO = dateObj.toISOString();
+
+        document
+          .querySelectorAll(".exposed-slot-btn")
+          .forEach(b => b.classList.remove("selected"));
+
+        btn.classList.add("selected");
+      };
+
+      wrap.appendChild(btn);
+    });
   }
+
+  row.appendChild(wrap);
+  hourlyCal.appendChild(row);
+}
+
 
 // =========================
 // CALENDAR NAVIGATION
