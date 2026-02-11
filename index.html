@@ -812,24 +812,29 @@ function getBusinessCloseDate(dayDate) {
 // - must not overlap any expanded booking block (booking + travel buffer)
 function getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks) {
   if (!Number.isFinite(serviceDurationMinutes) || serviceDurationMinutes <= 0) return [];
-
-  
-  //SELF TEST ADMIN ONLY 
-function selfTestExposedStarts(dayDate, serviceDurationMinutes, expandedBlocks) {
+   return valid;
+}
+    function selfTestValidStarts(dayDate, serviceDurationMinutes, expandedBlocks) {
   if (!DEBUG) return;
 
-  const exposed = getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks);
+  const valid = getValidStartTimesForDay(
+    dayDate,
+    serviceDurationMinutes,
+    expandedBlocks
+  );
 
-  log("Exposed start times (customer-safe)", {
+  console.log("Valid start times (preview)", {
     day: dayDate.toDateString(),
     duration_minutes: serviceDurationMinutes,
-    count: exposed.length,
-    times: exposed.map(d =>
+    count: valid.length,
+    first10: valid.slice(0, 10).map(d =>
       d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
     )
   });
 }
 
+
+  
 
   // weekday gate
   if (!isAllowedWeekday(dayDate)) return [];
