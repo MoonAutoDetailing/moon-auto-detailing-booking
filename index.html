@@ -892,6 +892,8 @@ function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlo
 
   const exposed = [];
   const businessClose = getBusinessCloseDate(dayDate);
+  for (const gap of gaps) {
+
 
   let candidates = [];
 
@@ -938,6 +940,9 @@ if (gapLengthMinutes > 240 && candidates.length > 1) {
   if ((second - candidates[0].start) / 60000 >= 60) {
     exposed.push(second);
   }
+}
+  }
+  return exposed;
 }
 
 
