@@ -1191,6 +1191,10 @@ function computeScheduledEnd(startLocal, durationMinutes) {
     elServiceVariant.addEventListener("change", async () => {
   const id = elServiceVariant.value;
   selectedVariant = variantsCache.find(v => v.id === id) || null;
+      selectedStartISO = null;
+elStart.value = "";
+recalcEndTimePreview();
+loadCalendar();
 
   if (!selectedVariant) {
     elServiceMeta.textContent = "";
@@ -1468,155 +1472,136 @@ function addDays(d, n) {
 // HOURLY CALENDAR (RENDER)
 // =========================
 async function loadCalendar() {
+
   const hourlyCal = document.getElementById("hourlyCal");
   const calLabel = document.getElementById("calLabel");
   if (!hourlyCal) return;
 
   hourlyCal.innerHTML = "";
-  // =========================
-// GRID HEADER (HOURS)
-// =========================
-const header = document.createElement("div");
-header.className = "hourly-header";
-
-header.innerHTML = `<div></div>`; // empty corner cell
-
-for (let h = 8; h <= 17; h++) {
-  const hourCell = document.createElement("div");
-  hourCell.textContent = formatHourLabel(h);
-  header.appendChild(hourCell);
-}
-
-hourlyCal.appendChild(header);
-
 
   const weekEnd = addDays(calWeekStart, 7);
+
   calLabel.textContent =
     calWeekStart.toLocaleDateString() +
     " – " +
     addDays(weekEnd, -1).toLocaleDateString();
 
-  // Fetch confirmed bookings
+  // =========================
+  // HEADER (HOURS)
+  // =========================
+  const header = document.createElement("div");
+  header.className = "hourly-header";
+
+  header.innerHTML = `<div></div>`; // empty corner cell
+
+  for (let h = 8; h <= 17; h++) {
+    const hourCell = document.createElement("div");
+    hourCell.textContent = formatHourLabel(h);
+    header.appendChild(hourCell);
+  }
+
+  hourlyCal.appendChild(header);
+
+  // =========================
+  // FETCH BOOKING BLOCKS
+  // =========================
   const resp = await fetch(
     `/api/list-calendar-blocks?timeMin=${calWeekStart.toISOString()}&timeMax=${weekEnd.toISOString()}`
   );
+
   const data = await resp.json();
   const blocks = data.blocks || [];
   const expandedBlocks = blocks.map(b => expandBookingBlock(b));
-const exposedByDay = {};
 
-for (let d = 0; d < 7; d++) {
-  const day = addDays(calWeekStart, d);
-
-  const exposed = selectedVariant
-  ? getExposedStartTimesForDay(
-      day,
-      Number(selectedVariant.duration_minutes),
-      expandedBlocks
-    )
-  : [];
-
-
-  exposedByDay[day.toDateString()] =
-    exposed.map(x => x.getTime());
-}
   // =========================
-// RENDER DAY ROWS (GRID)
-// =========================
-for (let d = 0; d < 7; d++) {
-  const day = addDays(calWeekStart, d);
-  const isToday =
-    day.toDateString() === new Date().toDateString();
+  // BUILD EXPOSED START MAP
+  // =========================
+  const exposedByDay = {};
 
-  const row = document.createElement("div");
-  row.className = "hourly-row";
+  for (let d = 0; d < 7; d++) {
 
-  row.innerHTML = `
-    <div class="day-label ${isToday ? "today" : ""}">
-      ${day.toLocaleDateString(undefined, {
-        weekday: "long",
-        month: "numeric",
-        day: "numeric"
-      })}
-    </div>
-  `;
+    const day = addDays(calWeekStart, d);
 
-  const dayKey = day.toDateString();
-  const exposedTimes = exposedByDay[dayKey] || [];
+    const exposed = selectedVariant
+      ? getExposedStartTimesForDay(
+          day,
+          Number(selectedVariant.duration_minutes),
+          expandedBlocks
+        )
+      : [];
 
-  for (let h = 8; h <= 17; h++) {
-    const cell = document.createElement("div");
-    cell.className = "hourly-cell";
-
-    const cellStart = new Date(day);
-    cellStart.setHours(h, 0, 0, 0);
-
-    const cellEnd = new Date(cellStart);
-cellEnd.setHours(cellEnd.getHours() + 1);
-
-// Red booked logic
-const isBooked = expandedBlocks.some(b =>
-  cellStart < b.end && cellEnd > b.start
-);
-
-if (isBooked) {
-  cell.classList.add("booked");
-}
-
-// Green exposed logic (only if not booked)
-if (!isBooked && exposedTimes.includes(cellStart.getTime())) {
-  cell.classList.add("exposed");
-
-  cell.addEventListener("click", () => {
-    document
-      .querySelectorAll(".hourly-cell.exposed.selected")
-      .forEach(el => el.classList.remove("selected"));
-
-    cell.classList.add("selected");
-
-    elStart.value = formatDateToDateTimeLocal(cellStart);
-    selectedStartISO = cellStart.toISOString();
-    recalcEndTimePreview();
-  });
-}
-
-      cell.classList.add("exposed");
-
-      cell.addEventListener("click", () => {
-        document
-          .querySelectorAll(".hourly-cell.exposed.selected")
-          .forEach(el => el.classList.remove("selected"));
-
-        cell.classList.add("selected");
-
-        elStart.value =
-          formatDateToDateTimeLocal(cellStart);
-
-        selectedStartISO =
-          cellStart.toISOString();
-
-        recalcEndTimePreview();
-      });
-    }
-
-    row.appendChild(cell);
+    exposedByDay[day.toDateString()] =
+      exposed.map(x => x.getTime());
   }
 
-  hourlyCal.appendChild(row);
-}
+  // =========================
+  // RENDER GRID ROWS
+  // =========================
+  for (let d = 0; d < 7; d++) {
 
+    const day = addDays(calWeekStart, d);
+    const dayKey = day.toDateString();
+    const exposedSet = new Set(exposedByDay[dayKey] || []);
 
+    const isToday =
+      day.toDateString() === new Date().toDateString();
 
-  //Epand blocks helper function
-  function selfTestExpandedBlocks(blocks) {
-  if (!DEBUG) return;
+    const row = document.createElement("div");
+    row.className = "hourly-row";
 
-  blocks.forEach((b, i) => {
-    log(`Expanded block ${i}`, {
-      start: b.start.toString(),
-      end: b.end.toString()
-    });
-  });
+    row.innerHTML = `
+      <div class="day-label ${isToday ? "today" : ""}">
+        ${day.toLocaleDateString(undefined, {
+          weekday: "long",
+          month: "numeric",
+          day: "numeric"
+        })}
+      </div>
+    `;
+
+    for (let h = 8; h <= 17; h++) {
+
+      const cellStart = new Date(day);
+      cellStart.setHours(h, 0, 0, 0);
+
+      const cellEnd = new Date(cellStart);
+      cellEnd.setHours(cellEnd.getHours() + 1);
+
+      const cell = document.createElement("div");
+      cell.className = "hourly-cell";
+
+      const isBooked = expandedBlocks.some(b =>
+        cellStart < b.end && cellEnd > b.start
+      );
+
+      if (isBooked) {
+
+        cell.classList.add("booked");
+        cell.textContent = "BOOKED";
+
+      } else if (exposedSet.has(cellStart.getTime())) {
+
+        cell.classList.add("exposed");
+
+        cell.addEventListener("click", () => {
+
+          document
+            .querySelectorAll(".hourly-cell.exposed.selected")
+            .forEach(el => el.classList.remove("selected"));
+
+          cell.classList.add("selected");
+
+          elStart.value = formatDateToDateTimeLocal(cellStart);
+          selectedStartISO = cellStart.toISOString();
+          recalcEndTimePreview();
+        });
+      }
+
+      row.appendChild(cell);
+    }
+
+    hourlyCal.appendChild(row);
+  }
 }
 
 // =========================
@@ -1638,6 +1623,17 @@ document.getElementById("calToday").onclick = () => {
   calWeekStart.setDate(calWeekStart.getDate() - calWeekStart.getDay());
   loadCalendar();
 };
+    //Epand blocks helper function
+  function selfTestExpandedBlocks(blocks) {
+  if (!DEBUG) return;
+
+  blocks.forEach((b, i) => {
+    log(`Expanded block ${i}`, {
+      start: b.start.toString(),
+      end: b.end.toString()
+    });
+  });
+}
 
 // =========================
 // CALENDAR TOGGLE (UI ONLY)
