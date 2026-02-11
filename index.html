@@ -621,6 +621,12 @@ const BUSINESS_RULES = {
   closeHour: 18,  // 6:00 PM (hard stop)
   allowedWeekdays: [1, 2, 3, 4, 5] // Monday–Friday (JS: 0 = Sunday)
 };
+    // =========================
+// SCHEDULING CONSTANTS (v1.1)
+// =========================
+const SLOT_MINUTES = 15;              // internal resolution
+const TRAVEL_BUFFER_MINUTES = 30;     // fixed heuristic travel buffer
+
     
     const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbWh1Z3p0cnBpcHJucW1jeWFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MDk1NjMsImV4cCI6MjA4NjA4NTU2M30.Mo0uRGWCjU1fOa1br2P8j1ogEZf7mDm2JseV8DFnPwI";
@@ -675,6 +681,23 @@ elEnd.addEventListener("paste", (e) => e.preventDefault());
   elLog.textContent = (elLog.textContent || "") + line;
 }
 
+    function selfTestTimeSlots() {
+  if (!DEBUG) return;
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const slots = generateSlotsForDay(today);
+  log("Self-test: first/last slot", {
+    first: slots[0] ? slots[0].toString() : null,
+    last: slots[slots.length - 1] ? slots[slots.length - 1].toString() : null,
+    count: slots.length
+  });
+
+  // Expect count = 40 for 8:00–18:00 in 15-min slots
+  // (10 hours * 4 slots per hour = 40)
+}
+
 
     function setStatus(type, text) {
       elStatus.className = type === "ok" ? "ok" : type === "bad" ? "bad" : "muted";
@@ -717,6 +740,50 @@ function formatDateToDateTimeLocal(d) {
   const min = pad(d.getMinutes());
   return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
 }
+
+    // =========================
+// 15-MIN INTERNAL TIME HELPERS (PHASE 1)
+// Pure functions only: no DOM, no Supabase, no fetch
+// =========================
+
+// Return a new Date that is rounded UP to the next 15-minute boundary
+function roundUpToSlot(date, slotMinutes = SLOT_MINUTES) {
+  const d = new Date(date);
+  const ms = d.getTime();
+  const slotMs = slotMinutes * 60_000;
+  const rounded = Math.ceil(ms / slotMs) * slotMs;
+  return new Date(rounded);
+}
+
+// Add minutes to a Date (returns new Date)
+function addMinutes(date, minutes) {
+  return new Date(date.getTime() + minutes * 60_000);
+}
+
+// Generate all slot start times (15-min) for a given day within business hours
+// Returns array of Date objects: [08:00, 08:15, ... , 17:45]
+function generateSlotsForDay(dayDate, openHour = BUSINESS_RULES.openHour, closeHour = BUSINESS_RULES.closeHour, slotMinutes = SLOT_MINUTES) {
+  const day = new Date(dayDate);
+  day.setHours(0, 0, 0, 0);
+
+  const start = new Date(day);
+  start.setHours(openHour, 0, 0, 0);
+
+  const end = new Date(day);
+  end.setHours(closeHour, 0, 0, 0);
+
+  const slots = [];
+  for (let t = new Date(start); t < end; t = addMinutes(t, slotMinutes)) {
+    slots.push(new Date(t));
+  }
+  return slots;
+}
+
+// Utility: overlap check (half-open interval logic)
+function intervalsOverlap(aStart, aEnd, bStart, bEnd) {
+  return aStart < bEnd && aEnd > bStart;
+}
+
 // =========================
 // BUSINESS HOURS VALIDATION
 // =========================
@@ -1242,9 +1309,8 @@ if (toggleBtn && calContainer) {
 
     // Initial load
 loadCalendar();
-    
-    
     loadServiceVariants();
+    selfTestTimeSlots();
 function waitForGooglePlaces() {
   if (window.google && google.maps?.places) {
     initAddressAutocomplete();
