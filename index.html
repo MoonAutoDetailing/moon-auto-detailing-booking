@@ -1630,45 +1630,84 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
       return new Date(t).getMinutes() !== 0;
     });
 
-    if (nonHourExposed) {
+    // Determine if this hour needs 15-min resolution
+const hourHasBooking = expandedBlocks.some(b =>
+  hourStart < b.end && hourEnd > b.start
+);
 
-      for (let m = 0; m < 60; m += SLOT_MINUTES) {
+const hourHasNonHourExposure = exposedInThisHour.some(t => {
+  return new Date(t).getMinutes() !== 0;
+});
 
-        const cellStart = new Date(day);
-        cellStart.setHours(h, m, 0, 0);
+if (hourHasNonHourExposure) {
 
-        const cellEnd = addMinutes(cellStart, SLOT_MINUTES);
+  // Render 15-min internal grid
+  for (let m = 0; m < 60; m += SLOT_MINUTES) {
 
-        const cell = document.createElement("div");
-        cell.className = "hourly-cell";
+    const cellStart = new Date(day);
+    cellStart.setHours(h, m, 0, 0);
+    const cellEnd = addMinutes(cellStart, SLOT_MINUTES);
 
-        const isBooked = expandedBlocks.some(b =>
-          cellStart < b.end && cellEnd > b.start
-        );
+    const cell = document.createElement("div");
+    cell.className = "hourly-cell";
 
-        if (isBooked) {
-          cell.classList.add("booked");
+    const isBooked = expandedBlocks.some(b =>
+      cellStart < b.end && cellEnd > b.start
+    );
 
-        } else if (exposedSet.has(cellStart.getTime())) {
+    if (isBooked) {
+      cell.classList.add("booked");
 
-          cell.classList.add("exposed");
+    } else if (exposedSet.has(cellStart.getTime())) {
 
-          cell.addEventListener("click", () => {
+      cell.classList.add("exposed");
 
-            document
-              .querySelectorAll(".hourly-cell.exposed.selected")
-              .forEach(el => el.classList.remove("selected"));
+      cell.addEventListener("click", () => {
 
-            cell.classList.add("selected");
+        document
+          .querySelectorAll(".hourly-cell.exposed.selected")
+          .forEach(el => el.classList.remove("selected"));
 
-            elStart.value = formatDateToDateTimeLocal(cellStart);
-            selectedStartISO = cellStart.toISOString();
-            recalcEndTimePreview();
-          });
-        }
+        cell.classList.add("selected");
 
-        row.appendChild(cell);
-      }
+        elStart.value = formatDateToDateTimeLocal(cellStart);
+        selectedStartISO = cellStart.toISOString();
+        recalcEndTimePreview();
+      });
+    }
+
+    row.appendChild(cell);
+  }
+
+} else {
+
+  // Render normal 60-min cell
+  const cell = document.createElement("div");
+  cell.className = "hourly-cell";
+
+  if (hourHasBooking) {
+    cell.classList.add("booked");
+
+  } else if (exposedSet.has(hourStart.getTime())) {
+
+    cell.classList.add("exposed");
+
+    cell.addEventListener("click", () => {
+
+      document
+        .querySelectorAll(".hourly-cell.exposed.selected")
+        .forEach(el => el.classList.remove("selected"));
+
+      cell.classList.add("selected");
+
+      elStart.value = formatDateToDateTimeLocal(hourStart);
+      selectedStartISO = hourStart.toISOString();
+      recalcEndTimePreview();
+    });
+  }
+
+  row.appendChild(cell);
+}
 
     } else {
 
