@@ -424,6 +424,51 @@ label[for="start"] {
   background: #facc15;
   color: #111;
 }
+    /* =====================
+   CALENDAR TOOLBAR (MOON)
+   ===================== */
+
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.cal-label {
+  font-weight: 700;
+  font-size: 18px;
+  color: #7fb8e6;
+  min-width: 180px;
+  text-align: center;
+}
+
+.nav-btn,
+.today-btn {
+  background: #7fb8e6;
+  border: none;
+  color: white;
+  border-radius: 999px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 6px 14px;
+  font-size: 14px;
+  box-shadow: 0 4px 10px rgba(127, 184, 230, 0.35);
+}
+
+.nav-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 16px;
+}
+
+.nav-btn:hover,
+.today-btn:hover {
+  background: #6aaee2;
+}
+
 
 /* Pulse animation for green slots */
 @keyframes pulse {
@@ -579,7 +624,7 @@ label[for="start"] {
 
   <div class="calendar-toolbar">
   <button type="button" id="calPrev" class="nav-btn">‹</button>
-  <div id="calLabel"></div>
+  <div id="calLabel" class="cal-label"></div>
   <button type="button" id="calNext" class="nav-btn">›</button>
   <button type="button" id="calToday" class="today-btn">Today</button>
 </div>
@@ -1470,10 +1515,14 @@ async function loadCalendar() {
 
   const weekEnd = addDays(calWeekStart, 7);
 
-  calLabel.textContent =
-    calWeekStart.toLocaleDateString() +
-    " – " +
-    addDays(weekEnd, -1).toLocaleDateString();
+  const start = calWeekStart;
+const end = addDays(weekEnd, -1);
+
+const options = { month: "long" };
+const monthName = start.toLocaleDateString(undefined, options);
+
+calLabel.textContent = `${monthName} ${start.getDate()}–${end.getDate()}`;
+
 
   // =========================
   // HEADER (HOURS)
@@ -1564,9 +1613,8 @@ async function loadCalendar() {
       );
 
       if (isBooked) {
-
-        cell.classList.add("booked");
-        cell.textContent = "BOOKED";
+  cell.classList.add("booked");
+}
 
       } else if (exposedSet.has(cellStart.getTime())) {
 
