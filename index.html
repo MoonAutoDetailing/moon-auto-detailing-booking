@@ -126,9 +126,11 @@ h1 {
 
   .hourly-header,
 .hourly-row {
-  grid-template-columns: 5px repeat(10, 1fr);
+  grid-template-columns: 80px repeat(10, 1fr);
 }
-
+#hourlyCal::before {
+  width: 80px;
+}
 
   .hourly-header,
   .hourly-row {
@@ -412,10 +414,10 @@ label[for="start"] {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100px; /* MUST MATCH grid first column */
+  width: 100px; /* must match first grid column width */
   height: 100%;
   background: #ffffff;
-  z-index: 2;
+  z-index: 4; /* below pills, above grid cells */
   pointer-events: none;
 }
 
@@ -476,7 +478,7 @@ label[for="start"] {
 .day-label {
   position: sticky;
   left: 0;
-  z-index: 5;
+  z-index: 6;
 
   background: #7fb8e6;
   color: white;
