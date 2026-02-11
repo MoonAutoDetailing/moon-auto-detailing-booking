@@ -977,34 +977,6 @@ if (!expandedBlocks.length) {
   return true;
 }
 
-    const duration = Number(selectedVariant.duration_minutes);
-
-    const exposed = getExposedStartTimesForDay(
-      dayDate,
-      duration,
-      expandedBlocks
-    );
-
-    currentExposedStarts = exposed;
-
-    if (DEBUG) {
-      console.log("Phase 5 resolved exposed starts", {
-        date: dayDate.toDateString(),
-        count: exposed.length,
-        times: exposed.map(d =>
-          d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
-        )
-      });
-    }
-
-  } catch (err) {
-    console.error("Failed to resolve exposed times", err);
-    currentExposedStarts = [];
-  }
-}
-
-
-
 // =========================
 // BUSINESS HOURS VALIDATION
 // =========================
