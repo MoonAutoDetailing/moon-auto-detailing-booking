@@ -161,18 +161,23 @@ h1 {
   position: relative;
 }
 
-#hourlyCal::before {
+#calWrap {
+  position: relative;
+}
+
+#calWrap::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
-  width: 100px; /* desktop width */
+  width: 80px;   /* match your mobile first column width */
   height: 100%;
   background: linear-gradient(to bottom, #ffffff, #f9fbff);
   box-shadow: 4px 0 8px rgba(0,0,0,0.08);
-  z-index: 5;
+  z-index: 10;
   pointer-events: none;
 }
+
 
   /* Prevent overflow issues, BOX INPUT SIZES AND STYLES */
   input,
