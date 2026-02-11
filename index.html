@@ -396,17 +396,41 @@ input[type="datetime-local"] {
 }
 
 .hour-slot.booked {
-  background: var(--moon-red);
-  color: white;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: linear-gradient(145deg, #e34b4b, #cf3c3c);
+  border-radius: 14px;
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+  cursor: not-allowed;
+}
+.hour-slot:not(.available):not(.booked) {
+  opacity: 0.5;
 }
 
 .hour-slot.available {
   background: var(--moon-green);
   cursor: pointer;
+  position: relative;
+  animation: availablePulse 2.4s ease-in-out infinite;
+}
+
+@keyframes availablePulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(34,197,94,0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(34,197,94,0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(34,197,94,0);
+  }
+}
+/* Selected available slot */
+.hour-slot.available.selected {
+  background: rgba(34,197,94,0.75);
+  animation: none;
+  box-shadow:
+    0 0 0 3px rgba(127,184,230,0.6),
+    inset 0 2px 4px rgba(0,0,0,0.1);
+  transform: scale(1.05);
 }
 
 .hour-slot.available:hover {
@@ -504,13 +528,15 @@ input[type="datetime-local"] {
   text-align: center;
 }
     /* Highlight today's column */
-.hour-slot.today {
+/* Today background only applies if NOT available */
+.hour-slot.today:not(.available) {
   background: #fff7cc;
 }
 
-.hour-slot.today:hover {
+.hour-slot.today:not(.available):hover {
   background: #ffef99;
 }
+
 
 .day-label.today {
   background: #facc15;
@@ -536,7 +562,13 @@ input[type="datetime-local"] {
   color: #7fb8e6;
   font-weight: 600;
 }
+/* =====================
+   DESIRED START LABEL BLUE
+   ===================== */
 
+label[for="start"] {
+  color: #7fb8e6;
+}
 
   </style>                              <!--PAGE UI DESIGN END-->
 
@@ -636,22 +668,12 @@ input[type="datetime-local"] {
 <div id="calendarContainer" style="display:none;">
   <div id="calWrap" style="margin-top:16px;">
 
-  <div class="muted" style="text-align:center; margin-bottom:10px;">
-    <strong>Confirmed bookings (for reference)</strong><br />
-    This calendar shows already-confirmed appointments.
-    Your request will still be reviewed and confirmed manually.
-  </div>
-
   <div class="calendar-toolbar">
   <button type="button" id="calPrev" class="nav-btn">‹</button>
   <div id="calLabel"></div>
   <button type="button" id="calNext" class="nav-btn">›</button>
   <button type="button" id="calToday" class="today-btn">Today</button>
 </div>
-
-  <div class="muted" style="text-align:center; margin-bottom:10px;">
-    Tap a time to prefill your start time. Grey blocks are confirmed bookings.
-  </div>
 
   <div id="hourlyCal"></div>
 </div>
@@ -1679,10 +1701,35 @@ const isExposed =
 
 if (booked) {
   cell.classList.add("booked");
-  cell.innerHTML = "BOOKED";
 } else if (isExposed) {
   cell.classList.add("available");
 }
+      // ----------------------------
+// CLICK HANDLER FOR AVAILABLE
+// ----------------------------
+if (cell.classList.contains("available")) {
+
+  cell.addEventListener("click", () => {
+
+    // Clear previous selection
+    document
+      .querySelectorAll(".hour-slot.selected")
+      .forEach(el => el.classList.remove("selected"));
+
+    // Mark this one selected
+    cell.classList.add("selected");
+
+    // Populate start + end inputs
+    startInput.value = formatDateTimeLocal(cellStart);
+
+    const endTime = new Date(
+      cellStart.getTime() + selectedVariant.duration_minutes * 60000
+    );
+
+    endInput.value = formatDateTimeLocal(endTime);
+  });
+}
+
 
 
 cell.onclick = async () => {
