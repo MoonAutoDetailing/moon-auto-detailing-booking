@@ -75,7 +75,6 @@ h1 {
    MOBILE ONLY
    ===================== */
 @media (max-width: 640px) {
-
  body {
   margin: 0;
 }
@@ -123,7 +122,14 @@ h1 {
   #hourlyCal::before {
   width: 80px;
 }
-
+  #calWrap {
+    position: relative;
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    margin-right: calc(-50vw + 50%);
+    padding-left: 0;
+    padding-right: 0;
+  }
 
   .hourly-header,
   .hourly-row {
@@ -167,15 +173,6 @@ h1 {
   z-index: 5;
   pointer-events: none;
 }
-    #calWrap {
-  position: relative;
-  width: 100vw;
-  margin-left: calc(-50vw + 50%);
-  margin-right: calc(-50vw + 50%);
-  padding-left: 0;
-  padding-right: 0;
-}
-
 
   /* Prevent overflow issues, BOX INPUT SIZES AND STYLES */
   input,
