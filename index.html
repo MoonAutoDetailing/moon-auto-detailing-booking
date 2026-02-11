@@ -1474,7 +1474,7 @@ async function loadCalendar() {
   );
   const data = await resp.json();
   const blocks = data.blocks || [];
-  const exposedByDay = {};
+  const expandedBlocks = blocks.map(b => expandBookingBlock(b));
 const exposedByDay = {};
 const dayPromises = [];
 
