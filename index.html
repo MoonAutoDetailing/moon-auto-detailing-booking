@@ -1650,25 +1650,27 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
     cell.classList.add("exposed");
 
 const quarterWidth = 100 / 4;
-const offset = (minute / 15) * quarterWidth;
+const sliceLeft = (minute / 15) * quarterWidth;
+
+// center pill inside its 15-min slice
+const pillWidthPercent = quarterWidth * 0.65;
+const pillOffsetPercent = sliceLeft + (quarterWidth - pillWidthPercent) / 2;
 
 cell.style.position = "relative";
-cell.style.overflow = "hidden";
 
 const block = document.createElement("div");
 block.style.position = "absolute";
-block.style.left = `${offset}%`;
-block.style.width = `${quarterWidth}%`;
-block.style.height = "100%";
+block.style.left = `${pillOffsetPercent}%`;
+block.style.width = `${pillWidthPercent}%`;
+block.style.height = "70%";
+block.style.top = "15%";
 block.style.borderRadius = "999px";
-block.style.top = "6px";
-block.style.bottom = "6px";
-block.style.height = "auto";
 block.style.background = "rgba(34,197,94,0.85)";
-block.style.zIndex = "2";
+block.style.boxShadow = "0 0 6px rgba(34,197,94,0.45)";
 block.style.pointerEvents = "none";
 
 cell.appendChild(block);
+
 
 
 
