@@ -893,41 +893,51 @@ function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlo
   const exposed = [];
   const businessClose = getBusinessCloseDate(dayDate);
 
-  for (const gap of gaps) {
-    let best = null;
-    let bestUsableAfter = -1;
+  let candidates = [];
 
-    for (const start of gap) {
-      if (!passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate)) {
-        continue;
-      }
-
-      // candidate occupies service + travel
-      const endWithTravel = addMinutes(start, serviceDurationMinutes + TRAVEL_BUFFER_MINUTES);
-
-      // next boundary = next expanded booking start, else close
-      let nextBoundary = businessClose;
-      for (const b of expandedBlocks) {
-        if (b.start > start && b.start < nextBoundary) {
-          nextBoundary = b.start;
-        }
-      }
-
-      const remainingAfter = (nextBoundary - endWithTravel) / 60000;
-      const usableAfter = remainingAfter >= MIN_BOOKABLE_GAP_MINUTES ? remainingAfter : 0;
-
-      if (usableAfter > bestUsableAfter) {
-        bestUsableAfter = usableAfter;
-        best = start;
-      } else if (usableAfter === bestUsableAfter && best && start < best) {
-        best = start; // tie → earlier wins
-      }
-    }
-
-    if (best) exposed.push(best);
+for (const start of gap) {
+  if (!passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate)) {
+    continue;
   }
 
-  return exposed;
+  const endWithTravel = addMinutes(start, serviceDurationMinutes + TRAVEL_BUFFER_MINUTES);
+
+  let nextBoundary = businessClose;
+  for (const b of expandedBlocks) {
+    if (b.start > start && b.start < nextBoundary) {
+      nextBoundary = b.start;
+    }
+  }
+
+  const remainingAfter = (nextBoundary - endWithTravel) / 60000;
+  const usableAfter = remainingAfter >= MIN_BOOKABLE_GAP_MINUTES ? remainingAfter : 0;
+
+  candidates.push({ start, usableAfter });
+}
+
+if (!candidates.length) continue;
+
+// Sort by usableAfter descending, tie → earlier first
+candidates.sort((a, b) => {
+  if (b.usableAfter !== a.usableAfter) {
+    return b.usableAfter - a.usableAfter;
+  }
+  return a.start - b.start;
+});
+
+// Always take best
+exposed.push(candidates[0].start);
+
+// If gap is large enough, take second-best if meaningful
+const gapLengthMinutes = (gap[gap.length - 1] - gap[0]) / 60000;
+
+if (gapLengthMinutes > 240 && candidates.length > 1) {
+  const second = candidates[1].start;
+
+  // only expose if at least 60 minutes apart
+  if ((second - candidates[0].start) / 60000 >= 60) {
+    exposed.push(second);
+  }
 }
 
 
