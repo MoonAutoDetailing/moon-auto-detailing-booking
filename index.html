@@ -1400,6 +1400,22 @@ async function loadCalendar() {
   if (!hourlyCal) return;
 
   hourlyCal.innerHTML = "";
+  // =========================
+// GRID HEADER (HOURS)
+// =========================
+const header = document.createElement("div");
+header.className = "hourly-header";
+
+header.innerHTML = `<div></div>`; // empty corner cell
+
+for (let h = 8; h <= 17; h++) {
+  const hourCell = document.createElement("div");
+  hourCell.textContent = formatHourLabel(h);
+  header.appendChild(hourCell);
+}
+
+hourlyCal.appendChild(header);
+
 
   const weekEnd = addDays(calWeekStart, 7);
   calLabel.textContent =
@@ -1468,65 +1484,7 @@ for (let d = 0; d < 7; d++) {
 
   const dayKey = day.toDateString();
   const exposedTimes = exposedByDay[dayKey] || [];
-
-  const timesWrap = document.createElement("div");
-  timesWrap.className = "exposed-times-wrap";
-
-  if (!selectedVariant) {
-
-    const msg = document.createElement("div");
-    msg.className = "exposed-muted";
-    msg.textContent = "Select a service to view availability.";
-    timesWrap.appendChild(msg);
-
-  } else if (!exposedTimes.length) {
-
-    const msg = document.createElement("div");
-    msg.className = "exposed-muted";
-    msg.textContent = "Fully booked.";
-    timesWrap.appendChild(msg);
-
-  } else {
-
-    exposedTimes.forEach(ts => {
-
-      const start = new Date(ts);
-
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.className = "exposed-slot-btn";
-
-      btn.textContent = start.toLocaleTimeString([], {
-        hour: "numeric",
-        minute: "2-digit"
-      });
-
-      btn.addEventListener("click", () => {
-
-        document
-          .querySelectorAll(".exposed-slot-btn.selected")
-          .forEach(el => el.classList.remove("selected"));
-
-        btn.classList.add("selected");
-
-        elStart.value = formatDateToDateTimeLocal(start);
-        selectedStartISO = start.toISOString();
-
-        recalcEndTimePreview();
-      });
-
-      timesWrap.appendChild(btn);
-
-    });
   }
-
-  row.appendChild(timesWrap);
-  hourlyCal.appendChild(row);
-
-  }
-
- 
-}
 
 // =========================
 // CALENDAR NAVIGATION
