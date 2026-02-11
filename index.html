@@ -968,6 +968,10 @@ function selfTestExposedStarts(dayDate, serviceDurationMinutes, expandedBlocks) 
 // PHASE 4.5 — FRAGMENT FILTER
 // =========================
 function passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate) {
+  // Open-day bypass — do not fragment-filter when no bookings exist
+if (!expandedBlocks.length) {
+  return true;
+}
   const serviceEnd = addMinutes(start, serviceDurationMinutes + TRAVEL_BUFFER_MINUTES);
   const businessClose = getBusinessCloseDate(dayDate);
 
