@@ -128,6 +128,10 @@ h1 {
 .hourly-row {
   grid-template-columns: 80px repeat(10, 1fr);
 }
+  #hourlyCal::before {
+  width: 80px;
+}
+
 
   .hourly-header,
   .hourly-row {
@@ -149,6 +153,23 @@ h1 {
 }
   
 }
+    #hourlyCal {
+  position: relative;
+}
+
+#hourlyCal::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100px; /* desktop width */
+  height: 100%;
+  background: linear-gradient(to bottom, #ffffff, #f9fbff);
+  box-shadow: 4px 0 8px rgba(0,0,0,0.08);
+  z-index: 5;
+  pointer-events: none;
+}
+
 
   /* Prevent overflow issues, BOX INPUT SIZES AND STYLES */
   input,
@@ -408,18 +429,6 @@ label[for="start"] {
   overflow: hidden;
 }
 
-#calWrap::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100px; /* desktop */
-  height: 100%;
-  background: linear-gradient(to bottom, #ffffff, #f9fbff);
-  box-shadow: 4px 0 8px rgba(0,0,0,0.08);
-  z-index: 5;
-  pointer-events: none;
-}
 
 
 .hourly-header,
