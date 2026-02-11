@@ -121,6 +121,11 @@ h1 {
   }
 
   .hourly-header,
+.hourly-row {
+  grid-template-columns: 90px repeat(10, 1fr);
+}
+
+  .hourly-header,
   .hourly-row {
     min-width: 900px; /* forces horizontal scroll instead of squish */
   }
@@ -128,6 +133,10 @@ h1 {
   .booking-card {
     overflow: hidden; /* prevent black background bleed */
   }
+  #hourlyCal {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
 }
 
   /* Prevent overflow issues, BOX INPUT SIZES AND STYLES */
@@ -437,9 +446,10 @@ label[for="start"] {
 .day-label {
   background: #7fb8e6;
   color: white;
-  padding: 10px 16px;
+  padding: 6px 10px;
   border-radius: 999px;
   font-weight: 600;
+  font-size: 13px;
   text-align: center;
 }
     .day-label {
@@ -1650,7 +1660,7 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
   row.innerHTML = `
     <div class="day-label ${isToday ? "today" : ""}">
       ${day.toLocaleDateString(undefined, {
-        weekday: "long",
+        weekday: "short",
         month: "numeric",
         day: "numeric"
       })}
