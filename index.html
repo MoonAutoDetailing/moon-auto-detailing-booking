@@ -626,6 +626,7 @@ const BUSINESS_RULES = {
 // =========================
 const SLOT_MINUTES = 15;              // internal resolution
 const TRAVEL_BUFFER_MINUTES = 30;     // fixed heuristic travel buffer
+const MIN_BOOKABLE_GAP_MINUTES = 120; // anti-fragment rule (2 hours)
 
     
     const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
@@ -878,15 +879,22 @@ function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlo
 
     // Rule 1: always expose on-the-hour
     if (isOnHour(start)) {
-      exposed.push(start);
-      continue;
-    }
+  if (!passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate)) {
+    continue;
+  }
+  exposed.push(start);
+  continue;
+}
 
     // Rule 2: first valid time after a gap
     if (i === 0 || valid[i - 1].getTime() !== start.getTime() - 15 * 60 * 1000) {
-      exposed.push(start);
-      continue;
-    }
+  if (!passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate)) {
+    continue;
+  }
+  exposed.push(start);
+  continue;
+}
+
 
     // Rule 3: skipping would eliminate ability to fit service
     const next = valid[i + 1];
@@ -895,8 +903,12 @@ function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlo
       : addMinutes(start, serviceDurationMinutes);
 
     if (endIfSkipped > closeTime) {
-      exposed.push(start);
-    }
+  if (!passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate)) {
+    continue;
+  }
+  exposed.push(start);
+}
+
   }
 
   return exposed;
@@ -920,6 +932,34 @@ function selfTestExposedStarts(dayDate, serviceDurationMinutes, expandedBlocks) 
     )
   });
 }
+    // =========================
+// PHASE 4.5 — FRAGMENT FILTER
+// =========================
+function passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate) {
+  const serviceEnd = addMinutes(start, serviceDurationMinutes);
+  const businessClose = getBusinessCloseDate(dayDate);
+
+  let nextBoundary = businessClose;
+
+  for (const b of expandedBlocks) {
+    if (b.start > start && b.start < nextBoundary) {
+      nextBoundary = b.start;
+    }
+  }
+
+  const remainingMinutes = (nextBoundary - serviceEnd) / 60000;
+
+  // If perfectly tight or no remaining gap, allow
+  if (remainingMinutes <= 0) return true;
+
+  // Block unusable fragments
+  if (remainingMinutes < MIN_BOOKABLE_GAP_MINUTES) {
+    return false;
+  }
+
+  return true;
+}
+
     // =========================
 // PHASE 5 — RESOLVE EXPOSED STARTS FOR A DAY
 // =========================
