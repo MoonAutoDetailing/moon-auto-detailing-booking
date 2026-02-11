@@ -404,16 +404,6 @@ label[for="start"] {
   cursor: pointer;
 }
 
-.hourly-cell.exposed:hover {
-  background: rgba(34, 197, 94, 0.55);
-  transform: translateY(-1px);
-}
-
-.hourly-cell.exposed.selected {
-  background: #7fb8e6;
-  box-shadow: 0 0 0 3px rgba(127, 184, 230, 0.6);
-}
-
 .day-label {
   background: #7fb8e6;
   color: white;
@@ -490,6 +480,21 @@ label[for="start"] {
     .green-slot-pill {
   animation: pulse 1.6s ease-in-out infinite;
 }
+    .green-slot-pill {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.green-slot-pill:hover {
+  background: rgba(34,197,94,1);
+  transform: translateY(-1px);
+}
+    .green-slot-pill.selected {
+  animation: none; /* stop pulse */
+  background: #15803d; /* dark green */
+  box-shadow: 0 0 0 3px #065f46; /* darker outline */
+}
+
 
     /* =====================
    EXPOSED ANCHOR LAYOUT
@@ -1673,8 +1678,6 @@ for (const b of expandedBlocks) {
     const startTime = new Date(t);
     const minute = startTime.getMinutes();
 
-    cell.classList.add("exposed");
-
 const quarterWidth = 100 / 4;
 const sliceLeft = (minute / 15) * quarterWidth;
 
@@ -1689,21 +1692,28 @@ block.style.height = "70%";
 block.style.top = "15%";
 block.style.borderRadius = "999px";
 block.style.background = "rgba(34,197,94,0.85)";
-block.style.pointerEvents = "none";
+block.style.pointerEvents = "auto";
+block.style.cursor = "pointer";
 
 cell.appendChild(block);
     greenBlocksInCell.push(block);
+    // GREEN PILL SELECTION
+block.addEventListener("click", (e) => {
+  e.stopPropagation();
 
-    cell.addEventListener("click", () => {
-      document
-        .querySelectorAll(".hourly-cell.exposed.selected")
-        .forEach(el => el.classList.remove("selected"));
+  // Remove previous selection
+  document
+    .querySelectorAll(".green-slot-pill.selected")
+    .forEach(el => el.classList.remove("selected"));
 
-      cell.classList.add("selected");
-      elStart.value = formatDateToDateTimeLocal(startTime);
-      selectedStartISO = startTime.toISOString();
-      recalcEndTimePreview();
-    });
+  block.classList.add("selected");
+
+  // Set start time
+  elStart.value = formatDateToDateTimeLocal(startTime);
+  selectedStartISO = startTime.toISOString();
+
+  recalcEndTimePreview();
+});
   }
 // -----------------------------
 // CONNECT ADJACENT BLOCK EDGES
@@ -1724,19 +1734,29 @@ for (const red of redBlocksInCell) {
 
     // red RIGHT touches green LEFT
     if (Math.abs(redRight - greenLeft) < EPS) {
-      red.style.borderTopRightRadius = "0px";
-      red.style.borderBottomRightRadius = "0px";
-      green.style.borderTopLeftRadius = "0px";
-      green.style.borderBottomLeftRadius = "0px";
-    }
+  red.style.borderTopRightRadius = "0px";
+  red.style.borderBottomRightRadius = "0px";
+
+  green.style.borderTopLeftRadius = "0px";
+  green.style.borderBottomLeftRadius = "0px";
+
+  // Make green match red height when connected
+  green.style.height = "100%";
+  green.style.top = "0";
+}
 
     // green RIGHT touches red LEFT (covers the opposite ordering too)
     if (Math.abs(greenRight - redLeft) < EPS) {
-      green.style.borderTopRightRadius = "0px";
-      green.style.borderBottomRightRadius = "0px";
-      red.style.borderTopLeftRadius = "0px";
-      red.style.borderBottomLeftRadius = "0px";
-    }
+  green.style.borderTopRightRadius = "0px";
+  green.style.borderBottomRightRadius = "0px";
+
+  red.style.borderTopLeftRadius = "0px";
+  red.style.borderBottomLeftRadius = "0px";
+
+  // Make green match red height when connected
+  green.style.height = "100%";
+  green.style.top = "0";
+}
   }
 }
 
