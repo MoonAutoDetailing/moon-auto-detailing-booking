@@ -1447,10 +1447,14 @@ const exposedByDay = {};
 for (let d = 0; d < 7; d++) {
   const day = addDays(calWeekStart, d);
 
-  const exposed = resolveExposedStartTimesForDay(
-    day,
-    expandedBlocks
-  );
+  const exposed = selectedVariant
+  ? getExposedStartTimesForDay(
+      day,
+      Number(selectedVariant.duration_minutes),
+      expandedBlocks
+    )
+  : [];
+
 
   exposedByDay[day.toDateString()] =
     exposed.map(x => x.getTime());
