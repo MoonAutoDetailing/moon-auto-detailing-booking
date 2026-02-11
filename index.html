@@ -415,7 +415,14 @@ label[for="start"] {
   align-items: center;
   justify-content: center;
 }
+    /* Alternating row backgrounds */
+.row-light .hourly-cell {
+  background: rgba(0, 0, 0, 0.04);
+}
 
+.row-dark .hourly-cell {
+  background: rgba(0, 0, 0, 0.08);
+}
 
 .hourly-cell.booked {
   background: #e44b4b;
@@ -1638,7 +1645,7 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
     day.toDateString() === new Date().toDateString();
 
   const row = document.createElement("div");
-  row.className = "hourly-row";
+  row.className = "hourly-row " + (d % 2 === 0 ? "row-light" : "row-dark");
 
   row.innerHTML = `
     <div class="day-label ${isToday ? "today" : ""}">
