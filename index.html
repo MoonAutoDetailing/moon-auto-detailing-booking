@@ -1508,14 +1508,27 @@ cell.onclick = async () => {
     return;
   }
 
-  const first = currentExposedStarts[0];
-  console.log("FIRST EXPOSED RAW:", first);
-  elStart.value = formatDateToDateTimeLocal(first);
-  selectedStartISO = first.toISOString();
+  // The hour the user clicked
+  const clickedStart = new Date(day);
+  clickedStart.setHours(h, 0, 0, 0);
+
+  // Check if that exact hour is exposed
+  const match = currentExposedStarts.find(d =>
+    d.getTime() === clickedStart.getTime()
+  );
+
+  if (!match) {
+    setStatus("bad", "That time is not available for the selected service.");
+    return;
+  }
+
+  elStart.value = formatDateToDateTimeLocal(match);
+  selectedStartISO = match.toISOString();
 
   recalcEndTimePreview();
   setStatus("muted", "");
 };
+
 
       row.appendChild(cell);
     }
