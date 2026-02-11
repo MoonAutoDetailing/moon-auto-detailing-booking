@@ -1592,52 +1592,88 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
   // =========================
   for (let d = 0; d < 7; d++) {
 
-    const day = addDays(calWeekStart, d);
-    const dayKey = day.toDateString();
-    const exposedSet = new Set(exposedByDay[dayKey] || []);
+  const day = addDays(calWeekStart, d);
+  const dayKey = day.toDateString();
+  const exposedSet = new Set(exposedByDay[dayKey] || []);
 
-    const isToday =
-      day.toDateString() === new Date().toDateString();
+  const isToday =
+    day.toDateString() === new Date().toDateString();
 
-    const row = document.createElement("div");
-    row.className = "hourly-row";
+  const row = document.createElement("div");
+  row.className = "hourly-row";
 
-    row.innerHTML = `
-      <div class="day-label ${isToday ? "today" : ""}">
-        ${day.toLocaleDateString(undefined, {
-          weekday: "long",
-          month: "numeric",
-          day: "numeric"
-        })}
-      </div>
-    `;
+  row.innerHTML = `
+    <div class="day-label ${isToday ? "today" : ""}">
+      ${day.toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "numeric",
+        day: "numeric"
+      })}
+    </div>
+  `;
 
-    for (let h = BUSINESS_RULES.openHour; h < BUSINESS_RULES.closeHour; h++) {
+  for (let h = BUSINESS_RULES.openHour; h < BUSINESS_RULES.closeHour; h++) {
 
-  const hourStart = new Date(day);
-  hourStart.setHours(h, 0, 0, 0);
+    const hourStart = new Date(day);
+    hourStart.setHours(h, 0, 0, 0);
 
-  const hourEnd = new Date(hourStart);
-  hourEnd.setHours(hourEnd.getHours() + 1);
+    const hourEnd = new Date(hourStart);
+    hourEnd.setHours(hourEnd.getHours() + 1);
 
-  const exposedInThisHour = (exposedByDay[dayKey] || [])
-    .filter(t => {
-      const d = new Date(t);
-      return d >= hourStart && d < hourEnd;
+    const exposedInThisHour = (exposedByDay[dayKey] || [])
+      .filter(t => {
+        const d = new Date(t);
+        return d >= hourStart && d < hourEnd;
+      });
+
+    const nonHourExposed = exposedInThisHour.find(t => {
+      return new Date(t).getMinutes() !== 0;
     });
 
-  const nonHourExposed = exposedInThisHour.find(t => {
-    return new Date(t).getMinutes() !== 0;
-  });
+    if (nonHourExposed) {
 
-  if (nonHourExposed) {
+      for (let m = 0; m < 60; m += SLOT_MINUTES) {
 
-    for (let m = 0; m < 60; m += SLOT_MINUTES) {
+        const cellStart = new Date(day);
+        cellStart.setHours(h, m, 0, 0);
 
-      const cellStart = new Date(day);
-      cellStart.setHours(h, m, 0, 0);
+        const cellEnd = addMinutes(cellStart, SLOT_MINUTES);
 
-      const cellEnd = addMinutes(cellStart, SLOT_MINUTES);
+        const cell = document.createElement("div");
+        cell.className = "hourly-cell";
+
+        const isBooked = expandedBlocks.some(b =>
+          cellStart < b.end && cellEnd > b.start
+        );
+
+        if (isBooked) {
+          cell.classList.add("booked");
+
+        } else if (exposedSet.has(cellStart.getTime())) {
+
+          cell.classList.add("exposed");
+
+          cell.addEventListener("click", () => {
+
+            document
+              .querySelectorAll(".hourly-cell.exposed.selected")
+              .forEach(el => el.classList.remove("selected"));
+
+            cell.classList.add("selected");
+
+            elStart.value = formatDateToDateTimeLocal(cellStart);
+            selectedStartISO = cellStart.toISOString();
+            recalcEndTimePreview();
+          });
+        }
+
+        row.appendChild(cell);
+      }
+
+    } else {
+
+      const cellStart = hourStart;
+      const cellEnd = hourEnd;
 
       const cell = document.createElement("div");
       cell.className = "hourly-cell";
@@ -1669,44 +1705,14 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
 
       row.appendChild(cell);
     }
-
-  } else {
-
-    const cellStart = hourStart;
-    const cellEnd = hourEnd;
-
-    const cell = document.createElement("div");
-    cell.className = "hourly-cell";
-
-    const isBooked = expandedBlocks.some(b =>
-      cellStart < b.end && cellEnd > b.start
-    );
-
-    if (isBooked) {
-      cell.classList.add("booked");
-
-    } else if (exposedSet.has(cellStart.getTime())) {
-
-      cell.classList.add("exposed");
-
-      cell.addEventListener("click", () => {
-
-        document
-          .querySelectorAll(".hourly-cell.exposed.selected")
-          .forEach(el => el.classList.remove("selected"));
-
-        cell.classList.add("selected");
-
-        elStart.value = formatDateToDateTimeLocal(cellStart);
-        selectedStartISO = cellStart.toISOString();
-        recalcEndTimePreview();
-      });
-    }
-
-    row.appendChild(cell);
   }
+
+  // ✅ THIS WAS MISSING
+  hourlyCal.appendChild(row);
 }
-  }   // ← THIS closes loadCalendar()
+
+// ✅ Properly closes loadCalendar()
+}
 
 // =========================
 // CALENDAR NAVIGATION
