@@ -1000,6 +1000,7 @@ async function resolveExposedStartTimesForDay(dayDate) {
 
     const data = await resp.json();
     const blocks = data.blocks || [];
+    const expandedBlocks = blocks.map(b => expandBookingBlock(b));
     if (DEBUG) {
   console.log("RAW blocks", blocks);
   console.log("EXPANDED blocks", expandedBlocks.map(b => ({
@@ -1474,11 +1475,22 @@ async function loadCalendar() {
   const data = await resp.json();
   const blocks = data.blocks || [];
   const exposedByDay = {};
+const exposedByDay = {};
+const dayPromises = [];
+
 for (let d = 0; d < 7; d++) {
   const day = addDays(calWeekStart, d);
-  await resolveExposedStartTimesForDay(day);
-  exposedByDay[day.toDateString()] = currentExposedStarts.map(x => x.getTime());
+
+  dayPromises.push(
+    resolveExposedStartTimesForDay(day).then(() => {
+      exposedByDay[day.toDateString()] =
+        currentExposedStarts.map(x => x.getTime());
+    })
+  );
 }
+
+await Promise.all(dayPromises);
+
 
   //Epand blocks helper function
   function selfTestExpandedBlocks(blocks) {
