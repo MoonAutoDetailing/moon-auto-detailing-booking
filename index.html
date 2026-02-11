@@ -1648,10 +1648,9 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
     const startTime = new Date(t);
     const minute = startTime.getMinutes();
 
-    if (minute === 0) {
-      cell.classList.add("exposed");
+    cell.classList.add("exposed");
 
-const quarterWidth = 100 / 4; // 4 x 15-min blocks per hour
+const quarterWidth = 100 / 4;
 const offset = (minute / 15) * quarterWidth;
 
 cell.style.position = "relative";
@@ -1666,7 +1665,7 @@ block.style.background = "rgba(34,197,94,0.75)";
 block.style.pointerEvents = "none";
 
 cell.appendChild(block);
-    }
+
 
     cell.addEventListener("click", () => {
       document
