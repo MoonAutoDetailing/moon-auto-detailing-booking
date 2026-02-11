@@ -1561,10 +1561,13 @@ try {
     const data = await resp.json();
     blocks = data.blocks || [];
   }
-  const expandedBlocks = blocks.map(b => expandBookingBlock(b));
 } catch (e) {
   console.error("Calendar fetch failed:", e);
 }
+
+// 👇 MUST be outside try block
+const expandedBlocks = blocks.map(b => expandBookingBlock(b));
+
 
   // =========================
   // BUILD EXPOSED START MAP
@@ -1624,10 +1627,10 @@ try {
       cell.className = "hourly-cell";
 
       const isBooked = expandedBlocks.some(b =>
-        cellStart < b.end && cellEnd > b.start
-      );
+  cellStart < b.end && cellEnd > b.start
+);
 
-      if (isBooked) {
+if (isBooked) {
 
   cell.classList.add("booked");
 
@@ -1649,24 +1652,7 @@ try {
   });
 }
 
-
-        cell.classList.add("exposed");
-
-        cell.addEventListener("click", () => {
-
-          document
-            .querySelectorAll(".hourly-cell.exposed.selected")
-            .forEach(el => el.classList.remove("selected"));
-
-          cell.classList.add("selected");
-
-          elStart.value = formatDateToDateTimeLocal(cellStart);
-          selectedStartISO = cellStart.toISOString();
-          recalcEndTimePreview();
-        });
-      }
-
-      row.appendChild(cell);
+row.appendChild(cell);
     }
 
     hourlyCal.appendChild(row);
