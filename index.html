@@ -364,6 +364,79 @@ label[for="start"] {
 }
 
     /* =====================
+   HOURLY GRID CALENDAR
+   ===================== */
+
+.hourly-header,
+.hourly-row {
+  display: grid;
+  grid-template-columns: 160px repeat(10, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.hourly-header div {
+  font-weight: 600;
+  text-align: center;
+  color: #7fb8e6;
+}
+
+.hourly-cell {
+  height: 46px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.04);
+  transition: all 0.18s ease;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
+}
+
+.hourly-cell.booked {
+  background: #e44b4b;
+  color: #fff;
+  font-weight: 700;
+}
+
+.hourly-cell.exposed {
+  background: rgba(34, 197, 94, 0.35);
+  cursor: pointer;
+}
+
+.hourly-cell.exposed:hover {
+  background: rgba(34, 197, 94, 0.55);
+  transform: translateY(-1px);
+}
+
+.hourly-cell.exposed.selected {
+  background: #7fb8e6;
+  box-shadow: 0 0 0 3px rgba(127, 184, 230, 0.6);
+}
+
+.day-label {
+  background: #7fb8e6;
+  color: white;
+  padding: 10px 16px;
+  border-radius: 999px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.day-label.today {
+  background: #facc15;
+  color: #111;
+}
+
+/* Pulse animation for green slots */
+@keyframes pulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+.hourly-cell.exposed {
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+    /* =====================
    EXPOSED ANCHOR LAYOUT
    ===================== */
 
@@ -1478,7 +1551,35 @@ for (let d = 0; d < 7; d++) {
     const cellStart = new Date(day);
     cellStart.setHours(h, 0, 0, 0);
 
-    if (exposedTimes.includes(cellStart.getTime())) {
+    const cellEnd = new Date(cellStart);
+cellEnd.setHours(cellEnd.getHours() + 1);
+
+// Red booked logic
+const isBooked = expandedBlocks.some(b =>
+  cellStart < b.end && cellEnd > b.start
+);
+
+if (isBooked) {
+  cell.classList.add("booked");
+}
+
+// Green exposed logic (only if not booked)
+if (!isBooked && exposedTimes.includes(cellStart.getTime())) {
+  cell.classList.add("exposed");
+
+  cell.addEventListener("click", () => {
+    document
+      .querySelectorAll(".hourly-cell.exposed.selected")
+      .forEach(el => el.classList.remove("selected"));
+
+    cell.classList.add("selected");
+
+    elStart.value = formatDateToDateTimeLocal(cellStart);
+    selectedStartISO = cellStart.toISOString();
+    recalcEndTimePreview();
+  });
+}
+
       cell.classList.add("exposed");
 
       cell.addEventListener("click", () => {
