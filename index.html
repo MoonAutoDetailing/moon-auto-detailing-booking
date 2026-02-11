@@ -335,213 +335,6 @@ input[type="datetime-local"] {
     height: 40px;
   }
 }                     
-    /* =====================
-   MOON PREMIUM WEEK CALENDAR
-   ===================== */
-
-:root {
-  --moon-blue: #7fb8e6;
-  --moon-blue-dark: #6aaee2;
-  --moon-green: rgba(34,197,94,0.25);
-  --moon-green-solid: rgba(34,197,94,0.55);
-  --moon-red: #e34b4b;
-}
-
-#hourlyCal {
-  overflow-x: auto;
-  border-radius: 22px;
-  background: linear-gradient(to bottom, #ffffff, #f9fbff);
-  box-shadow: 0 18px 40px rgba(0,0,0,0.08);
-  padding: 10px;
-}
-
-.hourly-header,
-.hourly-row {
-  display: grid;
-  grid-template-columns: 110px repeat(10, 70px);
-}
-
-.hourly-header div {
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--moon-blue);
-  text-align: center;
-  padding: 6px 4px;
-}
-
-.hourly-row {
-  margin-bottom: 6px;
-}
-
-.day-label {
-  font-weight: 600;
-  font-size: 13px;
-  color: #ffffff;
-  background: var(--moon-blue);
-  border-radius: 14px;
-  padding: 6px;
-  text-align: center;
-}
-
-.hour-slot {
-  height: 36px;
-  border-radius: 14px;
-  margin: 2px;
-  background: rgba(0,0,0,0.02);
-  transition: all 0.18s ease;
-}
-
-.hour-slot:hover {
-  background: rgba(127,184,230,0.18);
-}
-
-.hour-slot.booked {
-  background: linear-gradient(145deg, #e34b4b, #cf3c3c);
-  border-radius: 14px;
-  box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
-  cursor: not-allowed;
-}
-.hour-slot:not(.available):not(.booked) {
-  opacity: 0.5;
-}
-
-.hour-slot.available {
-  background: var(--moon-green);
-  cursor: pointer;
-  position: relative;
-  animation: availablePulse 2.4s ease-in-out infinite;
-}
-
-@keyframes availablePulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(34,197,94,0.35);
-  }
-  70% {
-    box-shadow: 0 0 0 8px rgba(34,197,94,0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(34,197,94,0);
-  }
-}
-/* Selected available slot */
-.hour-slot.available.selected {
-  background: rgba(34,197,94,0.75);
-  animation: none;
-  box-shadow:
-    0 0 0 3px rgba(127,184,230,0.6),
-    inset 0 2px 4px rgba(0,0,0,0.1);
-  transform: scale(1.05);
-}
-
-.hour-slot.available:hover {
-  background: var(--moon-green-solid);
-  transform: scale(1.03);
-}
-
-.calendar-toolbar {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.nav-btn {
-  background: #7fb8e6;
-  border: none;
-  color: white;
-  border-radius: 50%;
-  width: 38px;
-  height: 38px;
-  font-size: 18px;
-  box-shadow: 0 6px 16px rgba(127, 184, 230, 0.4);
-  transition: all 0.2s ease;
-}
-
-.nav-btn:hover {
-  background: #6aaee2;
-  transform: translateY(-1px);
-}
-
-.today-btn {
-  background: #7fb8e6;
-  color: #ffffff;
-  border: none;
-  border-radius: 999px;
-  padding: 4px 14px;
-  font-size: 12px;
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(127, 184, 230, 0.4);
-  transition: all 0.2s ease;
-}
-
-.today-btn:hover {
-  background: #6aaee2;
-}
-
-#calLabel {
-  font-weight: 700;
-  color: var(--moon-blue);
-}
-
-@media (max-width: 640px) {
-  .hour-slot {
-    height: 30px;
-  }
-
-  .hourly-header,
-  .hourly-row {
-    grid-template-columns: 90px repeat(10, 60px);
-  }
-
-  .nav-btn {
-    width: 28px;
-    height: 28px;
-  }
-}
-
-/* MOBILE */
-@media (max-width: 640px) {
-    :root {
-    --hour-label-width: 90px;
-    --hour-col-width: 72px;
-  }
-
-  .hourly-header div,
-  .hourly-row div {
-    padding: 10px 4px;
-    font-size: 12px;
-  }
-}
-
-    .calendar-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-#calLabel {
-  font-weight: 600;
-  min-width: 160px;
-  text-align: center;
-}
-    /* Highlight today's column */
-/* Today background only applies if NOT available */
-.hour-slot.today:not(.available) {
-  background: #fff7cc;
-}
-
-.hour-slot.today:not(.available):hover {
-  background: #ffef99;
-}
-
-
-.day-label.today {
-  background: #facc15;
-  color: #111;
-}
     
 /* =====================
    DATETIME INPUT POLISH
@@ -568,6 +361,60 @@ input[type="datetime-local"] {
 
 label[for="start"] {
   color: #7fb8e6;
+}
+
+    /* =====================
+   EXPOSED ANCHOR LAYOUT
+   ===================== */
+
+.exposed-day-row {
+  padding: 18px;
+  border-radius: 22px;
+  background: linear-gradient(to bottom, #ffffff, #f9fbff);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.08);
+  margin-bottom: 16px;
+}
+
+.day-label {
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #7fb8e6;
+  text-align: left;
+}
+
+.day-label.today {
+  color: #facc15;
+}
+
+.exposed-times-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.exposed-slot-btn {
+  background: rgba(34,197,94,0.25);
+  border: none;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.exposed-slot-btn:hover {
+  background: rgba(34,197,94,0.45);
+  transform: translateY(-1px);
+}
+
+.exposed-slot-btn.selected {
+  background: rgba(34,197,94,0.75);
+  box-shadow: 0 0 0 3px rgba(127,184,230,0.6);
+}
+
+.exposed-muted {
+  font-size: 14px;
+  color: #6b7280;
 }
 
   </style>                              <!--PAGE UI DESIGN END-->
@@ -1153,7 +1000,6 @@ async function resolveExposedStartTimesForDay(dayDate) {
 
     const data = await resp.json();
     const blocks = data.blocks || [];
-    const expandedBlocks = blocks.map(b => expandBookingBlock(b));
     if (DEBUG) {
   console.log("RAW blocks", blocks);
   console.log("EXPANDED blocks", expandedBlocks.map(b => ({
@@ -1627,27 +1473,12 @@ async function loadCalendar() {
   );
   const data = await resp.json();
   const blocks = data.blocks || [];
-  const expandedBlocks = blocks.map(b => expandBookingBlock(b));
   const exposedByDay = {};
 for (let d = 0; d < 7; d++) {
   const day = addDays(calWeekStart, d);
   await resolveExposedStartTimesForDay(day);
   exposedByDay[day.toDateString()] = currentExposedStarts.map(x => x.getTime());
 }
-
-  
-  // Phase 3: Validate internal availability math (uses selected service duration if available)
-const testDuration = Number(selectedVariant?.duration_minutes || 60);
-const testDay = new Date(calWeekStart);
-testDay.setDate(testDay.getDate() + 1); // Monday
-
-  // Phase 4: exposed (customer-safe) start times — DEV ONLY
-const exposedTestDay = new Date(calWeekStart);
-exposedTestDay.setDate(exposedTestDay.getDate() + 1); // Monday
-
-
-
-
 
   //Epand blocks helper function
   function selfTestExpandedBlocks(blocks) {
@@ -1667,7 +1498,7 @@ exposedTestDay.setDate(exposedTestDay.getDate() + 1); // Monday
     const isToday =
   day.toDateString() === new Date().toDateString();
     const row = document.createElement("div");
-    row.className = "hourly-row";
+    row.className = "exposed-day-row";
 
     row.innerHTML = `
   <div class="day-label ${isToday ? "today" : ""}">
@@ -1739,89 +1570,7 @@ exposedTestDay.setDate(exposedTestDay.getDate() + 1); // Monday
   row.appendChild(timesWrap);
   hourlyCal.appendChild(row);
 
-      const cellStart = new Date(day);
-      cellStart.setHours(h, 0, 0, 0);
-      const cellEnd = new Date(cellStart);
-      cellEnd.setHours(h + 1);
-
-      const booked = blocks.some(b =>
-        new Date(b.start) < cellEnd && new Date(b.end) > cellStart
-      );
-
-      const dayKey = day.toDateString();
-const isExposed =
-  exposedByDay[dayKey]?.includes(cellStart.getTime());
-
-if (booked) {
-  cell.classList.add("booked");
-} else if (isExposed) {
-  cell.classList.add("available");
-}
-      // ----------------------------
-// CLICK HANDLER FOR AVAILABLE
-// ----------------------------
-if (cell.classList.contains("available")) {
-
-  cell.addEventListener("click", () => {
-
-    // Clear previous selection
-    document
-      .querySelectorAll(".hour-slot.selected")
-      .forEach(el => el.classList.remove("selected"));
-
-    // Mark this one selected
-    cell.classList.add("selected");
-
-    // Populate start + end inputs
-    startInput.value = formatDateTimeLocal(cellStart);
-
-    const endTime = new Date(
-      cellStart.getTime() + selectedVariant.duration_minutes * 60000
-    );
-
-    endInput.value = formatDateTimeLocal(endTime);
-  });
-}
-
-
-
-cell.onclick = async () => {
-  if (!selectedVariant) {
-    setStatus("bad", "Please select a service first.");
-    return;
   }
-
-  await resolveExposedStartTimesForDay(day);
-
-  if (!currentExposedStarts.length) {
-    setStatus("bad", "No available start times for this day.");
-    return;
-  }
-
-  // The hour the user clicked
-  const clickedStart = new Date(day);
-  clickedStart.setHours(h, 0, 0, 0);
-
-  // Check if that exact hour is exposed
-  const match = currentExposedStarts.find(d =>
-    d.getTime() === clickedStart.getTime()
-  );
-
-  if (!match) {
-    setStatus("bad", "That time is not available for the selected service.");
-    return;
-  }
-
-  elStart.value = formatDateToDateTimeLocal(match);
-  selectedStartISO = match.toISOString();
-
-  recalcEndTimePreview();
-  setStatus("muted", "");
-};
-
-
-      row.appendChild(cell);
-    }
 
  
 }
