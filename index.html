@@ -116,14 +116,6 @@ h1 {
   }
     /* === HOURLY CALENDAR MOBILE FIX === */
 
-  #hourlyCal {
-  width: 100vw;
-  margin-left: calc(-50vw + 50%);
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
-}
-
   .hourly-header,
 .hourly-row {
   grid-template-columns: 80px repeat(10, 1fr);
@@ -139,10 +131,16 @@ h1 {
   }
 
   .booking-card {
-    overflow: hidden; /* prevent black background bleed */
-  }
+  overflow: visible;
+}
+  body {
+  overflow-x: hidden;
+}
+
   #hourlyCal {
+  width: 100%;
   overflow-x: auto;
+  overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
 }
   .day-label {
@@ -168,6 +166,14 @@ h1 {
   box-shadow: 4px 0 8px rgba(0,0,0,0.08);
   z-index: 5;
   pointer-events: none;
+}
+    #calWrap {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  margin-right: calc(-50vw + 50%);
+  padding-left: 0;
+  padding-right: 0;
 }
 
 
