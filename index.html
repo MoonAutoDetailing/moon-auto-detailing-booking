@@ -1447,6 +1447,63 @@ for (let d = 0; d < 7; d++) {
   exposedByDay[day.toDateString()] =
     exposed.map(x => x.getTime());
 }
+  // =========================
+// RENDER DAY ROWS (GRID)
+// =========================
+for (let d = 0; d < 7; d++) {
+  const day = addDays(calWeekStart, d);
+  const isToday =
+    day.toDateString() === new Date().toDateString();
+
+  const row = document.createElement("div");
+  row.className = "hourly-row";
+
+  row.innerHTML = `
+    <div class="day-label ${isToday ? "today" : ""}">
+      ${day.toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "numeric",
+        day: "numeric"
+      })}
+    </div>
+  `;
+
+  const dayKey = day.toDateString();
+  const exposedTimes = exposedByDay[dayKey] || [];
+
+  for (let h = 8; h <= 17; h++) {
+    const cell = document.createElement("div");
+    cell.className = "hourly-cell";
+
+    const cellStart = new Date(day);
+    cellStart.setHours(h, 0, 0, 0);
+
+    if (exposedTimes.includes(cellStart.getTime())) {
+      cell.classList.add("exposed");
+
+      cell.addEventListener("click", () => {
+        document
+          .querySelectorAll(".hourly-cell.exposed.selected")
+          .forEach(el => el.classList.remove("selected"));
+
+        cell.classList.add("selected");
+
+        elStart.value =
+          formatDateToDateTimeLocal(cellStart);
+
+        selectedStartISO =
+          cellStart.toISOString();
+
+        recalcEndTimePreview();
+      });
+    }
+
+    row.appendChild(cell);
+  }
+
+  hourlyCal.appendChild(row);
+}
+
 } // CLOSES loadCalendar()
 
 
