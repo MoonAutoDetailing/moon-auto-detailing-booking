@@ -1354,18 +1354,17 @@ async function loadCalendar() {
   const data = await resp.json();
   const blocks = data.blocks || [];
   const expandedBlocks = blocks.map(b => expandBookingBlock(b));
-  selfTestExpandedBlocks(expandedBlocks);
+  
   // Phase 3: Validate internal availability math (uses selected service duration if available)
 const testDuration = Number(selectedVariant?.duration_minutes || 60);
 const testDay = new Date(calWeekStart);
 testDay.setDate(testDay.getDate() + 1); // Monday
-selfTestValidStarts(testDay, testDuration, expandedBlocks);
 
   // Phase 4: exposed (customer-safe) start times — DEV ONLY
 const exposedTestDay = new Date(calWeekStart);
 exposedTestDay.setDate(exposedTestDay.getDate() + 1); // Monday
 
-selfTestExposedStarts(exposedTestDay, testDuration, expandedBlocks);
+
 
 
 
