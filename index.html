@@ -111,6 +111,23 @@ h1 {
     margin-left: auto;
     margin-right: auto;
   }
+    /* === HOURLY CALENDAR MOBILE FIX === */
+
+  #hourlyCal {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .hourly-header,
+  .hourly-row {
+    min-width: 900px; /* forces horizontal scroll instead of squish */
+  }
+
+  .booking-card {
+    overflow: hidden; /* prevent black background bleed */
+  }
 }
 
   /* Prevent overflow issues, BOX INPUT SIZES AND STYLES */
