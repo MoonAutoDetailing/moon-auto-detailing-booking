@@ -130,6 +130,9 @@ h1 {
     padding-left: 0;
     padding-right: 0;
   }
+  #calWrap::before {
+    width: 80px; /* mobile column width */
+  }
 
   .hourly-header,
   .hourly-row {
@@ -496,17 +499,20 @@ label[for="start"] {
 .day-label {
   position: sticky;
   left: 0;
+
+  width: 100px;            /* match grid column */
+  box-sizing: border-box;
+  text-align: center;
+
   z-index: 20;
 
   background: #7fb8e6;
   color: white;
 
-  padding: 4px 6px;
+  padding: 6px 0;
   border-radius: 999px;
   font-weight: 600;
   font-size: 12px;
-  text-align: center;
-  letter-spacing: 0.2px;
 }
 
 .day-label.today {
