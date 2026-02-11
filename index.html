@@ -856,16 +856,14 @@ function selfTestExposedStarts(dayDate, serviceDurationMinutes, expandedBlocks) 
 
   return valid;
 }
-    // =========================
-// PHASE 4 EXPOSED (CUSTOMER-SAFE) START TIMES
+   // =========================
+// PHASE 4: EXPOSED (CUSTOMER-SAFE) START TIMES
 // =========================
 
-// true if time is exactly on the hour
 function isOnHour(date) {
   return date.getMinutes() === 0;
 }
 
-// Returns only the start times we allow customers to see/select
 function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks) {
   const valid = getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks);
   if (valid.length === 0) return [];
@@ -876,20 +874,24 @@ function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlo
   for (let i = 0; i < valid.length; i++) {
     const start = valid[i];
 
-    // Rule 1: always expose on-the-hour starts
+    // Rule 1: always expose on-the-hour
     if (isOnHour(start)) {
       exposed.push(start);
       continue;
     }
 
-    // Rule 2: expose earliest valid start after a gap
+    // Rule 2: first valid time after a gap
     if (i === 0 || valid[i - 1].getTime() !== start.getTime() - 15 * 60 * 1000) {
       exposed.push(start);
       continue;
     }
 
-    // Rule 3: expose if skipping it would eliminate the ability to fit the job
-    const endIfSkipped = addMinutes(valid[i + 1] ?? start, serviceDurationMinutes);
+    // Rule 3: skipping would eliminate ability to fit service
+    const next = valid[i + 1];
+    const endIfSkipped = next
+      ? addMinutes(next, serviceDurationMinutes)
+      : addMinutes(start, serviceDurationMinutes);
+
     if (endIfSkipped > closeTime) {
       exposed.push(start);
     }
@@ -898,21 +900,24 @@ function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlo
   return exposed;
 }
 
-// DEV helper: log a compact summary so we can sanity-check results fast
-function selfTestValidStarts(dayDate, serviceDurationMinutes, expandedBlocks) {
+function selfTestExposedStarts(dayDate, serviceDurationMinutes, expandedBlocks) {
   if (!DEBUG) return;
 
-  const valid = getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks);
-  const preview = valid.slice(0, 10).map(d => d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }));
+  const exposed = getExposedStartTimesForDay(
+    dayDate,
+    serviceDurationMinutes,
+    expandedBlocks
+  );
 
-  log("Valid start times (preview)", {
+  console.log("Exposed start times (customer-safe)", {
     day: dayDate.toDateString(),
     duration_minutes: serviceDurationMinutes,
-    count: valid.length,
-    first10: preview
+    count: exposed.length,
+    times: exposed.map(d =>
+      d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    )
   });
 }
-
 
 
 // =========================
