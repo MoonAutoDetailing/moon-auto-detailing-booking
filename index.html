@@ -870,22 +870,66 @@ function isOnHour(date) {
 
 function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks) {
   const valid = getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks);
-  if (valid.length === 0) return [];
+  if (!valid.length) return [];
+
+  // Split valid times into continuous gaps
+  const gaps = [];
+  let currentGap = [valid[0]];
+
+  for (let i = 1; i < valid.length; i++) {
+    const prev = valid[i - 1];
+    const curr = valid[i];
+    const diffMinutes = (curr - prev) / 60000;
+
+    if (diffMinutes === SLOT_MINUTES) {
+      currentGap.push(curr);
+    } else {
+      gaps.push(currentGap);
+      currentGap = [curr];
+    }
+  }
+  gaps.push(currentGap);
 
   const exposed = [];
+  const businessClose = getBusinessCloseDate(dayDate);
 
-  for (let i = 0; i < valid.length; i++) {
-    const start = valid[i];
+  for (const gap of gaps) {
+    let best = null;
+    let bestUsableAfter = -1;
 
-    if (!passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate)) {
-      continue;
+    for (const start of gap) {
+      if (!passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate)) {
+        continue;
+      }
+
+      // candidate occupies service + travel
+      const endWithTravel = addMinutes(start, serviceDurationMinutes + TRAVEL_BUFFER_MINUTES);
+
+      // next boundary = next expanded booking start, else close
+      let nextBoundary = businessClose;
+      for (const b of expandedBlocks) {
+        if (b.start > start && b.start < nextBoundary) {
+          nextBoundary = b.start;
+        }
+      }
+
+      const remainingAfter = (nextBoundary - endWithTravel) / 60000;
+      const usableAfter = remainingAfter >= MIN_BOOKABLE_GAP_MINUTES ? remainingAfter : 0;
+
+      if (usableAfter > bestUsableAfter) {
+        bestUsableAfter = usableAfter;
+        best = start;
+      } else if (usableAfter === bestUsableAfter && best && start < best) {
+        best = start; // tie → earlier wins
+      }
     }
 
-    exposed.push(start);
+    if (best) exposed.push(best);
   }
 
   return exposed;
 }
+
 
 function selfTestExposedStarts(dayDate, serviceDurationMinutes, expandedBlocks) {
   if (!DEBUG) return;
