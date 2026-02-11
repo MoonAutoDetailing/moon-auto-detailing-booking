@@ -1329,18 +1329,28 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       renderServiceDropdown(vs);
     });
 
-    elServiceVariant.addEventListener("change", () => {
-      const id = elServiceVariant.value;
-      selectedVariant = variantsCache.find(v => v.id === id) || null;
-      if (!selectedVariant) {
-        elServiceMeta.textContent = "";
-        return;
-      }
-      const cat = selectedVariant.service?.category ?? "Unknown Category";
-      const lvl = selectedVariant.service?.level ?? "?";
-      elServiceMeta.textContent = `Selected: ${cat} Level ${lvl} — ${selectedVariant.duration_minutes} minutes (cleanup +10 and travel NOT included)`;
-      recalcEndTimePreview();
-    });
+    elServiceVariant.addEventListener("change", async () => {
+  const id = elServiceVariant.value;
+  selectedVariant = variantsCache.find(v => v.id === id) || null;
+
+  if (!selectedVariant) {
+    elServiceMeta.textContent = "";
+    await loadCalendar(); // Clear availability if no service
+    return;
+  }
+
+  const cat = selectedVariant.service?.category ?? "Unknown Category";
+  const lvl = selectedVariant.service?.level ?? "?";
+
+  elServiceMeta.textContent =
+    `Selected: ${cat} Level ${lvl} — ${selectedVariant.duration_minutes} minutes`;
+
+  recalcEndTimePreview();
+
+  // 🔥 FORCE CALENDAR REBUILD
+  await loadCalendar();
+});
+
 
     // Core booking flow (no read-after-write after inserts)
 async function hasBookingConflict(requestedStartISO, requestedEndISO) {
@@ -1611,15 +1621,6 @@ async function loadCalendar() {
     " – " +
     addDays(weekEnd, -1).toLocaleDateString();
 
-  // Header row
-  const header = document.createElement("div");
-  header.className = "hourly-header";
-  header.innerHTML = `<div></div>`;
-  for (let h = 8; h <= 17; h++) {
-    header.innerHTML += `<div>${formatHourLabel(h)}</div>`;
-  }
-  hourlyCal.appendChild(header);
-
   // Fetch confirmed bookings
   const resp = await fetch(
     `/api/list-calendar-blocks?timeMin=${calWeekStart.toISOString()}&timeMax=${weekEnd.toISOString()}`
@@ -1677,14 +1678,66 @@ exposedTestDay.setDate(exposedTestDay.getDate() + 1); // Monday
     })}
   </div>
 `;
+  // ============================
+  // EXPOSED ANCHOR RENDERING
+  // ============================
 
-    for (let h = 8; h <= 17; h++) {
-      const cell = document.createElement("div");
-cell.className = "hour-slot";
+  const dayKey = day.toDateString();
+  const exposedTimes = exposedByDay[dayKey] || [];
 
-if (isToday) {
-  cell.classList.add("today");
-}
+  const timesWrap = document.createElement("div");
+  timesWrap.className = "exposed-times-wrap";
+
+  if (!selectedVariant) {
+
+    const msg = document.createElement("div");
+    msg.className = "exposed-muted";
+    msg.textContent = "Select a service to view availability.";
+    timesWrap.appendChild(msg);
+
+  } else if (!exposedTimes.length) {
+
+    const msg = document.createElement("div");
+    msg.className = "exposed-muted";
+    msg.textContent = "Fully booked.";
+    timesWrap.appendChild(msg);
+
+  } else {
+
+    exposedTimes.forEach(ts => {
+
+      const start = new Date(ts);
+
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "exposed-slot-btn";
+
+      btn.textContent = start.toLocaleTimeString([], {
+        hour: "numeric",
+        minute: "2-digit"
+      });
+
+      btn.addEventListener("click", () => {
+
+        document
+          .querySelectorAll(".exposed-slot-btn.selected")
+          .forEach(el => el.classList.remove("selected"));
+
+        btn.classList.add("selected");
+
+        elStart.value = formatDateToDateTimeLocal(start);
+        selectedStartISO = start.toISOString();
+
+        recalcEndTimePreview();
+      });
+
+      timesWrap.appendChild(btn);
+
+    });
+  }
+
+  row.appendChild(timesWrap);
+  hourlyCal.appendChild(row);
 
       const cellStart = new Date(day);
       cellStart.setHours(h, 0, 0, 0);
@@ -1770,8 +1823,7 @@ cell.onclick = async () => {
       row.appendChild(cell);
     }
 
-    hourlyCal.appendChild(row);
-  }
+ 
 }
 
 // =========================
