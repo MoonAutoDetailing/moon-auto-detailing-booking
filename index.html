@@ -959,11 +959,14 @@ if (gapLengthMinutes > 240 && candidates.length > 1) {
   }
 
   if (closest && closest.getTime() !== candidates[0].start.getTime()) {
-    exposed.push(closest);
-  }
+  exposed.push(closest);
 }
-  return exposed;
-} // <-- closes getExposedStartTimesForDay
+
+} // closes for (const gap of gaps)
+
+return exposed;
+} // closes getExposedStartTimesForDay
+
 
 
 
