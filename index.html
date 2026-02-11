@@ -626,7 +626,6 @@ elEnd.addEventListener("paste", (e) => e.preventDefault());
     let isSubmitting = false;
     
     // Phase 5 state
-let currentExposedStarts = [];
 let selectedStartISO = null;
 
                                                                             //SWITCH CHANGES THIS DEBUG
@@ -977,38 +976,6 @@ if (!expandedBlocks.length) {
 
   return true;
 }
-
-    // =========================
-// PHASE 5 — RESOLVE EXPOSED STARTS FOR A DAY
-// =========================
-async function resolveExposedStartTimesForDay(dayDate) {
-  if (!selectedVariant?.duration_minutes) {
-    currentExposedStarts = [];
-    return;
-  }
-
-  const weekStart = new Date(dayDate);
-  weekStart.setHours(0,0,0,0);
-
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekEnd.getDate() + 1);
-
-  try {
-    const resp = await fetch(
-      `/api/list-calendar-blocks?timeMin=${weekStart.toISOString()}&timeMax=${weekEnd.toISOString()}`
-    );
-
-    const data = await resp.json();
-    const blocks = data.blocks || [];
-    const expandedBlocks = blocks.map(b => expandBookingBlock(b));
-    if (DEBUG) {
-  console.log("RAW blocks", blocks);
-  console.log("EXPANDED blocks", expandedBlocks.map(b => ({
-    start: b.start.toLocaleString(),
-    end: b.end.toLocaleString()
-  })));
-}
-
 
     const duration = Number(selectedVariant.duration_minutes);
 
@@ -1476,20 +1443,18 @@ async function loadCalendar() {
   const blocks = data.blocks || [];
   const expandedBlocks = blocks.map(b => expandBookingBlock(b));
 const exposedByDay = {};
-const dayPromises = [];
 
 for (let d = 0; d < 7; d++) {
   const day = addDays(calWeekStart, d);
 
-  dayPromises.push(
-    resolveExposedStartTimesForDay(day).then(() => {
-      exposedByDay[day.toDateString()] =
-        currentExposedStarts.map(x => x.getTime());
-    })
+  const exposed = resolveExposedStartTimesForDay(
+    day,
+    expandedBlocks
   );
-}
 
-await Promise.all(dayPromises);
+  exposedByDay[day.toDateString()] =
+    exposed.map(x => x.getTime());
+}
 
 
   //Epand blocks helper function
