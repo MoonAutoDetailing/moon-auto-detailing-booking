@@ -823,15 +823,16 @@ function getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlock
 
   for (const start of daySlots) {
     const end = addMinutes(start, serviceDurationMinutes);
+const endWithTravel = addMinutes(end, TRAVEL_BUFFER_MINUTES);
 
-    // must finish by close
-    if (end > businessClose) continue;
+// must finish service by close (travel may extend past close)
+if (end > businessClose) continue;
 
-    // must not overlap expanded booking blocks
-    const conflicts = expandedBlocks.some(b =>
-      intervalsOverlap(start, end, b.start, b.end)
-    );
-    if (conflicts) continue;
+// candidate must also reserve its travel buffer after service
+const conflicts = expandedBlocks.some(b =>
+  intervalsOverlap(start, endWithTravel, b.start, b.end)
+);
+if (conflicts) continue;
 
     valid.push(start);
   }
@@ -936,7 +937,7 @@ function selfTestExposedStarts(dayDate, serviceDurationMinutes, expandedBlocks) 
 // PHASE 4.5 — FRAGMENT FILTER
 // =========================
 function passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate) {
-  const serviceEnd = addMinutes(start, serviceDurationMinutes);
+  const serviceEnd = addMinutes(start, serviceDurationMinutes + TRAVEL_BUFFER_MINUTES);
   const businessClose = getBusinessCloseDate(dayDate);
 
   let nextBoundary = businessClose;
