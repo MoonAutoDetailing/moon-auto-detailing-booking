@@ -1358,10 +1358,10 @@ testDay.setDate(testDay.getDate() + 1); // Monday
 selfTestValidStarts(testDay, testDuration, expandedBlocks);
 
   // Phase 4: exposed (customer-safe) start times — DEV ONLY
-const testDay = new Date(calWeekStart);
-testDay.setDate(testDay.getDate() + 1); // force Monday for visibility
+const exposedTestDay = new Date(calWeekStart);
+exposedTestDay.setDate(exposedTestDay.getDate() + 1); // Monday
 
-selfTestExposedStarts(testDay, testDuration, expandedBlocks);
+selfTestExposedStarts(exposedTestDay, testDuration, expandedBlocks);
 
 
 
