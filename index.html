@@ -667,6 +667,10 @@ elEnd.addEventListener("paste", (e) => e.preventDefault());
     let variantsCache = []; // {id, vehicle_size, price, duration_minutes, service:{category,level}}
     let selectedVariant = null;
     let isSubmitting = false;
+    
+    // Phase 5 state
+let currentExposedStarts = [];
+let selectedStartISO = null;
 
                                                                             //SWITCH CHANGES THIS DEBUG
     function log(message, obj) {
@@ -916,6 +920,56 @@ function selfTestExposedStarts(dayDate, serviceDurationMinutes, expandedBlocks) 
     )
   });
 }
+    // =========================
+// PHASE 5 — RESOLVE EXPOSED STARTS FOR A DAY
+// =========================
+async function resolveExposedStartTimesForDay(dayDate) {
+  if (!selectedVariant?.duration_minutes) {
+    currentExposedStarts = [];
+    return;
+  }
+
+  const weekStart = new Date(dayDate);
+  weekStart.setHours(0,0,0,0);
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekEnd.getDate() + 1);
+
+  try {
+    const resp = await fetch(
+      `/api/list-calendar-blocks?timeMin=${weekStart.toISOString()}&timeMax=${weekEnd.toISOString()}`
+    );
+
+    const data = await resp.json();
+    const blocks = data.blocks || [];
+    const expandedBlocks = blocks.map(b => expandBookingBlock(b));
+
+    const duration = Number(selectedVariant.duration_minutes);
+
+    const exposed = getExposedStartTimesForDay(
+      dayDate,
+      duration,
+      expandedBlocks
+    );
+
+    currentExposedStarts = exposed;
+
+    if (DEBUG) {
+      console.log("Phase 5 resolved exposed starts", {
+        date: dayDate.toDateString(),
+        count: exposed.length,
+        times: exposed.map(d =>
+          d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+        )
+      });
+    }
+
+  } catch (err) {
+    console.error("Failed to resolve exposed times", err);
+    currentExposedStarts = [];
+  }
+}
+
 
 
 // =========================
@@ -1419,10 +1473,29 @@ if (isToday) {
         cell.classList.add("booked");
         cell.innerHTML = `<span>BOOKED</span>`;
       } else {
-        cell.onclick = () => {
-          elStart.value = formatDateToDateTimeLocal(cellStart);
-          recalcEndTimePreview();
-        };
+       cell.onclick = async () => {
+  if (!selectedVariant) {
+    setStatus("bad", "Please select a service first.");
+    return;
+  }
+
+  await resolveExposedStartTimesForDay(day);
+
+  if (!currentExposedStarts.length) {
+    setStatus("bad", "No available start times for this day.");
+    return;
+  }
+
+  // Auto-select first valid exposed start
+  const first = currentExposedStarts[0];
+
+  elStart.value = formatDateToDateTimeLocal(first);
+  selectedStartISO = first.toISOString();
+
+  recalcEndTimePreview();
+  setStatus("muted", "");
+};
+
       }
 
       row.appendChild(cell);
