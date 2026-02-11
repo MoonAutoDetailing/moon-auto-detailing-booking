@@ -1650,17 +1650,22 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
 
     if (minute === 0) {
       cell.classList.add("exposed");
-    } else {
-      const bubble = document.createElement("div");
-      bubble.style.width = "10px";
-      bubble.style.height = "10px";
-      bubble.style.background = "rgba(34,197,94,0.85)";
-      bubble.style.borderRadius = "50%";
-      bubble.style.position = "absolute";
-      bubble.style.bottom = "6px";
-      bubble.style.right = "6px";
-      cell.style.position = "relative";
-      cell.appendChild(bubble);
+
+const quarterWidth = 100 / 4; // 4 x 15-min blocks per hour
+const offset = (minute / 15) * quarterWidth;
+
+cell.style.position = "relative";
+
+const block = document.createElement("div");
+block.style.position = "absolute";
+block.style.left = `${offset}%`;
+block.style.width = `${quarterWidth}%`;
+block.style.height = "100%";
+block.style.borderRadius = "999px";
+block.style.background = "rgba(34,197,94,0.75)";
+block.style.pointerEvents = "none";
+
+cell.appendChild(block);
     }
 
     cell.addEventListener("click", () => {
