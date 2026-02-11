@@ -792,7 +792,7 @@ function expandBookingBlock(block, bufferMinutes = TRAVEL_BUFFER_MINUTES) {
 }
 
   // =========================
-// PHASE 3: VALID START TIMES (INTERNAL)
+// VALID START TIMES (INTERNAL)
 // =========================
 
 function isAllowedWeekday(date) {
@@ -812,6 +812,64 @@ function getBusinessCloseDate(dayDate) {
 // - must not overlap any expanded booking block (booking + travel buffer)
 function getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks) {
   if (!Number.isFinite(serviceDurationMinutes) || serviceDurationMinutes <= 0) return [];
+
+  // =========================
+// EXPOSED (CUSTOMER-SAFE) START TIMES
+// =========================
+
+// true if time is exactly on the hour
+function isOnHour(date) {
+  return date.getMinutes() === 0;
+}
+
+// Returns only the start times we allow customers to see/select
+function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks) {
+  const valid = getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks);
+  if (valid.length === 0) return [];
+
+  const exposed = [];
+  const closeTime = getBusinessCloseDate(dayDate);
+
+  for (let i = 0; i < valid.length; i++) {
+    const start = valid[i];
+
+    // Rule 1: always expose on-the-hour starts
+    if (isOnHour(start)) {
+      exposed.push(start);
+      continue;
+    }
+
+    // Rule 2: expose earliest valid start after a gap
+    if (i === 0 || valid[i - 1].getTime() !== start.getTime() - 15 * 60 * 1000) {
+      exposed.push(start);
+      continue;
+    }
+
+    // Rule 3: expose if skipping it would eliminate the ability to fit the job
+    const endIfSkipped = addMinutes(valid[i + 1] ?? start, serviceDurationMinutes);
+    if (endIfSkipped > closeTime) {
+      exposed.push(start);
+    }
+  }
+
+  return exposed;
+}
+  //SELF TEST ADMIN ONLY 
+function selfTestExposedStarts(dayDate, serviceDurationMinutes, expandedBlocks) {
+  if (!DEBUG) return;
+
+  const exposed = getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks);
+
+  log("Exposed start times (customer-safe)", {
+    day: dayDate.toDateString(),
+    duration_minutes: serviceDurationMinutes,
+    count: exposed.length,
+    times: exposed.map(d =>
+      d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    )
+  });
+}
+
 
   // weekday gate
   if (!isAllowedWeekday(dayDate)) return [];
@@ -1293,9 +1351,18 @@ async function loadCalendar() {
   const blocks = data.blocks || [];
   const expandedBlocks = blocks.map(b => expandBookingBlock(b));
   selfTestExpandedBlocks(expandedBlocks);
-  // Validate internal availability math (uses selected service duration if available)
+  // Phase 3: Validate internal availability math (uses selected service duration if available)
 const testDuration = Number(selectedVariant?.duration_minutes || 60);
-selfTestValidStarts(calWeekStart, testDuration, expandedBlocks);
+const testDay = new Date(calWeekStart);
+testDay.setDate(testDay.getDate() + 1); // Monday
+selfTestValidStarts(testDay, testDuration, expandedBlocks);
+
+  // Phase 4: exposed (customer-safe) start times — DEV ONLY
+const testDay = new Date(calWeekStart);
+testDay.setDate(testDay.getDate() + 1); // force Monday for visibility
+
+selfTestExposedStarts(testDay, testDuration, expandedBlocks);
+
 
 
   //Epand blocks helper function
