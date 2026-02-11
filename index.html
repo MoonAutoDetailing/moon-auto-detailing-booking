@@ -422,8 +422,12 @@ label[for="start"] {
     .hourly-header div:first-child {
   position: sticky;
   left: 0;
-  background: white;
-  z-index: 6;
+  background: #ffffff;
+  z-index: 25;
+}
+.hourly-cell {
+  position: relative;
+  z-index: 1;
 }
 
 .hourly-cell {
@@ -456,15 +460,33 @@ label[for="start"] {
 }
 
 .day-label {
-  background: #7fb8e6;
-  color: white;
+  position: sticky;
+  left: 0;
+  z-index: 20;
+
+  background: #ffffff;          /* solid layer */
+  color: #111;
+
   padding: 4px 6px;
-  border-radius: 999px;
   font-weight: 600;
   font-size: 12px;
   text-align: center;
   letter-spacing: 0.2px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+.day-label::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(0,0,0,0.08);
+}
+
     .day-label {
   position: sticky;
   left: 0;
