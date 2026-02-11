@@ -444,7 +444,6 @@ label[for="start"] {
   text-align: center;
 }
 
-.nav-btn,
 .today-btn {
   background: #7fb8e6;
   border: none;
@@ -458,15 +457,23 @@ label[for="start"] {
 }
 
 .nav-btn {
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  font-size: 16px;
+  background: none;
+  border: none;
+  font-size: 18px;
+  font-weight: 600;
+  color: #7fb8e6;
+  cursor: pointer;
+  padding: 4px 8px;
 }
 
 .nav-btn:hover,
 .today-btn:hover {
   background: #6aaee2;
+}
+    #calLabel {
+  font-weight: 600;
+  color: #7fb8e6;
+  font-size: 15px;
 }
 
 
@@ -640,7 +647,7 @@ label[for="start"] {
         <input id="start" type="datetime-local" required />
       </div>
       <div>
-        <label for="end">Scheduled End Time</label>
+        <label for="end" style="color:#7fb8e6;">Scheduled End Time</label>
        <input id="end" type="datetime-local" readonly />
       </div>
     </div>
@@ -1543,13 +1550,20 @@ calLabel.textContent = `${monthName} ${start.getDate()}–${end.getDate()}`;
   // =========================
   // FETCH BOOKING BLOCKS
   // =========================
+  let blocks = [];
+
+try {
   const resp = await fetch(
     `/api/list-calendar-blocks?timeMin=${calWeekStart.toISOString()}&timeMax=${weekEnd.toISOString()}`
   );
 
-  const data = await resp.json();
-  const blocks = data.blocks || [];
-  const expandedBlocks = blocks.map(b => expandBookingBlock(b));
+  if (resp.ok) {
+    const data = await resp.json();
+    blocks = data.blocks || [];
+  }
+} catch (e) {
+  console.error("Calendar fetch failed:", e);
+}
 
   // =========================
   // BUILD EXPOSED START MAP
