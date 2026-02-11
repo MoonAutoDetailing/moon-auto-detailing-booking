@@ -1442,6 +1442,28 @@ exposedTestDay.setDate(exposedTestDay.getDate() + 1); // Monday
     const row = document.createElement("div");
     row.className = "hourly-row";
 
+    row.onclick = async () => {
+  if (!selectedVariant) {
+    setStatus("bad", "Please select a service first.");
+    return;
+  }
+
+  await resolveExposedStartTimesForDay(day);
+
+  if (!currentExposedStarts.length) {
+    setStatus("bad", "No available start times for this day.");
+    return;
+  }
+
+  const first = currentExposedStarts[0];
+  elStart.value = formatDateToDateTimeLocal(first);
+  selectedStartISO = first.toISOString();
+
+  recalcEndTimePreview();
+  setStatus("muted", "");
+};
+
+
     row.innerHTML = `
   <div class="day-label ${isToday ? "today" : ""}">
     ${day.toLocaleDateString(undefined, {
@@ -1472,32 +1494,12 @@ if (isToday) {
       if (booked) {
         cell.classList.add("booked");
         cell.innerHTML = `<span>BOOKED</span>`;
+        
       } else {
-       cell.onclick = async () => {
-  if (!selectedVariant) {
-    setStatus("bad", "Please select a service first.");
-    return;
-  }
-
-  await resolveExposedStartTimesForDay(day);
-
-  if (!currentExposedStarts.length) {
-    setStatus("bad", "No available start times for this day.");
-    return;
-  }
-
-  // Auto-select first valid exposed start
-  const first = currentExposedStarts[0];
-
-  elStart.value = formatDateToDateTimeLocal(first);
-  selectedStartISO = first.toISOString();
-
-  recalcEndTimePreview();
-  setStatus("muted", "");
-};
-
-      }
-
+  cell.onclick = (e) => {
+    e.stopPropagation(); // Prevent cell from overriding row click
+  };
+}
       row.appendChild(cell);
     }
 
