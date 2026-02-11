@@ -873,23 +873,20 @@ function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlo
   if (valid.length === 0) return [];
 
   const exposed = [];
-  const closeTime = getBusinessCloseDate(dayDate);
 
   for (let i = 0; i < valid.length; i++) {
-  const start = valid[i];
+    const start = valid[i];
 
-  const isNewGap =
-    i === 0 ||
-    valid[i - 1].getTime() !== start.getTime() - SLOT_MINUTES * 60000;
+    if (!passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate)) {
+      continue;
+    }
 
-  if (!isNewGap) continue;
-
-  if (!passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate)) {
-    continue;
+    exposed.push(start);
   }
 
-  exposed.push(start);
+  return exposed;
 }
+
 
 
 
