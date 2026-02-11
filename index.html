@@ -791,7 +791,7 @@ function expandBookingBlock(block, bufferMinutes = TRAVEL_BUFFER_MINUTES) {
   return { start, end };
 }
 
-  // =========================
+ // =========================
 // PHASE 3 VALID START TIMES (INTERNAL)
 // =========================
 
@@ -806,15 +806,36 @@ function getBusinessCloseDate(dayDate) {
 }
 
 // Returns array of Date start times that are internally valid (15-min aligned)
-// Rules:
-// - must be weekday allowed
-// - must end by business close
-// - must not overlap any expanded booking block (booking + travel buffer)
 function getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks) {
   if (!Number.isFinite(serviceDurationMinutes) || serviceDurationMinutes <= 0) return [];
-   return valid;
+
+  // weekday gate
+  if (!isAllowedWeekday(dayDate)) return [];
+
+  const daySlots = generateSlotsForDay(dayDate);
+  const businessClose = getBusinessCloseDate(dayDate);
+  const valid = [];
+
+  for (const start of daySlots) {
+    const end = addMinutes(start, serviceDurationMinutes);
+
+    // must finish by close
+    if (end > businessClose) continue;
+
+    // must not overlap expanded booking blocks
+    const conflicts = expandedBlocks.some(b =>
+      intervalsOverlap(start, end, b.start, b.end)
+    );
+    if (conflicts) continue;
+
+    valid.push(start);
+  }
+
+  return valid;
 }
-    function selfTestValidStarts(dayDate, serviceDurationMinutes, expandedBlocks) {
+
+// DEV-ONLY SELF TEST
+function selfTestValidStarts(dayDate, serviceDurationMinutes, expandedBlocks) {
   if (!DEBUG) return;
 
   const valid = getValidStartTimesForDay(
@@ -833,34 +854,6 @@ function getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlock
   });
 }
 
-
-  
-
-  // weekday gate
-  if (!isAllowedWeekday(dayDate)) return [];
-
-  const daySlots = generateSlotsForDay(dayDate);
-  const businessClose = getBusinessCloseDate(dayDate);
-
-  const valid = [];
-
-  for (const start of daySlots) {
-    const end = addMinutes(start, serviceDurationMinutes);
-
-    // service must complete by close hour
-    if (end > businessClose) continue;
-
-    // must not overlap any expanded block
-    const conflicts = expandedBlocks.some(b =>
-      intervalsOverlap(start, end, b.start, b.end)
-    );
-    if (conflicts) continue;
-
-    valid.push(start);
-  }
-
-  return valid;
-}
    // =========================
 // PHASE 4: EXPOSED (CUSTOMER-SAFE) START TIMES
 // =========================
