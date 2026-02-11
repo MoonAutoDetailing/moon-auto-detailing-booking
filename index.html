@@ -1631,16 +1631,36 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
       return d >= hourStart && d < hourEnd;
     });
 
-  const hourHasBooking = expandedBlocks.some(b =>
-    hourStart < b.end && hourEnd > b.start
-  );
+  cell.style.position = "relative";
 
-  const cell = document.createElement("div");
-  cell.className = "hourly-cell";
+for (const b of expandedBlocks) {
 
-  if (hourHasBooking) {
-    cell.classList.add("booked");
+  if (hourStart < b.end && hourEnd > b.start) {
+
+    const overlapStart = new Date(Math.max(hourStart, b.start));
+    const overlapEnd = new Date(Math.min(hourEnd, b.end));
+
+    const overlapMinutes =
+      (overlapEnd - overlapStart) / 60000;
+
+    const startMinuteOffset =
+      (overlapStart - hourStart) / 60000;
+
+    const percentLeft = (startMinuteOffset / 60) * 100;
+    const percentWidth = (overlapMinutes / 60) * 100;
+
+    const redBlock = document.createElement("div");
+    redBlock.style.position = "absolute";
+    redBlock.style.left = `${percentLeft}%`;
+    redBlock.style.width = `${percentWidth}%`;
+    redBlock.style.height = "100%";
+    redBlock.style.borderRadius = "999px";
+    redBlock.style.background = "#e44b4b";
+    redBlock.style.pointerEvents = "none";
+
+    cell.appendChild(redBlock);
   }
+}
 
   for (const t of exposedInThisHour) {
 
