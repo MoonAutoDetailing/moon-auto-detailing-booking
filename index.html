@@ -792,7 +792,7 @@ function expandBookingBlock(block, bufferMinutes = TRAVEL_BUFFER_MINUTES) {
 }
 
   // =========================
-// VALID START TIMES (INTERNAL)
+// PHASE 3 VALID START TIMES (INTERNAL)
 // =========================
 
 function isAllowedWeekday(date) {
@@ -813,47 +813,7 @@ function getBusinessCloseDate(dayDate) {
 function getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks) {
   if (!Number.isFinite(serviceDurationMinutes) || serviceDurationMinutes <= 0) return [];
 
-  // =========================
-// EXPOSED (CUSTOMER-SAFE) START TIMES
-// =========================
-
-// true if time is exactly on the hour
-function isOnHour(date) {
-  return date.getMinutes() === 0;
-}
-
-// Returns only the start times we allow customers to see/select
-function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks) {
-  const valid = getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks);
-  if (valid.length === 0) return [];
-
-  const exposed = [];
-  const closeTime = getBusinessCloseDate(dayDate);
-
-  for (let i = 0; i < valid.length; i++) {
-    const start = valid[i];
-
-    // Rule 1: always expose on-the-hour starts
-    if (isOnHour(start)) {
-      exposed.push(start);
-      continue;
-    }
-
-    // Rule 2: expose earliest valid start after a gap
-    if (i === 0 || valid[i - 1].getTime() !== start.getTime() - 15 * 60 * 1000) {
-      exposed.push(start);
-      continue;
-    }
-
-    // Rule 3: expose if skipping it would eliminate the ability to fit the job
-    const endIfSkipped = addMinutes(valid[i + 1] ?? start, serviceDurationMinutes);
-    if (endIfSkipped > closeTime) {
-      exposed.push(start);
-    }
-  }
-
-  return exposed;
-}
+  
   //SELF TEST ADMIN ONLY 
 function selfTestExposedStarts(dayDate, serviceDurationMinutes, expandedBlocks) {
   if (!DEBUG) return;
@@ -895,6 +855,47 @@ function selfTestExposedStarts(dayDate, serviceDurationMinutes, expandedBlocks) 
   }
 
   return valid;
+}
+    // =========================
+// PHASE 4 EXPOSED (CUSTOMER-SAFE) START TIMES
+// =========================
+
+// true if time is exactly on the hour
+function isOnHour(date) {
+  return date.getMinutes() === 0;
+}
+
+// Returns only the start times we allow customers to see/select
+function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks) {
+  const valid = getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks);
+  if (valid.length === 0) return [];
+
+  const exposed = [];
+  const closeTime = getBusinessCloseDate(dayDate);
+
+  for (let i = 0; i < valid.length; i++) {
+    const start = valid[i];
+
+    // Rule 1: always expose on-the-hour starts
+    if (isOnHour(start)) {
+      exposed.push(start);
+      continue;
+    }
+
+    // Rule 2: expose earliest valid start after a gap
+    if (i === 0 || valid[i - 1].getTime() !== start.getTime() - 15 * 60 * 1000) {
+      exposed.push(start);
+      continue;
+    }
+
+    // Rule 3: expose if skipping it would eliminate the ability to fit the job
+    const endIfSkipped = addMinutes(valid[i + 1] ?? start, serviceDurationMinutes);
+    if (endIfSkipped > closeTime) {
+      exposed.push(start);
+    }
+  }
+
+  return exposed;
 }
 
 // DEV helper: log a compact summary so we can sanity-check results fast
