@@ -95,9 +95,12 @@ h1 {
 
   /* Reduce card padding */
   .booking-card {
-    border-radius: 0;
-    padding: 20px;
-  }
+  border-radius: 0;
+  padding-left: 0;
+  padding-right: 0;
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
 
   /* Datetime inputs stay centered */
   input[type="datetime-local"] {
@@ -114,15 +117,16 @@ h1 {
     /* === HOURLY CALENDAR MOBILE FIX === */
 
   #hourlyCal {
-    width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-  }
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
 
   .hourly-header,
 .hourly-row {
-  grid-template-columns: 50px repeat(10, 1fr);
+  grid-template-columns: 5px repeat(10, 1fr);
 }
 
 
@@ -138,11 +142,11 @@ h1 {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
-  #hourlyCal {
-  margin-left: -20px;
-  margin-right: -20px;
-  padding-left: 20px;
-  padding-right: 20px;
+  .day-label {
+  left: 0;
+  margin-left: 0;
+  padding-left: 2px;
+  padding-right: 2px;
 }
   
 }
