@@ -487,7 +487,7 @@ label[for="start"] {
   100% { transform: scale(1); }
 }
 
-.hourly-cell.exposed {
+    .green-slot-pill {
   animation: pulse 1.6s ease-in-out infinite;
 }
 
@@ -1652,9 +1652,21 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
 const quarterWidth = 100 / 4;
 const sliceLeft = (minute / 15) * quarterWidth;
 
-// center pill inside its 15-min slice
-const pillWidthPercent = quarterWidth * 0.65;
-const pillOffsetPercent = sliceLeft + (quarterWidth - pillWidthPercent) / 2;
+cell.style.position = "relative";
+
+const block = document.createElement("div");
+block.className = "green-slot-pill"; // IMPORTANT (we'll use this for pulse)
+block.style.position = "absolute";
+block.style.left = `${sliceLeft}%`;
+block.style.width = `${quarterWidth}%`;
+block.style.height = "70%";
+block.style.top = "15%";
+block.style.borderRadius = "999px";
+block.style.background = "rgba(34,197,94,0.85)";
+block.style.pointerEvents = "none";
+
+cell.appendChild(block);
+
 
 cell.style.position = "relative";
 
