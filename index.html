@@ -404,6 +404,20 @@ label[for="start"] {
     /* =====================
    HOURLY GRID CALENDAR
    ===================== */
+#hourlyCal {
+  position: relative;
+}
+    #hourlyCal::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100px; /* MUST MATCH grid first column */
+  height: 100%;
+  background: #ffffff;
+  z-index: 2;
+  pointer-events: none;
+}
 
 .hourly-header,
 .hourly-row {
@@ -422,12 +436,12 @@ label[for="start"] {
     .hourly-header div:first-child {
   position: sticky;
   left: 0;
-  background: #ffffff;
-  z-index: 25;
+  background: white;
+  z-index: 6;
 }
+
 .hourly-cell {
   position: relative;
-  z-index: 1;
 }
 
 .hourly-cell {
@@ -462,35 +476,17 @@ label[for="start"] {
 .day-label {
   position: sticky;
   left: 0;
-  z-index: 20;
+  z-index: 5;
 
-  background: #ffffff;          /* solid layer */
-  color: #111;
+  background: #7fb8e6;
+  color: white;
 
   padding: 4px 6px;
+  border-radius: 999px;
   font-weight: 600;
   font-size: 12px;
   text-align: center;
   letter-spacing: 0.2px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.day-label::after {
-  content: "";
-  position: absolute;
-  right: -1px;
-  top: 0;
-  bottom: 0;
-  width: 1px;
-  background: rgba(0,0,0,0.08);
-}
-
-    .day-label {
-  position: sticky;
-  left: 0;
-  z-index: 5;
 }
 
 .day-label.today {
