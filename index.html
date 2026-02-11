@@ -122,7 +122,7 @@ h1 {
 
   .hourly-header,
 .hourly-row {
-  grid-template-columns: 60px repeat(10, 1fr);
+  grid-template-columns: 50px repeat(10, 1fr);
 }
 
 
@@ -137,6 +137,12 @@ h1 {
   #hourlyCal {
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
+}
+  #hourlyCal {
+  margin-left: -20px;
+  margin-right: -20px;
+  padding-left: 20px;
+  padding-right: 20px;
 }
   
 }
@@ -398,7 +404,7 @@ label[for="start"] {
 .hourly-header,
 .hourly-row {
   display: grid;
-  grid-template-columns: 160px repeat(10, 1fr);
+  grid-template-columns: 100px repeat(10, 1fr);
   align-items: center;
   gap: 10px;
 }
@@ -448,11 +454,12 @@ label[for="start"] {
 .day-label {
   background: #7fb8e6;
   color: white;
-  padding: 6px 10px;
+  padding: 4px 6px;
   border-radius: 999px;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
   text-align: center;
+  letter-spacing: 0.2px;
 }
     .day-label {
   position: sticky;
