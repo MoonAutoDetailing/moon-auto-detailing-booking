@@ -1561,6 +1561,7 @@ try {
     const data = await resp.json();
     blocks = data.blocks || [];
   }
+  const expandedBlocks = blocks.map(b => expandBookingBlock(b));
 } catch (e) {
   console.error("Calendar fetch failed:", e);
 }
@@ -1627,10 +1628,27 @@ try {
       );
 
       if (isBooked) {
+
   cell.classList.add("booked");
+
+} else if (exposedSet.has(cellStart.getTime())) {
+
+  cell.classList.add("exposed");
+
+  cell.addEventListener("click", () => {
+
+    document
+      .querySelectorAll(".hourly-cell.exposed.selected")
+      .forEach(el => el.classList.remove("selected"));
+
+    cell.classList.add("selected");
+
+    elStart.value = formatDateToDateTimeLocal(cellStart);
+    selectedStartISO = cellStart.toISOString();
+    recalcEndTimePreview();
+  });
 }
 
-      } else if (exposedSet.has(cellStart.getTime())) {
 
         cell.classList.add("exposed");
 
