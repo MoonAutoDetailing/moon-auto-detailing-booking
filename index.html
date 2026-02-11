@@ -626,7 +626,7 @@ const BUSINESS_RULES = {
 // =========================
 const SLOT_MINUTES = 15;              // internal resolution
 const TRAVEL_BUFFER_MINUTES = 30;     // fixed heuristic travel buffer
-const MIN_BOOKABLE_GAP_MINUTES = 120; // anti-fragment rule (2 hours)
+const MIN_BOOKABLE_GAP_MINUTES = 60; // anti-fragment rule (2 hours)
 
     
     const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
@@ -876,25 +876,21 @@ function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlo
   const closeTime = getBusinessCloseDate(dayDate);
 
   for (let i = 0; i < valid.length; i++) {
-    const start = valid[i];
+  const start = valid[i];
 
-    // Rule 1: always expose on-the-hour
-    if (isOnHour(start)) {
+  const isNewGap =
+    i === 0 ||
+    valid[i - 1].getTime() !== start.getTime() - SLOT_MINUTES * 60000;
+
+  if (!isNewGap) continue;
+
   if (!passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate)) {
     continue;
   }
+
   exposed.push(start);
-  continue;
 }
 
-    // Rule 2: first valid time after a gap
-    if (i === 0 || valid[i - 1].getTime() !== start.getTime() - 15 * 60 * 1000) {
-  if (!passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate)) {
-    continue;
-  }
-  exposed.push(start);
-  continue;
-}
 
 
     // Rule 3: skipping would eliminate ability to fit service
