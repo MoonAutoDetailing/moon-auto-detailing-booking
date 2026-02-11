@@ -1626,22 +1626,17 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
         return d >= hourStart && d < hourEnd;
       });
 
-    const nonHourExposed = exposedInThisHour.find(t => {
-      return new Date(t).getMinutes() !== 0;
-    });
-
     // Determine if this hour needs 15-min resolution
-const hourHasBooking = expandedBlocks.some(b =>
-  hourStart < b.end && hourEnd > b.start
-);
-
 const hourHasNonHourExposure = exposedInThisHour.some(t => {
   return new Date(t).getMinutes() !== 0;
 });
 
+const hourHasBooking = expandedBlocks.some(b =>
+  hourStart < b.end && hourEnd > b.start
+);
+
 if (hourHasNonHourExposure) {
 
-  // Render 15-min internal grid
   for (let m = 0; m < 60; m += SLOT_MINUTES) {
 
     const cellStart = new Date(day);
@@ -1657,13 +1652,11 @@ if (hourHasNonHourExposure) {
 
     if (isBooked) {
       cell.classList.add("booked");
-
     } else if (exposedSet.has(cellStart.getTime())) {
 
       cell.classList.add("exposed");
 
       cell.addEventListener("click", () => {
-
         document
           .querySelectorAll(".hourly-cell.exposed.selected")
           .forEach(el => el.classList.remove("selected"));
@@ -1680,6 +1673,33 @@ if (hourHasNonHourExposure) {
   }
 
 } else {
+
+  const cell = document.createElement("div");
+  cell.className = "hourly-cell";
+
+  if (hourHasBooking) {
+    cell.classList.add("booked");
+
+  } else if (exposedSet.has(hourStart.getTime())) {
+
+    cell.classList.add("exposed");
+
+    cell.addEventListener("click", () => {
+      document
+        .querySelectorAll(".hourly-cell.exposed.selected")
+        .forEach(el => el.classList.remove("selected"));
+
+      cell.classList.add("selected");
+
+      elStart.value = formatDateToDateTimeLocal(hourStart);
+      selectedStartISO = hourStart.toISOString();
+      recalcEndTimePreview();
+    });
+  }
+
+  row.appendChild(cell);
+}
+
 
   // Render normal 60-min cell
   const cell = document.createElement("div");
