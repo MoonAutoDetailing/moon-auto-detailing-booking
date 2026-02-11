@@ -131,6 +131,9 @@ h1 {
 #hourlyCal::before {
   width: 80px;
 }
+  #calWrap::before {
+  width: 80px;
+}
 
   .hourly-header,
   .hourly-row {
@@ -406,20 +409,23 @@ label[for="start"] {
     /* =====================
    HOURLY GRID CALENDAR
    ===================== */
-#hourlyCal {
+#calWrap {
   position: relative;
 }
-    #hourlyCal::before {
+
+#calWrap::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
-  width: 100px; /* must match first grid column width */
+  width: 100px; /* desktop */
   height: 100%;
-  background: #ffffff;
-  z-index: 4; /* below pills, above grid cells */
+  background: linear-gradient(to bottom, #ffffff, #f9fbff);
+  box-shadow: 4px 0 8px rgba(0,0,0,0.08);
+  z-index: 5;
   pointer-events: none;
 }
+
 
 .hourly-header,
 .hourly-row {
