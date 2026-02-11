@@ -1626,7 +1626,9 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
   hourEnd.setHours(hourEnd.getHours() + 1);
       const cell = document.createElement("div");
   cell.className = "hourly-cell";
-
+    // Track blocks created in THIS cell so we can adjust connected corners
+const redBlocksInCell = [];
+const greenBlocksInCell = [];
 
   const exposedInThisHour = (exposedByDay[dayKey] || [])
     .filter(t => {
@@ -1657,11 +1659,12 @@ for (const b of expandedBlocks) {
     redBlock.style.left = `${percentLeft}%`;
     redBlock.style.width = `${percentWidth}%`;
     redBlock.style.height = "100%";
-    redBlock.style.borderRadius = "999px";
+    redBlock.style.borderRadius = "999px"; // keep for now
     redBlock.style.background = "#e44b4b";
     redBlock.style.pointerEvents = "none";
 
     cell.appendChild(redBlock);
+    redBlocksInCell.push(redBlock);
   }
 }
 
@@ -1689,7 +1692,7 @@ block.style.background = "rgba(34,197,94,0.85)";
 block.style.pointerEvents = "none";
 
 cell.appendChild(block);
-
+    greenBlocksInCell.push(block);
 
     cell.addEventListener("click", () => {
       document
@@ -1702,6 +1705,40 @@ cell.appendChild(block);
       recalcEndTimePreview();
     });
   }
+// -----------------------------
+// CONNECT ADJACENT BLOCK EDGES
+// If a red block ends exactly where a green block begins (or vice versa),
+// flatten ONLY the touching corners.
+// -----------------------------
+const EPS = 0.5; // tolerance in percent units
+
+for (const red of redBlocksInCell) {
+  const redLeft = parseFloat(red.style.left) || 0;
+  const redWidth = parseFloat(red.style.width) || 0;
+  const redRight = redLeft + redWidth;
+
+  for (const green of greenBlocksInCell) {
+    const greenLeft = parseFloat(green.style.left) || 0;
+    const greenWidth = parseFloat(green.style.width) || 0;
+    const greenRight = greenLeft + greenWidth;
+
+    // red RIGHT touches green LEFT
+    if (Math.abs(redRight - greenLeft) < EPS) {
+      red.style.borderTopRightRadius = "0px";
+      red.style.borderBottomRightRadius = "0px";
+      green.style.borderTopLeftRadius = "0px";
+      green.style.borderBottomLeftRadius = "0px";
+    }
+
+    // green RIGHT touches red LEFT (covers the opposite ordering too)
+    if (Math.abs(greenRight - redLeft) < EPS) {
+      green.style.borderTopRightRadius = "0px";
+      green.style.borderBottomRightRadius = "0px";
+      red.style.borderTopLeftRadius = "0px";
+      red.style.borderBottomLeftRadius = "0px";
+    }
+  }
+}
 
   row.appendChild(cell);
 }
