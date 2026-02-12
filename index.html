@@ -1168,6 +1168,10 @@ function getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlock
   const valid = [];
 
   for (const start of daySlots) {
+    const now = new Date();
+
+if (start < now) continue;
+
     const end = addMinutes(start, serviceDurationMinutes);
 const endWithTravel = addMinutes(end, TRAVEL_BUFFER_MINUTES);
 
@@ -1629,6 +1633,11 @@ isSubmitting = true;
 const startLocal = parseDateTimeLocalToDate(
   requireNonEmpty("Scheduled start", elStart.value)
 );
+        const now = new Date();
+if (startLocal < now) {
+  throw new Error("You cannot book a time in the past.");
+}
+
 
 const durationMinutes = Number(selectedVariant?.duration_minutes);
 if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
