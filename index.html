@@ -1812,7 +1812,10 @@ try {
 }
 
 // 👇 MUST be outside try block
-const expandedBlocks = blocks.map(b => expandBookingBlock(b));
+const expandedBlocks = blocks.map(b => ({
+  start: new Date(b.start),
+  end: new Date(b.end)
+}));
 
 // =========================
 // RED BLOCK ADJACENCY MAPS (PER DAY)
