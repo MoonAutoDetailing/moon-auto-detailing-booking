@@ -579,16 +579,16 @@ label[for="start"] {
 .calendar-toolbar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 14px;
-  margin-bottom: 18px;
+  justify-content: space-between;
+  margin-bottom: 10px;
 }
+
 
 .cal-label {
   font-weight: 700;
-  font-size: 18px;
+  font-size: 16px;
   color: #7fb8e6;
-  min-width: 180px;
+  flex: 1;
   text-align: center;
 }
 
@@ -597,21 +597,23 @@ label[for="start"] {
   border: none;
   color: white;
   border-radius: 999px;
+  font-size: 11px;
   font-weight: 600;
+  padding: 4px 10px;
   cursor: pointer;
-  padding: 6px 14px;
-  font-size: 14px;
   box-shadow: 0 4px 10px rgba(127, 184, 230, 0.35);
 }
 
 .nav-btn {
-  background: none;
+  background: #7fb8e6;
   border: none;
-  font-size: 18px;
+  color: white;
+  border-radius: 999px;
+  font-size: 12px;
   font-weight: 600;
-  color: #7fb8e6;
+  padding: 4px 10px;
   cursor: pointer;
-  padding: 4px 8px;
+  box-shadow: 0 4px 10px rgba(127, 184, 230, 0.35);
 }
 
 .nav-btn:hover,
@@ -1831,7 +1833,28 @@ redBlock.style.position = "absolute";
 redBlock.style.top = `${percentTop}%`;
 redBlock.style.height = `${percentHeight}%`;
 redBlock.style.width = "100%";
-          redBlock.style.borderRadius = "999px";
+          // Default full rounding
+let borderTopLeft = "999px";
+let borderTopRight = "999px";
+let borderBottomLeft = "999px";
+let borderBottomRight = "999px";
+
+// If block touches top of cell, flatten top
+if (percentTop === 0) {
+  borderTopLeft = "0px";
+  borderTopRight = "0px";
+}
+
+// If block touches bottom of cell, flatten bottom
+if (percentTop + percentHeight === 100) {
+  borderBottomLeft = "0px";
+  borderBottomRight = "0px";
+}
+
+redBlock.style.borderTopLeftRadius = borderTopLeft;
+redBlock.style.borderTopRightRadius = borderTopRight;
+redBlock.style.borderBottomLeftRadius = borderBottomLeft;
+redBlock.style.borderBottomRightRadius = borderBottomRight;
           redBlock.style.background = "#e44b4b";
           redBlock.style.pointerEvents = "none";
 
