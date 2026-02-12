@@ -125,9 +125,7 @@ h1 {
 .hourly-row {
   grid-template-columns: 80px repeat(10, 1fr);
 }
-  #hourlyCal::before {
-  width: 80px;
-}
+ 
   #calWrap {
     position: relative;
     width: 100vw;
@@ -136,9 +134,7 @@ h1 {
     padding-left: 0;
     padding-right: 0;
   }
-  #calWrap::before {
-    width: 80px; /* mobile column width */
-  }
+  
   .day-label {
     width: 80px;
   }
@@ -172,19 +168,6 @@ h1 {
     #hourlyCal {
   position: relative;
 }
-    #hourlyCal::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100px;
-  height: 100%;
-  background: linear-gradient(to bottom, #ffffff, #f9fbff);
-  box-shadow: 4px 0 8px rgba(0,0,0,0.08);
-  z-index: 5;
-  pointer-events: none;
-}
-
 
 #calWrap {
   position: relative;
@@ -452,6 +435,17 @@ label[for="start"] {
   position: relative;
   overflow: hidden;
   z-index: 0;
+}
+    #calendarOverlay {
+  position: absolute;
+  top: 56px;               /* sits below toolbar */
+  left: 0;
+  width: 100px;            /* width of day-label column */
+  height: calc(100% - 56px);
+  background: linear-gradient(to bottom, #ffffff, #f9fbff);
+  box-shadow: 4px 0 8px rgba(0,0,0,0.08);
+  z-index: 5;
+  pointer-events: none;
 }
 
 
@@ -753,7 +747,7 @@ label[for="start"] {
 
 <div id="calendarContainer" style="display:none;">
   <div id="calWrap" style="margin-top:16px;">
-
+    <div id="calendarOverlay"></div>
   <div class="calendar-toolbar">
   <button type="button" id="calPrev" class="nav-btn">‹</button>
   <div id="calLabel" class="cal-label"></div>
