@@ -891,7 +891,7 @@ const BUSINESS_RULES = {
 // =========================
 const SLOT_MINUTES = 15;              // internal resolution
 const TRAVEL_BUFFER_MINUTES = 30;     // fixed heuristic travel buffer
-const MIN_BOOKABLE_GAP_MINUTES = 60; // anti-fragment rule (2 hours)
+const MIN_BOOKABLE_GAP_MINUTES = 120; // anti-fragment rule (2 hours)
 
     
     const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
@@ -1102,8 +1102,8 @@ function getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlock
     const end = addMinutes(start, serviceDurationMinutes);
 const endWithTravel = addMinutes(end, TRAVEL_BUFFER_MINUTES);
 
-// must finish service by close (travel may extend past close)
-if (end > businessClose) continue;
+// service + travel buffer must fit before close
+if (endWithTravel > businessClose) continue;
 
 // candidate must also reserve its travel buffer after service
 const conflicts = expandedBlocks.some(b =>
@@ -1276,7 +1276,7 @@ function passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, day
     return true;
   }
 
-  const serviceEnd = addMinutes(start, serviceDurationMinutes);
+  const endWithTravel = addMinutes(start, serviceDurationMinutes + TRAVEL_BUFFER_MINUTES);
   const businessClose = getBusinessCloseDate(dayDate);
 
   let nextBoundary = businessClose;
@@ -1287,7 +1287,7 @@ function passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, day
     }
   }
 
-  const remainingMinutes = (nextBoundary - serviceEnd) / 60000;
+  const remainingMinutes = (nextBoundary - endWithTravel) / 60000;
 
   if (remainingMinutes <= 0) return true;
 
@@ -1534,7 +1534,10 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
 // --- End Step 2.5 ---
 
         // Calendar conflict check (block overlaps)
-const conflict = await hasBookingConflict(scheduled_start, scheduled_end);
+// reserve travel buffer in the conflict check too (must match availability logic)
+const endWithTravelISO = addMinutes(endLocal, TRAVEL_BUFFER_MINUTES).toISOString();
+
+const conflict = await hasBookingConflict(scheduled_start, endWithTravelISO);
 if (conflict) {
   throw new Error("Selected time is unavailable. Please choose another slot.");
 }
