@@ -144,6 +144,19 @@ h1 {
   position: relative;
       z-index: 6;
 }
+    .hourly-header,
+.hourly-row {
+  grid-template-columns: 60px repeat(7, 1fr);
+}
+.hourly-row div:first-child,
+.hourly-header div:first-child {
+  font-size: 13px;
+  padding-left: 2px;
+}
+#calWrap {
+  margin-left: -20px;
+  margin-right: -20px;
+}
 
 #calWrap {
   position: relative;
@@ -471,7 +484,6 @@ label[for="start"] {
   position: sticky;
   left: 0;
 
-  width: 100px;
   display: flex;
   align-items: center;
   justify-content: center;
