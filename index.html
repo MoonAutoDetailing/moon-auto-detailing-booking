@@ -146,16 +146,28 @@ h1 {
 }
     .hourly-header,
 .hourly-row {
-  grid-template-columns: 60px repeat(7, 1fr);
+  grid-template-columns: 36px repeat(7, 1fr);
 }
 .hourly-row div:first-child,
 .hourly-header div:first-child {
   font-size: 13px;
   padding-left: 2px;
 }
+    .hourly-row div:first-child,
+.hourly-header div:first-child {
+  padding-left: 0;
+  font-size: 12px;
+  text-align: left;
+}
+.day-label {
+  width: 100%;
+  font-size: 11px;
+  padding: 4px 0;
+}
+
 #calWrap {
-  margin-left: -20px;
-  margin-right: -20px;
+  margin-left: 5px;
+  margin-right: 5px;
 }
 
 #calWrap {
