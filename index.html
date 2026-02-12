@@ -1061,8 +1061,10 @@ function expandBookingBlock(block, bufferMinutes = TRAVEL_BUFFER_MINUTES) {
 }
 
 function setRedBlockRadii(el, { roundTop, roundBottom }) {
-  const rTop = roundTop ? "999px" : "0px";
-  const rBot = roundBottom ? "999px" : "0px";
+  const RADIUS = "17px";
+
+const rTop = roundTop ? RADIUS : "0px";
+const rBot = roundBottom ? RADIUS : "0px";
 
   el.style.borderTopLeftRadius = rTop;
   el.style.borderTopRightRadius = rTop;
@@ -1898,7 +1900,8 @@ const redBlock = document.createElement("div");
 redBlock.style.position = "absolute";
 redBlock.style.top = `${percentTop}%`;
 redBlock.style.height = `${percentHeight}%`;
-redBlock.style.width = "100%";
+redBlock.style.width = "80%";
+redBlock.style.left = "10%";
           redBlock.style.background = "#e44b4b";
           redBlock.style.pointerEvents = "none";
           // --- FIXED MERGE LOGIC ---
