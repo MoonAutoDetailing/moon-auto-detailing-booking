@@ -1850,30 +1850,6 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
 
           const overlapStart = new Date(Math.max(hourStart, b.start));
           const overlapEnd = new Date(Math.min(hourEnd, b.end));
-          const bookingStartsInThisCell =
-  b.start >= hourStart && b.start < hourEnd;
-
-const bookingEndsInThisCell =
-  b.end > hourStart && b.end <= hourEnd;
-
-// Default: fully rounded
-let topRadius = "999px";
-let bottomRadius = "999px";
-
-// If booking started BEFORE this cell → flatten top
-if (!bookingStartsInThisCell) {
-  topRadius = "0px";
-}
-
-// If booking continues AFTER this cell → flatten bottom
-if (!bookingEndsInThisCell) {
-  bottomRadius = "0px";
-}
-
-redBlock.style.borderTopLeftRadius = topRadius;
-redBlock.style.borderTopRightRadius = topRadius;
-redBlock.style.borderBottomLeftRadius = bottomRadius;
-redBlock.style.borderBottomRightRadius = bottomRadius;
 
           const overlapMinutes =
             (overlapEnd - overlapStart) / 60000;
@@ -1889,7 +1865,7 @@ redBlock.style.position = "absolute";
 redBlock.style.top = `${percentTop}%`;
 redBlock.style.height = `${percentHeight}%`;
 redBlock.style.width = "100%";
-          
+          redBlock.style.borderRadius = "999px";
           redBlock.style.background = "#e44b4b";
           redBlock.style.pointerEvents = "none";
 
