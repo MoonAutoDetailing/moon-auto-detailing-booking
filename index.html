@@ -127,11 +127,33 @@ h1 {
 }
 
   #hourlyCal {
-  width: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
+  width: 100% !important;
+  overflow-x: hidden !important;
+  overflow-y: visible;
 }
+.hourly-header,
+.hourly-row {
+  gap: 0 !important;
+  grid-template-columns: 46px repeat(7, 1fr) !important;
+}
+.hourly-row div:first-child,
+.hourly-header div:first-child {
+  font-size: 11px !important;
+  padding-left: 2px !important;
+  text-align: left !important;
+}
+#calendarContainer {
+  width: 100%;
+}
+
+#calWrap {
+  width: 100%;
+}
+
+#hourlyCal {
+  width: 100%;
+}
+
   .day-label {
   left: 0;
   margin-left: 0;
@@ -177,6 +199,21 @@ h1 {
 #calWrap {
   position: relative;
 }
+    .page-wrap {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.booking-card {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+#calWrap {
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
 
 
   /* Prevent overflow issues, BOX INPUT SIZES AND STYLES */
