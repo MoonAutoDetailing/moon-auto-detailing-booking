@@ -1305,13 +1305,17 @@ function passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, day
   const gapBefore = (start - previousBoundary) / 60000;
   const gapAfter = (nextBoundary - endWithTravel) / 60000;
 
-  if (gapBefore > 0 && gapBefore < MIN_BOOKABLE_GAP_MINUTES) {
-    return false;
-  }
+  const isStartOfDay = previousBoundary.getTime() === businessOpen.getTime();
 
-  if (gapAfter > 0 && gapAfter < MIN_BOOKABLE_GAP_MINUTES) {
-    return false;
-  }
+if (!isStartOfDay && gapBefore > 0 && gapBefore < MIN_BOOKABLE_GAP_MINUTES) {
+  return false;
+}
+
+  const isEndOfDay = nextBoundary.getTime() === serviceClose.getTime();
+
+if (!isEndOfDay && gapAfter > 0 && gapAfter < MIN_BOOKABLE_GAP_MINUTES) {
+  return false;
+}
 
   return true;
 }
