@@ -83,7 +83,14 @@ h1 {
   .page-wrap {
   max-width: 100%;
   margin: 0;
-  padding: 0 12px;
+  padding: 0 6px;
+}
+  #hourlyCal {
+  width: 100%;
+}
+
+#calWrap {
+  width: 100%;
 }
   /* Stack rows ONLY on mobile */
   .row {
@@ -155,15 +162,15 @@ h1 {
 
 .hourly-header,
 .hourly-row {
-  grid-template-columns: 30px repeat(7, 1fr);
-  gap: 4px;
+  grid-template-columns: 42px repeat(7, 1fr);
+  gap: 5px;
 }
 
 /* shrink time label */
 .hourly-row div:first-child,
 .hourly-header div:first-child {
-  font-size: 10px;
-  padding: 0;
+  font-size: 9px;
+  padding: 2;
   text-align: left;
 }
 
@@ -202,11 +209,6 @@ h1 {
 
 #calWrap {
   position: relative;
-}
-
-#calWrap {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
 }
 
 
@@ -483,7 +485,7 @@ label[for="start"] {
 .hourly-header,
 .hourly-row {
   display: grid;
-  grid-template-columns: 100px repeat(7, 1fr);
+  grid-template-columns: 100px repeat(7, minmax(130px, 1fr));
   align-items: center;
   gap: 10px;
 }
