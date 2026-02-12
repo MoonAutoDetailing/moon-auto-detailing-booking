@@ -1059,11 +1059,6 @@ function expandBookingBlock(block, bufferMinutes = TRAVEL_BUFFER_MINUTES) {
   const end = addMinutes(new Date(block.end), bufferMinutes);
   return { start, end };
 }
-    //RED BLOCK HELPERS//
-    function snapToMinuteMs(ms) {
-  // Prevent ms jitter breaking adjacency checks (Google often returns seconds/ms)
-  return Math.round(ms / 60000) * 60000;
-}
 
 function setRedBlockRadii(el, { roundTop, roundBottom }) {
   const rTop = roundTop ? "999px" : "0px";
@@ -1815,8 +1810,8 @@ for (const b of expandedBlocks) {
   const e = new Date(b.end);
 
   const dayKey = s.toDateString(); // bookings never cross days (strict business rule)
-  const sMs = Math.round(s.getTime() / 60000) * 60000;
-const eMs = Math.round(e.getTime() / 60000) * 60000;
+  const sMs = Math.floor(s.getTime() / 60000) * 60000;
+const eMs = Math.floor(e.getTime() / 60000) * 60000;
 
   if (!dayStarts.has(dayKey)) dayStarts.set(dayKey, new Set());
   if (!dayEnds.has(dayKey)) dayEnds.set(dayKey, new Set());
@@ -1908,11 +1903,11 @@ redBlock.style.width = "100%";
 const startsSet = dayStarts.get(dayKey) || new Set();
 const endsSet = dayEnds.get(dayKey) || new Set();
 
-const fragStartMs = snapToMinuteMs(overlapStart.getTime());
-const fragEndMs = snapToMinuteMs(overlapEnd.getTime());
+const fragStartMs = Math.floor(overlapStart.getTime() / 60000) * 60000;
+const fragEndMs = Math.floor(overlapEnd.getTime() / 60000) * 60000;
 
-const blockStartMs = snapToMinuteMs(new Date(b.start).getTime());
-const blockEndMs = snapToMinuteMs(new Date(b.end).getTime());
+const blockStartMs = Math.floor(new Date(b.start).getTime() / 60000) * 60000;
+const blockEndMs = Math.floor(new Date(b.end).getTime() / 60000) * 60000;
 
 // True booking boundaries
 const isTrueStart = fragStartMs === blockStartMs;
