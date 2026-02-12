@@ -69,14 +69,6 @@ h1 {
   border-bottom: 1px solid #e5e7eb;
   padding-bottom: 4px;
 }
-    .day-top,
-.day-bottom {
-  font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  color: #ffffff;
-}
-
                                 /*Mobile Media Configuration*/
 /* =====================
    MOBILE ONLY
@@ -187,11 +179,6 @@ h1 {
   padding-left: 0;
   font-size: 12px;
   text-align: left;
-}
-.day-label {
-  width: 100%;
-  font-size: 11px;
-  padding: 4px 0;
 }
 
 #calWrap {
@@ -491,11 +478,12 @@ label[for="start"] {
 }
 
 
-.hourly-header div {
+.hourly-header > div:not(.day-label) {
   font-weight: 600;
   text-align: center;
   color: #7fb8e6;
 }
+
     .hourly-header div:first-child {
   position: sticky;
   left: 0;
@@ -561,7 +549,7 @@ label[for="start"] {
 
   font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-weight: 600;
-  font-size: 14px;
+  font-size: 13px;
   letter-spacing: 0.5px;
   line-height: 1.1;
   text-align: center;
