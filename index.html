@@ -1799,8 +1799,8 @@ for (const b of expandedBlocks) {
   const e = new Date(b.end);
 
   const dayKey = s.toDateString(); // bookings never cross days (strict business rule)
-  const sMs = snapToMinuteMs(s.getTime());
-  const eMs = snapToMinuteMs(e.getTime());
+  const sMs = Math.round(s.getTime() / 60000) * 60000;
+const eMs = Math.round(e.getTime() / 60000) * 60000;
 
   if (!dayStarts.has(dayKey)) dayStarts.set(dayKey, new Set());
   if (!dayEnds.has(dayKey)) dayEnds.set(dayKey, new Set());
@@ -1892,11 +1892,11 @@ redBlock.style.width = "100%";
 const startsSet = dayStarts.get(dayKey) || new Set();
 const endsSet = dayEnds.get(dayKey) || new Set();
 
-const fragStartMs = snapToMinuteMs(overlapStart.getTime());
-const fragEndMs = snapToMinuteMs(overlapEnd.getTime());
+const fragStartMs = Math.round(overlapStart.getTime() / 60000) * 60000;
+const fragEndMs = Math.round(overlapEnd.getTime() / 60000) * 60000;
 
-const blockStartMs = snapToMinuteMs(new Date(b.start).getTime());
-const blockEndMs = snapToMinuteMs(new Date(b.end).getTime());
+const blockStartMs = Math.round(new Date(b.start).getTime() / 60000) * 60000;
+const blockEndMs = Math.round(new Date(b.end).getTime() / 60000) * 60000;
 
 // Is this fragment the true start/end of THIS booking block?
 const isStartOfThisBlock = fragStartMs === blockStartMs;
