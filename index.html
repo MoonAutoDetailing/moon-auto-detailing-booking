@@ -69,13 +69,6 @@ h1 {
   border-bottom: 1px solid #e5e7eb;
   padding-bottom: 4px;
 }
-    .day-label {
-  color: #ffffff !important;
-}
-.day-label.today {
-  color: #111 !important;
-}
-
 
                                 /*Mobile Media Configuration*/
 /* =====================
@@ -120,10 +113,6 @@ h1 {
     display: block;
     margin-left: auto;
     margin-right: auto;
-  }
-  
-  .day-label {
-    width: 80px;
   }
 
   .booking-card {
@@ -171,14 +160,8 @@ h1 {
   width: 100%;
 }
 
-  .day-label {
-  left: 0;
-  margin-left: 0;
-  padding-left: 2px;
-  padding-right: 2px;
-}
   
-}
+}                        /*MEDIA CONFIGURATION END*/
     #hourlyCal {
   position: relative;
       z-index: 6;
@@ -541,23 +524,16 @@ label[for="start"] {
   color: #fff;
   font-weight: 700;
 }
-    .day-label {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  line-height: 1.1;
-  white-space: nowrap;
-}
 
 .day-top {
   font-size: 11px;
+  font-weight: 600;
 }
 
 .day-bottom {
   font-size: 11px;
+  font-weight: 500;
 }
-
 
 .hourly-cell.exposed {
   cursor: pointer;
@@ -568,22 +544,28 @@ label[for="start"] {
   left: 0;
 
   display: flex;
-  align-items: center;
+  flex-direction: column;
   justify-content: center;
-
-  z-index: 10;   /* WELL above overlay */
+  align-items: center;
 
   background: #7fb8e6;
-  color: white;
+  color: #ffffff;
 
-  padding: 6px 0;
+  padding: 8px 0;
   border-radius: 999px;
+
+  font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-weight: 600;
   font-size: 12px;
+  line-height: 1.1;
+
+  white-space: nowrap;
+  text-align: center;
+
+  z-index: 10;
 }
 
-
-.day-label.today {
+.day-label.today {    /*CURRENT DAY CALENDAR COLOR*/
   background: #facc15;
   color: #111;
 }
