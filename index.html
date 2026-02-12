@@ -137,12 +137,6 @@ h1 {
 #hourlyCal {
   width: 100%;
 }
-.calendar-toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-}
 
 .cal-label {
   min-width: 0 !important;
@@ -581,7 +575,45 @@ label[for="start"] {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
+  gap: 10px;
 }
+
+/* Month label centered */
+.cal-label {
+  font-weight: 600;
+  color: #7fb8e6;
+  font-size: 15px;
+  text-align: center;
+  flex: 1;
+}
+
+/* Small circular nav buttons */
+.nav-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  background: #7fb8e6;
+  color: white;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(127,184,230,0.35);
+}
+
+/* Compact Today button */
+.today-btn {
+  padding: 6px 14px;
+  border-radius: 18px;
+  background: #7fb8e6;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(127,184,230,0.35);
+}
+
 
 
 .cal-label {
@@ -1818,6 +1850,30 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
 
           const overlapStart = new Date(Math.max(hourStart, b.start));
           const overlapEnd = new Date(Math.min(hourEnd, b.end));
+          const bookingStartsInThisCell =
+  b.start >= hourStart && b.start < hourEnd;
+
+const bookingEndsInThisCell =
+  b.end > hourStart && b.end <= hourEnd;
+
+// Default: fully rounded
+let topRadius = "999px";
+let bottomRadius = "999px";
+
+// If booking started BEFORE this cell → flatten top
+if (!bookingStartsInThisCell) {
+  topRadius = "0px";
+}
+
+// If booking continues AFTER this cell → flatten bottom
+if (!bookingEndsInThisCell) {
+  bottomRadius = "0px";
+}
+
+redBlock.style.borderTopLeftRadius = topRadius;
+redBlock.style.borderTopRightRadius = topRadius;
+redBlock.style.borderBottomLeftRadius = bottomRadius;
+redBlock.style.borderBottomRightRadius = bottomRadius;
 
           const overlapMinutes =
             (overlapEnd - overlapStart) / 60000;
@@ -1833,28 +1889,7 @@ redBlock.style.position = "absolute";
 redBlock.style.top = `${percentTop}%`;
 redBlock.style.height = `${percentHeight}%`;
 redBlock.style.width = "100%";
-          // Default full rounding
-let borderTopLeft = "999px";
-let borderTopRight = "999px";
-let borderBottomLeft = "999px";
-let borderBottomRight = "999px";
-
-// If block touches top of cell, flatten top
-if (percentTop === 0) {
-  borderTopLeft = "0px";
-  borderTopRight = "0px";
-}
-
-// If block touches bottom of cell, flatten bottom
-if (percentTop + percentHeight === 100) {
-  borderBottomLeft = "0px";
-  borderBottomRight = "0px";
-}
-
-redBlock.style.borderTopLeftRadius = borderTopLeft;
-redBlock.style.borderTopRightRadius = borderTopRight;
-redBlock.style.borderBottomLeftRadius = borderBottomLeft;
-redBlock.style.borderBottomRightRadius = borderBottomRight;
+          
           redBlock.style.background = "#e44b4b";
           redBlock.style.pointerEvents = "none";
 
