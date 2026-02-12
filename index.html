@@ -145,10 +145,6 @@ h1 {
   white-space: nowrap;
 }
 
-.today-btn {
-  flex: 0 0 auto;
-}
-
 #hourlyCal {
   width: 100%;
 }
@@ -172,6 +168,21 @@ h1 {
 .day-label {
   padding: 6px 0;
   font-size: 11px;
+}
+  .calendar-toolbar {
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .calendar-left {
+    justify-content: center;
+  }
+
+  .today-btn {
+    width: 120px; /* fixed width */
+  }
+
 }
   
 }                        /*MEDIA CONFIGURATION END*/
@@ -566,8 +577,9 @@ label[for="start"] {
   background: #facc15;
   color: #111;
 }
-    /* =====================
-   CALENDAR TOOLBAR (MOON)
+
+/* =====================
+   CALENDAR TOOLBAR LAYOUT (STRUCTURAL FIX)
    ===================== */
 
 .calendar-toolbar {
@@ -575,7 +587,35 @@ label[for="start"] {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
-  gap: 10px;
+  gap: 12px;
+}
+
+/* Left group: arrows + month */
+.calendar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Keep label centered inside its group */
+.cal-label {
+  font-weight: 600;
+  color: #7fb8e6;
+  font-size: 15px;
+  text-align: center;
+  min-width: 140px;
+}
+
+/* Fix button sizing so they NEVER stretch */
+.nav-btn,
+.today-btn {
+  width: 90px;
+  height: 36px;
+  padding: 0;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Month label centered */
@@ -826,9 +866,12 @@ label[for="start"] {
 <div id="calendarContainer" style="display:none;">
   <div id="calWrap" style="margin-top:16px;">
   <div class="calendar-toolbar">
-  <button type="button" id="calPrev" class="nav-btn">‹</button>
-  <div id="calLabel" class="cal-label"></div>
-  <button type="button" id="calNext" class="nav-btn">›</button>
+  <div class="calendar-left">
+    <button type="button" id="calPrev" class="nav-btn">‹</button>
+    <div id="calLabel" class="cal-label"></div>
+    <button type="button" id="calNext" class="nav-btn">›</button>
+  </div>
+
   <button type="button" id="calToday" class="today-btn">Today</button>
 </div>
   <div id="hourlyCal"></div>
