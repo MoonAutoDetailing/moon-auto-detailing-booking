@@ -174,7 +174,7 @@ h1 {
 }
     #hourlyCal {
   position: relative;
-  z-index: 2;
+  z-index: 1;
 }
 
 #calWrap {
@@ -194,7 +194,7 @@ h1 {
   height: 100%;
   background: linear-gradient(to bottom, #ffffff, #f9fbff);
   box-shadow: 4px 0 8px rgba(0,0,0,0.08);
-  z-index: 0;            /* LOWER than pills */
+  z-index: 5;            /* LOWER than pills */
   pointer-events: none;
 }
 
@@ -466,8 +466,6 @@ label[for="start"] {
   grid-template-columns: 100px repeat(10, 1fr);
   align-items: center;
   gap: 10px;
-  position: relative;
-  z-index: 10;
 }
 
 
@@ -525,7 +523,7 @@ label[for="start"] {
   align-items: center;
   justify-content: center;
 
-  z-index: 50;   /* WELL above overlay */
+  z-index: 10;   /* WELL above overlay */
 
   background: #7fb8e6;
   color: white;
