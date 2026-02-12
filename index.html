@@ -527,6 +527,9 @@ label[for="start"] {
 .day-bottom {
   font-size: 12px;
 }
+    .day-label > div {
+  background: transparent !important;
+}
 
 .hourly-cell.exposed {
   cursor: pointer;
@@ -557,6 +560,7 @@ label[for="start"] {
   white-space: nowrap;
 
   box-shadow: 0 6px 16px rgba(127, 184, 230, 0.45);
+  background-clip: padding-box;
 
   z-index: 10;
 }
