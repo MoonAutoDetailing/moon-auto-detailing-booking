@@ -1196,16 +1196,10 @@ for (const start of gap) {
 
 if (!candidates.length) continue;
 
-// Sort by usableAfter descending, tie → earlier first
-candidates.sort((a, b) => {
-  if (b.usableAfter !== a.usableAfter) {
-    return b.usableAfter - a.usableAfter;
-  }
-  return a.start - b.start;
-});
-
-// Always take best
+// Always expose earliest valid time in this gap
+candidates.sort((a, b) => a.start - b.start);
 exposed.push(candidates[0].start);
+
 
 // If gap is large enough, take second-best if meaningful
 const gapStart = gap[0];
@@ -1272,26 +1266,43 @@ function selfTestExposedStarts(dayDate, serviceDurationMinutes, expandedBlocks) 
 // =========================
 function passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate) {
 
-  if (!expandedBlocks.length) {
-    return true;
-  }
+  const businessOpen = new Date(dayDate);
+  businessOpen.setHours(BUSINESS_RULES.openHour, 0, 0, 0);
 
-  const endWithTravel = addMinutes(start, serviceDurationMinutes + TRAVEL_BUFFER_MINUTES);
   const businessClose = getBusinessCloseDate(dayDate);
 
+  const endWithTravel = addMinutes(
+    start,
+    serviceDurationMinutes + TRAVEL_BUFFER_MINUTES
+  );
+
+  // --- FIND PREVIOUS BOUNDARY ---
+  let previousBoundary = businessOpen;
+
+  for (const b of expandedBlocks) {
+    if (b.end <= start && b.end > previousBoundary) {
+      previousBoundary = b.end;
+    }
+  }
+
+  // --- FIND NEXT BOUNDARY ---
   let nextBoundary = businessClose;
 
   for (const b of expandedBlocks) {
-    if (b.start > start && b.start < nextBoundary) {
+    if (b.start >= start && b.start < nextBoundary) {
       nextBoundary = b.start;
     }
   }
 
-  const remainingMinutes = (nextBoundary - endWithTravel) / 60000;
+  const gapBefore = (start - previousBoundary) / 60000;
+  const gapAfter = (nextBoundary - endWithTravel) / 60000;
 
-  if (remainingMinutes <= 0) return true;
+  // If gap exists but is smaller than minimum → reject
+  if (gapBefore > 0 && gapBefore < MIN_BOOKABLE_GAP_MINUTES) {
+    return false;
+  }
 
-  if (remainingMinutes < MIN_BOOKABLE_GAP_MINUTES) {
+  if (gapAfter > 0 && gapAfter < MIN_BOOKABLE_GAP_MINUTES) {
     return false;
   }
 
