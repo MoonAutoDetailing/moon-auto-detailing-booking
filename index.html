@@ -160,12 +160,6 @@ h1 {
 }
   /* ===== CLEAN MOBILE GRID FIT ===== */
 
-.hourly-header,
-.hourly-row {
-  grid-template-columns: 42px repeat(7, 1fr);
-  gap: 5px;
-}
-
 /* shrink time label */
 .hourly-row div:first-child,
 .hourly-header div:first-child {
@@ -193,9 +187,9 @@ h1 {
     
     .hourly-row div:first-child,
 .hourly-header div:first-child {
-  font-size: 12px;
+  font-size: 11px;
   padding-left: 4px;
-  text-align: left;
+  white-space: nowrap;
 }
 
 #calWrap {
@@ -478,17 +472,21 @@ label[for="start"] {
    ===================== */
 #calWrap {
   position: relative;
-  overflow: visible;
+  overflow-x: auto;
+  overflow-y: visible;
   z-index: 0;
+  padding-bottom: 6px;
 }
 
 .hourly-header,
 .hourly-row {
   display: grid;
-  grid-template-columns: 100px repeat(7, minmax(130px, 1fr));
+  grid-template-columns: 70px repeat(7, 110px);
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  min-width: max-content;
 }
+
 
 
 .hourly-header > div:not(.day-label) {
@@ -509,7 +507,8 @@ label[for="start"] {
 }
 
 .hourly-cell {
-  height: 46px;
+  height: 80px;
+  width: 110px;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.04);
   transition: all 0.18s ease;
