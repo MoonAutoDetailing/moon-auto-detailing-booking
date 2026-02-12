@@ -83,11 +83,6 @@ h1 {
   margin: 0;
   padding: 0;
 }
-  .day-label {
-  position: sticky;
-  left: 0;
-  z-index: 50;
-}
 
 
   /* Stack rows ONLY on mobile */
@@ -119,29 +114,9 @@ h1 {
     margin-left: auto;
     margin-right: auto;
   }
-    /* === HOURLY CALENDAR MOBILE FIX === */
-
-  .hourly-header,
-.hourly-row {
-  grid-template-columns: 80px repeat(10, 1fr);
-}
- 
-  #calWrap {
-    position: relative;
-    width: 100vw;
-    margin-left: calc(-50vw + 50%);
-    margin-right: calc(-50vw + 50%);
-    padding-left: 0;
-    padding-right: 0;
-  }
   
   .day-label {
     width: 80px;
-  }
-
-  .hourly-header,
-  .hourly-row {
-    min-width: 900px; /* forces horizontal scroll instead of squish */
   }
 
   .booking-card {
