@@ -172,32 +172,27 @@ h1 {
     #hourlyCal {
   position: relative;
 }
-    #hourlyCal {
-  position: relative;
-  z-index: 1;
-}
-
-#calWrap {
-  position: relative;
-}
-
-#calWrap {
-  position: relative;
-}
-
-#calWrap::before {
+    #hourlyCal::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
-  width: 100px;          /* desktop default */
+  width: 100px;
   height: 100%;
   background: linear-gradient(to bottom, #ffffff, #f9fbff);
   box-shadow: 4px 0 8px rgba(0,0,0,0.08);
-  z-index: 5;            /* LOWER than pills */
+  z-index: 5;
   pointer-events: none;
 }
 
+
+#calWrap {
+  position: relative;
+}
+
+#calWrap {
+  position: relative;
+}
 
 
   /* Prevent overflow issues, BOX INPUT SIZES AND STYLES */
