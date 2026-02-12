@@ -1556,13 +1556,6 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
 // --- End Step 2.5 ---
 
         // Calendar conflict check (block overlaps)
-// reserve travel buffer in the conflict check too (must match availability logic)
-const endWithTravelISO = addMinutes(endLocal, TRAVEL_BUFFER_MINUTES).toISOString();
-
-const conflict = await hasBookingConflict(scheduled_start, endWithTravelISO);
-if (conflict) {
-  throw new Error("Selected time is unavailable. Please choose another slot.");
-}
         
         // Step 1: find existing customer by email (SELECT allowed only by email header policy)
         const customerLookupClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
