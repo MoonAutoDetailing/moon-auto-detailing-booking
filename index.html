@@ -124,11 +124,6 @@ h1 {
   overflow-x: hidden !important;
   overflow-y: visible;
 }
-.hourly-header,
-.hourly-row {
-  gap: 0 !important;
-  grid-template-columns: 42px repeat(7, 1fr) !important;
-}
 
 .hourly-header div:first-child,
 .hourly-row div:first-child {
@@ -158,12 +153,42 @@ h1 {
 #hourlyCal {
   width: 100%;
 }
-/* === MOBILE CALENDAR FULL BLEED (CORRECTED) === */
+.calendar-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.cal-label {
+  min-width: 0 !important;
+  flex: 1 1 auto;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.today-btn {
+  flex: 0 0 auto;
+}
+
+  /* ===== MOBILE FULL BLEED CALENDAR ===== */
+
+#calendarContainer {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+}
 
 #calWrap {
-  padding-left: 0;
-  padding-right: 0;
+  width: 100%;
+  padding-left: 8px;
+  padding-right: 8px;
 }
+
+#hourlyCal {
+  width: 100%;
+}
+
 
   
 }                        /*MEDIA CONFIGURATION END*/
@@ -171,10 +196,7 @@ h1 {
   position: relative;
       z-index: 6;
 }
-    .hourly-header,
-.hourly-row {
-  grid-template-columns: 36px repeat(7, 1fr);
-}
+    
 .hourly-row div:first-child,
 .hourly-header div:first-child {
   font-size: 13px;
@@ -472,7 +494,7 @@ label[for="start"] {
    ===================== */
 #calWrap {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   z-index: 0;
 }
 
