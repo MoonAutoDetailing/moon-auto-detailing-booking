@@ -69,6 +69,13 @@ h1 {
   border-bottom: 1px solid #e5e7eb;
   padding-bottom: 4px;
 }
+    .day-label {
+  color: #ffffff !important;
+}
+.day-label.today {
+  color: #111 !important;
+}
+
 
                                 /*Mobile Media Configuration*/
 /* =====================
@@ -534,6 +541,23 @@ label[for="start"] {
   color: #fff;
   font-weight: 700;
 }
+    .day-label {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.day-top {
+  font-size: 11px;
+}
+
+.day-bottom {
+  font-size: 11px;
+}
+
 
 .hourly-cell.exposed {
   cursor: pointer;
@@ -1701,11 +1725,16 @@ calLabel.textContent = `${monthName} ${start.getDate()}–${end.getDate()}`;
 
     const dayCell = document.createElement("div");
 dayCell.className = "day-label"; // reuse existing style
-dayCell.textContent = day.toLocaleDateString(undefined, {
-  weekday: "short",
+const weekday = day.toLocaleDateString(undefined, { weekday: "short" });
+const monthDay = day.toLocaleDateString(undefined, {
   month: "numeric",
   day: "numeric"
 });
+
+dayCell.innerHTML = `
+  <div class="day-top">${weekday}</div>
+  <div class="day-bottom">${monthDay}</div>
+`;
 
 if (isToday) {
   dayCell.classList.add("today");
