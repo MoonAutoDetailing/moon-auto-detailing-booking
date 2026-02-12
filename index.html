@@ -1269,12 +1269,13 @@ function passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, day
   const businessOpen = new Date(dayDate);
   businessOpen.setHours(BUSINESS_RULES.openHour, 0, 0, 0);
 
-  const businessClose = getBusinessCloseDate(dayDate);
+  const serviceEnd = addMinutes(start, serviceDurationMinutes);
+const serviceClose = getBusinessCloseDate(dayDate);
 
-  const endWithTravel = addMinutes(
-    start,
-    serviceDurationMinutes + TRAVEL_BUFFER_MINUTES
-  );
+// HARD RULE: service must finish by close
+if (serviceEnd > serviceClose) {
+  return false;
+}
 
   // --- FIND PREVIOUS BOUNDARY ---
   let previousBoundary = businessOpen;
@@ -1286,7 +1287,7 @@ function passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, day
   }
 
   // --- FIND NEXT BOUNDARY ---
-  let nextBoundary = businessClose;
+  let nextBoundary = serviceClose;
 
   for (const b of expandedBlocks) {
     if (b.start >= start && b.start < nextBoundary) {
@@ -1812,10 +1813,7 @@ try {
 }
 
 // 👇 MUST be outside try block
-const expandedBlocks = blocks.map(b => ({
-  start: new Date(b.start),
-  end: new Date(b.end)
-}));
+const expandedBlocks = blocks.map(b => expandBookingBlock(b));
 
 // =========================
 // RED BLOCK ADJACENCY MAPS (PER DAY)
