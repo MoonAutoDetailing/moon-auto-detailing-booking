@@ -1805,14 +1805,14 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
           const startMinuteOffset =
             (overlapStart - hourStart) / 60000;
 
-          const percentLeft = (startMinuteOffset / 60) * 100;
-          const percentWidth = (overlapMinutes / 60) * 100;
+          const percentTop = (startMinuteOffset / 60) * 100;
+const percentHeight = (overlapMinutes / 60) * 100;
 
-          const redBlock = document.createElement("div");
-          redBlock.style.position = "absolute";
-          redBlock.style.left = `${percentLeft}%`;
-          redBlock.style.width = `${percentWidth}%`;
-          redBlock.style.height = "100%";
+const redBlock = document.createElement("div");
+redBlock.style.position = "absolute";
+redBlock.style.top = `${percentTop}%`;
+redBlock.style.height = `${percentHeight}%`;
+redBlock.style.width = "100%";
           redBlock.style.borderRadius = "999px";
           redBlock.style.background = "#e44b4b";
           redBlock.style.pointerEvents = "none";
@@ -1837,13 +1837,16 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
         const quarterWidth = 100 / 4;
         const sliceLeft = (minute / 15) * quarterWidth;
 
-        const block = document.createElement("div");
-        block.className = "green-slot-pill";
-        block.style.position = "absolute";
-        block.style.left = `${sliceLeft}%`;
-        block.style.width = `${quarterWidth}%`;
-        block.style.height = "70%";
-        block.style.top = "15%";
+        const quarterHeight = 100 / 4;
+const sliceTop = (minute / 15) * quarterHeight;
+
+const block = document.createElement("div");
+block.className = "green-slot-pill";
+block.style.position = "absolute";
+block.style.top = `${sliceTop}%`;
+block.style.height = `${quarterHeight}%`;
+block.style.width = "80%";
+block.style.left = "10%";
         block.style.borderRadius = "999px";
         block.style.background = "rgba(34,197,94,0.85)";
         block.style.pointerEvents = "auto";
