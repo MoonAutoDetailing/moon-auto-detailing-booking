@@ -1902,13 +1902,14 @@ const blockEndMs = Math.round(new Date(b.end).getTime() / 60000) * 60000;
 const isStartOfThisBlock = fragStartMs === blockStartMs;
 const isEndOfThisBlock = fragEndMs === blockEndMs;
 
-// Neighbor checks (back-to-back bookings count as neighbors)
-const hasPrevNeighbor = endsSet.has(fragStartMs) && !isStartOfThisBlock;
-const hasNextNeighbor = startsSet.has(fragEndMs) && !isEndOfThisBlock;
+const hasPrevNeighbor = endsSet.has(fragStartMs);
+const hasNextNeighbor = startsSet.has(fragEndMs);
 
-// Round only the outer edges of the continuous run
-const roundTop = isStartOfThisBlock && !hasPrevNeighbor;
-const roundBottom = isEndOfThisBlock && !hasNextNeighbor;
+// Round top only if NOTHING ends at this time
+const roundTop = !hasPrevNeighbor;
+
+// Round bottom only if NOTHING starts at this time
+const roundBottom = !hasNextNeighbor;
 
 setRedBlockRadii(redBlock, { roundTop, roundBottom });
 // --- END NEW LOGIC ---
