@@ -1269,15 +1269,22 @@ function passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, day
   const businessOpen = new Date(dayDate);
   businessOpen.setHours(BUSINESS_RULES.openHour, 0, 0, 0);
 
+  const serviceClose = new Date(dayDate);
+  serviceClose.setHours(BUSINESS_RULES.closeHour, 0, 0, 0);
+
   const serviceEnd = addMinutes(start, serviceDurationMinutes);
-const serviceClose = getBusinessCloseDate(dayDate);
 
-// HARD RULE: service must finish by close
-if (serviceEnd > serviceClose) {
-  return false;
-}
+  // HARD RULE: service must finish by close (6 PM)
+  if (serviceEnd > serviceClose) {
+    return false;
+  }
 
-  // --- FIND PREVIOUS BOUNDARY ---
+  const endWithTravel = addMinutes(
+    start,
+    serviceDurationMinutes + TRAVEL_BUFFER_MINUTES
+  );
+
+  // ---- FIND PREVIOUS BOUNDARY ----
   let previousBoundary = businessOpen;
 
   for (const b of expandedBlocks) {
@@ -1286,7 +1293,7 @@ if (serviceEnd > serviceClose) {
     }
   }
 
-  // --- FIND NEXT BOUNDARY ---
+  // ---- FIND NEXT BOUNDARY ----
   let nextBoundary = serviceClose;
 
   for (const b of expandedBlocks) {
@@ -1298,7 +1305,6 @@ if (serviceEnd > serviceClose) {
   const gapBefore = (start - previousBoundary) / 60000;
   const gapAfter = (nextBoundary - endWithTravel) / 60000;
 
-  // If gap exists but is smaller than minimum → reject
   if (gapBefore > 0 && gapBefore < MIN_BOOKABLE_GAP_MINUTES) {
     return false;
   }
