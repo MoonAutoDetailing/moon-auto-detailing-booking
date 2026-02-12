@@ -1698,15 +1698,17 @@ calLabel.textContent = `${monthName} ${start.getDate()}–${end.getDate()}`;
       day.toDateString() === new Date().toDateString();
 
     const dayCell = document.createElement("div");
-    dayCell.textContent = day.toLocaleDateString(undefined, {
-      weekday: "short",
-      month: "numeric",
-      day: "numeric"
-    });
+dayCell.className = "day-label"; // reuse existing style
+dayCell.textContent = day.toLocaleDateString(undefined, {
+  weekday: "short",
+  month: "numeric",
+  day: "numeric"
+});
 
-    if (isToday) {
-      dayCell.classList.add("today");
-    }
+if (isToday) {
+  dayCell.classList.add("today");
+}
+
 
     header.appendChild(dayCell);
   }
