@@ -1902,8 +1902,10 @@ redBlock.style.top = `${percentTop}%`;
 redBlock.style.height = `${percentHeight}%`;
 redBlock.style.width = "80%";
 redBlock.style.left = "10%";
-          redBlock.style.right = "10%";
           redBlock.style.background = "#e44b4b";
+          // prevent 1px seams from percent/subpixel rounding between fragments
+redBlock.style.outline = "1px solid #e44b4b";
+redBlock.style.outlineOffset = "-1px";
           redBlock.style.pointerEvents = "none";
           // --- FIXED MERGE LOGIC ---
 const fragStartMs = Math.floor(overlapStart.getTime() / 60000) * 60000;
