@@ -1059,6 +1059,22 @@ function expandBookingBlock(block, bufferMinutes = TRAVEL_BUFFER_MINUTES) {
   const end = addMinutes(new Date(block.end), bufferMinutes);
   return { start, end };
 }
+    //RED BLOCK HELPERS//
+    function snapToMinuteMs(ms) {
+  // Prevent ms jitter breaking adjacency checks (Google often returns seconds/ms)
+  return Math.round(ms / 60000) * 60000;
+}
+
+function setRedBlockRadii(el, { roundTop, roundBottom }) {
+  const rTop = roundTop ? "999px" : "0px";
+  const rBot = roundBottom ? "999px" : "0px";
+
+  el.style.borderTopLeftRadius = rTop;
+  el.style.borderTopRightRadius = rTop;
+  el.style.borderBottomLeftRadius = rBot;
+  el.style.borderBottomRightRadius = rBot;
+}
+
 
  // =========================
 // PHASE 3 VALID START TIMES (INTERNAL)
@@ -1888,52 +1904,36 @@ redBlock.style.height = `${percentHeight}%`;
 redBlock.style.width = "100%";
           redBlock.style.background = "#e44b4b";
           redBlock.style.pointerEvents = "none";
-          // --- NEW: adjacency-based corner logic (merges red pills visually) ---
+          // --- FIXED MERGE LOGIC ---
 const startsSet = dayStarts.get(dayKey) || new Set();
 const endsSet = dayEnds.get(dayKey) || new Set();
 
-const fragStartMs = Math.round(overlapStart.getTime() / 60000) * 60000;
-const fragEndMs = Math.round(overlapEnd.getTime() / 60000) * 60000;
+const fragStartMs = snapToMinuteMs(overlapStart.getTime());
+const fragEndMs = snapToMinuteMs(overlapEnd.getTime());
 
-const blockStartMs = Math.round(new Date(b.start).getTime() / 60000) * 60000;
-const blockEndMs = Math.round(new Date(b.end).getTime() / 60000) * 60000;
+const blockStartMs = snapToMinuteMs(new Date(b.start).getTime());
+const blockEndMs = snapToMinuteMs(new Date(b.end).getTime());
 
-// Is this fragment the true start/end of THIS booking block?
-const isStartOfThisBlock = fragStartMs === blockStartMs;
-const isEndOfThisBlock = fragEndMs === blockEndMs;
+// True booking boundaries
+const isTrueStart = fragStartMs === blockStartMs;
+const isTrueEnd = fragEndMs === blockEndMs;
 
-const hasPrevNeighbor = endsSet.has(fragStartMs);
-const hasNextNeighbor = startsSet.has(fragEndMs);
+// Check for OTHER booking adjacency
+const otherEndsHere = endsSet.has(fragStartMs) && fragStartMs !== blockStartMs;
+const otherStartsHere = startsSet.has(fragEndMs) && fragEndMs !== blockEndMs;
 
-// Round top only if NOTHING ends at this time
-const roundTop = !hasPrevNeighbor;
-
-// Round bottom only if NOTHING starts at this time
-const roundBottom = !hasNextNeighbor;
+// Round only outermost edges
+const roundTop = isTrueStart && !otherEndsHere;
+const roundBottom = isTrueEnd && !otherStartsHere;
 
 setRedBlockRadii(redBlock, { roundTop, roundBottom });
-// --- END NEW LOGIC ---
+// --- END FIXED MERGE LOGIC ---
 
 
           cell.appendChild(redBlock);
           redBlocksInCell.push(redBlock);
         }
       }
-      function snapToMinuteMs(ms) {
-  // Prevent ms jitter breaking adjacency checks (Google often returns seconds/ms)
-  return Math.round(ms / 60000) * 60000;
-}
-
-function setRedBlockRadii(el, { roundTop, roundBottom }) {
-  const rTop = roundTop ? "999px" : "0px";
-  const rBot = roundBottom ? "999px" : "0px";
-
-  el.style.borderTopLeftRadius = rTop;
-  el.style.borderTopRightRadius = rTop;
-  el.style.borderBottomLeftRadius = rBot;
-  el.style.borderBottomRightRadius = rBot;
-}
-
 
       // GREEN SLOTS
       const exposedInThisHour = (exposedByDay[dayKey] || [])
