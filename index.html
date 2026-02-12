@@ -1797,28 +1797,30 @@ try {
 
 // 👇 MUST be outside try block
 const expandedBlocks = blocks.map(b => expandBookingBlock(b));
+
 // =========================
 // RED BLOCK ADJACENCY MAPS (PER DAY)
 // =========================
-// These let us know if a red fragment touches another fragment above/below
-// so we can flatten interior corners.
-const dayStarts = new Map(); // dayKey -> Set(startMs)
-const dayEnds = new Map();   // dayKey -> Set(endMs)
+const dayStarts = new Map();
+const dayEnds = new Map();
 
 for (const b of expandedBlocks) {
-  const s = new Date(b.start);
-  const e = new Date(b.end);
+  const start = new Date(b.start);
+  const end = new Date(b.end);
 
-  const dayKey = s.toDateString(); // bookings never cross days (strict business rule)
-  const sMs = Math.floor(s.getTime() / 60000) * 60000;
-const eMs = Math.floor(e.getTime() / 60000) * 60000;
+  // Force both into LOCAL minute precision
+  const startMs = Math.floor(start.getTime() / 60000) * 60000;
+  const endMs = Math.floor(end.getTime() / 60000) * 60000;
+
+  const dayKey = new Date(startMs).toDateString();
 
   if (!dayStarts.has(dayKey)) dayStarts.set(dayKey, new Set());
   if (!dayEnds.has(dayKey)) dayEnds.set(dayKey, new Set());
 
-  dayStarts.get(dayKey).add(sMs);
-  dayEnds.get(dayKey).add(eMs);
+  dayStarts.get(dayKey).add(startMs);
+  dayEnds.get(dayKey).add(endMs);
 }
+
 
   // =========================
   // BUILD EXPOSED START MAP
@@ -1900,28 +1902,23 @@ redBlock.style.width = "100%";
           redBlock.style.background = "#e44b4b";
           redBlock.style.pointerEvents = "none";
           // --- FIXED MERGE LOGIC ---
-const startsSet = dayStarts.get(dayKey) || new Set();
-const endsSet = dayEnds.get(dayKey) || new Set();
-
 const fragStartMs = Math.floor(overlapStart.getTime() / 60000) * 60000;
 const fragEndMs = Math.floor(overlapEnd.getTime() / 60000) * 60000;
 
 const blockStartMs = Math.floor(new Date(b.start).getTime() / 60000) * 60000;
 const blockEndMs = Math.floor(new Date(b.end).getTime() / 60000) * 60000;
 
-// True booking boundaries
-const isTrueStart = fragStartMs === blockStartMs;
-const isTrueEnd = fragEndMs === blockEndMs;
+const isTopFragment = fragStartMs === blockStartMs;
+const isBottomFragment = fragEndMs === blockEndMs;
 
-// Check for OTHER booking adjacency
-const otherEndsHere = endsSet.has(fragStartMs) && fragStartMs !== blockStartMs;
-const otherStartsHere = startsSet.has(fragEndMs) && fragEndMs !== blockEndMs;
+const hasBlockAbove = dayEnds.get(dayKey)?.has(blockStartMs);
+const hasBlockBelow = dayStarts.get(dayKey)?.has(blockEndMs);
 
-// Round only outermost edges
-const roundTop = isTrueStart && !otherEndsHere;
-const roundBottom = isTrueEnd && !otherStartsHere;
+const roundTop = isTopFragment && !hasBlockAbove;
+const roundBottom = isBottomFragment && !hasBlockBelow;
 
 setRedBlockRadii(redBlock, { roundTop, roundBottom });
+
 // --- END FIXED MERGE LOGIC ---
 
 
