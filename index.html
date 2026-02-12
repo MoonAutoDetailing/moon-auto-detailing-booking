@@ -1215,12 +1215,18 @@ function isOnHour(date) {
 function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks) {
   const valid = getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks);
   if (!valid.length) return [];
-   // =========================
-  // OPEN DAY RULE (no bookings at all)
   // =========================
-  if (!expandedBlocks.length) {
-    return getOpenDayAnchors(dayDate, serviceDurationMinutes);
-  }
+// OPEN DAY RULE (per-day)
+// =========================
+const hasBlockOnThisDay = expandedBlocks.some(b => {
+  const blockDay = new Date(b.start);
+  return blockDay.toDateString() === dayDate.toDateString();
+});
+
+if (!hasBlockOnThisDay) {
+  return getOpenDayAnchors(dayDate, serviceDurationMinutes);
+}
+
 
   // Split valid times into continuous gaps
   const gaps = [];
