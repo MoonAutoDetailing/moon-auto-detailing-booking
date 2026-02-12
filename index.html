@@ -1786,7 +1786,28 @@ try {
 
 // 👇 MUST be outside try block
 const expandedBlocks = blocks.map(b => expandBookingBlock(b));
+// =========================
+// RED BLOCK ADJACENCY MAPS (PER DAY)
+// =========================
+// These let us know if a red fragment touches another fragment above/below
+// so we can flatten interior corners.
+const dayStarts = new Map(); // dayKey -> Set(startMs)
+const dayEnds = new Map();   // dayKey -> Set(endMs)
 
+for (const b of expandedBlocks) {
+  const s = new Date(b.start);
+  const e = new Date(b.end);
+
+  const dayKey = s.toDateString(); // bookings never cross days (strict business rule)
+  const sMs = snapToMinuteMs(s.getTime());
+  const eMs = snapToMinuteMs(e.getTime());
+
+  if (!dayStarts.has(dayKey)) dayStarts.set(dayKey, new Set());
+  if (!dayEnds.has(dayKey)) dayEnds.set(dayKey, new Set());
+
+  dayStarts.get(dayKey).add(sMs);
+  dayEnds.get(dayKey).add(eMs);
+}
 
   // =========================
   // BUILD EXPOSED START MAP
@@ -1865,14 +1886,53 @@ redBlock.style.position = "absolute";
 redBlock.style.top = `${percentTop}%`;
 redBlock.style.height = `${percentHeight}%`;
 redBlock.style.width = "100%";
-          redBlock.style.borderRadius = "999px";
           redBlock.style.background = "#e44b4b";
           redBlock.style.pointerEvents = "none";
+          // --- NEW: adjacency-based corner logic (merges red pills visually) ---
+const startsSet = dayStarts.get(dayKey) || new Set();
+const endsSet = dayEnds.get(dayKey) || new Set();
+
+const fragStartMs = snapToMinuteMs(overlapStart.getTime());
+const fragEndMs = snapToMinuteMs(overlapEnd.getTime());
+
+const blockStartMs = snapToMinuteMs(new Date(b.start).getTime());
+const blockEndMs = snapToMinuteMs(new Date(b.end).getTime());
+
+// Is this fragment the true start/end of THIS booking block?
+const isStartOfThisBlock = fragStartMs === blockStartMs;
+const isEndOfThisBlock = fragEndMs === blockEndMs;
+
+// Neighbor checks (back-to-back bookings count as neighbors)
+const hasPrevNeighbor = endsSet.has(fragStartMs) && !isStartOfThisBlock;
+const hasNextNeighbor = startsSet.has(fragEndMs) && !isEndOfThisBlock;
+
+// Round only the outer edges of the continuous run
+const roundTop = isStartOfThisBlock && !hasPrevNeighbor;
+const roundBottom = isEndOfThisBlock && !hasNextNeighbor;
+
+setRedBlockRadii(redBlock, { roundTop, roundBottom });
+// --- END NEW LOGIC ---
+
 
           cell.appendChild(redBlock);
           redBlocksInCell.push(redBlock);
         }
       }
+      function snapToMinuteMs(ms) {
+  // Prevent ms jitter breaking adjacency checks (Google often returns seconds/ms)
+  return Math.round(ms / 60000) * 60000;
+}
+
+function setRedBlockRadii(el, { roundTop, roundBottom }) {
+  const rTop = roundTop ? "999px" : "0px";
+  const rBot = roundBottom ? "999px" : "0px";
+
+  el.style.borderTopLeftRadius = rTop;
+  el.style.borderTopRightRadius = rTop;
+  el.style.borderBottomLeftRadius = rBot;
+  el.style.borderBottomRightRadius = rBot;
+}
+
 
       // GREEN SLOTS
       const exposedInThisHour = (exposedByDay[dayKey] || [])
