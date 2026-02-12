@@ -1893,13 +1893,14 @@ for (const b of expandedBlocks) {
           const startMinuteOffset =
             (overlapStart - hourStart) / 60000;
 
-          const percentTop = (startMinuteOffset / 60) * 100;
-const percentHeight = (overlapMinutes / 60) * 100;
+          const CELL_HEIGHT = 34; // must match .hourly-cell height
 
+const pxTop = (startMinuteOffset / 60) * CELL_HEIGHT;
+const pxHeight = (overlapMinutes / 60) * CELL_HEIGHT;
 const redBlock = document.createElement("div");
 redBlock.style.position = "absolute";
-redBlock.style.top = `${percentTop}%`;
-redBlock.style.height = `${percentHeight}%`;
+redBlock.style.top = `${pxTop}px`;
+redBlock.style.height = `${pxHeight}px`;
 redBlock.style.width = "80%";
 redBlock.style.left = "10%";
           redBlock.style.background = "#e44b4b";
