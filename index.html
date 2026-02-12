@@ -1184,6 +1184,30 @@ function selfTestValidStarts(dayDate, serviceDurationMinutes, expandedBlocks) {
 // PHASE 4: EXPOSED (CUSTOMER-SAFE) START TIMES
 // =========================
 
+    function getOpenDayAnchors(dayDate, serviceDurationMinutes) {
+  const anchors = [];
+
+  const base = new Date(dayDate);
+  base.setHours(BUSINESS_RULES.openHour, 0, 0, 0);
+
+  const increments = [0, 150, 300, 450]; // 2.5 hour spacing
+
+  const businessClose = getBusinessCloseDate(dayDate);
+
+  for (const offset of increments) {
+    const start = addMinutes(base, offset);
+
+    const serviceEnd = addMinutes(start, serviceDurationMinutes);
+
+    // Service must finish by 6pm (travel can exceed)
+    if (serviceEnd <= businessClose) {
+      anchors.push(start);
+    }
+  }
+
+  return anchors;
+}
+
 function isOnHour(date) {
   return date.getMinutes() === 0;
 }
@@ -1191,6 +1215,12 @@ function isOnHour(date) {
 function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks) {
   const valid = getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks);
   if (!valid.length) return [];
+   // =========================
+  // OPEN DAY RULE (no bookings at all)
+  // =========================
+  if (!expandedBlocks.length) {
+    return getOpenDayAnchors(dayDate, serviceDurationMinutes);
+  }
 
   // Split valid times into continuous gaps
   const gaps = [];
