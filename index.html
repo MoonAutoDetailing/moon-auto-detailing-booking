@@ -119,32 +119,9 @@ h1 {
   overflow-x: hidden;
 }
 
-  #hourlyCal {
-  width: 100% !important;
-  overflow-x: hidden !important;
-  overflow-y: visible;
-}
-
-.hourly-header div:first-child,
-.hourly-row div:first-child {
-  width: 42px !important;
-  min-width: 42px !important;
-}
-
-
-.hourly-row div:first-child,
-.hourly-header div:first-child {
-  font-size: 11px !important;
-  padding-left: 2px !important;
-  text-align: left !important;
-}
 #calendarContainer {
   width: 100%;
 }
-  .hourly-header {
-  grid-template-columns: 40px repeat(7, 1fr) !important;
-}
-
 
 #calWrap {
   width: 100%;
@@ -171,25 +148,35 @@ h1 {
   flex: 0 0 auto;
 }
 
-  /* ===== MOBILE FULL BLEED CALENDAR ===== */
-
-#calendarContainer {
-  width: 100vw;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
-}
-
-#calWrap {
-  width: 100%;
-  padding-left: 8px;
-  padding-right: 8px;
-}
-
 #hourlyCal {
   width: 100%;
 }
+  /* ===== CLEAN MOBILE GRID FIT ===== */
 
+.hourly-header,
+.hourly-row {
+  grid-template-columns: 30px repeat(7, 1fr);
+  gap: 4px;
+}
 
+/* shrink time label */
+.hourly-row div:first-child,
+.hourly-header div:first-child {
+  font-size: 10px;
+  padding: 0;
+  text-align: left;
+}
+
+/* slightly shrink pills */
+.hourly-cell {
+  height: 40px;
+}
+
+/* slightly tighten day header */
+.day-label {
+  padding: 6px 0;
+  font-size: 11px;
+}
   
 }                        /*MEDIA CONFIGURATION END*/
     #hourlyCal {
@@ -197,15 +184,10 @@ h1 {
       z-index: 6;
 }
     
-.hourly-row div:first-child,
-.hourly-header div:first-child {
-  font-size: 13px;
-  padding-left: 2px;
-}
     .hourly-row div:first-child,
 .hourly-header div:first-child {
-  padding-left: 0;
   font-size: 12px;
+  padding-left: 4px;
   text-align: left;
 }
 
