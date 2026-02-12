@@ -505,14 +505,15 @@ label[for="start"] {
 
 .hourly-cell {
   height: 34px;
-  border-radius: 999px;
+  border-radius: 6px; /* square calendar look */
   background: rgba(0, 0, 0, 0.04);
   transition: all 0.18s ease;
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.06);
+  box-shadow: none; /* remove pill shadow */
   display: flex;
   align-items: center;
   justify-content: center;
 }
+
     /* Alternating row backgrounds */
 .row-light .hourly-cell {
   background: rgba(0, 0, 0, 0.04);
@@ -698,6 +699,30 @@ label[for="start"] {
   font-size: 15px;
 }
 
+/* =====================
+   LEFT AXIS HOUR PILLS
+   ===================== */
+
+.hour-pill {
+  background: #7fb8e6;
+  color: #ffffff;
+
+  font-size: 10px;
+  font-weight: 600;
+
+  border-radius: 999px;
+
+  height: 22px;
+  margin: 0 4px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  white-space: nowrap;
+
+  box-shadow: 0 4px 10px rgba(127,184,230,0.35);
+}
 
 /* Pulse animation for green slots */
 @keyframes pulse {
@@ -1952,8 +1977,9 @@ for (const b of expandedBlocks) {
 
     // First column = hour label
     const hourLabel = document.createElement("div");
-    hourLabel.textContent = formatHourLabel(h);
-    row.appendChild(hourLabel);
+hourLabel.className = "hour-pill";
+hourLabel.textContent = formatHourLabel(h);
+row.appendChild(hourLabel);
 
     // Now build 7 day cells for this hour
     for (let d = 0; d < 7; d++) {
