@@ -1683,21 +1683,36 @@ const monthName = start.toLocaleDateString(undefined, options);
 calLabel.textContent = `${monthName} ${start.getDate()}–${end.getDate()}`;
 
 
-  // =========================
-  // HEADER (HOURS)
+    // =========================
+  // HEADER (DAYS)
   // =========================
   const header = document.createElement("div");
   header.className = "hourly-header";
 
-  header.innerHTML = `<div></div>`; // empty corner cell
+  header.innerHTML = `<div></div>`; // empty corner (top-left)
 
-  for (let h = 8; h <= 17; h++) {
-    const hourCell = document.createElement("div");
-    hourCell.textContent = formatHourLabel(h);
-    header.appendChild(hourCell);
+  for (let d = 0; d < 7; d++) {
+    const day = addDays(calWeekStart, d);
+
+    const isToday =
+      day.toDateString() === new Date().toDateString();
+
+    const dayCell = document.createElement("div");
+    dayCell.textContent = day.toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "numeric",
+      day: "numeric"
+    });
+
+    if (isToday) {
+      dayCell.classList.add("today");
+    }
+
+    header.appendChild(dayCell);
   }
 
   hourlyCal.appendChild(header);
+
 
   // =========================
   // FETCH BOOKING BLOCKS
@@ -1745,174 +1760,120 @@ const expandedBlocks = blocks.map(b => expandBookingBlock(b));
   // =========================
   // RENDER GRID ROWS
   // =========================
-  for (let d = 0; d < 7; d++) {
+    for (let h = BUSINESS_RULES.openHour; h < BUSINESS_RULES.closeHour; h++) {
 
-  const day = addDays(calWeekStart, d);
-  const dayKey = day.toDateString();
-  const exposedSet = new Set(exposedByDay[dayKey] || []);
+    const row = document.createElement("div");
+    row.className = "hourly-row " + (h % 2 === 0 ? "row-light" : "row-dark");
 
-  const isToday =
-    day.toDateString() === new Date().toDateString();
+    // First column = hour label
+    const hourLabel = document.createElement("div");
+    hourLabel.textContent = formatHourLabel(h);
+    row.appendChild(hourLabel);
 
-    if (dayLabelColumn) {
-  const label = document.createElement("div");
-  label.className = "day-label-fixed " + (isToday ? "today" : "");
-  label.textContent = day.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "numeric",
-    day: "numeric"
-  });
-  dayLabelColumn.appendChild(label);
-}
-    
-  const row = document.createElement("div");
-  row.className = "hourly-row " + (d % 2 === 0 ? "row-light" : "row-dark");
+    // Now build 7 day cells for this hour
+    for (let d = 0; d < 7; d++) {
 
-  row.innerHTML = ``;
+      const day = addDays(calWeekStart, d);
+      const dayKey = day.toDateString();
+      const exposedSet = new Set(exposedByDay[dayKey] || []);
 
-  for (let h = BUSINESS_RULES.openHour; h < BUSINESS_RULES.closeHour; h++) {
+      const hourStart = new Date(day);
+      hourStart.setHours(h, 0, 0, 0);
 
-  const hourStart = new Date(day);
-  hourStart.setHours(h, 0, 0, 0);
+      const hourEnd = new Date(hourStart);
+      hourEnd.setHours(hourEnd.getHours() + 1);
 
-  const hourEnd = new Date(hourStart);
-  hourEnd.setHours(hourEnd.getHours() + 1);
       const cell = document.createElement("div");
-  cell.className = "hourly-cell";
-    // Track blocks created in THIS cell so we can adjust connected corners
-const redBlocksInCell = [];
-const greenBlocksInCell = [];
+      cell.className = "hourly-cell";
+      cell.style.position = "relative";
 
-  const exposedInThisHour = (exposedByDay[dayKey] || [])
-    .filter(t => {
-      const d = new Date(t);
-      return d >= hourStart && d < hourEnd;
-    });
+      // Track blocks created in THIS cell
+      const redBlocksInCell = [];
+      const greenBlocksInCell = [];
 
-  cell.style.position = "relative";
+      // RED BLOCKS
+      for (const b of expandedBlocks) {
 
-for (const b of expandedBlocks) {
+        if (hourStart < b.end && hourEnd > b.start) {
 
-  if (hourStart < b.end && hourEnd > b.start) {
+          const overlapStart = new Date(Math.max(hourStart, b.start));
+          const overlapEnd = new Date(Math.min(hourEnd, b.end));
 
-    const overlapStart = new Date(Math.max(hourStart, b.start));
-    const overlapEnd = new Date(Math.min(hourEnd, b.end));
+          const overlapMinutes =
+            (overlapEnd - overlapStart) / 60000;
 
-    const overlapMinutes =
-      (overlapEnd - overlapStart) / 60000;
+          const startMinuteOffset =
+            (overlapStart - hourStart) / 60000;
 
-    const startMinuteOffset =
-      (overlapStart - hourStart) / 60000;
+          const percentLeft = (startMinuteOffset / 60) * 100;
+          const percentWidth = (overlapMinutes / 60) * 100;
 
-    const percentLeft = (startMinuteOffset / 60) * 100;
-    const percentWidth = (overlapMinutes / 60) * 100;
+          const redBlock = document.createElement("div");
+          redBlock.style.position = "absolute";
+          redBlock.style.left = `${percentLeft}%`;
+          redBlock.style.width = `${percentWidth}%`;
+          redBlock.style.height = "100%";
+          redBlock.style.borderRadius = "999px";
+          redBlock.style.background = "#e44b4b";
+          redBlock.style.pointerEvents = "none";
 
-    const redBlock = document.createElement("div");
-    redBlock.style.position = "absolute";
-    redBlock.style.left = `${percentLeft}%`;
-    redBlock.style.width = `${percentWidth}%`;
-    redBlock.style.height = "100%";
-    redBlock.style.borderRadius = "999px"; // keep for now
-    redBlock.style.background = "#e44b4b";
-    redBlock.style.pointerEvents = "none";
+          cell.appendChild(redBlock);
+          redBlocksInCell.push(redBlock);
+        }
+      }
 
-    cell.appendChild(redBlock);
-    redBlocksInCell.push(redBlock);
+      // GREEN SLOTS
+      const exposedInThisHour = (exposedByDay[dayKey] || [])
+        .filter(t => {
+          const dt = new Date(t);
+          return dt >= hourStart && dt < hourEnd;
+        });
+
+      for (const t of exposedInThisHour) {
+
+        const startTime = new Date(t);
+        const minute = startTime.getMinutes();
+
+        const quarterWidth = 100 / 4;
+        const sliceLeft = (minute / 15) * quarterWidth;
+
+        const block = document.createElement("div");
+        block.className = "green-slot-pill";
+        block.style.position = "absolute";
+        block.style.left = `${sliceLeft}%`;
+        block.style.width = `${quarterWidth}%`;
+        block.style.height = "70%";
+        block.style.top = "15%";
+        block.style.borderRadius = "999px";
+        block.style.background = "rgba(34,197,94,0.85)";
+        block.style.pointerEvents = "auto";
+        block.style.cursor = "pointer";
+
+        cell.appendChild(block);
+        greenBlocksInCell.push(block);
+
+        block.addEventListener("click", (e) => {
+          e.stopPropagation();
+
+          document
+            .querySelectorAll(".green-slot-pill.selected")
+            .forEach(el => el.classList.remove("selected"));
+
+          block.classList.add("selected");
+
+          elStart.value = formatDateToDateTimeLocal(startTime);
+          selectedStartISO = startTime.toISOString();
+
+          recalcEndTimePreview();
+        });
+      }
+
+      row.appendChild(cell);
+    }
+
+    hourlyCal.appendChild(row);
   }
-}
 
-  for (const t of exposedInThisHour) {
-
-    const startTime = new Date(t);
-    const minute = startTime.getMinutes();
-
-const quarterWidth = 100 / 4;
-const sliceLeft = (minute / 15) * quarterWidth;
-
-cell.style.position = "relative";
-
-const block = document.createElement("div");
-block.className = "green-slot-pill"; // IMPORTANT (we'll use this for pulse)
-block.style.position = "absolute";
-block.style.left = `${sliceLeft}%`;
-block.style.width = `${quarterWidth}%`;
-block.style.height = "70%";
-block.style.top = "15%";
-block.style.borderRadius = "999px";
-block.style.background = "rgba(34,197,94,0.85)";
-block.style.pointerEvents = "auto";
-block.style.cursor = "pointer";
-
-cell.appendChild(block);
-    greenBlocksInCell.push(block);
-    // GREEN PILL SELECTION
-block.addEventListener("click", (e) => {
-  e.stopPropagation();
-
-  // Remove previous selection
-  document
-    .querySelectorAll(".green-slot-pill.selected")
-    .forEach(el => el.classList.remove("selected"));
-
-  block.classList.add("selected");
-
-  // Set start time
-  elStart.value = formatDateToDateTimeLocal(startTime);
-  selectedStartISO = startTime.toISOString();
-
-  recalcEndTimePreview();
-});
-  }
-// -----------------------------
-// CONNECT ADJACENT BLOCK EDGES
-// If a red block ends exactly where a green block begins (or vice versa),
-// flatten ONLY the touching corners.
-// -----------------------------
-const EPS = 0.5; // tolerance in percent units
-
-for (const red of redBlocksInCell) {
-  const redLeft = parseFloat(red.style.left) || 0;
-  const redWidth = parseFloat(red.style.width) || 0;
-  const redRight = redLeft + redWidth;
-
-  for (const green of greenBlocksInCell) {
-    const greenLeft = parseFloat(green.style.left) || 0;
-    const greenWidth = parseFloat(green.style.width) || 0;
-    const greenRight = greenLeft + greenWidth;
-
-    // red RIGHT touches green LEFT
-    if (Math.abs(redRight - greenLeft) < EPS) {
-  red.style.borderTopRightRadius = "0px";
-  red.style.borderBottomRightRadius = "0px";
-
-  green.style.borderTopLeftRadius = "0px";
-  green.style.borderBottomLeftRadius = "0px";
-
-  // Make green match red height when connected
-  green.style.height = "100%";
-  green.style.top = "0";
-}
-
-    // green RIGHT touches red LEFT (covers the opposite ordering too)
-    if (Math.abs(greenRight - redLeft) < EPS) {
-  green.style.borderTopRightRadius = "0px";
-  green.style.borderBottomRightRadius = "0px";
-
-  red.style.borderTopLeftRadius = "0px";
-  red.style.borderBottomLeftRadius = "0px";
-
-  // Make green match red height when connected
-  green.style.height = "100%";
-  green.style.top = "0";
-}
-  }
-}
-
-  row.appendChild(cell);
-}
-
-hourlyCal.appendChild(row);
-  }
 
 // ✅ Properly closes loadCalendar()
 }
