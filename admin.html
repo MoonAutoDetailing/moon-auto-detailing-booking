@@ -170,11 +170,12 @@ upcoming.push(b);
 }
 
 else if (
-["completed","no_show","cancelled","rescheduled","denied"]
-.includes(b.status)
+  ["completed","no_show","cancelled","rescheduled","reschedule_requested","denied"]
+    .includes(b.status)
 ) {
-completed.push(b);
+  completed.push(b);
 }
+
 });
 
 renderSection("Pending Bookings", pending);
