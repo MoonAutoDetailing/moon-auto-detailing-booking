@@ -26,47 +26,65 @@ export default async function handler(req, res) {
     // =========================
     // 1️⃣ Fetch booking
     // =========================
-    const { data: booking } = await supabase
+    const { data: booking, error: bookingError } = await supabase
       .from("bookings")
       .select("*")
       .eq("id", bookingId)
       .single();
 
-    if (!booking) {
+    if (bookingError || !booking) {
       return res.status(404).json({ ok: false, message: "Booking not found" });
     }
 
-    // Already confirmed?
-    if (booking.status === "confirmed" && booking.google_event_id) {
+    // ✅ Idempotency: if an event id exists, do NOT create another event (regardless of status)
+    if (booking.google_event_id) {
+      // If it’s not confirmed, try to heal status to confirmed (safe, because event id exists)
+      if (booking.status !== "confirmed") {
+        await supabase
+          .from("bookings")
+          .update({ status: "confirmed" })
+          .eq("id", bookingId);
+      }
       return res.status(200).json({ ok: true, alreadyConfirmed: true });
     }
 
+    // Only pending can be confirmed
     if (booking.status !== "pending") {
       return res.status(409).json({ ok: false, message: "Booking not pending" });
     }
 
     // =========================
-    // 2️⃣ Acquire lock
+    // 2️⃣ Acquire lock: pending -> confirming
     // =========================
-    const { data: locked } = await supabase
+    const { data: locked, error: lockError } = await supabase
       .from("bookings")
       .update({ status: "confirming" })
       .eq("id", bookingId)
       .eq("status", "pending")
       .select("id");
 
+    if (lockError) {
+      return res.status(500).json({ ok: false, message: "Failed to lock booking" });
+    }
+
     if (!locked || locked.length === 0) {
       return res.status(409).json({ ok: false, message: "Already being confirmed" });
     }
 
     // =========================
-    // 3️⃣ Fetch related data (UNCHANGED)
+    // 3️⃣ Fetch related data
     // =========================
-    const { data: customer } = await supabase
+    const { data: customer, error: customerError } = await supabase
       .from("customers")
       .select("full_name, phone, sms_opt_out")
       .eq("id", booking.customer_id)
       .single();
+
+    if (customerError || !customer) {
+      // revert lock
+      await supabase.from("bookings").update({ status: "pending" }).eq("id", bookingId).eq("status", "confirming");
+      return res.status(500).json({ ok: false, message: "Failed to load customer" });
+    }
 
     const { data: vehicle } = await supabase
       .from("vehicles")
@@ -74,27 +92,33 @@ export default async function handler(req, res) {
       .eq("id", booking.vehicle_id)
       .single();
 
-    const { data: variant } = await supabase
+    const { data: variant, error: variantError } = await supabase
       .from("service_variants")
       .select("duration_minutes, service_id")
       .eq("id", booking.service_variant_id)
       .single();
 
-    const { data: service } = await supabase
+    if (variantError || !variant) {
+      await supabase.from("bookings").update({ status: "pending" }).eq("id", bookingId).eq("status", "confirming");
+      return res.status(500).json({ ok: false, message: "Failed to load service variant" });
+    }
+
+    const { data: service, error: serviceError } = await supabase
       .from("services")
       .select("category, level")
       .eq("id", variant.service_id)
       .single();
 
+    if (serviceError || !service) {
+      await supabase.from("bookings").update({ status: "pending" }).eq("id", bookingId).eq("status", "confirming");
+      return res.status(500).json({ ok: false, message: "Failed to load service" });
+    }
+
     // =========================
-    // 4️⃣ Create Google Event (SINGLE INSERT)
+    // 4️⃣ Create Google Calendar event
     // =========================
     const calendarId = process.env.GOOGLE_CALENDAR_ID.trim();
-    const decoded = Buffer.from(
-      process.env.GOOGLE_SERVICE_ACCOUNT_JSON,
-      "base64"
-    ).toString("utf-8");
-
+    const decoded = Buffer.from(process.env.GOOGLE_SERVICE_ACCOUNT_JSON, "base64").toString("utf-8");
     const creds = JSON.parse(decoded);
 
     const auth = new google.auth.JWT({
@@ -106,15 +130,14 @@ export default async function handler(req, res) {
     const calendar = google.calendar({ version: "v3", auth });
 
     const formattedService = `${service.category} Detail Level ${service.level}`;
+
     const formattedVehicle = [
-      vehicle.vehicle_year,
-      vehicle.vehicle_make,
-      vehicle.vehicle_model
+      vehicle?.vehicle_year,
+      vehicle?.vehicle_make,
+      vehicle?.vehicle_model
     ].filter(Boolean).join(" ");
 
-    const formattedLicense = vehicle.license_plate
-      ? ` (${vehicle.license_plate})`
-      : "";
+    const formattedLicense = vehicle?.license_plate ? ` (${vehicle.license_plate})` : "";
 
     const summary = `${formattedService} — ${customer.full_name}`;
 
@@ -125,33 +148,67 @@ export default async function handler(req, res) {
       `Service: ${formattedService}`
     ].join("\n");
 
-    const calendarResponse = await calendar.events.insert({
-      calendarId,
-      requestBody: {
-        summary,
-        location: booking.service_address,
-        description,
-        start: { dateTime: booking.scheduled_start },
-        end: { dateTime: booking.scheduled_end }
+    let googleEventId = null;
+
+    try {
+      const calendarResponse = await calendar.events.insert({
+        calendarId,
+        requestBody: {
+          summary,
+          location: booking.service_address,
+          description,
+          start: { dateTime: booking.scheduled_start },
+          end: { dateTime: booking.scheduled_end }
+        }
+      });
+
+      googleEventId = calendarResponse.data.id;
+
+      // =========================
+      // 5️⃣ Finalize booking (VERIFY IT ACTUALLY UPDATED)
+      // =========================
+      const { data: updated, error: finalizeError } = await supabase
+        .from("bookings")
+        .update({
+          status: "confirmed",
+          google_event_id: googleEventId
+        })
+        .eq("id", bookingId)
+        .eq("status", "confirming")
+        .is("google_event_id", null)
+        .select("id");
+
+      if (finalizeError || !updated || updated.length === 0) {
+        // If we can't finalize, clean up the event to avoid orphaned calendar events
+        try {
+          await calendar.events.delete({ calendarId, eventId: googleEventId });
+        } catch (e) {
+          console.error("CLEANUP DELETE EVENT FAILED:", e);
+        }
+
+        // revert lock (best effort)
+        await supabase
+          .from("bookings")
+          .update({ status: "pending" })
+          .eq("id", bookingId)
+          .eq("status", "confirming");
+
+        return res.status(409).json({ ok: false, message: "Finalize failed; event cleaned up" });
       }
-    });
 
-    const googleEventId = calendarResponse.data.id;
+    } catch (eventErr) {
+      // Revert lock so admin can retry
+      await supabase
+        .from("bookings")
+        .update({ status: "pending" })
+        .eq("id", bookingId)
+        .eq("status", "confirming");
 
-    // =========================
-    // 5️⃣ Finalize booking
-    // =========================
-    await supabase
-      .from("bookings")
-      .update({
-        status: "confirmed",
-        google_event_id: googleEventId
-      })
-      .eq("id", bookingId)
-      .eq("status", "confirming");
+      throw eventErr;
+    }
 
     // =========================
-    // 6️⃣ SMS (UNCHANGED + LOGGING PRESERVED)
+    // 6️⃣ SMS confirmation (unchanged + logging preserved)
     // =========================
     if (
       process.env.TWILIO_ACCOUNT_SID &&
