@@ -176,15 +176,38 @@
           `;
 
           card.querySelector(".confirm").onclick = async () => {
-            hardLog(`CONFIRM CLICKED booking ${b.id}`);
-            try {
-              await fetch("/api/confirm-booking", { ... });
+  hardLog(`CONFIRM CLICKED booking ${b.id}`);
 
-            } catch (err) {
-              alert("Calendar creation failed. Booking NOT confirmed.");
-              console.error(err);
-            }
-          };
+  try {
+    const res = await fetch("/api/confirm-booking", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-secret": ADMIN_SECRET
+      },
+      body: JSON.stringify({
+        bookingId: b.id
+      })
+    });
+
+    const data = await res.json();
+    hardLog(`CONFIRM API RESPONSE ${res.status}`);
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data.message || "Confirmation failed");
+    }
+
+    // Success → remove card
+    card.remove();
+    hardLog(`BOOKING ${b.id} CONFIRMED`);
+
+  } catch (err) {
+    alert("Confirmation failed. Booking NOT confirmed.");
+    console.error(err);
+    hardLog(`CONFIRM ERROR ${err.message}`);
+  }
+};
+
 
           card.querySelector(".cancel").onclick = async () => {
             if (!confirm("Are you sure you want to deny this booking?")) return;
