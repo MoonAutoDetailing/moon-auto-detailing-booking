@@ -14,6 +14,7 @@ export default async function handler(req, res) {
     }
 
     const { bookingId } = req.body;
+    console.log("BOOKING ID RECEIVED:", bookingId);
     if (!bookingId) {
       return res.status(400).json({ ok: false, message: "Missing bookingId" });
     }
@@ -23,23 +24,16 @@ export default async function handler(req, res) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // Fetch booking + relations
-    const { data: booking, error } = await supabase
-      .from("bookings")
-      .select(`
-        id,
-        scheduled_start,
-        scheduled_end,
-        service_address,
-        customers:customer_id ( full_name, phone, sms_opt_out ),
-        vehicles:vehicle_id ( vehicle_year, vehicle_make, vehicle_model ),
-        service_variants:service_variant_id (
-          duration_minutes,
-          services:service_id ( category, level )
-        )
-      `)
-      .eq("id", bookingId)
-      .single();
+    // DEBUG: simple fetch only
+const { data: booking, error } = await supabase
+  .from("bookings")
+  .select("*")
+  .eq("id", bookingId)
+  .single();
+
+console.log("BOOKING RESULT:", booking);
+console.log("BOOKING ERROR:", error);
+
 
     if (error || !booking) {
       return res.status(404).json({ ok: false, message: "Booking not found" });
