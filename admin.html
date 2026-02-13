@@ -106,150 +106,110 @@
     }
 
     /* ===================== LOAD BOOKINGS ===================== */
-    async function loadPendingBookings() {
-      const { data, error } = await supabase
-        .from("bookings")
-        .select(`
-          id,
-          scheduled_start,
-          scheduled_end,
-          service_address,
-          status,
-          customers:customer_id ( full_name, phone ),
-          vehicles:vehicle_id ( vehicle_year, vehicle_make, vehicle_model ),
-          service_variants:service_variant_id (
-            duration_minutes,
-            services:service_id ( category, level )
-          )
-        `)
-        .eq("status", "pending")
-        .order("scheduled_start", { ascending: true });
+    async function loadAdminData() {
+  hardLog("LOADING ADMIN DATA");
 
-      if (error) {
-        container.textContent = "Failed to load bookings.";
-        console.error(error);
-        return;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const { data, error } = await supabase
+    .from("bookings")
+    .select(`
+      id,
+      scheduled_start,
+      scheduled_end,
+      service_address,
+      status,
+      google_event_id,
+      customers:customer_id ( full_name, phone ),
+      vehicles:vehicle_id ( vehicle_year, vehicle_make, vehicle_model ),
+      service_variants:service_variant_id (
+        duration_minutes,
+        services:service_id ( category, level )
+      )
+    `)
+    .gte("scheduled_start", today.toISOString())
+    .order("scheduled_start", { ascending: true });
+
+  if (error) {
+    container.textContent = "Failed to load bookings.";
+    console.error(error);
+    return;
+  }
+
+  splitAndRender(data);
+}
+function splitAndRender(bookings) {
+  container.innerHTML = "";
+
+  const pending = [];
+  const todayList = [];
+  const upcoming = [];
+  const completed = [];
+
+  const now = new Date();
+  const startOfToday = new Date();
+  startOfToday.setHours(0,0,0,0);
+
+  const endOfToday = new Date(startOfToday);
+  endOfToday.setDate(endOfToday.getDate() + 1);
+
+  bookings.forEach(b => {
+    const start = new Date(b.scheduled_start);
+
+    if (b.status === "pending") {
+      pending.push(b);
+    }
+
+    else if (b.status === "confirmed") {
+      if (start >= startOfToday && start < endOfToday) {
+        todayList.push(b);
+      } else if (start >= endOfToday) {
+        upcoming.push(b);
       }
-
-      renderBookings(data);
     }
 
-    /* ===================== RENDER BOOKINGS ===================== */
-    function renderBookings(bookings) {
-      container.innerHTML = "";
-      const groups = {};
-
-      bookings.forEach(b => {
-        const dayKey = new Date(b.scheduled_start).toDateString();
-        if (!groups[dayKey]) groups[dayKey] = [];
-        groups[dayKey].push(b);
-      });
-
-      Object.entries(groups).forEach(([day, items]) => {
-        const dayDiv = document.createElement("div");
-        dayDiv.className = "day";
-        dayDiv.innerHTML = `<h2>${formatDay(new Date(day))}</h2>`;
-
-        items.forEach(b => {
-          const start = new Date(b.scheduled_start);
-          const end = new Date(b.scheduled_end);
-
-          const service = b.service_variants.services;
-          const vehicle = b.vehicles;
-          const customer = b.customers;
-
-          const card = document.createElement("div");
-          card.className = "card";
-
-          card.innerHTML = `
-            <div class="row"><span class="label">Client:</span> ${customer.full_name}</div>
-            <div class="row"><span class="label">Phone:</span> ${customer.phone || "—"}</div>
-            <div class="row"><span class="label">Address:</span> ${b.service_address}</div>
-            <div class="row"><span class="label">Vehicle:</span> ${vehicle.vehicle_year || ""} ${vehicle.vehicle_make || ""} ${vehicle.vehicle_model || ""}</div>
-            <div class="row"><span class="label">Service:</span> ${service.category} (Level ${service.level}) — ${b.service_variants.duration_minutes} min</div>
-            <div class="row"><span class="label">Time:</span> ${formatTime(start)} → ${formatTime(end)}</div>
-            <div class="actions">
-              <button class="confirm">Confirm</button>
-              <button class="delay">Delay</button>
-              <button class="cancel">Cancel</button>
-            </div>
-          `;
-
-          card.querySelector(".confirm").onclick = async () => {
-  hardLog(`CONFIRM CLICKED booking ${b.id}`);
-
-  try {
-    const res = await fetch("/api/confirm-booking", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-secret": ADMIN_SECRET
-      },
-      body: JSON.stringify({
-        bookingId: b.id
-      })
-    });
-
-    const data = await res.json();
-    hardLog(`CONFIRM API RESPONSE ${res.status}`);
-
-    if (!res.ok || !data.ok) {
-      throw new Error(data.message || "Confirmation failed");
+    else if (
+      ["completed","no_show","cancelled","rescheduled","denied"]
+        .includes(b.status)
+    ) {
+      completed.push(b);
     }
+  });
 
-    // Success → remove card
-    card.remove();
-    hardLog(`BOOKING ${b.id} CONFIRMED`);
+  renderSection("Pending Bookings", pending);
+  renderSection("Today's Schedule", todayList);
+  renderSection("Upcoming Bookings", upcoming);
+  renderSection("Completed Archive", completed, true);
+}
 
-  } catch (err) {
-    alert("Confirmation failed. Booking NOT confirmed.");
-    console.error(err);
-    hardLog(`CONFIRM ERROR ${err.message}`);
+   function renderSection(title, bookings, collapsed = false) {
+  const section = document.createElement("div");
+  section.className = "day";
+
+  const header = document.createElement("h2");
+  header.textContent = `${title} (${bookings.length})`;
+  section.appendChild(header);
+
+  const body = document.createElement("div");
+
+  if (collapsed) {
+    body.style.display = "none";
+    header.style.cursor = "pointer";
+    header.onclick = () => {
+      body.style.display =
+        body.style.display === "none" ? "block" : "none";
+    };
   }
-};
 
+  bookings.forEach(b => {
+    body.appendChild(buildCard(b));
+  });
 
-          card.querySelector(".cancel").onclick = async () => {
-  if (!confirm("Are you sure you want to cancel this booking?")) return;
+  section.appendChild(body);
+  container.appendChild(section);
+}
 
-  try {
-    hardLog(`DELETE CALENDAR EVENT for ${b.id}`);
-
-    // 1️⃣ Delete Google Calendar event (HARD FAILURE)
-    const delRes = await fetch("/api/delete-calendar-event", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-secret": ADMIN_SECRET
-      },
-      body: JSON.stringify({ bookingId: b.id })
-    });
-
-    const delData = await delRes.json();
-    hardLog(`DELETE API RESPONSE ${delRes.status}`);
-
-    if (!delRes.ok || !delData.ok) {
-      throw new Error(delData.message || "Calendar deletion failed");
-    }
-
-    // 2️⃣ Only if calendar deletion succeeds → update DB status
-    await updateStatus(b.id, "cancelled", card);
-
-    hardLog(`BOOKING ${b.id} CANCELLED`);
-
-  } catch (err) {
-    alert("Cancellation failed. Calendar event was NOT deleted.");
-    console.error(err);
-    hardLog(`CANCEL ERROR ${err.message}`);
-  }
-};
-
-          dayDiv.appendChild(card);
-        });
-
-        container.appendChild(dayDiv);
-      });
-    }
 
     /* ===================== CALENDAR API ===================== */
     async function createCalendarEvent(booking) {
