@@ -34,21 +34,10 @@ export default async function handler(req, res) {
 
     // Fetch booking + relations
     const { data: booking, error } = await supabase
-      .from("bookings")
-      .select(`
-        id,
-        scheduled_start,
-        scheduled_end,
-        service_address,
-        customers:customer_id ( full_name, phone, sms_opt_out ),
-        vehicles:vehicle_id ( vehicle_year, vehicle_make, vehicle_model ),
-        service_variants:service_variant_id (
-          duration_minutes,
-          services:service_id ( category, level )
-        )
-      `)
-      .eq("id", bookingId)
-      .single();
+  .from("bookings")
+  .select("*")
+  .eq("id", bookingId)
+  .single();
 
     if (error || !booking) {
       throw new Error("Booking not found");
