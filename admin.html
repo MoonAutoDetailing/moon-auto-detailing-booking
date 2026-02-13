@@ -336,9 +336,7 @@ hardLog(`CANCEL ERROR ${err.message}`);
 }
 };
 
-    actions.appendChild(rescheduleBtn);
-actions.appendChild(completeBtn);
-    const rescheduleBtn = document.createElement("button");
+   const rescheduleBtn = document.createElement("button");
 rescheduleBtn.textContent = "Reschedule";
 rescheduleBtn.className = "delay";
 
@@ -346,7 +344,6 @@ rescheduleBtn.onclick = async () => {
   if (!confirm("Mark this booking as reschedule requested?")) return;
 
   try {
-    // 1️⃣ Delete Google event
     const delRes = await fetch("/api/delete-calendar-event", {
       method: "POST",
       headers: {
@@ -362,7 +359,6 @@ rescheduleBtn.onclick = async () => {
       throw new Error(delData.message || "Calendar deletion failed");
     }
 
-    // 2️⃣ Update status
     const { error } = await supabase
       .from("bookings")
       .update({ status: "reschedule_requested" })
@@ -376,8 +372,11 @@ rescheduleBtn.onclick = async () => {
     hardLog(`RESCHEDULE ERROR ${err.message}`);
   }
 };
+
+actions.appendChild(rescheduleBtn);
+actions.appendChild(completeBtn);
 actions.appendChild(cancelBtn);
-}
+
 
 card.appendChild(actions);
 return card;
