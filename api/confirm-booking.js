@@ -14,7 +14,6 @@ export default async function handler(req, res) {
     }
 
     const { bookingId } = req.body;
-    console.log("BOOKING ID RECEIVED:", bookingId);
     if (!bookingId) {
       return res.status(400).json({ ok: false, message: "Missing bookingId" });
     }
@@ -23,83 +22,73 @@ export default async function handler(req, res) {
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
-    console.log("SERVICE ROLE KEY BEING USED:", process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 20));
 
+    // =========================
+    // 1️⃣ Fetch booking
+    // =========================
+    const { data: booking } = await supabase
+      .from("bookings")
+      .select("*")
+      .eq("id", bookingId)
+      .single();
 
-  // 1️⃣ Fetch booking (authoritative fields only)
-const { data: booking, error: bookingError } = await supabase
-  .from("bookings")
-  .select("id, status, google_event_id, customer_id, vehicle_id, service_variant_id, service_address, scheduled_start, scheduled_end")
-  .eq("id", bookingId)
-  .single();
+    if (!booking) {
+      return res.status(404).json({ ok: false, message: "Booking not found" });
+    }
 
-if (bookingError || !booking) {
-  return res.status(404).json({ ok: false, message: "Booking not found" });
-}
+    // Already confirmed?
+    if (booking.status === "confirmed" && booking.google_event_id) {
+      return res.status(200).json({ ok: true, alreadyConfirmed: true });
+    }
 
-// ✅ Idempotency: if already confirmed (or already has event), do nothing.
-if (booking.status === "confirmed" && booking.google_event_id) {
-  return res.status(200).json({ ok: true, alreadyConfirmed: true });
-}
-if (booking.google_event_id) {
-  // event exists even if status got weird; don't create another
-  return res.status(200).json({ ok: true, alreadyConfirmed: true });
-}
-if (booking.status !== "pending") {
-  // another admin action or a concurrent confirm is in progress
-  return res.status(409).json({ ok: false, message: `Booking not pending (status=${booking.status})` });
-}
+    if (booking.status !== "pending") {
+      return res.status(409).json({ ok: false, message: "Booking not pending" });
+    }
 
-// 1.5️⃣ Acquire lock: pending -> confirming (atomic gate)
-const { data: lockedRows, error: lockError } = await supabase
-  .from("bookings")
-  .update({ status: "confirming" })
-  .eq("id", bookingId)
-  .eq("status", "pending")
-  .select("id");
+    // =========================
+    // 2️⃣ Acquire lock
+    // =========================
+    const { data: locked } = await supabase
+      .from("bookings")
+      .update({ status: "confirming" })
+      .eq("id", bookingId)
+      .eq("status", "pending")
+      .select("id");
 
-if (lockError) {
-  return res.status(500).json({ ok: false, message: "Failed to lock booking" });
-}
-if (!lockedRows || lockedRows.length === 0) {
-  // someone else beat us to it
-  return res.status(409).json({ ok: false, message: "Booking is already being confirmed" });
-}
+    if (!locked || locked.length === 0) {
+      return res.status(409).json({ ok: false, message: "Already being confirmed" });
+    }
 
+    // =========================
+    // 3️⃣ Fetch related data (UNCHANGED)
+    // =========================
+    const { data: customer } = await supabase
+      .from("customers")
+      .select("full_name, phone, sms_opt_out")
+      .eq("id", booking.customer_id)
+      .single();
 
+    const { data: vehicle } = await supabase
+      .from("vehicles")
+      .select("vehicle_year, vehicle_make, vehicle_model, license_plate")
+      .eq("id", booking.vehicle_id)
+      .single();
 
-// 2️⃣ Fetch customer
-const { data: customer, error: customerError } = await supabase
-  .from("customers")
-  .select("full_name, phone, sms_opt_out")
-  .eq("id", booking.customer_id)
-  .single();
-    console.log("CUSTOMER RESULT:", customer);
-console.log("CUSTOMER ERROR:", customerError);
+    const { data: variant } = await supabase
+      .from("service_variants")
+      .select("duration_minutes, service_id")
+      .eq("id", booking.service_variant_id)
+      .single();
 
+    const { data: service } = await supabase
+      .from("services")
+      .select("category, level")
+      .eq("id", variant.service_id)
+      .single();
 
-// 3️⃣ Fetch vehicle
-const { data: vehicle } = await supabase
-  .from("vehicles")
-  .select("vehicle_year, vehicle_make, vehicle_model, license_plate")
-  .eq("id", booking.vehicle_id)
-  .single();
-
-// 4️⃣ Fetch service variant
-const { data: variant } = await supabase
-  .from("service_variants")
-  .select("duration_minutes, service_id")
-  .eq("id", booking.service_variant_id)
-  .single();
-
-// 5️⃣ Fetch service
-const { data: service } = await supabase
-  .from("services")
-  .select("category, level")
-  .eq("id", variant.service_id)
-  .single();
-
-    // 1️⃣ Create Google Calendar event
+    // =========================
+    // 4️⃣ Create Google Event (SINGLE INSERT)
+    // =========================
     const calendarId = process.env.GOOGLE_CALENDAR_ID.trim();
     const decoded = Buffer.from(
       process.env.GOOGLE_SERVICE_ACCOUNT_JSON,
@@ -117,98 +106,59 @@ const { data: service } = await supabase
     const calendar = google.calendar({ version: "v3", auth });
 
     const formattedService = `${service.category} Detail Level ${service.level}`;
+    const formattedVehicle = [
+      vehicle.vehicle_year,
+      vehicle.vehicle_make,
+      vehicle.vehicle_model
+    ].filter(Boolean).join(" ");
 
-const formattedVehicle = [
-  vehicle.vehicle_year,
-  vehicle.vehicle_make,
-  vehicle.vehicle_model
-].filter(Boolean).join(" ");
+    const formattedLicense = vehicle.license_plate
+      ? ` (${vehicle.license_plate})`
+      : "";
 
-const formattedLicense = vehicle.license_plate
-  ? ` (${vehicle.license_plate})`
-  : "";
+    const summary = `${formattedService} — ${customer.full_name}`;
 
-const summary = `${formattedService} — ${customer.full_name}`;
+    const description = [
+      `Customer: ${customer.full_name}`,
+      `Phone: ${customer.phone || "—"}`,
+      `Vehicle: ${formattedVehicle}${formattedLicense}`,
+      `Service: ${formattedService}`
+    ].join("\n");
 
-const description = [
-  `Customer: ${customer.full_name}`,
-  `Phone: ${customer.phone || "—"}`,
-  `Vehicle: ${formattedVehicle}${formattedLicense}`,
-  `Service: ${formattedService}`
-].join("\n");
+    const calendarResponse = await calendar.events.insert({
+      calendarId,
+      requestBody: {
+        summary,
+        location: booking.service_address,
+        description,
+        start: { dateTime: booking.scheduled_start },
+        end: { dateTime: booking.scheduled_end }
+      }
+    });
 
-const calendarResponse = await calendar.events.insert({
-  calendarId,
-  requestBody: {
-    summary,
-    location: booking.service_address,
-    description,
-    start: { dateTime: booking.scheduled_start },
-    end: { dateTime: booking.scheduled_end }
-  }
-});
+    const googleEventId = calendarResponse.data.id;
 
-const googleEventId = calendarResponse.data.id;
+    // =========================
+    // 5️⃣ Finalize booking
+    // =========================
+    await supabase
+      .from("bookings")
+      .update({
+        status: "confirmed",
+        google_event_id: googleEventId
+      })
+      .eq("id", bookingId)
+      .eq("status", "confirming");
 
-    // 2️⃣ Update booking status
-    let googleEventId = null;
-
-try {
-  const calendarResponse = await calendar.events.insert({
-    calendarId,
-    requestBody: {
-      summary,
-      location: booking.service_address,
-      description,
-      start: { dateTime: booking.scheduled_start },
-      end: { dateTime: booking.scheduled_end }
-    }
-  });
-
-  googleEventId = calendarResponse.data.id;
-
-  // 2️⃣ Update booking status (idempotent guard: only if still confirming and event_id empty)
-  const { data: updatedRows, error: updateErr } = await supabase
-    .from("bookings")
-    .update({
-      status: "confirmed",
-      google_event_id: googleEventId
-    })
-    .eq("id", bookingId)
-    .eq("status", "confirming")
-    .is("google_event_id", null)
-    .select("id");
-
-  if (updateErr || !updatedRows || updatedRows.length === 0) {
-    // DB didn't accept update; avoid orphaning: best effort delete the just-created event
-    try {
-      await calendar.events.delete({ calendarId, eventId: googleEventId });
-    } catch (e) {
-      console.error("CLEANUP DELETE EVENT FAILED:", e);
-    }
-    return res.status(409).json({ ok: false, message: "Booking confirmation race detected; event cleanup attempted" });
-  }
-
-} catch (eventErr) {
-  // Revert lock so admin can retry
-  await supabase
-    .from("bookings")
-    .update({ status: "pending" })
-    .eq("id", bookingId)
-    .eq("status", "confirming");
-
-  throw eventErr;
-}
-
-
-
-    // 3️⃣ Send SMS confirmation (if configured)
+    // =========================
+    // 6️⃣ SMS (UNCHANGED + LOGGING PRESERVED)
+    // =========================
     if (
       process.env.TWILIO_ACCOUNT_SID &&
       process.env.TWILIO_AUTH_TOKEN &&
       process.env.TWILIO_PHONE_NUMBER &&
       customer.phone &&
-!customer.sms_opt_out
+      !customer.sms_opt_out
     ) {
       try {
         const client = twilio(
