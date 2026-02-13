@@ -27,12 +27,32 @@ export default async function handler(req, res) {
     // DEBUG: simple fetch only
 const { data: booking, error } = await supabase
   .from("bookings")
-  .select("*")
+  .select(`
+    id,
+    scheduled_start,
+    scheduled_end,
+    service_address,
+    status,
+    customers (
+      full_name,
+      phone,
+      sms_opt_out
+    ),
+    vehicles (
+      vehicle_year,
+      vehicle_make,
+      vehicle_model
+    ),
+    service_variants (
+      duration_minutes,
+      services (
+        category,
+        level
+      )
+    )
+  `)
   .eq("id", bookingId)
   .single();
-
-console.log("BOOKING RESULT:", booking);
-console.log("BOOKING ERROR:", error);
 
 
     if (error || !booking) {
