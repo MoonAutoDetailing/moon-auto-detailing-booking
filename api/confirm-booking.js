@@ -23,6 +23,8 @@ export default async function handler(req, res) {
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
+    console.log("SERVICE ROLE KEY BEING USED:", process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 20));
+
 
   // 1️⃣ Fetch booking
 const { data: booking, error: bookingError } = await supabase
