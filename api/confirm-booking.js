@@ -86,7 +86,7 @@ const { data: service } = await supabase
 
     const calendar = google.calendar({ version: "v3", auth });
 
-    const summary = `${booking.service_variants.services.category} Level ${booking.service_variants.services.level} — ${booking.customers.full_name}`;
+    const summary = `${service.category} Level ${service.level} — ${customer.full_name}`;
 
     await calendar.events.insert({
       calendarId,
@@ -109,8 +109,8 @@ const { data: service } = await supabase
       process.env.TWILIO_ACCOUNT_SID &&
       process.env.TWILIO_AUTH_TOKEN &&
       process.env.TWILIO_PHONE_NUMBER &&
-      booking.customers.phone &&
-      !booking.customers.sms_opt_out
+      customer.phone &&
+!customer.sms_opt_out
     ) {
       try {
         const client = twilio(
@@ -124,7 +124,7 @@ const { data: service } = await supabase
         const sms = await client.messages.create({
           body: `Hi ${booking.customers.full_name}, your Moon Auto Detailing appointment is confirmed for ${formatted}. Reply STOP to opt out.`,
           from: process.env.TWILIO_PHONE_NUMBER,
-          to: booking.customers.phone
+          to: booking.customer.phone
         });
 
         await supabase.from("booking_communications").insert({
