@@ -225,15 +225,6 @@ function splitAndRender(bookings) {
   container.appendChild(section);
 }
 
-
-  bookings.forEach(b => {
-    body.appendChild(buildCard(b));
-  });
-
-  section.appendChild(body);
-  container.appendChild(section);
-}
-
 function buildCard(b) {
   const start = new Date(b.scheduled_start);
   const end = new Date(b.scheduled_end);
