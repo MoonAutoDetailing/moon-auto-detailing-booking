@@ -364,9 +364,9 @@ function buildCard(b) {
         }
 
         const { error } = await supabase
-          .from("bookings")
-          .delete()
-          .eq("id", b.id);
+  .from("bookings")
+  .update({ status: "cancelled" })
+  .eq("id", b.id);
 
         if (error) throw error;
 
