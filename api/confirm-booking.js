@@ -36,13 +36,19 @@ const { data: booking, error: bookingError } = await supabase
 if (bookingError || !booking) {
   return res.status(404).json({ ok: false, message: "Booking not found" });
 }
+    console.log("BOOKING OBJECT:", booking);
+console.log("CUSTOMER ID FROM BOOKING:", booking.customer_id);
+
 
 // 2️⃣ Fetch customer
-const { data: customer } = await supabase
+const { data: customer, error: customerError } = await supabase
   .from("customers")
   .select("full_name, phone, sms_opt_out")
   .eq("id", booking.customer_id)
   .single();
+    console.log("CUSTOMER RESULT:", customer);
+console.log("CUSTOMER ERROR:", customerError);
+
 
 // 3️⃣ Fetch vehicle
 const { data: vehicle } = await supabase
