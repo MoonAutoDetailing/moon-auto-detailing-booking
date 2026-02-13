@@ -63,12 +63,6 @@ const { data: service } = await supabase
   .eq("id", variant.service_id)
   .single();
 
-
-
-    if (error || !booking) {
-      return res.status(404).json({ ok: false, message: "Booking not found" });
-    }
-
     // 1️⃣ Create Google Calendar event
     const calendarId = process.env.GOOGLE_CALENDAR_ID.trim();
     const decoded = Buffer.from(
@@ -122,9 +116,9 @@ const { data: service } = await supabase
           .toLocaleString("en-US", { timeZone: "America/New_York" });
 
         const sms = await client.messages.create({
-          body: `Hi ${booking.customers.full_name}, your Moon Auto Detailing appointment is confirmed for ${formatted}. Reply STOP to opt out.`,
+          body: `Hi ${customer.full_name}, your Moon Auto Detailing appointment is confirmed for ${formatted}. Reply STOP to opt out.`,
           from: process.env.TWILIO_PHONE_NUMBER,
-          to: booking.customer.phone
+          to: customer.phone
         });
 
         await supabase.from("booking_communications").insert({
