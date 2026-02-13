@@ -335,8 +335,46 @@ function buildCard(b) {
         hardLog(`CANCEL ERROR ${err.message}`);
       }
     };
-
+    actions.appendChild(rescheduleBtn);
     actions.appendChild(completeBtn);
+    const rescheduleBtn = document.createElement("button");
+rescheduleBtn.textContent = "Reschedule";
+rescheduleBtn.className = "delay";
+
+rescheduleBtn.onclick = async () => {
+  if (!confirm("Mark this booking as reschedule requested?")) return;
+
+  try {
+    // 1️⃣ Delete Google event
+    const delRes = await fetch("/api/delete-calendar-event", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-secret": ADMIN_SECRET
+      },
+      body: JSON.stringify({ bookingId: b.id })
+    });
+
+    const delData = await delRes.json();
+
+    if (!delRes.ok || !delData.ok) {
+      throw new Error(delData.message || "Calendar deletion failed");
+    }
+
+    // 2️⃣ Update status
+    const { error } = await supabase
+      .from("bookings")
+      .update({ status: "reschedule_requested" })
+      .eq("id", b.id);
+
+    if (error) throw error;
+
+    loadAdminData();
+  } catch (err) {
+    alert("Reschedule failed.");
+    hardLog(`RESCHEDULE ERROR ${err.message}`);
+  }
+};
     actions.appendChild(cancelBtn);
   }
 
