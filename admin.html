@@ -231,6 +231,101 @@ function buildCard(b) {
     <div class="row"><span class="label">Status:</span> ${b.status}</div>
   `;
 
+  const actions = document.createElement("div");
+  actions.className = "actions";
+
+  // 🟡 PENDING BUTTONS
+  if (b.status === "pending") {
+
+    const confirmBtn = document.createElement("button");
+    confirmBtn.textContent = "Confirm";
+    confirmBtn.className = "confirm";
+    confirmBtn.onclick = async () => {
+      hardLog(`CONFIRM CLICKED booking ${b.id}`);
+
+      try {
+        const res = await fetch("/api/confirm-booking", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-secret": ADMIN_SECRET
+          },
+          body: JSON.stringify({ bookingId: b.id })
+        });
+
+        const data = await res.json();
+        hardLog(`CONFIRM API RESPONSE ${res.status}`);
+
+        if (!res.ok || !data.ok) {
+          throw new Error(data.message || "Confirmation failed");
+        }
+
+        loadAdminData();
+      } catch (err) {
+        alert("Confirmation failed.");
+        hardLog(`CONFIRM ERROR ${err.message}`);
+      }
+    };
+
+    const denyBtn = document.createElement("button");
+    denyBtn.textContent = "Deny";
+    denyBtn.className = "cancel";
+    denyBtn.onclick = async () => {
+      if (!confirm("Are you sure you want to deny this booking?")) return;
+      await updateStatus(b.id, "denied", card);
+      loadAdminData();
+    };
+
+    actions.appendChild(confirmBtn);
+    actions.appendChild(denyBtn);
+  }
+
+  // 🔵 CONFIRMED (Today or Upcoming)
+  else if (b.status === "confirmed") {
+
+    const completeBtn = document.createElement("button");
+    completeBtn.textContent = "Job Completed";
+    completeBtn.className = "confirm";
+    completeBtn.onclick = async () => {
+      await updateStatus(b.id, "completed", card);
+      loadAdminData();
+    };
+
+    const cancelBtn = document.createElement("button");
+    cancelBtn.textContent = "Cancel";
+    cancelBtn.className = "cancel";
+    cancelBtn.onclick = async () => {
+      if (!confirm("Cancel this booking?")) return;
+
+      try {
+        const delRes = await fetch("/api/delete-calendar-event", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-secret": ADMIN_SECRET
+          },
+          body: JSON.stringify({ bookingId: b.id })
+        });
+
+        const delData = await delRes.json();
+
+        if (!delRes.ok || !delData.ok) {
+          throw new Error(delData.message || "Calendar deletion failed");
+        }
+
+        await updateStatus(b.id, "cancelled", card);
+        loadAdminData();
+      } catch (err) {
+        alert("Cancellation failed.");
+        hardLog(`CANCEL ERROR ${err.message}`);
+      }
+    };
+
+    actions.appendChild(completeBtn);
+    actions.appendChild(cancelBtn);
+  }
+
+  card.appendChild(actions);
   return card;
 }
 
