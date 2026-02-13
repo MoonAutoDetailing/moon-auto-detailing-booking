@@ -33,19 +33,19 @@ const { data: booking, error } = await supabase
     scheduled_end,
     service_address,
     status,
-    customers (
+    customers:customer_id (
       full_name,
       phone,
       sms_opt_out
     ),
-    vehicles (
+    vehicles:vehicle_id (
       vehicle_year,
       vehicle_make,
       vehicle_model
     ),
-    service_variants (
+    service_variants:service_variant_id (
       duration_minutes,
-      services (
+      services:service_id (
         category,
         level
       )
