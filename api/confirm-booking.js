@@ -26,18 +26,46 @@ export default async function handler(req, res) {
     console.log("SERVICE ROLE KEY BEING USED:", process.env.SUPABASE_SERVICE_ROLE_KEY?.slice(0, 20));
 
 
-  // 1️⃣ Fetch booking
+  // 1️⃣ Fetch booking (authoritative fields only)
 const { data: booking, error: bookingError } = await supabase
   .from("bookings")
-  .select("*")
+  .select("id, status, google_event_id, customer_id, vehicle_id, service_variant_id, service_address, scheduled_start, scheduled_end")
   .eq("id", bookingId)
   .single();
 
 if (bookingError || !booking) {
   return res.status(404).json({ ok: false, message: "Booking not found" });
 }
-    console.log("BOOKING OBJECT:", booking);
-console.log("CUSTOMER ID FROM BOOKING:", booking.customer_id);
+
+// ✅ Idempotency: if already confirmed (or already has event), do nothing.
+if (booking.status === "confirmed" && booking.google_event_id) {
+  return res.status(200).json({ ok: true, alreadyConfirmed: true });
+}
+if (booking.google_event_id) {
+  // event exists even if status got weird; don't create another
+  return res.status(200).json({ ok: true, alreadyConfirmed: true });
+}
+if (booking.status !== "pending") {
+  // another admin action or a concurrent confirm is in progress
+  return res.status(409).json({ ok: false, message: `Booking not pending (status=${booking.status})` });
+}
+
+// 1.5️⃣ Acquire lock: pending -> confirming (atomic gate)
+const { data: lockedRows, error: lockError } = await supabase
+  .from("bookings")
+  .update({ status: "confirming" })
+  .eq("id", bookingId)
+  .eq("status", "pending")
+  .select("id");
+
+if (lockError) {
+  return res.status(500).json({ ok: false, message: "Failed to lock booking" });
+}
+if (!lockedRows || lockedRows.length === 0) {
+  // someone else beat us to it
+  return res.status(409).json({ ok: false, message: "Booking is already being confirmed" });
+}
+
 
 
 // 2️⃣ Fetch customer
@@ -123,13 +151,55 @@ const calendarResponse = await calendar.events.insert({
 const googleEventId = calendarResponse.data.id;
 
     // 2️⃣ Update booking status
-    await supabase
-  .from("bookings")
-  .update({
-    status: "confirmed",
-    google_event_id: googleEventId
-  })
-  .eq("id", bookingId);
+    let googleEventId = null;
+
+try {
+  const calendarResponse = await calendar.events.insert({
+    calendarId,
+    requestBody: {
+      summary,
+      location: booking.service_address,
+      description,
+      start: { dateTime: booking.scheduled_start },
+      end: { dateTime: booking.scheduled_end }
+    }
+  });
+
+  googleEventId = calendarResponse.data.id;
+
+  // 2️⃣ Update booking status (idempotent guard: only if still confirming and event_id empty)
+  const { data: updatedRows, error: updateErr } = await supabase
+    .from("bookings")
+    .update({
+      status: "confirmed",
+      google_event_id: googleEventId
+    })
+    .eq("id", bookingId)
+    .eq("status", "confirming")
+    .is("google_event_id", null)
+    .select("id");
+
+  if (updateErr || !updatedRows || updatedRows.length === 0) {
+    // DB didn't accept update; avoid orphaning: best effort delete the just-created event
+    try {
+      await calendar.events.delete({ calendarId, eventId: googleEventId });
+    } catch (e) {
+      console.error("CLEANUP DELETE EVENT FAILED:", e);
+    }
+    return res.status(409).json({ ok: false, message: "Booking confirmation race detected; event cleanup attempted" });
+  }
+
+} catch (eventErr) {
+  // Revert lock so admin can retry
+  await supabase
+    .from("bookings")
+    .update({ status: "pending" })
+    .eq("id", bookingId)
+    .eq("status", "confirming");
+
+  throw eventErr;
+}
+
 
 
     // 3️⃣ Send SMS confirmation (if configured)
