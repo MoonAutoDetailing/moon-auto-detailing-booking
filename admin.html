@@ -1,309 +1,438 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Moon Auto Detailing — Admin</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta charset="utf-8" />
+<title>Moon Auto Detailing — Admin</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 
-  <style>
-    body {
-      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      margin: 20px;
-      max-width: 1000px;
-    }
-    h1 { margin-bottom: 10px; }
-    .day { margin-top: 24px; }
-    .card {
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      padding: 14px;
-      margin-top: 12px;
-    }
-    .row { margin-bottom: 6px; }
-    .label { font-weight: 600; }
-    .actions button {
-      margin-right: 8px;
-      padding: 8px 12px;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .confirm { background: #0a7a2f; color: white; border: none; }
-    .cancel { background: #b00020; color: white; border: none; }
-    .delay { background: #666; color: white; border: none; }
-  </style>
+<style>
+body {
+font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+margin: 20px;
+max-width: 1000px;
+}
+h1 { margin-bottom: 10px; }
+.day { margin-top: 24px; }
+.card {
+border: 1px solid #ddd;
+border-radius: 10px;
+padding: 14px;
+margin-top: 12px;
+}
+.row { margin-bottom: 6px; }
+.label { font-weight: 600; }
+.actions button {
+margin-right: 8px;
+padding: 8px 12px;
+font-weight: 700;
+cursor: pointer;
+}
+.confirm { background: #0a7a2f; color: white; border: none; }
+.cancel { background: #b00020; color: white; border: none; }
+.delay { background: #666; color: white; border: none; }
+</style>
 </head>
 
 <body>
 
-  <!-- HARD DEBUG PANEL -->
-  <div
-    id="hardLog"
-    style="
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      max-height: 180px;
-      overflow-y: auto;
-      background: #111;
-      color: #0f0;
-      font-family: monospace;
-      font-size: 12px;
-      padding: 8px;
-      z-index: 9999;
-      border-top: 2px solid #0f0;
-    "
-  >
-    <strong>DEBUG LOG</strong>
-  </div>
+<!-- HARD DEBUG PANEL -->
+<div
+id="hardLog"
+style="
+     position: fixed;
+     bottom: 0;
+     left: 0;
+     width: 100%;
+     max-height: 180px;
+     overflow-y: auto;
+     background: #111;
+     color: #0f0;
+     font-family: monospace;
+     font-size: 12px;
+     padding: 8px;
+     z-index: 9999;
+     border-top: 2px solid #0f0;
+   "
+>
+<strong>DEBUG LOG</strong>
+</div>
 
-  <h1>Pending Bookings — Admin</h1>
-  <div id="container"></div>
+<h1>Pending Bookings — Admin</h1>
+<div id="container"></div>
 
-  <script type="module">
-    /* ===================== IMPORTS ===================== */
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+<script type="module">
+/* ===================== IMPORTS ===================== */
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-    /* ===================== HARD LOG ===================== */
-    function hardLog(message) {
-      const el = document.getElementById("hardLog");
-      if (!el) return;
-      const line = document.createElement("div");
-      line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-      el.appendChild(line);
-      el.scrollTop = el.scrollHeight;
-    }
+/* ===================== HARD LOG ===================== */
+function hardLog(message) {
+const el = document.getElementById("hardLog");
+if (!el) return;
+const line = document.createElement("div");
+line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+el.appendChild(line);
+el.scrollTop = el.scrollHeight;
+}
 
-    hardLog("ADMIN LOADED");
+hardLog("ADMIN LOADED");
 
-    /* ===================== SUPABASE ===================== */
-    const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
-    const SUPABASE_ANON_KEY =
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbWh1Z3p0cnBpcHJucW1jeWFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MDk1NjMsImV4cCI6MjA4NjA4NTU2M30.Mo0uRGWCjU1fOa1br2P8j1ogEZf7mDm2JseV8DFnPwI";
+/* ===================== SUPABASE ===================== */
+const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
+const SUPABASE_ANON_KEY =
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbWh1Z3p0cnBpcHJucW1jeWFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MDk1NjMsImV4cCI6MjA4NjA4NTU2M30.Mo0uRGWCjU1fOa1br2P8j1ogEZf7mDm2JseV8DFnPwI";
 
-    const ADMIN_SECRET = "moon-admin-2026";
+const ADMIN_SECRET = "moon-admin-2026";
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: {
-        headers: { "x-admin-secret": ADMIN_SECRET }
-      }
-    });
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+global: {
+headers: { "x-admin-secret": ADMIN_SECRET }
+}
+});
 
-    const container = document.getElementById("container");
+const container = document.getElementById("container");
 
-    /* ===================== FORMAT HELPERS ===================== */
-    function formatDay(d) {
-      return d.toLocaleDateString(undefined, {
-        weekday: "long",
-        year: "numeric",
-        month: "long",
-        day: "numeric"
-      });
-    }
+/* ===================== FORMAT HELPERS ===================== */
+function formatDay(d) {
+return d.toLocaleDateString(undefined, {
+weekday: "long",
+year: "numeric",
+month: "long",
+day: "numeric"
+});
+}
 
-    function formatTime(d) {
-      return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    }
+function formatTime(d) {
+return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
 
-    /* ===================== LOAD BOOKINGS ===================== */
-    async function loadAdminData() {
-  hardLog("LOADING ADMIN DATA");
+/* ===================== LOAD BOOKINGS ===================== */
+async function loadAdminData() {
+hardLog("LOADING ADMIN DATA");
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+const today = new Date();
+today.setHours(0, 0, 0, 0);
 
-  const { data, error } = await supabase
-    .from("bookings")
-    .select(`
-      id,
-      scheduled_start,
-      scheduled_end,
-      service_address,
-      status,
-      google_event_id,
-      customers:customer_id ( full_name, phone ),
-      vehicles:vehicle_id ( vehicle_year, vehicle_make, vehicle_model ),
-      service_variants:service_variant_id (
-        duration_minutes,
-        services:service_id ( category, level )
-      )
-    `)
-    .gte("scheduled_start", today.toISOString())
-    .order("scheduled_start", { ascending: true });
+const { data, error } = await supabase
+.from("bookings")
+.select(`
+     id,
+     scheduled_start,
+     scheduled_end,
+     service_address,
+     status,
+     google_event_id,
+     customers:customer_id ( full_name, phone ),
+     vehicles:vehicle_id ( vehicle_year, vehicle_make, vehicle_model ),
+     service_variants:service_variant_id (
+       duration_minutes,
+       services:service_id ( category, level )
+     )
+   `)
+.gte("scheduled_start", today.toISOString())
+.order("scheduled_start", { ascending: true });
 
-  if (error) {
-    container.textContent = "Failed to load bookings.";
-    console.error(error);
-    return;
-  }
+if (error) {
+container.textContent = "Failed to load bookings.";
+console.error(error);
+return;
+}
 
-  splitAndRender(data);
+splitAndRender(data);
 }
 function splitAndRender(bookings) {
-  container.innerHTML = "";
+container.innerHTML = "";
 
-  const pending = [];
-  const todayList = [];
-  const upcoming = [];
-  const completed = [];
+const pending = [];
+const todayList = [];
+const upcoming = [];
+const completed = [];
 
-  const now = new Date();
-  const startOfToday = new Date();
-  startOfToday.setHours(0,0,0,0);
+const now = new Date();
+const startOfToday = new Date();
+startOfToday.setHours(0,0,0,0);
 
-  const endOfToday = new Date(startOfToday);
-  endOfToday.setDate(endOfToday.getDate() + 1);
+const endOfToday = new Date(startOfToday);
+endOfToday.setDate(endOfToday.getDate() + 1);
 
-  bookings.forEach(b => {
-    const start = new Date(b.scheduled_start);
+bookings.forEach(b => {
+const start = new Date(b.scheduled_start);
 
-    if (b.status === "pending") {
-      pending.push(b);
+if (b.status === "pending") {
+pending.push(b);
+}
+
+else if (b.status === "confirmed") {
+if (start >= startOfToday && start < endOfToday) {
+todayList.push(b);
+} else if (start >= endOfToday) {
+upcoming.push(b);
+}
+}
+
+else if (
+["completed","no_show","cancelled","rescheduled","denied"]
+.includes(b.status)
+) {
+completed.push(b);
+}
+});
+
+renderSection("Pending Bookings", pending);
+renderSection("Today's Schedule", todayList);
+renderSection("Upcoming Bookings", upcoming);
+renderSection("Completed Archive", completed, true);
+}
+
+function renderSection(title, bookings, collapsed = false) {
+const section = document.createElement("div");
+section.className = "day";
+
+const header = document.createElement("h2");
+header.textContent = `${title} (${bookings.length})`;
+section.appendChild(header);
+
+const body = document.createElement("div");
+
+if (collapsed) {
+body.style.display = "none";
+header.style.cursor = "pointer";
+header.onclick = () => {
+body.style.display =
+body.style.display === "none" ? "block" : "none";
+};
+}
+
+// 🔹 Group bookings by calendar day
+const groups = {};
+
+bookings.forEach(b => {
+const dayKey = new Date(b.scheduled_start).toDateString();
+if (!groups[dayKey]) groups[dayKey] = [];
+groups[dayKey].push(b);
+});
+
+Object.entries(groups).forEach(([day, items]) => {
+const dayHeader = document.createElement("h3");
+dayHeader.textContent = formatDay(new Date(day));
+body.appendChild(dayHeader);
+
+items.forEach(b => {
+body.appendChild(buildCard(b));
+});
+});
+
+section.appendChild(body);
+container.appendChild(section);
+}
+
+function buildCard(b) {
+const start = new Date(b.scheduled_start);
+const end = new Date(b.scheduled_end);
+
+const service = b.service_variants.services;
+const vehicle = b.vehicles;
+const customer = b.customers;
+
+const card = document.createElement("div");
+card.className = "card";
+
+card.innerHTML = `
+   <div class="row"><span class="label">Client:</span> ${customer.full_name}</div>
+   <div class="row"><span class="label">Phone:</span> ${customer.phone || "—"}</div>
+   <div class="row"><span class="label">Address:</span> ${b.service_address}</div>
+   <div class="row"><span class="label">Vehicle:</span> ${vehicle.vehicle_year || ""} ${vehicle.vehicle_make || ""} ${vehicle.vehicle_model || ""}</div>
+   <div class="row"><span class="label">Service:</span> ${service.category} (Level ${service.level})</div>
+   <div class="row"><span class="label">Time:</span> ${formatTime(start)} → ${formatTime(end)}</div>
+   <div class="row"><span class="label">Status:</span> ${b.status}</div>
+ `;
+
+const actions = document.createElement("div");
+actions.className = "actions";
+
+// 🟡 PENDING BUTTONS
+if (b.status === "pending") {
+
+const confirmBtn = document.createElement("button");
+confirmBtn.textContent = "Confirm";
+confirmBtn.className = "confirm";
+confirmBtn.onclick = async () => {
+hardLog(`CONFIRM CLICKED booking ${b.id}`);
+
+try {
+const res = await fetch("/api/confirm-booking", {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+"x-admin-secret": ADMIN_SECRET
+},
+body: JSON.stringify({ bookingId: b.id })
+});
+
+const data = await res.json();
+hardLog(`CONFIRM API RESPONSE ${res.status}`);
+
+if (!res.ok || !data.ok) {
+throw new Error(data.message || "Confirmation failed");
+}
+
+loadAdminData();
+} catch (err) {
+alert("Confirmation failed.");
+hardLog(`CONFIRM ERROR ${err.message}`);
+}
+};
+
+const denyBtn = document.createElement("button");
+denyBtn.textContent = "Deny";
+denyBtn.className = "cancel";
+denyBtn.onclick = async () => {
+if (!confirm("Are you sure you want to deny this booking?")) return;
+await updateStatus(b.id, "denied", card);
+loadAdminData();
+};
+
+actions.appendChild(confirmBtn);
+actions.appendChild(denyBtn);
+}
+
+// 🔵 CONFIRMED (Today or Upcoming)
+else if (b.status === "confirmed") {
+
+const completeBtn = document.createElement("button");
+completeBtn.textContent = "Job Completed";
+completeBtn.className = "confirm";
+completeBtn.onclick = async () => {
+await updateStatus(b.id, "completed", card);
+loadAdminData();
+};
+
+const cancelBtn = document.createElement("button");
+cancelBtn.textContent = "Cancel";
+cancelBtn.className = "cancel";
+cancelBtn.onclick = async () => {
+if (!confirm("Cancel this booking?")) return;
+
+try {
+const delRes = await fetch("/api/delete-calendar-event", {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+"x-admin-secret": ADMIN_SECRET
+},
+body: JSON.stringify({ bookingId: b.id })
+});
+
+const delData = await delRes.json();
+
+if (!delRes.ok || !delData.ok) {
+throw new Error(delData.message || "Calendar deletion failed");
+}
+
+await updateStatus(b.id, "cancelled", card);
+loadAdminData();
+} catch (err) {
+alert("Cancellation failed.");
+hardLog(`CANCEL ERROR ${err.message}`);
+}
+};
+
+    actions.appendChild(rescheduleBtn);
+actions.appendChild(completeBtn);
+    const rescheduleBtn = document.createElement("button");
+rescheduleBtn.textContent = "Reschedule";
+rescheduleBtn.className = "delay";
+
+rescheduleBtn.onclick = async () => {
+  if (!confirm("Mark this booking as reschedule requested?")) return;
+
+  try {
+    // 1️⃣ Delete Google event
+    const delRes = await fetch("/api/delete-calendar-event", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-secret": ADMIN_SECRET
+      },
+      body: JSON.stringify({ bookingId: b.id })
+    });
+
+    const delData = await delRes.json();
+
+    if (!delRes.ok || !delData.ok) {
+      throw new Error(delData.message || "Calendar deletion failed");
     }
 
-    else if (b.status === "confirmed") {
+    // 2️⃣ Update status
+    const { error } = await supabase
+      .from("bookings")
+      .update({ status: "reschedule_requested" })
+      .eq("id", b.id);
 
-  const rescheduleBtn = document.createElement("button");
-  rescheduleBtn.textContent = "Reschedule";
-  rescheduleBtn.className = "delay";
+    if (error) throw error;
 
-  rescheduleBtn.onclick = async () => {
-    if (!confirm("Mark this booking as reschedule requested?")) return;
-
-    try {
-      const delRes = await fetch("/api/delete-calendar-event", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-secret": ADMIN_SECRET
-        },
-        body: JSON.stringify({ bookingId: b.id })
-      });
-
-      const delData = await delRes.json();
-
-      if (!delRes.ok || !delData.ok) {
-        throw new Error(delData.message || "Calendar deletion failed");
-      }
-
-      const { error } = await supabase
-        .from("bookings")
-        .update({ status: "reschedule_requested" })
-        .eq("id", b.id);
-
-      if (error) throw error;
-
-      loadAdminData();
-    } catch (err) {
-      alert("Reschedule failed.");
-      hardLog(`RESCHEDULE ERROR ${err.message}`);
-    }
-  };
-
-  const completeBtn = document.createElement("button");
-  completeBtn.textContent = "Job Completed";
-  completeBtn.className = "confirm";
-  completeBtn.onclick = async () => {
-    await updateStatus(b.id, "completed", card);
     loadAdminData();
-  };
-
-  const cancelBtn = document.createElement("button");
-  cancelBtn.textContent = "Cancel";
-  cancelBtn.className = "cancel";
-  cancelBtn.onclick = async () => {
-    if (!confirm("Cancel this booking?")) return;
-
-    try {
-      const delRes = await fetch("/api/delete-calendar-event", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-secret": ADMIN_SECRET
-        },
-        body: JSON.stringify({ bookingId: b.id })
-      });
-
-      const delData = await delRes.json();
-
-      if (!delRes.ok || !delData.ok) {
-        throw new Error(delData.message || "Calendar deletion failed");
-      }
-
-      const { error } = await supabase
-        .from("bookings")
-        .delete()
-        .eq("id", b.id);
-
-      if (error) throw error;
-
-      loadAdminData();
-    } catch (err) {
-      alert("Cancellation failed.");
-      hardLog(`CANCEL ERROR ${err.message}`);
-    }
-  };
-
-  actions.appendChild(rescheduleBtn);
-  actions.appendChild(completeBtn);
-  actions.appendChild(cancelBtn);
+  } catch (err) {
+    alert("Reschedule failed.");
+    hardLog(`RESCHEDULE ERROR ${err.message}`);
+  }
+};
+actions.appendChild(cancelBtn);
 }
 
-
-  card.appendChild(actions);
-  return card;
+card.appendChild(actions);
+return card;
 }
 
-    /* ===================== CALENDAR API ===================== */
-    async function createCalendarEvent(booking) {
-  hardLog(`CALLING CALENDAR API for ${booking.id}`);
+/* ===================== CALENDAR API ===================== */
+async function createCalendarEvent(booking) {
+hardLog(`CALLING CALENDAR API for ${booking.id}`);
 
-  const summary = `${booking.service_variants.services.category} Level ${booking.service_variants.services.level} — ${booking.customers.full_name}`;
+const summary = `${booking.service_variants.services.category} Level ${booking.service_variants.services.level} — ${booking.customers.full_name}`;
 
-  const res = await fetch("/api/create-calendar-event", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-admin-secret": ADMIN_SECRET
-    },
-    body: JSON.stringify({
-      summary,
-      location: booking.service_address,
-      description: [
-        `Customer: ${booking.customers.full_name}`,
-        `Phone: ${booking.customers.phone || "—"}`,
-        `Vehicle: ${booking.vehicles.vehicle_year || ""} ${booking.vehicles.vehicle_make || ""} ${booking.vehicles.vehicle_model || ""}`.trim(),
-        `Service: ${booking.service_variants.services.category} Level ${booking.service_variants.services.level}`
-      ].join("\n"),
-      startISO: booking.scheduled_start,
-      endISO: booking.scheduled_end
-    })
-  });
+const res = await fetch("/api/create-calendar-event", {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+"x-admin-secret": ADMIN_SECRET
+},
+body: JSON.stringify({
+summary,
+location: booking.service_address,
+description: [
+`Customer: ${booking.customers.full_name}`,
+`Phone: ${booking.customers.phone || "—"}`,
+`Vehicle: ${booking.vehicles.vehicle_year || ""} ${booking.vehicles.vehicle_make || ""} ${booking.vehicles.vehicle_model || ""}`.trim(),
+`Service: ${booking.service_variants.services.category} Level ${booking.service_variants.services.level}`
+].join("\n"),
+startISO: booking.scheduled_start,
+endISO: booking.scheduled_end
+})
+});
 
-  const text = await res.text();
-  hardLog(`CALENDAR RESPONSE ${res.status}`);
+const text = await res.text();
+hardLog(`CALENDAR RESPONSE ${res.status}`);
 
-  if (!res.ok) throw new Error(text);
-  return JSON.parse(text);
+if (!res.ok) throw new Error(text);
+return JSON.parse(text);
 }
 
-    /* ===================== STATUS UPDATE ===================== */
-    async function updateStatus(id, status, card) {
-      const { error } = await supabase
-        .from("bookings")
-        .update({ status })
-        .eq("id", id);
+/* ===================== STATUS UPDATE ===================== */
+async function updateStatus(id, status, card) {
+const { error } = await supabase
+.from("bookings")
+.update({ status })
+.eq("id", id);
 
-      if (error) {
-        alert("Failed to update booking status");
-        console.error(error);
-        return;
-      }
+if (error) {
+alert("Failed to update booking status");
+console.error(error);
+return;
+}
 
-      card.remove();
-    }
+card.remove();
+}
 
-    loadAdminData();
-  </script>
+loadAdminData();
+</script>
 </body>
 </html>
