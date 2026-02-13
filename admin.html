@@ -202,6 +202,30 @@ function splitAndRender(bookings) {
     };
   }
 
+  // 🔹 Group bookings by calendar day
+  const groups = {};
+
+  bookings.forEach(b => {
+    const dayKey = new Date(b.scheduled_start).toDateString();
+    if (!groups[dayKey]) groups[dayKey] = [];
+    groups[dayKey].push(b);
+  });
+
+  Object.entries(groups).forEach(([day, items]) => {
+    const dayHeader = document.createElement("h3");
+    dayHeader.textContent = formatDay(new Date(day));
+    body.appendChild(dayHeader);
+
+    items.forEach(b => {
+      body.appendChild(buildCard(b));
+    });
+  });
+
+  section.appendChild(body);
+  container.appendChild(section);
+}
+
+
   bookings.forEach(b => {
     body.appendChild(buildCard(b));
   });
