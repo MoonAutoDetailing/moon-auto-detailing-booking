@@ -122,9 +122,6 @@ const calendarResponse = await calendar.events.insert({
 
 const googleEventId = calendarResponse.data.id;
 
-const googleEventId = calendarResponse.data.id;
-
-
     // 2️⃣ Update booking status
     await supabase
   .from("bookings")
