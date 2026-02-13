@@ -86,12 +86,41 @@ export default async function handler(req, res) {
       .update({ status: "confirmed" })
       .eq("id", bookingId);
 
-    // 3️⃣ Send confirmation SMS
-    if (!booking.customers.sms_opt_out && booking.customers.phone) {
-      const client = twilio(
-        requireEnv("TWILIO_ACCOUNT_SID"),
-        requireEnv("TWILIO_AUTH_TOKEN")
-      );
+    // 3️⃣ Send confirmation SMS (only if Twilio configured)
+if (
+  process.env.TWILIO_ACCOUNT_SID &&
+  process.env.TWILIO_AUTH_TOKEN &&
+  process.env.TWILIO_PHONE_NUMBER &&
+  !booking.customers.sms_opt_out &&
+  booking.customers.phone
+) {
+  try {
+    const client = twilio(
+      process.env.TWILIO_ACCOUNT_SID,
+      process.env.TWILIO_AUTH_TOKEN
+    );
+
+    const formatted = new Date(booking.scheduled_start)
+      .toLocaleString("en-US", { timeZone: "America/New_York" });
+
+    const sms = await client.messages.create({
+      body: `Hi ${booking.customers.full_name}, your Moon Auto Detailing appointment is confirmed for ${formatted}. Reply STOP to opt out.`,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: booking.customers.phone
+    });
+
+    await supabase.from("booking_communications").insert({
+      booking_id: booking.id,
+      type: "confirmation",
+      status: "sent",
+      sent_at: new Date().toISOString(),
+      provider_message_id: sms.sid
+    });
+
+  } catch (smsError) {
+    console.error("SMS ERROR:", smsError);
+  }
+}
 
       const formatted = new Date(booking.scheduled_start)
         .toLocaleString("en-US", { timeZone: "America/New_York" });
