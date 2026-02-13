@@ -178,8 +178,8 @@
           card.querySelector(".confirm").onclick = async () => {
             hardLog(`CONFIRM CLICKED booking ${b.id}`);
             try {
-              await createCalendarEvent(b);
-              await updateStatus(b.id, "confirmed", card);
+              await fetch("/api/confirm-booking", { ... });
+
             } catch (err) {
               alert("Calendar creation failed. Booking NOT confirmed.");
               console.error(err);
