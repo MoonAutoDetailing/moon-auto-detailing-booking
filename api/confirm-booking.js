@@ -53,7 +53,7 @@ console.log("CUSTOMER ERROR:", customerError);
 // 3️⃣ Fetch vehicle
 const { data: vehicle } = await supabase
   .from("vehicles")
-  .select("vehicle_year, vehicle_make, vehicle_model")
+  .select("vehicle_year, vehicle_make, vehicle_model, license_plate")
   .eq("id", booking.vehicle_id)
   .single();
 
@@ -88,17 +88,39 @@ const { data: service } = await supabase
 
     const calendar = google.calendar({ version: "v3", auth });
 
-    const summary = `${service.category} Level ${service.level} — ${customer.full_name}`;
+    const formattedService = `${service.category} Detail Level ${service.level}`;
 
-    const calendarResponse = await calendar.events.insert({
+const formattedVehicle = [
+  vehicle.vehicle_year,
+  vehicle.vehicle_make,
+  vehicle.vehicle_model
+].filter(Boolean).join(" ");
+
+const formattedLicense = vehicle.license_plate
+  ? ` (${vehicle.license_plate})`
+  : "";
+
+const summary = `${formattedService} — ${customer.full_name}`;
+
+const description = [
+  `Customer: ${customer.full_name}`,
+  `Phone: ${customer.phone || "—"}`,
+  `Vehicle: ${formattedVehicle}${formattedLicense}`,
+  `Service: ${formattedService}`
+].join("\n");
+
+const calendarResponse = await calendar.events.insert({
   calendarId,
   requestBody: {
     summary,
     location: booking.service_address,
+    description,
     start: { dateTime: booking.scheduled_start },
     end: { dateTime: booking.scheduled_end }
   }
 });
+
+const googleEventId = calendarResponse.data.id;
 
 const googleEventId = calendarResponse.data.id;
 
