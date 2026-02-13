@@ -162,221 +162,93 @@ function splitAndRender(bookings) {
     }
 
     else if (b.status === "confirmed") {
-      if (start >= startOfToday && start < endOfToday) {
-        todayList.push(b);
-      } else if (start >= endOfToday) {
-        upcoming.push(b);
+
+  const rescheduleBtn = document.createElement("button");
+  rescheduleBtn.textContent = "Reschedule";
+  rescheduleBtn.className = "delay";
+
+  rescheduleBtn.onclick = async () => {
+    if (!confirm("Mark this booking as reschedule requested?")) return;
+
+    try {
+      const delRes = await fetch("/api/delete-calendar-event", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret": ADMIN_SECRET
+        },
+        body: JSON.stringify({ bookingId: b.id })
+      });
+
+      const delData = await delRes.json();
+
+      if (!delRes.ok || !delData.ok) {
+        throw new Error(delData.message || "Calendar deletion failed");
       }
-    }
 
-    else if (
-      ["completed","no_show","cancelled","rescheduled","denied"]
-        .includes(b.status)
-    ) {
-      completed.push(b);
-    }
-  });
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: "reschedule_requested" })
+        .eq("id", b.id);
 
-  renderSection("Pending Bookings", pending);
-  renderSection("Today's Schedule", todayList);
-  renderSection("Upcoming Bookings", upcoming);
-  renderSection("Completed Archive", completed, true);
-}
+      if (error) throw error;
 
-   function renderSection(title, bookings, collapsed = false) {
-  const section = document.createElement("div");
-  section.className = "day";
-
-  const header = document.createElement("h2");
-  header.textContent = `${title} (${bookings.length})`;
-  section.appendChild(header);
-
-  const body = document.createElement("div");
-
-  if (collapsed) {
-    body.style.display = "none";
-    header.style.cursor = "pointer";
-    header.onclick = () => {
-      body.style.display =
-        body.style.display === "none" ? "block" : "none";
-    };
-  }
-
-  // 🔹 Group bookings by calendar day
-  const groups = {};
-
-  bookings.forEach(b => {
-    const dayKey = new Date(b.scheduled_start).toDateString();
-    if (!groups[dayKey]) groups[dayKey] = [];
-    groups[dayKey].push(b);
-  });
-
-  Object.entries(groups).forEach(([day, items]) => {
-    const dayHeader = document.createElement("h3");
-    dayHeader.textContent = formatDay(new Date(day));
-    body.appendChild(dayHeader);
-
-    items.forEach(b => {
-      body.appendChild(buildCard(b));
-    });
-  });
-
-  section.appendChild(body);
-  container.appendChild(section);
-}
-
-function buildCard(b) {
-  const start = new Date(b.scheduled_start);
-  const end = new Date(b.scheduled_end);
-
-  const service = b.service_variants.services;
-  const vehicle = b.vehicles;
-  const customer = b.customers;
-
-  const card = document.createElement("div");
-  card.className = "card";
-
-  card.innerHTML = `
-    <div class="row"><span class="label">Client:</span> ${customer.full_name}</div>
-    <div class="row"><span class="label">Phone:</span> ${customer.phone || "—"}</div>
-    <div class="row"><span class="label">Address:</span> ${b.service_address}</div>
-    <div class="row"><span class="label">Vehicle:</span> ${vehicle.vehicle_year || ""} ${vehicle.vehicle_make || ""} ${vehicle.vehicle_model || ""}</div>
-    <div class="row"><span class="label">Service:</span> ${service.category} (Level ${service.level})</div>
-    <div class="row"><span class="label">Time:</span> ${formatTime(start)} → ${formatTime(end)}</div>
-    <div class="row"><span class="label">Status:</span> ${b.status}</div>
-  `;
-
-  const actions = document.createElement("div");
-  actions.className = "actions";
-
-  // 🟡 PENDING BUTTONS
-  if (b.status === "pending") {
-
-    const confirmBtn = document.createElement("button");
-    confirmBtn.textContent = "Confirm";
-    confirmBtn.className = "confirm";
-    confirmBtn.onclick = async () => {
-      hardLog(`CONFIRM CLICKED booking ${b.id}`);
-
-      try {
-        const res = await fetch("/api/confirm-booking", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-admin-secret": ADMIN_SECRET
-          },
-          body: JSON.stringify({ bookingId: b.id })
-        });
-
-        const data = await res.json();
-        hardLog(`CONFIRM API RESPONSE ${res.status}`);
-
-        if (!res.ok || !data.ok) {
-          throw new Error(data.message || "Confirmation failed");
-        }
-
-        loadAdminData();
-      } catch (err) {
-        alert("Confirmation failed.");
-        hardLog(`CONFIRM ERROR ${err.message}`);
-      }
-    };
-
-    const denyBtn = document.createElement("button");
-    denyBtn.textContent = "Deny";
-    denyBtn.className = "cancel";
-    denyBtn.onclick = async () => {
-      if (!confirm("Are you sure you want to deny this booking?")) return;
-      await updateStatus(b.id, "denied", card);
       loadAdminData();
-    };
-
-    actions.appendChild(confirmBtn);
-    actions.appendChild(denyBtn);
-  }
-
-  // 🔵 CONFIRMED (Today or Upcoming)
-  else if (b.status === "confirmed") {
-
-    const completeBtn = document.createElement("button");
-    completeBtn.textContent = "Job Completed";
-    completeBtn.className = "confirm";
-    completeBtn.onclick = async () => {
-      await updateStatus(b.id, "completed", card);
-      loadAdminData();
-    };
-
-    const cancelBtn = document.createElement("button");
-    cancelBtn.textContent = "Cancel";
-    cancelBtn.className = "cancel";
-    cancelBtn.onclick = async () => {
-      if (!confirm("Cancel this booking?")) return;
-
-      try {
-        const delRes = await fetch("/api/delete-calendar-event", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-admin-secret": ADMIN_SECRET
-          },
-          body: JSON.stringify({ bookingId: b.id })
-        });
-
-        const delData = await delRes.json();
-
-        if (!delRes.ok || !delData.ok) {
-          throw new Error(delData.message || "Calendar deletion failed");
-        }
-
-        await updateStatus(b.id, "cancelled", card);
-        loadAdminData();
-      } catch (err) {
-        alert("Cancellation failed.");
-        hardLog(`CANCEL ERROR ${err.message}`);
-      }
-    };
-    actions.appendChild(rescheduleBtn);
-    actions.appendChild(completeBtn);
-    const rescheduleBtn = document.createElement("button");
-rescheduleBtn.textContent = "Reschedule";
-rescheduleBtn.className = "delay";
-
-rescheduleBtn.onclick = async () => {
-  if (!confirm("Mark this booking as reschedule requested?")) return;
-
-  try {
-    // 1️⃣ Delete Google event
-    const delRes = await fetch("/api/delete-calendar-event", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-secret": ADMIN_SECRET
-      },
-      body: JSON.stringify({ bookingId: b.id })
-    });
-
-    const delData = await delRes.json();
-
-    if (!delRes.ok || !delData.ok) {
-      throw new Error(delData.message || "Calendar deletion failed");
+    } catch (err) {
+      alert("Reschedule failed.");
+      hardLog(`RESCHEDULE ERROR ${err.message}`);
     }
+  };
 
-    // 2️⃣ Update status
-    const { error } = await supabase
-      .from("bookings")
-      .update({ status: "reschedule_requested" })
-      .eq("id", b.id);
-
-    if (error) throw error;
-
+  const completeBtn = document.createElement("button");
+  completeBtn.textContent = "Job Completed";
+  completeBtn.className = "confirm";
+  completeBtn.onclick = async () => {
+    await updateStatus(b.id, "completed", card);
     loadAdminData();
-  } catch (err) {
-    alert("Reschedule failed.");
-    hardLog(`RESCHEDULE ERROR ${err.message}`);
-  }
-};
-    actions.appendChild(cancelBtn);
-  }
+  };
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.className = "cancel";
+  cancelBtn.onclick = async () => {
+    if (!confirm("Cancel this booking?")) return;
+
+    try {
+      const delRes = await fetch("/api/delete-calendar-event", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret": ADMIN_SECRET
+        },
+        body: JSON.stringify({ bookingId: b.id })
+      });
+
+      const delData = await delRes.json();
+
+      if (!delRes.ok || !delData.ok) {
+        throw new Error(delData.message || "Calendar deletion failed");
+      }
+
+      const { error } = await supabase
+        .from("bookings")
+        .delete()
+        .eq("id", b.id);
+
+      if (error) throw error;
+
+      loadAdminData();
+    } catch (err) {
+      alert("Cancellation failed.");
+      hardLog(`CANCEL ERROR ${err.message}`);
+    }
+  };
+
+  actions.appendChild(rescheduleBtn);
+  actions.appendChild(completeBtn);
+  actions.appendChild(cancelBtn);
+}
+
 
   card.appendChild(actions);
   return card;
