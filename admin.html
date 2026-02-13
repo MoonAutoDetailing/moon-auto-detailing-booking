@@ -210,9 +210,39 @@
 
 
           card.querySelector(".cancel").onclick = async () => {
-            if (!confirm("Are you sure you want to deny this booking?")) return;
-            await updateStatus(b.id, "denied", card);
-          };
+  if (!confirm("Are you sure you want to cancel this booking?")) return;
+
+  try {
+    hardLog(`DELETE CALENDAR EVENT for ${b.id}`);
+
+    // 1️⃣ Delete Google Calendar event (HARD FAILURE)
+    const delRes = await fetch("/api/delete-calendar-event", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-secret": ADMIN_SECRET
+      },
+      body: JSON.stringify({ bookingId: b.id })
+    });
+
+    const delData = await delRes.json();
+    hardLog(`DELETE API RESPONSE ${delRes.status}`);
+
+    if (!delRes.ok || !delData.ok) {
+      throw new Error(delData.message || "Calendar deletion failed");
+    }
+
+    // 2️⃣ Only if calendar deletion succeeds → update DB status
+    await updateStatus(b.id, "cancelled", card);
+
+    hardLog(`BOOKING ${b.id} CANCELLED`);
+
+  } catch (err) {
+    alert("Cancellation failed. Calendar event was NOT deleted.");
+    console.error(err);
+    hardLog(`CANCEL ERROR ${err.message}`);
+  }
+};
 
           dayDiv.appendChild(card);
         });
