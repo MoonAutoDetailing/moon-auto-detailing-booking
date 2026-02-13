@@ -90,6 +90,37 @@ headers: { "x-admin-secret": ADMIN_SECRET }
 });
 
 const container = document.getElementById("container");
+     /* ===================== ACTION LOCKING ===================== */
+const inFlightActions = new Map();
+// key: `${bookingId}:${action}`
+
+function lockBookingAction(bookingId, action) {
+  const key = `${bookingId}:${action}`;
+  if (inFlightActions.has(key)) return false;
+  inFlightActions.set(key, true);
+  return true;
+}
+
+function unlockBookingAction(bookingId, action) {
+  const key = `${bookingId}:${action}`;
+  inFlightActions.delete(key);
+}
+
+function setBookingButtonsDisabled(card, disabled) {
+  const buttons = card.querySelectorAll("button");
+  buttons.forEach(btn => {
+    btn.disabled = disabled;
+    if (disabled) {
+      btn.dataset.originalText = btn.textContent;
+      btn.textContent = "Working...";
+    } else {
+      if (btn.dataset.originalText) {
+        btn.textContent = btn.dataset.originalText;
+      }
+    }
+  });
+}
+
 
 /* ===================== FORMAT HELPERS ===================== */
 function formatDay(d) {
@@ -257,32 +288,41 @@ function buildCard(b) {
     confirmBtn.textContent = "Confirm";
     confirmBtn.className = "confirm";
     confirmBtn.onclick = async () => {
-      hardLog(`CONFIRM CLICKED booking ${b.id}`);
 
-      try {
-        const res = await fetch("/api/confirm-booking", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-admin-secret": ADMIN_SECRET
-          },
-          body: JSON.stringify({ bookingId: b.id })
-        });
+  if (!lockBookingAction(b.id, "confirm")) return;
 
-        const data = await res.json();
-        hardLog(`CONFIRM API RESPONSE ${res.status}`);
+  setBookingButtonsDisabled(card, true);
 
-        if (!res.ok || !data.ok) {
-          throw new Error(data.message || "Confirmation failed");
-        }
+  hardLog(`CONFIRM CLICKED booking ${b.id}`);
 
-        loadAdminData();
-      } catch (err) {
-        alert("Confirmation failed.");
-        hardLog(`CONFIRM ERROR ${err.message}`);
-      }
-    };
+  try {
+    const res = await fetch("/api/confirm-booking", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-admin-secret": ADMIN_SECRET
+      },
+      body: JSON.stringify({ bookingId: b.id })
+    });
 
+    const data = await res.json();
+    hardLog(`CONFIRM API RESPONSE ${res.status}`);
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data.message || "Confirmation failed");
+    }
+
+    await loadAdminData();
+
+  } catch (err) {
+    alert("Confirmation failed.");
+    hardLog(`CONFIRM ERROR ${err.message}`);
+  } finally {
+    unlockBookingAction(b.id, "confirm");
+    setBookingButtonsDisabled(card, false);
+  }
+};
+       
     const denyBtn = document.createElement("button");
     denyBtn.textContent = "Deny";
     denyBtn.className = "cancel";
@@ -299,93 +339,116 @@ function buildCard(b) {
   // Confirmed
   else if (b.status === "confirmed") {
 
-    const rescheduleBtn = document.createElement("button");
-    rescheduleBtn.textContent = "Reschedule";
-    rescheduleBtn.className = "delay";
-    rescheduleBtn.onclick = async () => {
+  const rescheduleBtn = document.createElement("button");
+  rescheduleBtn.textContent = "Reschedule";
+  rescheduleBtn.className = "delay";
+  rescheduleBtn.onclick = async () => {
+
+    if (!lockBookingAction(b.id, "reschedule")) return;
+    setBookingButtonsDisabled(card, true);
+
+    try {
       if (!confirm("Mark this booking as reschedule requested?")) return;
 
-      try {
-        const delRes = await fetch("/api/delete-calendar-event", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-admin-secret": ADMIN_SECRET
-          },
-          body: JSON.stringify({ bookingId: b.id })
-        });
+      const delRes = await fetch("/api/delete-calendar-event", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret": ADMIN_SECRET
+        },
+        body: JSON.stringify({ bookingId: b.id })
+      });
 
-        const delData = await delRes.json();
-        if (!delRes.ok || !delData.ok) {
-          throw new Error(delData.message || "Calendar deletion failed");
-        }
-
-        const { error } = await supabase
-          .from("bookings")
-          .update({ status: "reschedule_requested" })
-          .eq("id", b.id);
-
-        if (error) throw error;
-
-        loadAdminData();
-      } catch (err) {
-        alert("Reschedule failed.");
-        hardLog(`RESCHEDULE ERROR ${err.message}`);
+      const delData = await delRes.json();
+      if (!delRes.ok || !delData.ok) {
+        throw new Error(delData.message || "Calendar deletion failed");
       }
-    };
 
-    const completeBtn = document.createElement("button");
-    completeBtn.textContent = "Job Completed";
-    completeBtn.className = "confirm";
-    completeBtn.onclick = async () => {
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: "reschedule_requested" })
+        .eq("id", b.id);
+
+      if (error) throw error;
+
+      await loadAdminData();
+
+    } catch (err) {
+      alert("Reschedule failed.");
+      hardLog(`RESCHEDULE ERROR ${err.message}`);
+    } finally {
+      unlockBookingAction(b.id, "reschedule");
+      setBookingButtonsDisabled(card, false);
+    }
+  };
+
+  const completeBtn = document.createElement("button");
+  completeBtn.textContent = "Job Completed";
+  completeBtn.className = "confirm";
+  completeBtn.onclick = async () => {
+
+    if (!lockBookingAction(b.id, "complete")) return;
+    setBookingButtonsDisabled(card, true);
+
+    try {
       await updateStatus(b.id, "completed", card);
-      loadAdminData();
-    };
+      await loadAdminData();
+    } finally {
+      unlockBookingAction(b.id, "complete");
+      setBookingButtonsDisabled(card, false);
+    }
+  };
 
-    const cancelBtn = document.createElement("button");
-    cancelBtn.textContent = "Cancel";
-    cancelBtn.className = "cancel";
-    cancelBtn.onclick = async () => {
+  const cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.className = "cancel";
+  cancelBtn.onclick = async () => {
+
+    if (!lockBookingAction(b.id, "cancel")) return;
+    setBookingButtonsDisabled(card, true);
+
+    try {
       if (!confirm("Cancel this booking?")) return;
 
-      try {
-        const delRes = await fetch("/api/delete-calendar-event", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-admin-secret": ADMIN_SECRET
-          },
-          body: JSON.stringify({ bookingId: b.id })
-        });
+      const delRes = await fetch("/api/delete-calendar-event", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret": ADMIN_SECRET
+        },
+        body: JSON.stringify({ bookingId: b.id })
+      });
 
-        const delData = await delRes.json();
-        if (!delRes.ok || !delData.ok) {
-          throw new Error(delData.message || "Calendar deletion failed");
-        }
-
-        const { error } = await supabase
-  .from("bookings")
-  .update({ status: "cancelled" })
-  .eq("id", b.id);
-
-        if (error) throw error;
-
-        loadAdminData();
-      } catch (err) {
-        alert("Cancellation failed.");
-        hardLog(`CANCEL ERROR ${err.message}`);
+      const delData = await delRes.json();
+      if (!delRes.ok || !delData.ok) {
+        throw new Error(delData.message || "Calendar deletion failed");
       }
-    };
 
-    actions.appendChild(rescheduleBtn);
-    actions.appendChild(completeBtn);
-    actions.appendChild(cancelBtn);
-  }
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: "cancelled" })
+        .eq("id", b.id);
 
-  card.appendChild(actions);
+      if (error) throw error;
+
+      await loadAdminData();
+
+    } catch (err) {
+      alert("Cancellation failed.");
+      hardLog(`CANCEL ERROR ${err.message}`);
+    } finally {
+      unlockBookingAction(b.id, "cancel");
+      setBookingButtonsDisabled(card, false);
+    }
+  };
+
+  actions.appendChild(rescheduleBtn);
+  actions.appendChild(completeBtn);
+  actions.appendChild(cancelBtn);
+}
+      card.appendChild(actions);
   return card;
 }
-
 
 /* ===================== CALENDAR API ===================== */
 async function createCalendarEvent(booking) {
