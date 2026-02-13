@@ -24,35 +24,45 @@ export default async function handler(req, res) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // DEBUG: simple fetch only
-const { data: booking, error } = await supabase
+  // 1️⃣ Fetch booking
+const { data: booking, error: bookingError } = await supabase
   .from("bookings")
-  .select(`
-    id,
-    scheduled_start,
-    scheduled_end,
-    service_address,
-    status,
-    customers:customer_id (
-      full_name,
-      phone,
-      sms_opt_out
-    ),
-    vehicles:vehicle_id (
-      vehicle_year,
-      vehicle_make,
-      vehicle_model
-    ),
-    service_variants:service_variant_id (
-      duration_minutes,
-      services:service_id (
-        category,
-        level
-      )
-    )
-  `)
+  .select("*")
   .eq("id", bookingId)
   .single();
+
+if (bookingError || !booking) {
+  return res.status(404).json({ ok: false, message: "Booking not found" });
+}
+
+// 2️⃣ Fetch customer
+const { data: customer } = await supabase
+  .from("customers")
+  .select("full_name, phone, sms_opt_out")
+  .eq("id", booking.customer_id)
+  .single();
+
+// 3️⃣ Fetch vehicle
+const { data: vehicle } = await supabase
+  .from("vehicles")
+  .select("vehicle_year, vehicle_make, vehicle_model")
+  .eq("id", booking.vehicle_id)
+  .single();
+
+// 4️⃣ Fetch service variant
+const { data: variant } = await supabase
+  .from("service_variants")
+  .select("duration_minutes, service_id")
+  .eq("id", booking.service_variant_id)
+  .single();
+
+// 5️⃣ Fetch service
+const { data: service } = await supabase
+  .from("services")
+  .select("category, level")
+  .eq("id", variant.service_id)
+  .single();
+
 
 
     if (error || !booking) {
