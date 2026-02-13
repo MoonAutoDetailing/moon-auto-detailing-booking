@@ -90,21 +90,28 @@ const { data: service } = await supabase
 
     const summary = `${service.category} Level ${service.level} — ${customer.full_name}`;
 
-    await calendar.events.insert({
-      calendarId,
-      requestBody: {
-        summary,
-        location: booking.service_address,
-        start: { dateTime: booking.scheduled_start },
-        end: { dateTime: booking.scheduled_end }
-      }
-    });
+    const calendarResponse = await calendar.events.insert({
+  calendarId,
+  requestBody: {
+    summary,
+    location: booking.service_address,
+    start: { dateTime: booking.scheduled_start },
+    end: { dateTime: booking.scheduled_end }
+  }
+});
+
+const googleEventId = calendarResponse.data.id;
+
 
     // 2️⃣ Update booking status
     await supabase
-      .from("bookings")
-      .update({ status: "confirmed" })
-      .eq("id", bookingId);
+  .from("bookings")
+  .update({
+    status: "confirmed",
+    google_event_id: googleEventId
+  })
+  .eq("id", bookingId);
+
 
     // 3️⃣ Send SMS confirmation (if configured)
     if (
