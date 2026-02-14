@@ -132,6 +132,27 @@ cursor: pointer;
 }
 .status-badge { margin-top: 6px; }
 
+     .dashboard-title {
+  text-align: center;
+  margin-top: 60px;
+  color: var(--moon-primary);
+}
+
+@media (max-width: 768px) {
+  .dashboard-title {
+    margin-top: 40px;
+  }
+}
+     #viewButtons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 70px; /* pushes below toggle button */
+  margin-bottom: 30px;
+}
+
+
 </style>
 </head>
 
@@ -181,6 +202,7 @@ style="
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
+  zindex: 5;
 ">
   Toggle Debug
 </button>
@@ -668,7 +690,7 @@ function renderDashboard() {
   viewContainer.innerHTML = `
   <div style="
     text-align: center;
-    margin-top: 120px;
+    margin-top: 60px;
     color: #4f8de6;
   ">
     <h1 style="margin: 0; font-weight: 800;">
