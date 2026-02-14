@@ -33,6 +33,7 @@ h1 { margin-bottom: 10px; }
   margin-top: 12px;
   background: rgba(111, 147, 196, 0.12); /* light moon blue */
   backdrop-filter: blur(2px);
+     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
 .row { margin-bottom: 6px; }
@@ -81,6 +82,53 @@ cursor: pointer;
 #pageOverlay.overlay-active {
   background: rgba(233, 241, 251, 0.85); /* only when a view is open */
 }
+     .moon-tab {
+  padding: 10px 16px;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--moon-primary);
+  color: white;
+  transition: all 0.15s ease;
+  margin-right: 12px;
+}
+     .moon-tab[data-view="pending"] {
+  box-shadow: 0 0 0 2px rgba(255, 204, 0, 0.6);
+}
+
+.moon-tab:hover {
+  background: var(--moon-primary-dark);
+}
+
+.moon-tab.active {
+  background: var(--moon-primary-dark);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-pending { background: #ffd966; color: #000; }
+.status-confirmed { background: #4f78a8; color: #fff; }
+.status-reschedule_requested { background: #8fb1e0; color: #000; }
+.status-completed { background: #888; color: #fff; }
+.status-cancelled { background: #b00020; color: #fff; }
+.status-denied { background: #6a1b9a; color: #fff; }
+.status-no_show { background: #555; color: #fff; }
+.status-confirming { background: #4f78a8; color: #fff; }
+.day h2 {
+  font-size: 20px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #ffffff30;
+  padding-bottom: 6px;
+}
+
 
 </style>
 </head>
@@ -104,6 +152,7 @@ style="
      padding: 8px;
      z-index: 9999;
      border-top: 2px solid #0f0;
+     display: none;
    "
 >
 <strong>DEBUG LOG</strong>
@@ -119,6 +168,20 @@ style="
   <div id="viewButtons" style="margin-bottom: 20px;"></div>
   <div id="viewContainer"></div>
 </div>
+     <button id="debugToggle" style="
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: #6f93c4;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+">
+  Toggle Debug
+</button>
 
 
 <script type="module">
@@ -136,6 +199,18 @@ el.scrollTop = el.scrollHeight;
 }
 
 hardLog("ADMIN LOADED");
+     // ===================== DEBUG TOGGLE =====================
+const debugToggle = document.getElementById("debugToggle");
+const hardLogPanel = document.getElementById("hardLog");
+
+debugToggle.onclick = () => {
+  if (hardLogPanel.style.display === "none") {
+    hardLogPanel.style.display = "block";
+  } else {
+    hardLogPanel.style.display = "none";
+  }
+};
+
 
 /* ===================== SUPABASE ===================== */
 const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
@@ -336,6 +411,19 @@ function buildCard(b) {
 
   const card = document.createElement("div");
   card.className = "card";
+     // Add accent border for today's confirmed bookings
+if (b.status === "confirmed") {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const start = new Date(b.scheduled_start);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  if (start >= today && start < tomorrow) {
+    card.style.borderLeft = "4px solid var(--moon-primary)";
+  }
+}
 
   card.innerHTML = `
     <div class="row"><span class="label">Client:</span> ${customer.full_name}</div>
@@ -344,7 +432,12 @@ function buildCard(b) {
     <div class="row"><span class="label">Vehicle:</span> ${vehicle.vehicle_year || ""} ${vehicle.vehicle_make || ""} ${vehicle.vehicle_model || ""}</div>
     <div class="row"><span class="label">Service:</span> ${service.category} (Level ${service.level})</div>
     <div class="row"><span class="label">Time:</span> ${formatTime(start)} → ${formatTime(end)}</div>
-    <div class="row"><span class="label">Status:</span> ${b.status}</div>
+    <div class="row">
+  <span class="status-badge status-${b.status}">
+    ${b.status.replace("_", " ")}
+  </span>
+</div>
+
   `;
 
   const actions = document.createElement("div");
@@ -599,14 +692,14 @@ function renderButtons() {
     button.textContent = btn.label;
     button.dataset.view = btn.key;
 
-    button.style.marginRight = "10px";
-    button.style.padding = "10px 16px";
-    button.style.fontWeight = "700";
-    button.style.border = "none";
-    button.style.borderRadius = "8px";
-    button.style.cursor = "pointer";
-    button.style.background = "#4f8de6";
-    button.style.color = "white";
+    button.className =marginRight = "10px";
+    button.className =padding = "10px 16px";
+    button.className =.fontWeight = "700";
+    button.className =border = "none";
+   button.className =borderRadius = "8px";
+   button.className =cursor = "pointer";
+    button.className =background = "#4f8de6";
+   button.className =color = "white";
 
     button.onclick = () => {
       handleViewSwitch(btn.key);
