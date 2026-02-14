@@ -137,6 +137,22 @@ cursor: pointer;
   margin-top: 60px;
   color: var(--moon-primary);
 }
+     .booking-header {
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  color: white;
+}
+
+.booking-content {
+  margin-top: 10px;
+  display: none;
+}
+
+.card.expanded .booking-content {
+  display: block;
+}
+
 
 @media (max-width: 768px) {
   .dashboard-title {
@@ -202,7 +218,7 @@ style="
   border-radius: 6px;
   cursor: pointer;
   font-weight: 600;
-  zindex: 5;
+  z-index: 5;
 ">
   Toggle Debug
 </button>
@@ -335,9 +351,10 @@ const { data, error } = await supabase
 .order("scheduled_start", { ascending: true });
 
 if (error) {
-container.textContent = "Failed to load bookings.";
-console.error(error);
-return;
+  hardLog("LOAD ERROR");
+  console.error(error);
+  viewContainer.innerHTML = "Failed to load bookings.";
+  return;
 }
 
 splitAndRender(data);
@@ -450,19 +467,31 @@ if (b.status === "confirmed") {
 }
 
   card.innerHTML = `
-    <div class="row"><span class="label">Client:</span> ${customer.full_name}</div>
+  <div class="booking-header">
+    ${customer.full_name}
+  </div>
+
+  <div class="booking-content">
     <div class="row"><span class="label">Phone:</span> ${customer.phone || "—"}</div>
     <div class="row"><span class="label">Address:</span> ${b.service_address}</div>
     <div class="row"><span class="label">Vehicle:</span> ${vehicle.vehicle_year || ""} ${vehicle.vehicle_make || ""} ${vehicle.vehicle_model || ""}</div>
     <div class="row"><span class="label">Service:</span> ${service.category} (Level ${service.level})</div>
     <div class="row"><span class="label">Time:</span> ${formatTime(start)} → ${formatTime(end)}</div>
     <div class="row">
+  <span class="label">Status:</span>
   <span class="status-badge status-${b.status}">
-    ${b.status.replace("_", " ")}
+    ${b.status.replace("_"," ")}
   </span>
 </div>
 
-  `;
+  </div>
+`;
+
+const header = card.querySelector(".booking-header");
+
+header.onclick = () => {
+  card.classList.toggle("expanded");
+};
 
   const actions = document.createElement("div");
   actions.className = "actions";
@@ -632,7 +661,8 @@ if (b.status === "confirmed") {
   actions.appendChild(completeBtn);
   actions.appendChild(cancelBtn);
 }
-      card.appendChild(actions);
+     card.querySelector(".booking-content").appendChild(actions);
+      
   return card;
 }
 
