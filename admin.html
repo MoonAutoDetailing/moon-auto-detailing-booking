@@ -89,7 +89,19 @@ headers: { "x-admin-secret": ADMIN_SECRET }
 }
 });
 
-const container = document.getElementById("container");
+     // ===================== VIEW STATE =====================
+let currentView = null;
+
+let cachedViews = {
+  pending: [],
+  today: [],
+  upcoming: [],
+  history: []
+};
+
+const viewButtons = document.getElementById("viewButtons");
+const viewContainer = document.getElementById("viewContainer");
+
      /* ===================== ACTION LOCKING ===================== */
 const inFlightActions = new Map();
 // key: `${bookingId}:${action}`
@@ -169,13 +181,15 @@ return;
 }
 
 splitAndRender(data);
+renderButtons();
+renderDashboard();
 }
 function splitAndRender(bookings) {
 
-const pending = [];
-const todayList = [];
-const upcoming = [];
-const completed = [];
+cachedViews.pending = [];
+cachedViews.today = [];
+cachedViews.upcoming = [];
+cachedViews.history = [];
 
 const now = new Date();
 const startOfToday = new Date();
@@ -188,14 +202,14 @@ bookings.forEach(b => {
 const start = new Date(b.scheduled_start);
 
 if (b.status === "pending") {
-pending.push(b);
+  cachedViews.pending.push(b);
 }
 
 else if (b.status === "confirmed") {
 if (start >= startOfToday && start < endOfToday) {
-todayList.push(b);
+cachedViews.today.push(b);
 } else if (start >= endOfToday) {
-upcoming.push(b);
+cachedViews.upcoming.push(b);
 }
 }
 
@@ -203,10 +217,11 @@ else if (
   ["completed","no_show","cancelled","rescheduled","reschedule_requested","denied"]
     .includes(b.status)
 ) {
-  completed.push(b);
+  cachedViews.history.push(b);
 }
 
 });
+}
 
 function renderSection(title, bookings, collapsed = false) {
 const section = document.createElement("div");
@@ -247,7 +262,7 @@ body.appendChild(buildCard(b));
 });
 
 section.appendChild(body);
-container.appendChild(section);
+viewContainer.appendChild(section);
 }
 
 function buildCard(b) {
@@ -490,6 +505,98 @@ return;
 }
 
 card.remove();
+}
+// ===================== DASHBOARD RENDERING =====================
+
+function renderDashboard() {
+  viewContainer.innerHTML = `
+    <div style="
+      text-align: center;
+      margin-top: 120px;
+      color: #4f8de6;
+    ">
+      <h2 style="margin-bottom: 10px;">
+        Quality in Every Detail
+      </h2>
+      <h1 style="margin: 0; font-weight: 800;">
+        Moon Auto Detailing Dashboard
+      </h1>
+    </div>
+  `;
+}
+
+function renderButtons() {
+  viewButtons.innerHTML = "";
+
+  const buttons = [
+    { key: "pending", label: "Pending Bookings" },
+    { key: "today", label: "Today's Schedule" },
+    { key: "upcoming", label: "Upcoming Bookings" },
+    { key: "history", label: "History" }
+  ];
+
+  buttons.forEach(btn => {
+    const button = document.createElement("button");
+    button.textContent = btn.label;
+    button.dataset.view = btn.key;
+
+    button.style.marginRight = "10px";
+    button.style.padding = "10px 16px";
+    button.style.fontWeight = "700";
+    button.style.border = "none";
+    button.style.borderRadius = "8px";
+    button.style.cursor = "pointer";
+    button.style.background = "#4f8de6";
+    button.style.color = "white";
+
+    button.onclick = () => {
+      handleViewSwitch(btn.key);
+    };
+
+    viewButtons.appendChild(button);
+  });
+}
+
+function handleViewSwitch(viewName) {
+  if (currentView === viewName) {
+    currentView = null;
+    renderDashboard();
+    highlightActiveButton(null);
+    return;
+  }
+
+  currentView = viewName;
+  renderView(viewName);
+  highlightActiveButton(viewName);
+}
+
+function highlightActiveButton(activeKey) {
+  const all = viewButtons.querySelectorAll("button");
+
+  all.forEach(btn => {
+    if (btn.dataset.view === activeKey) {
+      btn.style.background = "#3e7bd6";
+    } else {
+      btn.style.background = "#4f8de6";
+    }
+  });
+}
+
+function renderView(viewName) {
+  viewContainer.innerHTML = "";
+
+  const data = cachedViews[viewName];
+
+  if (!data || data.length === 0) {
+    viewContainer.innerHTML = `
+      <div style="margin-top:40px; font-weight:600;">
+        No records found.
+      </div>
+    `;
+    return;
+  }
+
+  renderSection(viewName.toUpperCase(), data);
 }
 
 loadAdminData();
