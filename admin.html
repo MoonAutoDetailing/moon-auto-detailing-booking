@@ -46,8 +46,15 @@ cursor: pointer;
   transform: translate(-50%, -50%);
   width: 600px;
   opacity: 0.06;
-  z-index: -1;
+  z-index: 0;
   pointer-events: none;
+}
+     #pageOverlay {
+  position: relative;
+  z-index: 1;
+  background: rgba(233, 241, 251, 0.85);
+  padding: 20px;
+  border-radius: 12px;
 }
 
 </style>
@@ -77,13 +84,16 @@ style="
 <strong>DEBUG LOG</strong>
 </div>
 
-<div id="viewButtons" style="margin-bottom: 20px;"></div>
-<div id="viewContainer"></div>
-     <img 
+<img 
   src="/NewLogoColor.png" 
   id="watermarkLogo" 
   alt="Moon Auto Detailing Logo" 
 />
+
+<div id="pageOverlay">
+  <div id="viewButtons" style="margin-bottom: 20px;"></div>
+  <div id="viewContainer"></div>
+</div>
 
 
 <script type="module">
