@@ -14,15 +14,17 @@
   --moon-shadow: rgba(0,0,0,0.08);
 }
 body {
-     #pageOverlay {
-  color: white;
-}
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   margin: 0;
   padding: 20px;
-  background: #0e0e0e; /* real charcoal */
+  background: #0e0e0e;
   min-height: 100vh;
 }
+
+#pageOverlay {
+  color: white;
+}
+
 
 h1 { margin-bottom: 10px; }
 .day { margin-top: 24px; }
@@ -128,7 +130,7 @@ cursor: pointer;
   border-bottom: 1px solid #ffffff30;
   padding-bottom: 6px;
 }
-
+.status-badge { margin-top: 6px; }
 
 </style>
 </head>
@@ -169,7 +171,7 @@ style="
   <div id="viewContainer"></div>
 </div>
      <button id="debugToggle" style="
-  position: absolute;
+  position: fixed;
   top: 20px;
   right: 20px;
   background: #6f93c4;
@@ -690,16 +692,8 @@ function renderButtons() {
   buttons.forEach(btn => {
     const button = document.createElement("button");
     button.textContent = btn.label;
+    button.className = "moon-tab";
     button.dataset.view = btn.key;
-
-    button.className =marginRight = "10px";
-    button.className =padding = "10px 16px";
-    button.className =.fontWeight = "700";
-    button.className =border = "none";
-   button.className =borderRadius = "8px";
-   button.className =cursor = "pointer";
-    button.className =background = "#4f8de6";
-   button.className =color = "white";
 
     button.onclick = () => {
       handleViewSwitch(btn.key);
@@ -728,9 +722,9 @@ function highlightActiveButton(activeKey) {
 
   all.forEach(btn => {
     if (btn.dataset.view === activeKey) {
-      btn.style.background = "#3e7bd6";
+      btn.classList.add("active");
     } else {
-      btn.style.background = "#4f8de6";
+      btn.classList.remove("active");
     }
   });
 }
