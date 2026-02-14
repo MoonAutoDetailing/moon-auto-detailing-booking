@@ -359,8 +359,14 @@ if (error) {
 
 splitAndRender(data);
 renderButtons();
-renderDashboard();
+
+if (currentView) {
+  renderView(currentView);
+  highlightActiveButton(currentView);
+} else {
+  renderDashboard();
 }
+
 function splitAndRender(bookings) {
 
 cachedViews.pending = [];
