@@ -806,6 +806,151 @@ function renderView(viewName) {
     return;
   }
 
+  // =========================
+  // HISTORY SPECIAL HANDLING
+  // =========================
+  if (viewName === "history") {
+
+    const wrapper = document.createElement("div");
+
+    // ---- Date Filter ----
+    const filterRow = document.createElement("div");
+    filterRow.style.display = "flex";
+    filterRow.style.justifyContent = "center";
+    filterRow.style.gap = "10px";
+    filterRow.style.marginBottom = "20px";
+
+    const dateInput = document.createElement("input");
+    dateInput.type = "date";
+    dateInput.style.padding = "6px 10px";
+    dateInput.style.borderRadius = "6px";
+    dateInput.style.border = "1px solid #ffffff40";
+    dateInput.style.background = "rgba(255,255,255,0.08)";
+    dateInput.style.color = "white";
+       
+    const searchInput = document.createElement("input");
+    searchInput.type = "text";
+    searchInput.placeholder = "Search by client name";
+    searchInput.style.padding = "6px 10px";
+    searchInput.style.borderRadius = "6px";
+    searchInput.style.border = "1px solid #ffffff40";
+    searchInput.style.background = "rgba(255,255,255,0.08)";
+    searchInput.style.color = "white";
+
+
+    const filterBtn = document.createElement("button");
+    filterBtn.textContent = "Filter";
+    filterBtn.className = "moon-tab";
+
+    filterRow.appendChild(searchInput);
+    filterRow.appendChild(dateInput);
+    filterRow.appendChild(filterBtn);
+
+    wrapper.appendChild(filterRow);
+
+    // ---- Results Container ----
+    const resultsContainer = document.createElement("div");
+    wrapper.appendChild(resultsContainer);
+
+    // ---- Pagination Container ----
+    const paginationContainer = document.createElement("div");
+    paginationContainer.style.display = "flex";
+    paginationContainer.style.justifyContent = "center";
+    paginationContainer.style.gap = "8px";
+    paginationContainer.style.marginTop = "20px";
+    wrapper.appendChild(paginationContainer);
+
+    viewContainer.appendChild(wrapper);
+
+    const ITEMS_PER_PAGE = 10;
+    let currentPage = 1;
+
+    function renderHistoryPage(page, dataset) {
+      resultsContainer.innerHTML = "";
+      paginationContainer.innerHTML = "";
+
+      const start = (page - 1) * ITEMS_PER_PAGE;
+      const end = start + ITEMS_PER_PAGE;
+      const pageItems = dataset.slice(start, end);
+
+      pageItems.forEach(b => {
+        resultsContainer.appendChild(buildCard(b));
+      });
+
+      const totalPages = Math.ceil(dataset.length / ITEMS_PER_PAGE);
+
+      for (let i = 1; i <= totalPages; i++) {
+        const pageBtn = document.createElement("button");
+        pageBtn.textContent = i;
+        pageBtn.className = "moon-tab";
+
+        if (i === page) {
+          pageBtn.classList.add("active");
+        }
+
+        pageBtn.onclick = () => {
+          currentPage = i;
+          renderHistoryPage(i, dataset);
+        };
+
+        paginationContainer.appendChild(pageBtn);
+      }
+    }
+
+    // ---- Filter Action ----
+    filterBtn.onclick = () => {
+  let filtered = [...data];
+
+  // Date filter
+  if (dateInput.value) {
+    const selected = new Date(dateInput.value);
+    selected.setHours(0,0,0,0);
+
+    filtered = filtered.filter(b => {
+      const d = new Date(b.scheduled_start);
+      d.setHours(0,0,0,0);
+      return d.getTime() === selected.getTime();
+    });
+  }
+
+  // Name search filter
+  if (searchInput.value.trim() !== "") {
+    const query = searchInput.value.trim().toLowerCase();
+    filtered = filtered.filter(b =>
+      b.customers.full_name.toLowerCase().includes(query)
+    );
+  }
+
+  renderHistoryPage(1, filtered);
+};
+searchInput.addEventListener("input", () => {
+  filterBtn.click();
+});
+
+
+      const selected = new Date(dateInput.value);
+      selected.setHours(0,0,0,0);
+
+      const filtered = data.filter(b => {
+        const d = new Date(b.scheduled_start);
+        d.setHours(0,0,0,0);
+        return d.getTime() === selected.getTime();
+      });
+
+      renderHistoryPage(1, filtered);
+    };
+
+    renderHistoryPage(currentPage, data);
+    return;
+  }
+
+  // =========================
+  // NORMAL VIEWS
+  // =========================
+  renderSection(viewName.toUpperCase(), data);
+}
+
+
   if (viewName === "history") {
     renderHistoryView(data);
   } else {
