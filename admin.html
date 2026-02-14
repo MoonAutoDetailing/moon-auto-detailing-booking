@@ -850,8 +850,10 @@ viewContainer.innerHTML = "";
 }
 function renderHistoryPage() {
 
-  const existingSections = viewContainer.querySelectorAll(".day");
-  existingSections.forEach(s => s.remove());
+  // Remove old sections AND old pagination
+viewContainer.querySelectorAll(".day, .history-pagination")
+  .forEach(el => el.remove());
+
 
   const start = (historyPage - 1) * historyPageSize;
   const end = start + historyPageSize;
@@ -868,6 +870,7 @@ function renderPaginationControls() {
   if (totalPages <= 1) return;
 
   const pagination = document.createElement("div");
+     pagination.className = "history-pagination";
   pagination.style.marginTop = "20px";
   pagination.style.textAlign = "center";
 
