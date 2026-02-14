@@ -274,6 +274,10 @@ let cachedViews = {
   upcoming: [],
   history: []
 };
+     let historyPage = 1;
+const historyPageSize = 20;
+let filteredHistory = [];
+
 
 const viewButtons = document.getElementById("viewButtons");
 const viewContainer = document.getElementById("viewContainer");
@@ -791,7 +795,7 @@ function highlightActiveButton(activeKey) {
 function renderView(viewName) {
   viewContainer.innerHTML = "";
 
-  const data = cachedViews[viewName];
+  let data = cachedViews[viewName];
 
   if (!data || data.length === 0) {
     viewContainer.innerHTML = `
@@ -802,7 +806,89 @@ function renderView(viewName) {
     return;
   }
 
-  renderSection(viewName.toUpperCase(), data);
+  if (viewName === "history") {
+    renderHistoryView(data);
+  } else {
+    renderSection(viewName.toUpperCase(), data);
+  }
+}
+function renderHistoryView(data) {
+
+  filteredHistory = data;
+
+  const controls = document.createElement("div");
+  controls.style.marginBottom = "20px";
+  controls.style.display = "flex";
+  controls.style.justifyContent = "space-between";
+  controls.style.alignItems = "center";
+
+  // Date filter
+  const dateInput = document.createElement("input");
+  dateInput.type = "date";
+  dateInput.onchange = () => {
+    const selected = dateInput.value;
+
+    if (!selected) {
+      filteredHistory = data;
+    } else {
+      filteredHistory = data.filter(b => {
+        const d = new Date(b.scheduled_start)
+          .toISOString()
+          .split("T")[0];
+        return d === selected;
+      });
+    }
+
+    historyPage = 1;
+    renderHistoryPage();
+  };
+
+  controls.appendChild(dateInput);
+  viewContainer.appendChild(controls);
+
+  renderHistoryPage();
+}
+function renderHistoryPage() {
+
+  const existingSections = viewContainer.querySelectorAll(".day");
+  existingSections.forEach(s => s.remove());
+
+  const start = (historyPage - 1) * historyPageSize;
+  const end = start + historyPageSize;
+
+  const pageData = filteredHistory.slice(start, end);
+
+  renderSection("HISTORY", pageData);
+
+  renderPaginationControls();
+}
+function renderPaginationControls() {
+
+  const totalPages = Math.ceil(filteredHistory.length / historyPageSize);
+  if (totalPages <= 1) return;
+
+  const pagination = document.createElement("div");
+  pagination.style.marginTop = "20px";
+  pagination.style.textAlign = "center";
+
+  for (let i = 1; i <= totalPages; i++) {
+    const btn = document.createElement("button");
+    btn.textContent = i;
+    btn.className = "moon-tab";
+
+    if (i === historyPage) {
+      btn.classList.add("active");
+    }
+
+    btn.onclick = () => {
+      historyPage = i;
+      renderHistoryPage();
+    };
+
+    pagination.appendChild(btn);
+  }
+
+  viewContainer.appendChild(pagination);
 }
 
 loadAdminData();
