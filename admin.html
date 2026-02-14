@@ -171,7 +171,6 @@ return;
 splitAndRender(data);
 }
 function splitAndRender(bookings) {
-container.innerHTML = "";
 
 const pending = [];
 const todayList = [];
@@ -208,12 +207,6 @@ else if (
 }
 
 });
-
-renderSection("Pending Bookings", pending);
-renderSection("Today's Schedule", todayList);
-renderSection("Upcoming Bookings", upcoming);
-renderSection("Completed Archive", completed, true);
-}
 
 function renderSection(title, bookings, collapsed = false) {
 const section = document.createElement("div");
