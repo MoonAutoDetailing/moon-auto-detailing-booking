@@ -46,15 +46,33 @@ cursor: pointer;
   transform: translate(-50%, -50%);
   width: 600px;
   opacity: 0.06;
-  z-index: 0;
+  z-index: 1;
   pointer-events: none;
 }
+     #watermarkUnderlay {
+  position: fixed;
+  top: 65%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 800px;
+  height: 520px; /* tweak if needed */
+  background: rgba(0,0,0,0.06);
+  z-index: 0;
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  border-radius: 18px;
+}
+
      #pageOverlay {
   position: relative;
-  z-index: 1;
-  background: rgba(233, 241, 251, 0.85);
+  z-index: 2;
   padding: 20px;
   border-radius: 12px;
+  background: transparent; /* dashboard default */
+}
+
+#pageOverlay.overlay-active {
+  background: rgba(233, 241, 251, 0.85); /* only when a view is open */
 }
 
 </style>
@@ -83,7 +101,7 @@ style="
 >
 <strong>DEBUG LOG</strong>
 </div>
-
+     <div id="watermarkUnderlay"></div>
 <img 
   src="/NewLogoColor.png" 
   id="watermarkLogo" 
@@ -596,6 +614,7 @@ function renderButtons() {
 function handleViewSwitch(viewName) {
   if (currentView === viewName) {
     currentView = null;
+       document.getElementById("pageOverlay").classList.remove("overlay-active");
     renderDashboard();
     highlightActiveButton(null);
     return;
