@@ -926,20 +926,6 @@ function renderView(viewName) {
 searchInput.addEventListener("input", () => {
   filterBtn.click();
 });
-
-
-      const selected = new Date(dateInput.value);
-      selected.setHours(0,0,0,0);
-
-      const filtered = data.filter(b => {
-        const d = new Date(b.scheduled_start);
-        d.setHours(0,0,0,0);
-        return d.getTime() === selected.getTime();
-      });
-
-      renderHistoryPage(1, filtered);
-    };
-
     renderHistoryPage(currentPage, data);
     return;
   }
@@ -948,95 +934,6 @@ searchInput.addEventListener("input", () => {
   // NORMAL VIEWS
   // =========================
   renderSection(viewName.toUpperCase(), data);
-}
-
-
-  if (viewName === "history") {
-    renderHistoryView(data);
-  } else {
-    renderSection(viewName.toUpperCase(), data);
-  }
-}
-function renderHistoryView(data) {
-viewContainer.innerHTML = "";
-  filteredHistory = data;
-
-  const controls = document.createElement("div");
-  controls.style.marginBottom = "20px";
-  controls.style.display = "flex";
-  controls.style.justifyContent = "space-between";
-  controls.style.alignItems = "center";
-
-  // Date filter
-  const dateInput = document.createElement("input");
-  dateInput.type = "date";
-  dateInput.onchange = () => {
-    const selected = dateInput.value;
-
-    if (!selected) {
-      filteredHistory = data;
-    } else {
-      filteredHistory = data.filter(b => {
-        const d = new Date(b.scheduled_start)
-          .toISOString()
-          .split("T")[0];
-        return d === selected;
-      });
-    }
-
-    historyPage = 1;
-    renderHistoryPage();
-  };
-
-  controls.appendChild(dateInput);
-  viewContainer.appendChild(controls);
-
-  renderHistoryPage();
-}
-function renderHistoryPage() {
-
-  // Remove old sections AND old pagination
-viewContainer.querySelectorAll(".day, .history-pagination")
-  .forEach(el => el.remove());
-
-
-  const start = (historyPage - 1) * historyPageSize;
-  const end = start + historyPageSize;
-
-  const pageData = filteredHistory.slice(start, end);
-
-  renderSection("HISTORY", pageData);
-
-  renderPaginationControls();
-}
-function renderPaginationControls() {
-
-  const totalPages = Math.ceil(filteredHistory.length / historyPageSize);
-  if (totalPages <= 1) return;
-
-  const pagination = document.createElement("div");
-     pagination.className = "history-pagination";
-  pagination.style.marginTop = "20px";
-  pagination.style.textAlign = "center";
-
-  for (let i = 1; i <= totalPages; i++) {
-    const btn = document.createElement("button");
-    btn.textContent = i;
-    btn.className = "moon-tab";
-
-    if (i === historyPage) {
-      btn.classList.add("active");
-    }
-
-    btn.onclick = () => {
-      historyPage = i;
-      renderHistoryPage();
-    };
-
-    pagination.appendChild(btn);
-  }
-
-  viewContainer.appendChild(pagination);
 }
 
 loadAdminData();
