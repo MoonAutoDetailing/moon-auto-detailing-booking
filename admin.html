@@ -6,10 +6,18 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 
 <style>
+     :root {
+  --moon-primary: #6f93c4;
+  --moon-primary-dark: #4f78a8;
+  --moon-light-bg: #e9f1fb;
+  --moon-soft: #9fb7d3;
+  --moon-shadow: rgba(0,0,0,0.08);
+}
 body {
-font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-margin: 20px;
-max-width: 1000px;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  margin: 20px;
+  max-width: 1100px;
+  background: var(--moon-light-bg);
 }
 h1 { margin-bottom: 10px; }
 .day { margin-top: 24px; }
@@ -30,6 +38,18 @@ cursor: pointer;
 .confirm { background: #0a7a2f; color: white; border: none; }
 .cancel { background: #b00020; color: white; border: none; }
 .delay { background: #666; color: white; border: none; }
+     
+     #watermarkLogo {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  opacity: 0.06;
+  z-index: -1;
+  pointer-events: none;
+}
+
 </style>
 </head>
 
@@ -59,6 +79,12 @@ style="
 
 <div id="viewButtons" style="margin-bottom: 20px;"></div>
 <div id="viewContainer"></div>
+     <img 
+  src="/NewLogoColor.png" 
+  id="watermarkLogo" 
+  alt="Moon Auto Detailing Logo" 
+/>
+
 
 <script type="module">
 /* ===================== IMPORTS ===================== */
