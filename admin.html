@@ -272,7 +272,6 @@ let cachedViews = {
   pending: [],
   today: [],
   upcoming: [],
-  history: []
 };
      let historyPage = 1;
 const historyPageSize = 20;
@@ -399,13 +398,6 @@ cachedViews.today.push(b);
 } else if (start >= endOfToday) {
 cachedViews.upcoming.push(b);
 }
-}
-
-else if (
-  ["completed","no_show","cancelled","rescheduled","reschedule_requested","denied"]
-    .includes(b.status)
-) {
-  cachedViews.history.push(b);
 }
 
 });
