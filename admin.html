@@ -257,13 +257,20 @@ const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
 const SUPABASE_ANON_KEY =
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbWh1Z3p0cnBpcHJucW1jeWFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MDk1NjMsImV4cCI6MjA4NjA4NTU2M30.Mo0uRGWCjU1fOa1br2P8j1ogEZf7mDm2JseV8DFnPwI";
 
-const ADMIN_SECRET = "moon-admin-2026";
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-global: {
-headers: { "x-admin-secret": ADMIN_SECRET }
+// ===== ADMIN AUTH (runtime, not in source) =====
+let ADMIN_SECRET = sessionStorage.getItem("moon_admin_secret");
+if (!ADMIN_SECRET) {
+  ADMIN_SECRET = prompt("Enter admin password:");
+  if (!ADMIN_SECRET) {
+    alert("Admin password required.");
+    throw new Error("Missing admin password");
+  }
+  sessionStorage.setItem("moon_admin_secret", ADMIN_SECRET);
 }
-});
+
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
 
      // ===================== VIEW STATE =====================
 let currentView = null;
