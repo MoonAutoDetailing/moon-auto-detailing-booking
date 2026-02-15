@@ -553,9 +553,9 @@ header.onclick = () => {
     const res = await fetch("/api/confirm-booking", {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "x-admin-secret": ADMIN_SECRET
-      },
+  "Content-Type": "application/json",
+  "x-admin-session": ADMIN_SESSION
+}
       body: JSON.stringify({ bookingId: b.id })
     });
 
@@ -606,10 +606,10 @@ header.onclick = () => {
 
       const delRes = await fetch("/api/delete-calendar-event", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-secret": ADMIN_SECRET
-        },
+       headers: {
+  "Content-Type": "application/json",
+  "x-admin-session": ADMIN_SESSION
+}
         body: JSON.stringify({ bookingId: b.id })
       });
 
@@ -667,9 +667,9 @@ header.onclick = () => {
       const delRes = await fetch("/api/delete-calendar-event", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
-          "x-admin-secret": ADMIN_SECRET
-        },
+  "Content-Type": "application/json",
+  "x-admin-session": ADMIN_SESSION
+}
         body: JSON.stringify({ bookingId: b.id })
       });
 
@@ -886,7 +886,9 @@ function renderView(viewName) {
 
       try {
         const res = await fetch(`/api/admin-history?${params.toString()}`, {
-          headers: { "x-admin-secret": ADMIN_SECRET }
+          headers: {
+  "x-admin-session": ADMIN_SESSION
+}
         });
 
         const payload = await res.json();
