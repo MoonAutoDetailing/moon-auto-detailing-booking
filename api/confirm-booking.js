@@ -1,8 +1,14 @@
 import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
 import twilio from "twilio";
+import { verifyAdmin } from "./_verifyAdmin.js";
+
 
 export default async function handler(req, res) {
+  // 🔒 VERIFY ADMIN SESSION
+if (!verifyAdmin(req)) {
+  return res.status(401).json({ error: "Unauthorized" });
+}
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false });
   }
