@@ -167,6 +167,79 @@ cursor: pointer;
   margin-top: 70px; /* pushes below toggle button */
   margin-bottom: 30px;
 }
+/* ================= LOGIN OVERLAY ================= */
+
+#loginOverlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, #0e0e0e 0%, #000 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+}
+
+#loginCard {
+  width: 360px;
+  padding: 40px 34px;
+  border-radius: 18px;
+  background: rgba(111,147,196,0.12);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  text-align: center;
+}
+
+#loginLogo {
+  width: 140px;
+  margin-bottom: 18px;
+  opacity: 0.95;
+}
+
+.loginTitle {
+  color: var(--moon-primary);
+  margin-bottom: 20px;
+  font-weight: 700;
+}
+
+#loginPassword {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: white;
+  outline: none;
+  margin-bottom: 14px;
+  font-size: 15px;
+}
+
+#loginPassword::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+
+#loginButton {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: var(--moon-primary);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+#loginButton:hover {
+  background: var(--moon-primary-dark);
+}
+
+#loginError {
+  margin-top: 12px;
+  color: #ff6b6b;
+  display: none;
+  font-size: 14px;
+}
 
 
 </style>
@@ -202,6 +275,25 @@ style="
   id="watermarkLogo" 
   alt="Moon Auto Detailing Logo" 
 />
+<!-- ADMIN LOGIN OVERLAY -->
+<div id="loginOverlay">
+  <div id="loginCard">
+    <img src="/NewLogoColor.png" id="loginLogo" />
+
+    <h2 class="loginTitle">Admin Access</h2>
+
+    <input
+      id="loginPassword"
+      type="password"
+      placeholder="Password"
+      autocomplete="off"
+    />
+
+    <button id="loginButton">Unlock Dashboard</button>
+
+    <div id="loginError">Wrong password</div>
+  </div>
+</div>
 
 <div id="pageOverlay">
   <div id="viewButtons" style="margin-bottom: 20px;"></div>
@@ -225,36 +317,71 @@ style="
 
 
 <script type="module">
-     // ================= ADMIN LOGIN =================
+// ================= ADMIN LOGIN UI =================
 let ADMIN_SESSION = sessionStorage.getItem("moon_admin_session");
 
-async function requireLogin() {
-  if (ADMIN_SESSION) return;
+async function performLogin(password) {
+  const res = await fetch("/api/admin-login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password })
+  });
 
-  while (!ADMIN_SESSION) {
-    const password = prompt("Admin password required:");
-    if (!password) continue;
+  const data = await res.json();
 
-    const res = await fetch("/api/admin-login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password })
-    });
+  if (!res.ok) throw new Error("Unauthorized");
 
-    const data = await res.json();
+  ADMIN_SESSION = data.token;
+  sessionStorage.setItem("moon_admin_session", ADMIN_SESSION);
+}
 
-    if (!res.ok) {
-      alert("Wrong password");
-      continue;
+async function requireLoginUI() {
+  if (ADMIN_SESSION) {
+    document.getElementById("loginOverlay").style.display = "none";
+    return;
+  }
+
+  const input = document.getElementById("loginPassword");
+  const button = document.getElementById("loginButton");
+  const error = document.getElementById("loginError");
+
+  return new Promise(resolve => {
+    async function attemptLogin() {
+      error.style.display = "none";
+
+      try {
+        await performLogin(input.value);
+        document.getElementById("loginOverlay").style.display = "none";
+        resolve();
+      } catch {
+        error.style.display = "block";
+        input.value = "";
+      }
     }
 
-    ADMIN_SESSION = data.token;
-    sessionStorage.setItem("moon_admin_session", ADMIN_SESSION);
+    button.onclick = attemptLogin;
+    input.addEventListener("keydown", e => {
+      if (e.key === "Enter") attemptLogin();
+    });
+  });
+}
+
+
+
+async function bootAdminApp() {
+  try {
+    await requireLoginUI();
+    hardLog("ADMIN AUTH SUCCESS");
+    renderButtons();
+    renderDashboard();
+    loadAdminData();
+  } catch (err) {
+    hardLog("ADMIN AUTH FAILED");
+    console.error(err);
   }
 }
 
 
-await requireLogin();
 
 /* ===================== IMPORTS ===================== */
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
@@ -937,9 +1064,8 @@ function renderView(viewName) {
 }
 
      // ===== APP BOOT =====
-renderButtons();
-renderDashboard();
-loadAdminData();
+bootAdminApp();
+
 
      
 </script>
