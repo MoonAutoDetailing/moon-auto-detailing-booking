@@ -801,126 +801,137 @@ function renderView(viewName) {
   // =========================
   // HISTORY SPECIAL HANDLING
   // =========================
-  if (viewName === "history") {
+ const wrapper = document.createElement("div");
 
-    const wrapper = document.createElement("div");
+// FILTER ROW
+const filterRow = document.createElement("div");
+filterRow.style.display = "flex";
+filterRow.style.justifyContent = "center";
+filterRow.style.gap = "10px";
+filterRow.style.marginBottom = "20px";
 
-    // ---- Date Filter ----
-    const filterRow = document.createElement("div");
-    filterRow.style.display = "flex";
-    filterRow.style.justifyContent = "center";
-    filterRow.style.gap = "10px";
-    filterRow.style.marginBottom = "20px";
+const searchInput = document.createElement("input");
+searchInput.type = "text";
+searchInput.placeholder = "Search by client name";
+searchInput.style.padding = "6px 10px";
+searchInput.style.borderRadius = "6px";
+searchInput.style.border = "1px solid #ffffff40";
+searchInput.style.background = "rgba(255,255,255,0.08)";
+searchInput.style.color = "white";
 
-    const dateInput = document.createElement("input");
-    dateInput.type = "date";
-    dateInput.style.padding = "6px 10px";
-    dateInput.style.borderRadius = "6px";
-    dateInput.style.border = "1px solid #ffffff40";
-    dateInput.style.background = "rgba(255,255,255,0.08)";
-    dateInput.style.color = "white";
-       
-    const searchInput = document.createElement("input");
-    searchInput.type = "text";
-    searchInput.placeholder = "Search by client name";
-    searchInput.style.padding = "6px 10px";
-    searchInput.style.borderRadius = "6px";
-    searchInput.style.border = "1px solid #ffffff40";
-    searchInput.style.background = "rgba(255,255,255,0.08)";
-    searchInput.style.color = "white";
+const dateInput = document.createElement("input");
+dateInput.type = "date";
+dateInput.style.padding = "6px 10px";
+dateInput.style.borderRadius = "6px";
+dateInput.style.border = "1px solid #ffffff40";
+dateInput.style.background = "rgba(255,255,255,0.08)";
+dateInput.style.color = "white";
 
+filterRow.appendChild(searchInput);
+filterRow.appendChild(dateInput);
+wrapper.appendChild(filterRow);
 
-    const filterBtn = document.createElement("button");
-    filterBtn.textContent = "Filter";
-    filterBtn.className = "moon-tab";
+// RESULTS
+const resultsContainer = document.createElement("div");
+wrapper.appendChild(resultsContainer);
 
-    filterRow.appendChild(searchInput);
-    filterRow.appendChild(dateInput);
-    filterRow.appendChild(filterBtn);
+// PAGINATION
+const paginationContainer = document.createElement("div");
+paginationContainer.style.display = "flex";
+paginationContainer.style.justifyContent = "center";
+paginationContainer.style.gap = "8px";
+paginationContainer.style.marginTop = "20px";
+wrapper.appendChild(paginationContainer);
 
-    wrapper.appendChild(filterRow);
+viewContainer.appendChild(wrapper);
 
-    // ---- Results Container ----
-    const resultsContainer = document.createElement("div");
-    wrapper.appendChild(resultsContainer);
+let currentPage = 1;
+const PAGE_SIZE = 10;
 
-    // ---- Pagination Container ----
-    const paginationContainer = document.createElement("div");
-    paginationContainer.style.display = "flex";
-    paginationContainer.style.justifyContent = "center";
-    paginationContainer.style.gap = "8px";
-    paginationContainer.style.marginTop = "20px";
-    wrapper.appendChild(paginationContainer);
+async function loadHistoryPage(page = 1) {
+  currentPage = page;
 
-    viewContainer.appendChild(wrapper);
+  resultsContainer.innerHTML = "Loading...";
+  paginationContainer.innerHTML = "";
 
-    const ITEMS_PER_PAGE = 10;
-    let currentPage = 1;
+  const params = new URLSearchParams({
+    page: page.toString(),
+    pageSize: PAGE_SIZE.toString()
+  });
 
-    function renderHistoryPage(page, dataset) {
-      resultsContainer.innerHTML = "";
-      paginationContainer.innerHTML = "";
+  if (searchInput.value.trim()) {
+    params.append("q", searchInput.value.trim());
+  }
 
-      const start = (page - 1) * ITEMS_PER_PAGE;
-      const end = start + ITEMS_PER_PAGE;
-      const pageItems = dataset.slice(start, end);
+  if (dateInput.value) {
+    params.append("date", dateInput.value);
+  }
 
-      pageItems.forEach(b => {
-        resultsContainer.appendChild(buildCard(b));
-      });
-
-      const totalPages = Math.ceil(dataset.length / ITEMS_PER_PAGE);
-
-      for (let i = 1; i <= totalPages; i++) {
-        const pageBtn = document.createElement("button");
-        pageBtn.textContent = i;
-        pageBtn.className = "moon-tab";
-
-        if (i === page) {
-          pageBtn.classList.add("active");
-        }
-
-        pageBtn.onclick = () => {
-          currentPage = i;
-          renderHistoryPage(i, dataset);
-        };
-
-        paginationContainer.appendChild(pageBtn);
+  try {
+    const res = await fetch(`/api/admin-history?${params.toString()}`, {
+      headers: {
+        "x-admin-secret": ADMIN_SECRET
       }
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || "Failed to load history");
     }
 
-    // ---- Filter Action ----
-    filterBtn.onclick = () => {
-  let filtered = [...data];
+    resultsContainer.innerHTML = "";
 
-  // Date filter
-  if (dateInput.value) {
-    const selected = new Date(dateInput.value);
-    selected.setHours(0,0,0,0);
+    if (!data.rows.length) {
+      resultsContainer.innerHTML = `
+        <div style="margin-top:40px; font-weight:600;">
+          No records found.
+        </div>
+      `;
+      return;
+    }
 
-    filtered = filtered.filter(b => {
-      const d = new Date(b.scheduled_start);
-      d.setHours(0,0,0,0);
-      return d.getTime() === selected.getTime();
+    data.rows.forEach(b => {
+      resultsContainer.appendChild(buildCard(b));
     });
-  }
 
-  // Name search filter
-  if (searchInput.value.trim() !== "") {
-    const query = searchInput.value.trim().toLowerCase();
-    filtered = filtered.filter(b =>
-      b.customers.full_name.toLowerCase().includes(query)
-    );
-  }
+    const totalPages = Math.ceil(data.totalCount / PAGE_SIZE);
 
-  renderHistoryPage(1, filtered);
-};
+    for (let i = 1; i <= totalPages; i++) {
+      const pageBtn = document.createElement("button");
+      pageBtn.textContent = i;
+      pageBtn.className = "moon-tab";
+
+      if (i === currentPage) {
+        pageBtn.classList.add("active");
+      }
+
+      pageBtn.onclick = () => loadHistoryPage(i);
+
+      paginationContainer.appendChild(pageBtn);
+    }
+
+  } catch (err) {
+    resultsContainer.innerHTML = "Failed to load history.";
+    hardLog("HISTORY LOAD ERROR " + err.message);
+  }
+}
+
+let searchTimeout;
 searchInput.addEventListener("input", () => {
-  filterBtn.click();
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    loadHistoryPage(1);
+  }, 300);
 });
-    renderHistoryPage(currentPage, data);
-    return;
-  }
+
+dateInput.addEventListener("change", () => {
+  loadHistoryPage(1);
+});
+
+loadHistoryPage(1);
+return;
+
 
   // =========================
   // NORMAL VIEWS
