@@ -1063,8 +1063,17 @@ function renderView(viewName) {
   renderSection(viewName.toUpperCase(), data);
 }
 
-     // ===== APP BOOT =====
-bootAdminApp();
+      // ===== APP BOOT (PROTECTED) =====
+(async () => {
+  try {
+    await requireLogin();
+    renderButtons();
+    renderDashboard();
+    loadAdminData();
+  } catch (err) {
+    document.body.innerHTML = "";
+  }
+})();
 
 
      
