@@ -788,162 +788,125 @@ function highlightActiveButton(activeKey) {
 function renderView(viewName) {
   viewContainer.innerHTML = "";
 
-  let data = cachedViews[viewName];
+  // =========================
+  // HISTORY (SERVER-SIDE)
+  // =========================
+  if (viewName === "history") {
+    const wrapper = document.createElement("div");
 
-// Allow history to load from server instead of cache
-if (viewName !== "history") {
-  if (!data || data.length === 0) {
-    viewContainer.innerHTML = `
-      <div style="margin-top:40px; font-weight:600;">
-        No records found.
-      </div>
-    `;
+    const filterRow = document.createElement("div");
+    filterRow.style.display = "flex";
+    filterRow.style.justifyContent = "center";
+    filterRow.style.gap = "10px";
+    filterRow.style.marginBottom = "20px";
+
+    const searchInput = document.createElement("input");
+    searchInput.type = "text";
+    searchInput.placeholder = "Search by client name";
+    searchInput.style.padding = "6px 10px";
+    searchInput.style.borderRadius = "6px";
+    searchInput.style.border = "1px solid #ffffff40";
+    searchInput.style.background = "rgba(255,255,255,0.08)";
+    searchInput.style.color = "white";
+
+    const dateInput = document.createElement("input");
+    dateInput.type = "date";
+    dateInput.style.padding = "6px 10px";
+    dateInput.style.borderRadius = "6px";
+    dateInput.style.border = "1px solid #ffffff40";
+    dateInput.style.background = "rgba(255,255,255,0.08)";
+    dateInput.style.color = "white";
+
+    filterRow.appendChild(searchInput);
+    filterRow.appendChild(dateInput);
+    wrapper.appendChild(filterRow);
+
+    const resultsContainer = document.createElement("div");
+    wrapper.appendChild(resultsContainer);
+
+    const paginationContainer = document.createElement("div");
+    paginationContainer.style.display = "flex";
+    paginationContainer.style.justifyContent = "center";
+    paginationContainer.style.gap = "8px";
+    paginationContainer.style.marginTop = "20px";
+    wrapper.appendChild(paginationContainer);
+
+    viewContainer.appendChild(wrapper);
+
+    let currentPage = 1;
+    const PAGE_SIZE = 10;
+
+    async function loadHistoryPage(page = 1) {
+      currentPage = page;
+      resultsContainer.innerHTML = "Loading...";
+      paginationContainer.innerHTML = "";
+
+      const params = new URLSearchParams({
+        page: page.toString(),
+        pageSize: PAGE_SIZE.toString()
+      });
+
+      if (searchInput.value.trim()) params.append("q", searchInput.value.trim());
+      if (dateInput.value) params.append("date", dateInput.value);
+
+      try {
+        const res = await fetch(`/api/admin-history?${params.toString()}`, {
+          headers: { "x-admin-secret": ADMIN_SECRET }
+        });
+
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload.error || "Failed to load history");
+
+        resultsContainer.innerHTML = "";
+
+        if (!payload.rows.length) {
+          resultsContainer.innerHTML = "<div style='margin-top:40px;font-weight:600;'>No records found.</div>";
+          return;
+        }
+
+        payload.rows.forEach(b => resultsContainer.appendChild(buildCard(b)));
+
+        const totalPages = Math.ceil(payload.totalCount / PAGE_SIZE);
+        for (let i = 1; i <= totalPages; i++) {
+          const btn = document.createElement("button");
+          btn.textContent = i;
+          btn.className = "moon-tab";
+          if (i === currentPage) btn.classList.add("active");
+          btn.onclick = () => loadHistoryPage(i);
+          paginationContainer.appendChild(btn);
+        }
+
+      } catch (err) {
+        resultsContainer.innerHTML = "Failed to load history.";
+        hardLog("HISTORY LOAD ERROR " + err.message);
+      }
+    }
+
+    let searchTimeout;
+    searchInput.addEventListener("input", () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => loadHistoryPage(1), 300);
+    });
+
+    dateInput.addEventListener("change", () => loadHistoryPage(1));
+
+    loadHistoryPage(1);
     return;
   }
-}
 
   // =========================
-  // HISTORY SPECIAL HANDLING
-  // =========================
-     if (viewName === "history") {
- const wrapper = document.createElement("div");
-
-// FILTER ROW
-const filterRow = document.createElement("div");
-filterRow.style.display = "flex";
-filterRow.style.justifyContent = "center";
-filterRow.style.gap = "10px";
-filterRow.style.marginBottom = "20px";
-
-const searchInput = document.createElement("input");
-searchInput.type = "text";
-searchInput.placeholder = "Search by client name";
-searchInput.style.padding = "6px 10px";
-searchInput.style.borderRadius = "6px";
-searchInput.style.border = "1px solid #ffffff40";
-searchInput.style.background = "rgba(255,255,255,0.08)";
-searchInput.style.color = "white";
-
-const dateInput = document.createElement("input");
-dateInput.type = "date";
-dateInput.style.padding = "6px 10px";
-dateInput.style.borderRadius = "6px";
-dateInput.style.border = "1px solid #ffffff40";
-dateInput.style.background = "rgba(255,255,255,0.08)";
-dateInput.style.color = "white";
-
-filterRow.appendChild(searchInput);
-filterRow.appendChild(dateInput);
-wrapper.appendChild(filterRow);
-
-// RESULTS
-const resultsContainer = document.createElement("div");
-wrapper.appendChild(resultsContainer);
-
-// PAGINATION
-const paginationContainer = document.createElement("div");
-paginationContainer.style.display = "flex";
-paginationContainer.style.justifyContent = "center";
-paginationContainer.style.gap = "8px";
-paginationContainer.style.marginTop = "20px";
-wrapper.appendChild(paginationContainer);
-
-viewContainer.appendChild(wrapper);
-
-let currentPage = 1;
-const PAGE_SIZE = 10;
-
-async function loadHistoryPage(page = 1) {
-  currentPage = page;
-
-  resultsContainer.innerHTML = "Loading...";
-  paginationContainer.innerHTML = "";
-
-  const params = new URLSearchParams({
-    page: page.toString(),
-    pageSize: PAGE_SIZE.toString()
-  });
-
-  if (searchInput.value.trim()) {
-    params.append("q", searchInput.value.trim());
-  }
-
-  if (dateInput.value) {
-    params.append("date", dateInput.value);
-  }
-
-  try {
-    const res = await fetch(`/api/admin-history?${params.toString()}`, {
-      headers: {
-        "x-admin-secret": ADMIN_SECRET
-      }
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.error || "Failed to load history");
-    }
-
-    resultsContainer.innerHTML = "";
-
-    if (!data.rows.length) {
-      resultsContainer.innerHTML = `
-        <div style="margin-top:40px; font-weight:600;">
-          No records found.
-        </div>
-      `;
-      return;
-    }
-
-    data.rows.forEach(b => {
-      resultsContainer.appendChild(buildCard(b));
-    });
-
-    const totalPages = Math.ceil(data.totalCount / PAGE_SIZE);
-
-    for (let i = 1; i <= totalPages; i++) {
-      const pageBtn = document.createElement("button");
-      pageBtn.textContent = i;
-      pageBtn.className = "moon-tab";
-
-      if (i === currentPage) {
-        pageBtn.classList.add("active");
-      }
-
-      pageBtn.onclick = () => loadHistoryPage(i);
-
-      paginationContainer.appendChild(pageBtn);
-    }
-
-  } catch (err) {
-    resultsContainer.innerHTML = "Failed to load history.";
-    hardLog("HISTORY LOAD ERROR " + err.message);
-  }
-}
-
-let searchTimeout;
-searchInput.addEventListener("input", () => {
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(() => {
-    loadHistoryPage(1);
-  }, 300);
-});
-
-dateInput.addEventListener("change", () => {
-  loadHistoryPage(1);
-});
-
-loadHistoryPage(1);
-return;
-}
-
-}
- // =========================
   // NORMAL VIEWS
   // =========================
-renderSection(viewName.toUpperCase(), data);
-loadAdminData();
+  const data = cachedViews[viewName];
+
+  if (!data || data.length === 0) {
+    viewContainer.innerHTML = "<div style='margin-top:40px;font-weight:600;'>No records found.</div>";
+    return;
+  }
+
+  renderSection(viewName.toUpperCase(), data);
+}
+
 </script>
 </body>
 </html>
