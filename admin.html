@@ -225,6 +225,34 @@ style="
 
 
 <script type="module">
+     // ================= ADMIN LOGIN =================
+let ADMIN_SESSION = sessionStorage.getItem("moon_admin_session");
+
+async function requireLogin() {
+  if (ADMIN_SESSION) return;
+
+  const password = prompt("Admin password required:");
+  if (!password) throw new Error("No password");
+
+  const res = await fetch("/api/admin-login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    alert("Wrong password");
+    throw new Error("Unauthorized");
+  }
+
+  ADMIN_SESSION = data.token;
+  sessionStorage.setItem("moon_admin_session", ADMIN_SESSION);
+}
+
+await requireLogin();
+
 /* ===================== IMPORTS ===================== */
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
