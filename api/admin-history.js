@@ -22,8 +22,10 @@ const HISTORY_STATUSES = [
   "no_show",
   "cancelled",
   "reschedule_requested",
+  "rescheduled",
   "denied"
 ];
+
 
 export async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
