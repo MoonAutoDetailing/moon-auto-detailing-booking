@@ -875,6 +875,7 @@ async function loadHistoryPage(page = 1) {
     });
 
     const data = await res.json();
+       alert("API RESPONSE:\n\n" + JSON.stringify(data, null, 2));
 
     if (!res.ok) {
       throw new Error(data.error || "Failed to load history");
