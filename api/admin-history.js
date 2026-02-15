@@ -1,6 +1,8 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { DateTime } from "luxon";
+import { verifyAdmin } from "./_verifyAdmin.js";
+
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -28,6 +30,9 @@ const HISTORY_STATUSES = [
 
 
 export async function handler(req, res) {
+   if (!verifyAdmin(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-admin-secret");
