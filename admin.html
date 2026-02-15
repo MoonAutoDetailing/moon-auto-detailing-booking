@@ -487,33 +487,20 @@ hardLog("LOADING ADMIN DATA");
 const today = new Date();
 today.setHours(0, 0, 0, 0);
 
-const { data, error } = await supabase
-.from("bookings")
-.select(`
-     id,
-     scheduled_start,
-     scheduled_end,
-     service_address,
-     status,
-     google_event_id,
-     customers:customer_id ( full_name, phone ),
-     vehicles:vehicle_id ( vehicle_year, vehicle_make, vehicle_model ),
-     service_variants:service_variant_id (
-       duration_minutes,
-       services:service_id ( category, level )
-     )
-   `)
-.gte("scheduled_start", today.toISOString())
-.order("scheduled_start", { ascending: true });
+const res = await fetch("/api/admin-bookings", {
+  headers: {
+    "x-admin-session": ADMIN_SESSION
+  }
+});
 
-if (error) {
-  hardLog("LOAD ERROR");
-  console.error(error);
-  viewContainer.innerHTML = "Failed to load bookings.";
+if (!res.ok) {
+  hardLog("UNAUTHORIZED");
+  viewContainer.innerHTML = "Unauthorized.";
   return;
 }
 
-splitAndRender(data);
+const data = await res.json();
+
 renderButtons();
 
 if (currentView) {
@@ -1063,18 +1050,7 @@ function renderView(viewName) {
   renderSection(viewName.toUpperCase(), data);
 }
 
-      // ===== APP BOOT (PROTECTED) =====
-(async () => {
-  try {
-    await requireLogin();
-    renderButtons();
-    renderDashboard();
-    loadAdminData();
-  } catch (err) {
-    document.body.innerHTML = "";
-  }
-})();
-
+ bootAdminApp();
 
      
 </script>
