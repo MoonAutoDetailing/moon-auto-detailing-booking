@@ -337,9 +337,10 @@ async function performLogin(password) {
 
 async function requireLoginUI() {
   if (ADMIN_SESSION) {
-    document.getElementById("loginOverlay").style.display = "none";
-    return;
-  }
+  // Do NOT hide overlay yet — token may be expired/invalid.
+  // We'll hide only after the first successful authorized data load.
+  return;
+}
 
   const input = document.getElementById("loginPassword");
   const button = document.getElementById("loginButton");
@@ -365,16 +366,41 @@ async function requireLoginUI() {
     });
   });
 }
+     
+function clearAdminSession() {
+  ADMIN_SESSION = null;
+  sessionStorage.removeItem("moon_admin_session");
+}
 
+function showLoginOverlay() {
+  document.getElementById("loginOverlay").style.display = "flex";
+}
 
+function hideLoginOverlay() {
+  document.getElementById("loginOverlay").style.display = "none";
+}
 
 async function bootAdminApp() {
   try {
-    await requireLoginUI();
+    showLoginOverlay();
+    await requireLoginUI(); // may set ADMIN_SESSION
+
+    hardLog("ADMIN AUTH TRY");
+
+    // Try first data load. If unauthorized, force re-login.
+    const ok = await loadAdminData({ silentUnauthorized: true });
+    if (!ok) {
+      hardLog("ADMIN TOKEN INVALID — RELOGIN");
+      clearAdminSession();
+      showLoginOverlay();
+      await requireLoginUI();
+
+      const ok2 = await loadAdminData({ silentUnauthorized: false });
+      if (!ok2) throw new Error("Unauthorized after re-login");
+    }
+
+    hideLoginOverlay();
     hardLog("ADMIN AUTH SUCCESS");
-    renderButtons();
-    renderDashboard();
-    loadAdminData();
   } catch (err) {
     hardLog("ADMIN AUTH FAILED");
     console.error(err);
@@ -481,7 +507,7 @@ return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
 /* ===================== LOAD BOOKINGS ===================== */
-async function loadAdminData() {
+async function loadAdminData(opts = {}) {
 hardLog("LOADING ADMIN DATA");
 
 const today = new Date();
@@ -495,13 +521,21 @@ const res = await fetch("/api/admin-bookings", {
 
 if (!res.ok) {
   hardLog("UNAUTHORIZED");
-  viewContainer.innerHTML = "Unauthorized.";
-  return;
+  if (!opts.silentUnauthorized) viewContainer.innerHTML = "Unauthorized.";
+  return false;
 }
 
 const data = await res.json();
 
+// Normalize payload shape safely
+const bookings = Array.isArray(data)
+  ? data
+  : (data.bookings || data.rows || data.data || []);
+
+splitAndRender(bookings);
+
 renderButtons();
+
 
 if (currentView) {
   renderView(currentView);
@@ -509,6 +543,7 @@ if (currentView) {
 } else {
   renderDashboard();
 }
+return true;
 }
 
 function splitAndRender(bookings) {
