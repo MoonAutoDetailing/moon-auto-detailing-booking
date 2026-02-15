@@ -91,30 +91,7 @@ export async function handler(req, res) {
 
     let query = supabase
       .from("bookings")
-      .select(`
-        id,
-        scheduled_start,
-        scheduled_end,
-        service_address,
-        status,
-        google_event_id,
-        customers:customer_id (
-          full_name,
-          phone
-        ),
-        vehicles:vehicle_id (
-          vehicle_year,
-          vehicle_make,
-          vehicle_model
-        ),
-        service_variants:service_variant_id (
-          duration_minutes,
-          services:service_id (
-            category,
-            level
-          )
-        )
-      `, { count: "exact" })
+      .select("*", { count: "exact" })
       .in("status", HISTORY_STATUSES)
       .order("scheduled_start", { ascending: false })
       .range(from, to);
