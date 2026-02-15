@@ -231,25 +231,28 @@ let ADMIN_SESSION = sessionStorage.getItem("moon_admin_session");
 async function requireLogin() {
   if (ADMIN_SESSION) return;
 
-  const password = prompt("Admin password required:");
-  if (!password) throw new Error("No password");
+  while (!ADMIN_SESSION) {
+    const password = prompt("Admin password required:");
+    if (!password) continue;
 
-  const res = await fetch("/api/admin-login", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password })
-  });
+    const res = await fetch("/api/admin-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (!res.ok) {
-    alert("Wrong password");
-    throw new Error("Unauthorized");
+    if (!res.ok) {
+      alert("Wrong password");
+      continue;
+    }
+
+    ADMIN_SESSION = data.token;
+    sessionStorage.setItem("moon_admin_session", ADMIN_SESSION);
   }
-
-  ADMIN_SESSION = data.token;
-  sessionStorage.setItem("moon_admin_session", ADMIN_SESSION);
 }
+
 
 await requireLogin();
 
@@ -284,18 +287,6 @@ debugToggle.onclick = () => {
 const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
 const SUPABASE_ANON_KEY =
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbWh1Z3p0cnBpcHJucW1jeWFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MDk1NjMsImV4cCI6MjA4NjA4NTU2M30.Mo0uRGWCjU1fOa1br2P8j1ogEZf7mDm2JseV8DFnPwI";
-
-// ===== ADMIN AUTH (runtime, not in source) =====
-let ADMIN_SECRET = sessionStorage.getItem("moon_admin_secret");
-if (!ADMIN_SECRET) {
-  ADMIN_SECRET = prompt("Enter admin password:");
-  if (!ADMIN_SECRET) {
-    alert("Admin password required.");
-    throw new Error("Missing admin password");
-  }
-  sessionStorage.setItem("moon_admin_secret", ADMIN_SECRET);
-}
-
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -555,8 +546,8 @@ header.onclick = () => {
       headers: {
   "Content-Type": "application/json",
   "x-admin-session": ADMIN_SESSION
-}
-      body: JSON.stringify({ bookingId: b.id })
+},
+body: JSON.stringify({ bookingId: b.id })
     });
 
     const data = await res.json();
@@ -609,7 +600,7 @@ header.onclick = () => {
        headers: {
   "Content-Type": "application/json",
   "x-admin-session": ADMIN_SESSION
-}
+},
         body: JSON.stringify({ bookingId: b.id })
       });
 
@@ -669,7 +660,7 @@ header.onclick = () => {
         headers: {
   "Content-Type": "application/json",
   "x-admin-session": ADMIN_SESSION
-}
+},
         body: JSON.stringify({ bookingId: b.id })
       });
 
@@ -714,9 +705,10 @@ const summary = `${booking.service_variants.services.category} Level ${booking.s
 const res = await fetch("/api/create-calendar-event", {
 method: "POST",
 headers: {
-"Content-Type": "application/json",
-"x-admin-secret": ADMIN_SECRET
+  "Content-Type": "application/json",
+  "x-admin-session": ADMIN_SESSION
 },
+
 body: JSON.stringify({
 summary,
 location: booking.service_address,
