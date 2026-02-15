@@ -789,6 +789,8 @@ function renderView(viewName) {
 
   let data = cachedViews[viewName];
 
+// Allow history to load from server instead of cache
+if (viewName !== "history") {
   if (!data || data.length === 0) {
     viewContainer.innerHTML = `
       <div style="margin-top:40px; font-weight:600;">
@@ -797,6 +799,7 @@ function renderView(viewName) {
     `;
     return;
   }
+}
 
   // =========================
   // HISTORY SPECIAL HANDLING
