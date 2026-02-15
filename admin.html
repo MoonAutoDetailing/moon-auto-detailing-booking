@@ -240,6 +240,9 @@ cursor: pointer;
   display: none;
   font-size: 14px;
 }
+#refreshNow {
+  margin-right: 0;
+}
 
 
 </style>
@@ -296,7 +299,11 @@ style="
 </div>
 
 <div id="pageOverlay">
-  <div id="viewButtons" style="margin-bottom: 20px;"></div>
+  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
+  <div id="viewButtons"></div>
+  <button id="refreshNow" class="moon-tab">Refresh</button>
+</div>
+
   <div id="viewContainer"></div>
 </div>
      <button id="debugToggle" style="
@@ -318,7 +325,8 @@ style="
 
 <script type="module">
 // ================= ADMIN LOGIN UI =================
-let ADMIN_SESSION = sessionStorage.getItem("moon_admin_session");
+let ADMIN_SESSION = null;
+sessionStorage.removeItem("moon_admin_session");
 
 async function performLogin(password) {
   const res = await fetch("/api/admin-login", {
@@ -332,7 +340,6 @@ async function performLogin(password) {
   if (!res.ok) throw new Error("Unauthorized");
 
   ADMIN_SESSION = data.token;
-  sessionStorage.setItem("moon_admin_session", ADMIN_SESSION);
 }
 
 async function requireLoginUI() {
@@ -369,7 +376,6 @@ async function requireLoginUI() {
      
 function clearAdminSession() {
   ADMIN_SESSION = null;
-  sessionStorage.removeItem("moon_admin_session");
 }
 
 function showLoginOverlay() {
@@ -459,6 +465,16 @@ let filteredHistory = [];
 
 const viewButtons = document.getElementById("viewButtons");
 const viewContainer = document.getElementById("viewContainer");
+     document.getElementById("refreshNow").onclick = async () => {
+  hardLog("MANUAL REFRESH CLICKED");
+
+  if (currentView === "history") {
+    renderView("history"); // reload server-side history
+    return;
+  }
+
+  await loadAdminData({ silentUnauthorized: true });
+};
 
      /* ===================== ACTION LOCKING ===================== */
 const inFlightActions = new Map();
@@ -897,6 +913,7 @@ card.remove();
 // ===================== DASHBOARD RENDERING =====================
 
 function renderDashboard() {
+     document.getElementById("pageOverlay").classList.remove("overlay-active");
   viewContainer.innerHTML = `
   <div style="
     text-align: center;
@@ -945,8 +962,9 @@ function handleViewSwitch(viewName) {
   }
 
   currentView = viewName;
-  renderView(viewName);
-  highlightActiveButton(viewName);
+document.getElementById("pageOverlay").classList.add("overlay-active");
+renderView(viewName);
+highlightActiveButton(viewName);
 }
 
 function highlightActiveButton(activeKey) {
