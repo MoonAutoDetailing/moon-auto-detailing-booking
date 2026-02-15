@@ -805,6 +805,7 @@ if (viewName !== "history") {
   // =========================
   // HISTORY SPECIAL HANDLING
   // =========================
+     if (viewName === "history") {
  const wrapper = document.createElement("div");
 
 // FILTER ROW
@@ -935,14 +936,13 @@ dateInput.addEventListener("change", () => {
 
 loadHistoryPage(1);
 return;
-
-
-  // =========================
-  // NORMAL VIEWS
-  // =========================
-  renderSection(viewName.toUpperCase(), data);
 }
 
+}
+ // =========================
+  // NORMAL VIEWS
+  // =========================
+renderSection(viewName.toUpperCase(), data);
 loadAdminData();
 </script>
 </body>
