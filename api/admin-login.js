@@ -6,31 +6,53 @@ function requireEnv(name) {
   return v;
 }
 
-export default function verifyAdmin(req) {
-  const SESSION_SECRET = requireEnv("SESSION_SECRET");
+export default async function handler(req, res) {
+  console.log("admin-login: handler start");
 
-  const token = req.headers["x-admin-session"];
-  if (!token) throw new Error("Missing admin session");
+  try {
+    if (req.method !== "POST") {
+      return res.status(405).json({ error: "Method not allowed" });
+    }
 
-  const parts = token.split(".");
-  if (parts.length !== 2) throw new Error("Invalid token format");
+    const ADMIN_PASSWORD = requireEnv("ADMIN_PASSWORD");
+    const SESSION_SECRET = requireEnv("SESSION_SECRET");
 
-  const [payload, signature] = parts;
+    // Safely parse JSON body (Vercel-safe)
+    let body = req.body;
+    if (!body || typeof body === "string") {
+      try {
+        body = JSON.parse(body || "{}");
+      } catch {
+        body = {};
+      }
+    }
 
-  // Recreate signature
-  const expectedSig = crypto
-    .createHmac("sha256", SESSION_SECRET)
-    .update(payload)
-    .digest("hex");
+    const password = body.password;
+    if (!password) {
+      return res.status(400).json({ error: "Missing password" });
+    }
 
-  if (signature !== expectedSig) {
-    throw new Error("Invalid signature");
+    if (password !== ADMIN_PASSWORD) {
+      console.log("admin-login: wrong password");
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    // Create token (8 hour expiry)
+    const expires = Date.now() + 1000 * 60 * 60 * 8;
+    const payload = String(expires);
+
+    const signature = crypto
+      .createHmac("sha256", SESSION_SECRET)
+      .update(payload)
+      .digest("hex");
+
+    const token = `${payload}.${signature}`;
+
+    console.log("admin-login: success");
+    return res.status(200).json({ token });
+
+  } catch (err) {
+    console.error("admin-login: FATAL", err);
+    return res.status(500).json({ error: "Server error" });
   }
-
-  const expires = Number(payload);
-  if (!expires || Date.now() > expires) {
-    throw new Error("Session expired");
-  }
-
-  return true;
 }
