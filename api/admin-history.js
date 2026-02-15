@@ -10,15 +10,6 @@ function requireEnv(name) {
   return v;
 }
 
-function requireAdmin(req) {
-  const secret = req.headers["x-admin-secret"];
-  if (!secret || secret !== process.env.ADMIN_SECRET) {
-    const err = new Error("Unauthorized");
-    err.statusCode = 401;
-    throw err;
-  }
-}
-
 const HISTORY_STATUSES = [
   "completed",
   "no_show",
@@ -29,13 +20,13 @@ const HISTORY_STATUSES = [
 ];
 
 
-export async function handler(req, res) {
+export default async function handler(req, res) {
    if (!verifyAdmin(req)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-admin-secret");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, x-admin-session");
 
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
