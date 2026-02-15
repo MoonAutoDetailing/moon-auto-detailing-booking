@@ -14,10 +14,6 @@ if (!verifyAdmin(req)) {
   }
 
   try {
-    const adminSecret = process.env.ADMIN_SECRET;
-    if (req.headers["x-admin-secret"] !== adminSecret) {
-      return res.status(401).json({ ok: false });
-    }
 
     const { bookingId } = req.body;
     if (!bookingId) {
