@@ -1,7 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
+import { verifyAdmin } from "./_verifyAdmin.js";
+
 
 export default async function handler(req, res) {
+    if (!verifyAdmin(req)) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false });
   }
