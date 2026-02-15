@@ -32,7 +32,6 @@ export default async function handler(req, res) {
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    requireAdmin(req);
 
     const SUPABASE_URL = requireEnv("SUPABASE_URL");
     const SUPABASE_SERVICE_ROLE_KEY = requireEnv("SUPABASE_SERVICE_ROLE_KEY");
