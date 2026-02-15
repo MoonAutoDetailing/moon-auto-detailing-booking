@@ -1,18 +1,21 @@
-import crypto from "crypto";
+import jwt from "jsonwebtoken";
 
-export function verifyAdmin(req) {
+export default function verifyAdmin(req) {
   const token = req.headers["x-admin-session"];
-  if (!token) return false;
 
-  const [expires, signature] = token.split(".");
-  if (!expires || !signature) return false;
+  if (!token) {
+    throw new Error("Missing admin session");
+  }
 
-  if (Date.now() > Number(expires)) return false;
+  try {
+    const decoded = jwt.verify(
+      token,
+      process.env.ADMIN_SESSION_SECRET
+    );
 
-  const expected = crypto
-    .createHmac("sha256", process.env.SESSION_SECRET)
-    .update(expires)
-    .digest("hex");
+    return decoded;
 
-  return signature === expected;
+  } catch (err) {
+    throw new Error("Invalid admin session");
+  }
 }
