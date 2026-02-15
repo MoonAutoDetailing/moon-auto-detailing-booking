@@ -449,9 +449,10 @@ function buildCard(b) {
   const start = new Date(b.scheduled_start);
   const end = new Date(b.scheduled_end);
 
-  const service = b.service_variants.services;
-  const vehicle = b.vehicles;
-  const customer = b.customers;
+  const service = b.service_variants?.services || {};
+const vehicle = b.vehicles || {};
+const customer = b.customers || {};
+
 
   const card = document.createElement("div");
   card.className = "card";
@@ -471,14 +472,14 @@ if (b.status === "confirmed") {
 
   card.innerHTML = `
   <div class="booking-header">
-    ${customer.full_name}
+    ${customer.full_name || "Unknown Client"}
   </div>
 
   <div class="booking-content">
     <div class="row"><span class="label">Phone:</span> ${customer.phone || "—"}</div>
     <div class="row"><span class="label">Address:</span> ${b.service_address}</div>
     <div class="row"><span class="label">Vehicle:</span> ${vehicle.vehicle_year || ""} ${vehicle.vehicle_make || ""} ${vehicle.vehicle_model || ""}</div>
-    <div class="row"><span class="label">Service:</span> ${service.category} (Level ${service.level})</div>
+    <div class="row"><span class="label">Service:</span> ${service.category || "Service"} (Level ${service.level || "?"})</div>
     <div class="row"><span class="label">Time:</span> ${formatTime(start)} → ${formatTime(end)}</div>
     <div class="row">
   <span class="label">Status:</span>
@@ -878,7 +879,6 @@ async function loadHistoryPage(page = 1) {
     });
 
     const data = await res.json();
-       alert("API RESPONSE:\n\n" + JSON.stringify(data, null, 2));
 
     if (!res.ok) {
       throw new Error(data.error || "Failed to load history");
