@@ -12,12 +12,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // 1️⃣ Admin authentication
-    const adminSecret = process.env.ADMIN_SECRET;
-    if (req.headers["x-admin-secret"] !== adminSecret) {
-      return res.status(401).json({ ok: false });
-    }
-
+    
     const { bookingId } = req.body;
     if (!bookingId) {
       return res.status(400).json({ ok: false, message: "Missing bookingId" });
