@@ -72,7 +72,8 @@
         </div>
       </div>
 
-      <button id="manageBtn" class="btn" type="button" disabled>Manage booking (coming next)</button>
+      <button id="manageBtn" class="btn" type="button">Manage booking</button>
+
 
       <p class="muted">
         If you need to update anything immediately, reply to your confirmation message once it arrives.
@@ -103,6 +104,17 @@
       // one-time use to avoid stale confirmations on later visits
       sessionStorage.removeItem("moon_booking_confirmation");
     }
+    // =========================
+// CONNECT MANAGE BUTTON
+// =========================
+if (p?.manage_token) {
+  document.getElementById("manageBtn").onclick = () => {
+    window.location.href = `/manage-booking.html?token=${p.manage_token}`;
+  };
+} else {
+  document.getElementById("manageBtn").style.display = "none";
+}
+
   </script>
 </body>
 </html>
