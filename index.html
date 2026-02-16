@@ -1758,6 +1758,32 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
 
 
         setStatus("ok", "Your booking has been received and will be confirmed shortly.");
+                // =========================
+        // PHASE A — CONFIRMATION REDIRECT (NO RLS READS)
+        // =========================
+        const cat = selectedVariant?.service?.category ?? "Service";
+        const lvl = selectedVariant?.service?.level ?? "";
+        const serviceLabel = lvl ? `${cat} Level ${lvl}` : `${cat}`;
+
+        const prettyStart = startLocal.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+        const prettyEnd = endLocal.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+
+        const confirmationPayload = {
+          full_name,
+          email,
+          phone,
+          serviceLabel,
+          service_address,
+          scheduled_start_iso: scheduled_start,
+          scheduled_end_iso: scheduled_end,
+          prettyStart,
+          prettyEnd
+        };
+
+        sessionStorage.setItem("moon_booking_confirmation", JSON.stringify(confirmationPayload));
+        window.location.href = "/booking-confirmed.html";
+        return; // hard stop: do not continue
+
         log("Booking created", { customer_id, vehicle_id, service_variant_id });
 
       } catch (e) {
