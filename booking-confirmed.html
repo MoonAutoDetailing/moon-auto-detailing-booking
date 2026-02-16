@@ -82,16 +82,16 @@
   </div>
 
   <script>
-    const raw = sessionStorage.getItem("moon_booking_confirmation");
-    if (!raw) {
-      // No session payload (direct visit or refresh)
-      document.getElementById("c_name").textContent = "—";
-      document.getElementById("c_service").textContent = "—";
-      document.getElementById("c_start").textContent = "—";
-      document.getElementById("c_end").textContent = "—";
-      document.getElementById("c_addr").textContent = "—";
-    } else {
-      } else {
+const raw = sessionStorage.getItem("moon_booking_confirmation");
+
+if (!raw) {
+  // Direct visit or refresh
+  document.getElementById("c_name").textContent = "—";
+  document.getElementById("c_service").textContent = "—";
+  document.getElementById("c_start").textContent = "—";
+  document.getElementById("c_end").textContent = "—";
+  document.getElementById("c_addr").textContent = "—";
+} else {
   try {
     const p = JSON.parse(raw);
 
@@ -101,9 +101,7 @@
     document.getElementById("c_end").textContent = p.prettyEnd || "—";
     document.getElementById("c_addr").textContent = p.service_address || "—";
 
-    // =========================
-    // CONNECT MANAGE BUTTON (FIXED SCOPE)
-    // =========================
+    // Connect Manage Booking button
     if (p.manage_token) {
       document.getElementById("manageBtn").onclick = () => {
         window.location.href = `/manage-booking.html?token=${p.manage_token}`;
@@ -112,24 +110,13 @@
       document.getElementById("manageBtn").style.display = "none";
     }
 
-  } catch {
-    // ignore parse error
+  } catch (err) {
+    console.error("Confirmation parse error", err);
   }
 
   sessionStorage.removeItem("moon_booking_confirmation");
 }
+</script>
 
-    // =========================
-// CONNECT MANAGE BUTTON
-// =========================
-if (p?.manage_token) {
-  document.getElementById("manageBtn").onclick = () => {
-    window.location.href = `/manage-booking.html?token=${p.manage_token}`;
-  };
-} else {
-  document.getElementById("manageBtn").style.display = "none";
-}
-
-  </script>
 </body>
 </html>
