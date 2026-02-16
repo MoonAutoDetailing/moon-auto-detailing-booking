@@ -1,5 +1,7 @@
 console.log("list-calendar-blocks: file loaded");
 import { google } from "googleapis";
+import { createClient } from "@supabase/supabase-js";
+
 
 /**
  * Read-only endpoint: returns confirmed booking blocks from Google Calendar.
@@ -42,6 +44,11 @@ const creds = JSON.parse(decoded);
     });
 
     const calendar = google.calendar({ version: "v3", auth });
+    const supabase = createClient(
+  requireEnv("SUPABASE_URL"),
+  requireEnv("SUPABASE_SERVICE_ROLE_KEY")
+);
+
 
     const resp = await calendar.events.list({
       calendarId,
@@ -55,24 +62,26 @@ const creds = JSON.parse(decoded);
 
     const items = resp.data.items || [];
 
-    // Return blocks only (start/end). If an all-day event exists, ignore it.
-    const blocks = items
+    // =========================
+// 1) Confirmed blocks from Google Calendar
+// =========================
+const confirmedBlocks = items
   .filter((e) => e.status !== "cancelled")
   .map((e) => {
-    // Timed events (normal case)
     if (e.start?.dateTime && e.end?.dateTime) {
       return {
         start: e.start.dateTime,
-        end: e.end.dateTime
+        end: e.end.dateTime,
+        status: "confirmed"
       };
     }
 
-    // All-day events → block full business day
     if (e.start?.date && e.end?.date) {
-      const day = e.start.date; // YYYY-MM-DD
+      const day = e.start.date;
       return {
         start: `${day}T08:00:00`,
-        end: `${day}T18:00:00`
+        end: `${day}T18:00:00`,
+        status: "confirmed"
       };
     }
 
@@ -80,8 +89,29 @@ const creds = JSON.parse(decoded);
   })
   .filter(Boolean);
 
+// =========================
+// 2) Pending bookings from Supabase
+// =========================
+const { data: pendingBookings } = await supabase
+  .from("bookings")
+  .select("scheduled_start, scheduled_end")
+  .eq("status", "pending")
+  .gte("scheduled_start", timeMin)
+  .lte("scheduled_end", timeMax);
 
-    return res.status(200).json({ blocks });
+const pendingBlocks = (pendingBookings || []).map(b => ({
+  start: b.scheduled_start,
+  end: b.scheduled_end,
+  status: "pending"
+}));
+
+// =========================
+// 3) Merge and return
+// =========================
+return res.status(200).json({
+  blocks: [...confirmedBlocks, ...pendingBlocks]
+});
+
 } catch (e) {
   console.error("list-calendar-blocks error:", e);
   return res.status(500).json({ error: e?.message || "Server error" });
