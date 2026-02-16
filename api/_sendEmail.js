@@ -11,7 +11,7 @@ const resend = new Resend(requireEnv("RESEND_API_KEY"));
 export async function sendBookingEmail({ to, subject, html }) {
   try {
     const result = await resend.emails.send({
-      from: "Moon Auto Detailing <onboarding@resend.dev>",
+      from: "Moon Auto Detailing <bookings@moonautodetailing.com>",
       to,
       subject,
       html
