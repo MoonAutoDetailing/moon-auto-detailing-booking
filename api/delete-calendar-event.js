@@ -64,15 +64,30 @@ await calendar.events.delete({
   eventId: booking.google_event_id
 });
 
-// 6️⃣ Mark booking as reschedule_requested + clear google fields
-await supabase
+// 6️⃣ Mark booking as reschedule_requested + fetch email + token
+const { data: updatedBooking, error: updateError } = await supabase
   .from("bookings")
   .update({
     status: "reschedule_requested",
     google_event_id: null,
     google_event_html_link: null
   })
-  .eq("id", bookingId);
+  .eq("id", bookingId)
+  .select(`
+    id,
+    manage_token,
+    customers (
+      email,
+      full_name
+    )
+  `)
+  .single();
+
+if (updateError || !updatedBooking) {
+  console.error("Booking update failed:", updateError);
+  return res.status(500).json({ ok: false, message: "Booking update failed" });
+}
+
 
 // 7️⃣ Email customer the rebooking link (fire-and-forget)
 try {
@@ -81,10 +96,15 @@ try {
     : "https://moon-auto-detailing-booking.vercel.app";
 
   await fetch(`${baseUrl}/api/send-reschedule-link-email`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ bookingId })
-  });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    email: updatedBooking.customers.email,
+    name: updatedBooking.customers.full_name,
+    token: updatedBooking.manage_token
+  })
+});
+
 } catch (e) {
   console.error("Failed to trigger send-reschedule-link-email:", e?.message || e);
 }
