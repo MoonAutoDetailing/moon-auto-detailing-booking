@@ -28,15 +28,48 @@ body {
 
 h1 { margin-bottom: 10px; }
 .day { margin-top: 24px; }
+/* collapsed booking row (glass pill) */
 .card {
-  border: 1px solid #ffffff40;
-  border-radius: 10px;
-  padding: 14px;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  padding: 14px 18px;
   margin-top: 12px;
-  background: rgba(111, 147, 196, 0.12); /* light moon blue */
-  backdrop-filter: blur(2px);
-     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  background: rgba(111,147,196,0.18);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  transition: 0.18s ease;
 }
+
+/* hover polish */
+.card:hover {
+  background: rgba(111,147,196,0.26);
+  transform: translateY(-1px);
+}
+/* expanded booking card */
+.card.expanded {
+  background: rgba(233,241,251,0.92);
+  backdrop-filter: blur(18px);
+  color: #111;
+  border: none;
+  box-shadow: 0 25px 60px rgba(0,0,0,0.55);
+}
+     .card.expanded .status-badge {
+  color: white;
+}
+
+
+/* make text readable when expanded */
+.card.expanded .booking-header {
+  color: #111;
+}
+
+.card.expanded .label {
+  color: #333;
+}
+.card.expanded[data-today-accent="true"] {
+  border-left: 4px solid var(--moon-primary);
+}
+
 
 .row { margin-bottom: 6px; }
 .label { font-weight: 600; }
@@ -80,10 +113,6 @@ cursor: pointer;
   background: transparent;
 }
 
-
-#pageOverlay.overlay-active {
-  background: rgba(233, 241, 251, 0.85); /* only when a view is open */
-}
      .moon-tab {
   padding: 10px 16px;
   font-weight: 700;
@@ -167,6 +196,21 @@ cursor: pointer;
   margin-top: 70px; /* pushes below toggle button */
   margin-bottom: 30px;
 }
+     /* ===== TOP BAR (tabs + refresh) ===== */
+#topBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 60px;
+  margin-bottom: 30px;
+}
+
+/* prevent viewButtons from pushing layout down */
+#viewButtons {
+  margin: 0;
+}
+
 /* ================= LOGIN OVERLAY ================= */
 
 #loginOverlay {
@@ -241,7 +285,10 @@ cursor: pointer;
   font-size: 14px;
 }
 #refreshNow {
-  margin-right: 0;
+  padding: 8px 16px;
+  height: 38px;
+  align-self: center;
+  flex: 0 0 auto;
 }
 
 
@@ -280,32 +327,41 @@ style="
 />
 <!-- ADMIN LOGIN OVERLAY -->
 <div id="loginOverlay">
-  <div id="loginCard">
+  <form id="loginCard" autocomplete="off">
     <img src="/NewLogoColor.png" id="loginLogo" />
 
     <h2 class="loginTitle">Admin Access</h2>
 
-    <input
-      id="loginPassword"
-      type="password"
-      placeholder="Password"
-      autocomplete="off"
-    />
+    <!-- Fake fields to defeat Chrome autofill -->
+<input type="text" style="display:none">
+<input type="password" style="display:none">
 
-    <button id="loginButton">Unlock Dashboard</button>
+<input
+  id="loginPassword"
+  type="password"
+  placeholder="Password"
+  autocomplete="new-password"
+  autocapitalize="off"
+  autocorrect="off"
+  spellcheck="false"
+/>
+
+
+    <button id="loginButton" type="submit">Unlock Dashboard</button>
 
     <div id="loginError">Wrong password</div>
-  </div>
+  </form>
 </div>
 
 <div id="pageOverlay">
-  <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:20px;">
-  <div id="viewButtons"></div>
-  <button id="refreshNow" class="moon-tab">Refresh</button>
-</div>
+  <div id="topBar">
+    <div id="viewButtons"></div>
+    <button id="refreshNow" class="moon-tab">Refresh</button>
+  </div>
 
   <div id="viewContainer"></div>
 </div>
+
      <button id="debugToggle" style="
   position: fixed;
   top: 20px;
@@ -367,10 +423,10 @@ async function requireLoginUI() {
       }
     }
 
-    button.onclick = attemptLogin;
-    input.addEventListener("keydown", e => {
-      if (e.key === "Enter") attemptLogin();
-    });
+    document.getElementById("loginCard").onsubmit = e => {
+  e.preventDefault();
+  attemptLogin();
+};
   });
 }
      
@@ -469,11 +525,15 @@ const viewContainer = document.getElementById("viewContainer");
   hardLog("MANUAL REFRESH CLICKED");
 
   if (currentView === "history") {
-    renderView("history"); // reload server-side history
+    renderView("history");
     return;
   }
 
-  await loadAdminData({ silentUnauthorized: true });
+  const ok = await loadAdminData({ silentUnauthorized: true });
+
+  if (ok && currentView) {
+    renderView(currentView);
+  }
 };
 
      /* ===================== ACTION LOCKING ===================== */
@@ -657,7 +717,8 @@ if (b.status === "confirmed") {
   tomorrow.setDate(tomorrow.getDate() + 1);
 
   if (start >= today && start < tomorrow) {
-    card.style.borderLeft = "4px solid var(--moon-primary)";
+   card.dataset.todayAccent = "true";
+card.style.borderLeft = "4px solid var(--moon-primary)";
   }
 }
 
@@ -913,7 +974,6 @@ card.remove();
 // ===================== DASHBOARD RENDERING =====================
 
 function renderDashboard() {
-     document.getElementById("pageOverlay").classList.remove("overlay-active");
   viewContainer.innerHTML = `
   <div style="
     text-align: center;
@@ -955,14 +1015,12 @@ function renderButtons() {
 function handleViewSwitch(viewName) {
   if (currentView === viewName) {
     currentView = null;
-       document.getElementById("pageOverlay").classList.remove("overlay-active");
     renderDashboard();
     highlightActiveButton(null);
     return;
   }
 
   currentView = viewName;
-document.getElementById("pageOverlay").classList.add("overlay-active");
 renderView(viewName);
 highlightActiveButton(viewName);
 }
