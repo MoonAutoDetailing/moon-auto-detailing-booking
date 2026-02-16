@@ -1733,17 +1733,20 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
         log("Created vehicle (no select after insert)", { vehicle_id });
 
         // Step 3: create booking (status pending), insert WITHOUT .select()
-        const { error: insBookErr } = await supabase
-          .from("bookings")
-          .insert([{
-            customer_id,
-            vehicle_id,
-            service_variant_id,
-            service_address,
-            scheduled_start,
-            scheduled_end,
-            status: "pending"
-          }]);
+        const { data: bookingRow, error: bookingError } = await supabase
+  .from("bookings")
+  .insert({
+    scheduled_start,
+    scheduled_end,
+    service_address,
+    status: "pending",
+    customer_id,
+    vehicle_id,
+    service_variant_id
+  })
+  .select()
+  .single();
+
 
        if (insBookErr) {
   log("Booking insert error", insBookErr);
@@ -1778,7 +1781,7 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
   scheduled_end_iso: scheduled_end,
   prettyStart,
   prettyEnd,
-  manage_token: booking.id // temporary until email phase
+  manage_token: bookingRow.manage_token // temporary until email phase
 };
 
 
