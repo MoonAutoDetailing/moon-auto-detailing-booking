@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
 import twilio from "twilio";
-import { verifyAdmin } from "./_verifyAdmin.js";
+import verifyAdmin from "./_verifyAdmin.js";
 
 
 export default async function handler(req, res) {
