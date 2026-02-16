@@ -445,14 +445,14 @@ async function performLogin(password) {
 }
 
 async function requireLoginUI() {
-  if (ADMIN_SESSION) {
-  // Do NOT hide overlay yet — token may be expired/invalid.
-  // We'll hide only after the first successful authorized data load.
-  return;
-}
+  if (ADMIN_SESSION) return;
+
+  // reset form every time to avoid dead promise after logout
+  const oldForm = document.getElementById("loginCard");
+  const newForm = oldForm.cloneNode(true);
+  oldForm.parentNode.replaceChild(newForm, oldForm);
 
   const input = document.getElementById("loginPassword");
-  const button = document.getElementById("loginButton");
   const error = document.getElementById("loginError");
 
   return new Promise(resolve => {
@@ -461,27 +461,20 @@ async function requireLoginUI() {
 
       try {
         await performLogin(input.value);
-// do NOT hide overlay here — only hide after first authorized data load
-resolve();
+        resolve();
       } catch {
         error.style.display = "block";
         input.value = "";
       }
     }
 
-    const form = document.getElementById("loginCard");
-
-// IMPORTANT: reset old handlers so logout → login works
-const newForm = form.cloneNode(true);
-form.parentNode.replaceChild(newForm, form);
-
-newForm.onsubmit = e => {
-  e.preventDefault();
-  attemptLogin();
-};
-
+    newForm.onsubmit = e => {
+      e.preventDefault();
+      attemptLogin();
+    };
   });
 }
+
      
 function clearAdminSession() {
   ADMIN_SESSION = null;
@@ -721,28 +714,17 @@ const viewContainer = document.getElementById("viewContainer");
   try {
     hardLog("MANUAL REFRESH CLICKED");
 
-    // show loading state
     viewContainer.innerHTML =
       "<div style='margin-top:40px;font-weight:600;'>Refreshing bookings...</div>";
 
-    // SPECIAL CASE: history view uses server pagination
+    // HISTORY VIEW (server side)
     if (currentView === "history") {
       if (reloadHistoryPage) {
         await reloadHistoryPage(1);
       }
-      renderView("history");   // ← THIS is the missing piece
+      highlightActiveButton("history");   // ← missing before
       return;
     }
-
-    const ok = await loadAdminData({ silentUnauthorized: true });
-    if (ok && currentView) {
-      renderView(currentView);
-    }
-
-  } finally {
-    refreshInFlight = false;
-  }
-};
 
     const ok = await loadAdminData({ silentUnauthorized: true });
     if (ok && currentView) renderView(currentView);
@@ -751,8 +733,6 @@ const viewContainer = document.getElementById("viewContainer");
     refreshInFlight = false;
   }
 };
-
-
      /* ===================== ACTION LOCKING ===================== */
 const inFlightActions = new Map();
 // key: `${bookingId}:${action}`
@@ -1110,6 +1090,7 @@ if (b.google_event_id) {
   hardLog("RESCHEDULE: no calendar event to delete");
 }
 
+
       const { error } = await supabase
         .from("bookings")
         .update({ status: "reschedule_requested" })
@@ -1171,6 +1152,7 @@ if (b.google_event_id) {
 } else {
   hardLog("CANCEL: no calendar event to delete");
 }
+
 
       const { error } = await supabase
         .from("bookings")
