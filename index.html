@@ -1002,6 +1002,13 @@ elEnd.addEventListener("paste", (e) => e.preventDefault());
     let variantsCache = []; // {id, vehicle_size, price, duration_minutes, service:{category,level}}
     let selectedVariant = null;
     let isSubmitting = false;
+    // =========================
+// RESCHEDULE MODE STATE
+// =========================
+let RESCHEDULE_MODE = false;
+let RESCHEDULE_BOOKING_ID = null;
+let RESCHEDULE_TOKEN = null;
+
     
     // Phase 5 state
 let selectedStartISO = null;
@@ -1608,7 +1615,57 @@ async function hasBookingConflict(requestedStartISO, requestedEndISO) {
   }
 
   return count > 0;
-}    
+}
+
+    // =========================
+// LOAD BOOKING FOR RESCHEDULE
+// =========================
+async function loadRescheduleBooking() {
+  try {
+    const res = await fetch(`/api/get-booking-by-token?token=${RESCHEDULE_TOKEN}`);
+    const data = await res.json();
+
+    if (!data?.booking) {
+      setStatus("bad", "Invalid or expired reschedule link.");
+      return;
+    }
+
+    const b = data.booking;
+    RESCHEDULE_BOOKING_ID = b.id;
+
+    // Prefill customer fields
+    elFullName.value = b.customers.full_name;
+    elEmail.value = b.customers.email;
+    elPhone.value = b.customers.phone || "";
+    elAddress.value = b.customers.address || "";
+    elServiceAddress.value = b.service_address;
+    elSubmit.textContent = "Submit New Time";
+
+    // Lock all fields except time
+    [
+      elFullName,
+      elEmail,
+      elPhone,
+      elAddress,
+      elVehicleSize,
+      elServiceVariant,
+      elYear,
+      elMake,
+      elModel,
+      elPlate,
+      elServiceAddress
+    ].forEach(el => el.disabled = true);
+  
+
+    setStatus("ok", "Please choose your new appointment time.");
+
+  } catch (err) {
+    console.error(err);
+    setStatus("bad", "Failed to load booking.");
+  }
+}
+
+    
     async function submitBooking() {
       if (isSubmitting) return;
 isSubmitting = true;
@@ -1754,7 +1811,33 @@ try {
   throw new Error("Unable to verify availability. Please try again.");
 }
 
+        // =========================
+// RESCHEDULE SUBMIT FLOW
+// =========================
+if (RESCHEDULE_MODE) {
 
+  const updateRes = await fetch("/api/submit-reschedule", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      bookingId: RESCHEDULE_BOOKING_ID,
+      start: scheduled_start,
+      end: scheduled_end
+    })
+  });
+
+  const updateData = await updateRes.json();
+
+  if (!updateRes.ok) {
+    throw new Error(updateData.error || "Reschedule failed");
+  }
+
+  setStatus("ok", "Your new time was submitted for approval.");
+
+  window.location.href = "/booking-confirmed.html";
+  return;
+}
+        
         // Step 3: create booking (status pending)
 const { data: bookingRows, error: bookingError } = await supabase
   .from("bookings")
@@ -2244,6 +2327,18 @@ if (toggleBtn && calContainer) {
       ? "View availability calendar"
       : "Hide availability calendar";
   });
+}
+
+    // =========================
+// CHECK FOR RESCHEDULE MODE
+// =========================
+const params = new URLSearchParams(window.location.search);
+RESCHEDULE_TOKEN = params.get("reschedule_token");
+
+if (RESCHEDULE_TOKEN) {
+  RESCHEDULE_MODE = true;
+  setStatus("muted", "Loading your booking...");
+  await loadRescheduleBooking();
 }
 
     // Initial load
