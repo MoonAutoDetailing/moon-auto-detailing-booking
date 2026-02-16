@@ -487,26 +487,32 @@ function showLoginOverlay() {
 function hideLoginOverlay() {
   document.getElementById("loginOverlay").style.display = "none";
 }
-     document.getElementById("logoutBtn").onclick = () => {
+     document.getElementById("logoutBtn").onclick = async () => {
   hardLog("ADMIN LOGOUT");
 
   stopRealtimeBookings();
   clearAdminSession();
 
-  // reset UI/state so nothing "looks logged in"
   currentView = null;
   refreshInFlight = false;
   viewContainer.innerHTML = "";
   viewButtons.innerHTML = "";
 
-  // clear password input + error
   const input = document.getElementById("loginPassword");
   const err = document.getElementById("loginError");
   if (input) input.value = "";
   if (err) err.style.display = "none";
 
   showLoginOverlay();
+
+  // 🔴 THIS IS THE MISSING PIECE
+  await requireLoginUI();
+  hideLoginOverlay();
+
+  await loadAdminData();
+  startRealtimeBookings();
 };
+
 
 async function bootAdminApp() {
   try {
@@ -976,7 +982,7 @@ if (b.google_event_html_link) {
   const q = encodeURIComponent(b.google_event_id);
   calendarRow.innerHTML = `
     <a
-      href="https://calendar.google.com/calendar/u/0/r/search?q=${q}"
+      href="https://calendar.google.com/calendar/u/1/r/search?q=${q}"
       target="_blank"
       rel="noopener noreferrer"
       style="color:#9fb7d3;font-weight:600;text-decoration:none;"
