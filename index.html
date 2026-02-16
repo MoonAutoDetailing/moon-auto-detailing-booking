@@ -1788,6 +1788,13 @@ if (bookingError || !bookingRow) {
 
 
         sessionStorage.setItem("moon_booking_confirmation", JSON.stringify(confirmationPayload));
+        // Fire-and-forget booking email
+fetch("/api/send-booking-created-email", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ booking_id: bookingRow.id })
+}).catch(err => console.error("Email trigger failed", err));
+
         window.location.href = "/booking-confirmed.html";
         return; // hard stop: do not continue
 
