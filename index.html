@@ -1769,16 +1769,18 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
         const prettyEnd = endLocal.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
         const confirmationPayload = {
-          full_name,
-          email,
-          phone,
-          serviceLabel,
-          service_address,
-          scheduled_start_iso: scheduled_start,
-          scheduled_end_iso: scheduled_end,
-          prettyStart,
-          prettyEnd
-        };
+  full_name,
+  email,
+  phone,
+  serviceLabel,
+  service_address,
+  scheduled_start_iso: scheduled_start,
+  scheduled_end_iso: scheduled_end,
+  prettyStart,
+  prettyEnd,
+  manage_token: booking.id // temporary until email phase
+};
+
 
         sessionStorage.setItem("moon_booking_confirmation", JSON.stringify(confirmationPayload));
         window.location.href = "/booking-confirmed.html";
