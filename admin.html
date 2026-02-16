@@ -1351,11 +1351,15 @@ function renderView(viewName) {
           paginationContainer.appendChild(btn);
         }
 
-      } catch (err) {
+            } catch (err) {
         resultsContainer.innerHTML = "Failed to load history.";
         hardLog("HISTORY LOAD ERROR " + err.message);
+        return false;
       }
+
+      return true;
     }
+
 
     let searchTimeout;
     searchInput.addEventListener("input", () => {
