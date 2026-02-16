@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import sendEmail from "./_sendEmail";
+import sendEmail from "./_sendEmail.js";
 
 function requireEnv(name) {
   const v = process.env[name];
