@@ -469,10 +469,17 @@ resolve();
       }
     }
 
-    document.getElementById("loginCard").onsubmit = e => {
+    const form = document.getElementById("loginCard");
+
+// IMPORTANT: reset old handlers so logout → login works
+const newForm = form.cloneNode(true);
+form.parentNode.replaceChild(newForm, form);
+
+newForm.onsubmit = e => {
   e.preventDefault();
   attemptLogin();
 };
+
   });
 }
      
@@ -714,18 +721,28 @@ const viewContainer = document.getElementById("viewContainer");
   try {
     hardLog("MANUAL REFRESH CLICKED");
 
-    // Loading state so UI doesn't feel frozen
+    // show loading state
     viewContainer.innerHTML =
       "<div style='margin-top:40px;font-weight:600;'>Refreshing bookings...</div>";
 
+    // SPECIAL CASE: history view uses server pagination
     if (currentView === "history") {
-  if (reloadHistoryPage) {
-    await reloadHistoryPage(1);
+      if (reloadHistoryPage) {
+        await reloadHistoryPage(1);
+      }
+      renderView("history");   // ← THIS is the missing piece
+      return;
+    }
+
+    const ok = await loadAdminData({ silentUnauthorized: true });
+    if (ok && currentView) {
+      renderView(currentView);
+    }
+
+  } finally {
+    refreshInFlight = false;
   }
-  return;
-}
-
-
+};
 
     const ok = await loadAdminData({ silentUnauthorized: true });
     if (ok && currentView) renderView(currentView);
@@ -1077,17 +1094,21 @@ header.onclick = () => {
     try {
       if (!confirm("Mark this booking as reschedule requested?")) return;
 
-      const delRes = await adminFetch("/api/delete-calendar-event", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ bookingId: b.id })
-});
+      // Delete Google Calendar event ONLY if one exists
+if (b.google_event_id) {
+  const delRes = await adminFetch("/api/delete-calendar-event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bookingId: b.id })
+  });
 
-
-      const delData = await delRes.json();
-      if (!delRes.ok || !delData.ok) {
-        throw new Error(delData.message || "Calendar deletion failed");
-      }
+  const delData = await delRes.json();
+  if (!delRes.ok || !delData.ok) {
+    throw new Error(delData.message || "Calendar deletion failed");
+  }
+} else {
+  hardLog("RESCHEDULE: no calendar event to delete");
+}
 
       const { error } = await supabase
         .from("bookings")
@@ -1135,16 +1156,21 @@ header.onclick = () => {
     try {
       if (!confirm("Cancel this booking?")) return;
 
-      const delRes = await adminFetch("/api/delete-calendar-event", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ bookingId: b.id })
-});
+      // Delete Google Calendar event ONLY if one exists
+if (b.google_event_id) {
+  const delRes = await adminFetch("/api/delete-calendar-event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bookingId: b.id })
+  });
 
-      const delData = await delRes.json();
-      if (!delRes.ok || !delData.ok) {
-        throw new Error(delData.message || "Calendar deletion failed");
-      }
+  const delData = await delRes.json();
+  if (!delRes.ok || !delData.ok) {
+    throw new Error(delData.message || "Calendar deletion failed");
+  }
+} else {
+  hardLog("CANCEL: no calendar event to delete");
+}
 
       const { error } = await supabase
         .from("bookings")
