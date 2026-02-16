@@ -249,6 +249,14 @@ const googleEventHtmlLink = calendarResponse.data.htmlLink;
         console.error("SMS ERROR:", smsError);
       }
     }
+        // =========================
+    // 7️⃣ Send confirmation email (fire-and-forget)
+    // =========================
+    fetch("https://moon-auto-detailing-booking.vercel.app/api/send-booking-confirmed-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ booking_id: bookingId })
+    }).catch(err => console.error("Confirmation email failed:", err));
 
     return res.status(200).json({ ok: true });
 
