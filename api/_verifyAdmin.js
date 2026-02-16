@@ -1,3 +1,9 @@
+// IMPORTANT:
+// This file uses DEFAULT EXPORT.
+// All API routes must import like:
+// import verifyAdmin from "./_verifyAdmin.js";
+
+
 import crypto from "crypto";
 
 function requireEnv(name) {
