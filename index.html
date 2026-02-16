@@ -1732,6 +1732,29 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
         }
         log("Created vehicle (no select after insert)", { vehicle_id });
 
+        // =========================
+// SERVER AVAILABILITY CHECK (race condition protection)
+// =========================
+try {
+  const availabilityRes = await fetch("/api/check-availability", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      start: scheduled_start,
+      end: scheduled_end
+    })
+  });
+
+  const availability = await availabilityRes.json();
+
+  if (!availability.available) {
+    throw new Error("That time was just booked by another customer. Please choose a new time.");
+  }
+} catch (err) {
+  throw new Error("Unable to verify availability. Please try again.");
+}
+
+
         // Step 3: create booking (status pending)
 const { data: bookingRows, error: bookingError } = await supabase
   .from("bookings")
