@@ -283,7 +283,53 @@ cursor: pointer;
   align-self: center;
   flex: 0 0 auto;
 }
+     #logoutBtn {
+  padding: 8px 14px;
+  height: 38px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.25);
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
 
+#logoutBtn:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+
+/* ===================== TOAST NOTIFICATIONS ===================== */
+#toastContainer {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 999999;
+}
+
+.toast {
+  background: rgba(111,147,196,0.22);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 14px 18px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  animation: slideIn 0.25s ease, fadeOut 0.5s ease 5s forwards;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-30px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; transform: translateX(-20px); }
+}
 
 </style>
 </head>
@@ -348,9 +394,13 @@ style="
 
 <div id="pageOverlay">
   <div id="topBar">
-    <div id="viewButtons"></div>
-    <button id="refreshNow" class="moon-tab">Refresh</button>
-  </div>
+  <div id="viewButtons"></div>
+
+  <button id="refreshNow" class="moon-tab">Refresh</button>
+
+  <button id="logoutBtn">Logout</button>
+</div>
+
 
   <div id="viewContainer"></div>
 </div>
@@ -371,11 +421,14 @@ style="
   Toggle Debug
 </button>
 
-
+<div id="toastContainer"></div>
 <script type="module">
 // ================= ADMIN LOGIN UI =================
 let ADMIN_SESSION = null;
 sessionStorage.removeItem("moon_admin_session");
+function isLoggedIn() {
+  return !!ADMIN_SESSION;
+}
 
 async function performLogin(password) {
   const res = await fetch("/api/admin-login", {
@@ -408,8 +461,8 @@ async function requireLoginUI() {
 
       try {
         await performLogin(input.value);
-        document.getElementById("loginOverlay").style.display = "none";
-        resolve();
+// do NOT hide overlay here — only hide after first authorized data load
+resolve();
       } catch {
         error.style.display = "block";
         input.value = "";
@@ -434,6 +487,26 @@ function showLoginOverlay() {
 function hideLoginOverlay() {
   document.getElementById("loginOverlay").style.display = "none";
 }
+     document.getElementById("logoutBtn").onclick = () => {
+  hardLog("ADMIN LOGOUT");
+
+  stopRealtimeBookings();
+  clearAdminSession();
+
+  // reset UI/state so nothing "looks logged in"
+  currentView = null;
+  refreshInFlight = false;
+  viewContainer.innerHTML = "";
+  viewButtons.innerHTML = "";
+
+  // clear password input + error
+  const input = document.getElementById("loginPassword");
+  const err = document.getElementById("loginError");
+  if (input) input.value = "";
+  if (err) err.style.display = "none";
+
+  showLoginOverlay();
+};
 
 async function bootAdminApp() {
   try {
@@ -456,6 +529,7 @@ async function bootAdminApp() {
 
     hideLoginOverlay();
     hardLog("ADMIN AUTH SUCCESS");
+    startRealtimeBookings();
   } catch (err) {
     hardLog("ADMIN AUTH FAILED");
     console.error(err);
@@ -478,6 +552,12 @@ el.scrollTop = el.scrollHeight;
 }
 
 hardLog("ADMIN LOADED");
+     /* ===================== NOTIFICATION SOUND ===================== */
+const bookingSound = new Audio(
+  "https://cdn.jsdelivr.net/gh/jshawl/AudioFX/sounds/bling.mp3"
+);
+bookingSound.volume = 0.35;
+
      // ===================== DEBUG TOGGLE =====================
 const debugToggle = document.getElementById("debugToggle");
 const hardLogPanel = document.getElementById("hardLog");
@@ -490,6 +570,46 @@ debugToggle.onclick = () => {
   }
 };
 
+/* ===================== AUTHENTICATED FETCH WRAPPER ===================== */
+async function adminFetch(url, options = {}, retry = true) {
+  options.headers = options.headers || {};
+  options.headers["x-admin-session"] = ADMIN_SESSION;
+
+  let res;
+  try {
+    res = await fetch(url, options);
+  } catch (err) {
+    hardLog("FETCH FAILED " + (err?.message || err));
+    throw err;
+  }
+
+  if (res.status === 401 && retry) {
+  hardLog("SESSION EXPIRED — RELOGIN REQUIRED");
+
+  clearAdminSession();
+  showLoginOverlay();
+
+  // Wait for login UI to finish
+  await requireLoginUI();
+
+  // If login somehow failed or was cancelled, stop here
+  if (!isLoggedIn()) {
+    hardLog("RELOGIN FAILED — ABORTING REQUEST");
+    throw new Error("Admin re-login required");
+  }
+
+  options.headers["x-admin-session"] = ADMIN_SESSION;
+
+  try {
+    return await adminFetch(url, options, false);
+  } catch (err) {
+    hardLog("RETRY FETCH FAILED " + (err?.message || err));
+    throw err;
+  }
+}
+
+  return res;
+}
 
 /* ===================== SUPABASE ===================== */
 const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
@@ -497,16 +617,95 @@ const SUPABASE_ANON_KEY =
 "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbWh1Z3p0cnBpcHJucW1jeWFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MDk1NjMsImV4cCI6MjA4NjA4NTU2M30.Mo0uRGWCjU1fOa1br2P8j1ogEZf7mDm2JseV8DFnPwI";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+/* ===================== REALTIME BOOKINGS ===================== */
+let realtimeChannel = null;
 
+     function showToast(message) {
+  const container = document.getElementById("toastContainer");
+
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = message;
+
+  container.appendChild(toast);
+
+  setTimeout(() => toast.remove(), 5500);
+}
+
+function startRealtimeBookings() {
+  if (realtimeChannel) return; // prevent duplicate subscriptions
+
+  hardLog("STARTING REALTIME BOOKINGS SUBSCRIPTION");
+
+  realtimeChannel = supabase.channel("admin-bookings-live")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "bookings" },
+      async payload => {
+  async payload => {
+  try {
+    hardLog("REALTIME BOOKING CHANGE DETECTED");
+
+    // Detect NEW booking inserts only
+    if (payload.eventType === "INSERT") {
+      const booking = payload.new;
+
+      if (booking && !knownBookingIds.has(booking.id)) {
+        knownBookingIds.add(booking.id);
+
+        // play sound safely (autoplay can fail in browsers)
+        try { bookingSound.play(); } catch {}
+
+        showToast("New booking received!");
+
+        document.title = "• New Booking!";
+        setTimeout(() => {
+          document.title = "Moon Auto Detailing — Admin";
+        }, 5000);
+      }
+    }
+
+    // refresh data safely
+    const ok = await loadAdminData({ silentUnauthorized: true });
+    if (ok && currentView) {
+      renderView(currentView);
+    }
+
+  } catch (err) {
+    console.error(err);
+    hardLog("REALTIME ERROR " + (err?.message || err));
+  }
+}
+
+}
+
+    )
+    .subscribe();
+}
+     
+function stopRealtimeBookings() {
+  try {
+    if (realtimeChannel) {
+      hardLog("STOPPING REALTIME BOOKINGS SUBSCRIPTION");
+      supabase.removeChannel(realtimeChannel);
+      realtimeChannel = null;
+    }
+  } catch (e) {
+    hardLog("STOP REALTIME ERROR " + (e?.message || e));
+  }
+}
 
      // ===================== VIEW STATE =====================
 let currentView = null;
+     let knownBookingIds = new Set();
+     let refreshInFlight = false;
 
 let cachedViews = {
   pending: [],
   today: [],
   upcoming: [],
 };
+     let reloadHistoryPage = null;
      let historyPage = 1;
 const historyPageSize = 20;
 let filteredHistory = [];
@@ -515,19 +714,35 @@ let filteredHistory = [];
 const viewButtons = document.getElementById("viewButtons");
 const viewContainer = document.getElementById("viewContainer");
      document.getElementById("refreshNow").onclick = async () => {
-  hardLog("MANUAL REFRESH CLICKED");
+  if (!ADMIN_SESSION) return;
+  if (refreshInFlight) return;
 
-  if (currentView === "history") {
-    renderView("history");
-    return;
+  refreshInFlight = true;
+
+  try {
+    hardLog("MANUAL REFRESH CLICKED");
+
+    // Loading state so UI doesn't feel frozen
+    viewContainer.innerHTML =
+      "<div style='margin-top:40px;font-weight:600;'>Refreshing bookings...</div>";
+
+    if (currentView === "history") {
+  if (reloadHistoryPage) {
+    await reloadHistoryPage(1);
   }
+  return;
+}
 
-  const ok = await loadAdminData({ silentUnauthorized: true });
 
-  if (ok && currentView) {
-    renderView(currentView);
+
+    const ok = await loadAdminData({ silentUnauthorized: true });
+    if (ok && currentView) renderView(currentView);
+
+  } finally {
+    refreshInFlight = false;
   }
 };
+
 
      /* ===================== ACTION LOCKING ===================== */
 const inFlightActions = new Map();
@@ -577,43 +792,51 @@ return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
 /* ===================== LOAD BOOKINGS ===================== */
 async function loadAdminData(opts = {}) {
-hardLog("LOADING ADMIN DATA");
+  hardLog("LOADING ADMIN DATA");
 
-const today = new Date();
-today.setHours(0, 0, 0, 0);
+  try {
+    const res = await adminFetch("/api/admin-bookings");
 
-const res = await fetch("/api/admin-bookings", {
-  headers: {
-    "x-admin-session": ADMIN_SESSION
+    if (!res.ok) {
+      hardLog("UNAUTHORIZED");
+      if (!opts.silentUnauthorized) {
+        viewContainer.innerHTML =
+          "<div style='margin-top:40px;font-weight:600;'>Unauthorized.</div>";
+      }
+      return false;
+    }
+
+    const data = await res.json();
+
+    // Normalize payload shape safely
+    const bookings = Array.isArray(data)
+      ? data
+      : (data.bookings || data.rows || data.data || []);
+
+    splitAndRender(bookings);
+    renderButtons();
+
+    if (currentView) {
+      renderView(currentView);
+      highlightActiveButton(currentView);
+    } else {
+      renderDashboard();
+    }
+
+    return true;
+  } catch (err) {
+    console.error(err);
+    hardLog("ADMIN DATA LOAD FAILED " + (err?.message || err));
+
+    if (!opts.silentUnauthorized) {
+      viewContainer.innerHTML =
+        "<div style='margin-top:40px;font-weight:600;'>Failed to load bookings. Try Refresh.</div>";
+    }
+
+    return false;
   }
-});
-
-if (!res.ok) {
-  hardLog("UNAUTHORIZED");
-  if (!opts.silentUnauthorized) viewContainer.innerHTML = "Unauthorized.";
-  return false;
 }
 
-const data = await res.json();
-
-// Normalize payload shape safely
-const bookings = Array.isArray(data)
-  ? data
-  : (data.bookings || data.rows || data.data || []);
-
-splitAndRender(bookings);
-
-renderButtons();
-
-
-if (currentView) {
-  renderView(currentView);
-  highlightActiveButton(currentView);
-} else {
-  renderDashboard();
-}
-return true;
-}
 
 function splitAndRender(bookings) {
 
@@ -645,6 +868,7 @@ cachedViews.upcoming.push(b);
 }
 
 });
+     bookings.forEach(b => knownBookingIds.add(b.id));
 }
 
 function renderSection(title, bookings, collapsed = false) {
@@ -735,6 +959,41 @@ card.style.borderLeft = "4px solid var(--moon-primary)";
 
   </div>
 `;
+     
+// ===== Google Calendar quick link =====
+// Prefer a stored htmlLink if you have it. Otherwise use a Calendar search link.
+if (b.google_event_html_link) {
+  const calendarRow = document.createElement("div");
+  calendarRow.className = "row";
+  calendarRow.innerHTML = `
+    <a
+      href="${b.google_event_html_link}"
+      target="_blank"
+      rel="noopener noreferrer"
+      style="color:#9fb7d3;font-weight:600;text-decoration:none;"
+    >
+      Open in Google Calendar →
+    </a>
+  `;
+  card.querySelector(".booking-content").appendChild(calendarRow);
+} else if (b.google_event_id) {
+  const calendarRow = document.createElement("div");
+  calendarRow.className = "row";
+  const q = encodeURIComponent(b.google_event_id);
+  calendarRow.innerHTML = `
+    <a
+      href="https://calendar.google.com/calendar/u/0/r/search?q=${q}"
+      target="_blank"
+      rel="noopener noreferrer"
+      style="color:#9fb7d3;font-weight:600;text-decoration:none;"
+    >
+      Find in Google Calendar →
+    </a>
+  `;
+  card.querySelector(".booking-content").appendChild(calendarRow);
+}
+
+
 
 const header = card.querySelector(".booking-header");
 
@@ -760,14 +1019,11 @@ header.onclick = () => {
   hardLog(`CONFIRM CLICKED booking ${b.id}`);
 
   try {
-    const res = await fetch("/api/confirm-booking", {
-      method: "POST",
-      headers: {
-  "Content-Type": "application/json",
-  "x-admin-session": ADMIN_SESSION
-},
-body: JSON.stringify({ bookingId: b.id })
-    });
+    const res = await adminFetch("/api/confirm-booking", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ bookingId: b.id })
+});
 
     const data = await res.json();
     hardLog(`CONFIRM API RESPONSE ${res.status}`);
@@ -791,10 +1047,25 @@ body: JSON.stringify({ bookingId: b.id })
     denyBtn.textContent = "Deny";
     denyBtn.className = "cancel";
     denyBtn.onclick = async () => {
-      if (!confirm("Are you sure you want to deny this booking?")) return;
-      await updateStatus(b.id, "denied", card);
-      loadAdminData();
-    };
+  if (!lockBookingAction(b.id, "deny")) return;
+  setBookingButtonsDisabled(card, true);
+
+  try {
+    if (!confirm("Are you sure you want to deny this booking?")) return;
+
+    await updateStatus(b.id, "denied", card);
+    await loadAdminData({ silentUnauthorized: true });
+    if (currentView) renderView(currentView);
+
+  } catch (err) {
+    alert("Deny failed.");
+    hardLog(`DENY ERROR ${err?.message || err}`);
+  } finally {
+    unlockBookingAction(b.id, "deny");
+    setBookingButtonsDisabled(card, false);
+  }
+};
+
 
     actions.appendChild(confirmBtn);
     actions.appendChild(denyBtn);
@@ -814,14 +1085,12 @@ body: JSON.stringify({ bookingId: b.id })
     try {
       if (!confirm("Mark this booking as reschedule requested?")) return;
 
-      const delRes = await fetch("/api/delete-calendar-event", {
-        method: "POST",
-       headers: {
-  "Content-Type": "application/json",
-  "x-admin-session": ADMIN_SESSION
-},
-        body: JSON.stringify({ bookingId: b.id })
-      });
+      const delRes = await adminFetch("/api/delete-calendar-event", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ bookingId: b.id })
+});
+
 
       const delData = await delRes.json();
       if (!delRes.ok || !delData.ok) {
@@ -874,14 +1143,11 @@ body: JSON.stringify({ bookingId: b.id })
     try {
       if (!confirm("Cancel this booking?")) return;
 
-      const delRes = await fetch("/api/delete-calendar-event", {
-        method: "POST",
-        headers: {
-  "Content-Type": "application/json",
-  "x-admin-session": ADMIN_SESSION
-},
-        body: JSON.stringify({ bookingId: b.id })
-      });
+      const delRes = await adminFetch("/api/delete-calendar-event", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ bookingId: b.id })
+});
 
       const delData = await delRes.json();
       if (!delRes.ok || !delData.ok) {
@@ -913,40 +1179,6 @@ body: JSON.stringify({ bookingId: b.id })
      card.querySelector(".booking-content").appendChild(actions);
       
   return card;
-}
-
-/* ===================== CALENDAR API ===================== */
-async function createCalendarEvent(booking) {
-hardLog(`CALLING CALENDAR API for ${booking.id}`);
-
-const summary = `${booking.service_variants.services.category} Level ${booking.service_variants.services.level} — ${booking.customers.full_name}`;
-
-const res = await fetch("/api/create-calendar-event", {
-method: "POST",
-headers: {
-  "Content-Type": "application/json",
-  "x-admin-session": ADMIN_SESSION
-},
-
-body: JSON.stringify({
-summary,
-location: booking.service_address,
-description: [
-`Customer: ${booking.customers.full_name}`,
-`Phone: ${booking.customers.phone || "—"}`,
-`Vehicle: ${booking.vehicles.vehicle_year || ""} ${booking.vehicles.vehicle_make || ""} ${booking.vehicles.vehicle_model || ""}`.trim(),
-`Service: ${booking.service_variants.services.category} Level ${booking.service_variants.services.level}`
-].join("\n"),
-startISO: booking.scheduled_start,
-endISO: booking.scheduled_end
-})
-});
-
-const text = await res.text();
-hardLog(`CALENDAR RESPONSE ${res.status}`);
-
-if (!res.ok) throw new Error(text);
-return JSON.parse(text);
 }
 
 /* ===================== STATUS UPDATE ===================== */
@@ -1095,11 +1327,7 @@ function renderView(viewName) {
       if (dateInput.value) params.append("date", dateInput.value);
 
       try {
-        const res = await fetch(`/api/admin-history?${params.toString()}`, {
-          headers: {
-  "x-admin-session": ADMIN_SESSION
-}
-        });
+        const res = await adminFetch(`/api/admin-history?${params.toString()}`);
 
         const payload = await res.json();
         if (!res.ok) throw new Error(payload.error || "Failed to load history");
@@ -1136,22 +1364,33 @@ function renderView(viewName) {
     });
 
     dateInput.addEventListener("change", () => loadHistoryPage(1));
-
+       reloadHistoryPage = loadHistoryPage;
     loadHistoryPage(1);
     return;
   }
 
   // =========================
-  // NORMAL VIEWS
-  // =========================
-  const data = cachedViews[viewName];
+// NORMAL VIEWS
+// =========================
+const data = cachedViews[viewName];
 
-  if (!data || data.length === 0) {
-    viewContainer.innerHTML = "<div style='margin-top:40px;font-weight:600;'>No records found.</div>";
-    return;
+if (!data || data.length === 0) {
+  let message = "No records found.";
+
+  if (viewName === "pending") {
+    message = "No pending bookings yet.";
+  } else if (viewName === "today") {
+    message = "No jobs scheduled for today.";
+  } else if (viewName === "upcoming") {
+    message = "No upcoming confirmed bookings.";
   }
 
-  renderSection(viewName.toUpperCase(), data);
+  viewContainer.innerHTML =
+    `<div style="margin-top:40px;font-weight:600;">${message}</div>`;
+  return;
+}
+
+renderSection(viewName.toUpperCase(), data);
 }
 
  bootAdminApp();
