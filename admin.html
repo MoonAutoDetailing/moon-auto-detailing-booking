@@ -710,21 +710,21 @@ const viewContainer = document.getElementById("viewContainer");
   if (refreshInFlight) return;
 
   refreshInFlight = true;
+  hardLog("MANUAL REFRESH CLICKED");
 
   try {
-    hardLog("MANUAL REFRESH CLICKED");
 
-    viewContainer.innerHTML =
-      "<div style='margin-top:40px;font-weight:600;'>Refreshing bookings...</div>";
-
-    // HISTORY VIEW (server side)
+    // HISTORY VIEW — do NOT wipe the DOM
     if (currentView === "history") {
       if (reloadHistoryPage) {
         await reloadHistoryPage(1);
       }
-      highlightActiveButton("history");   // ← missing before
       return;
     }
+
+    // NORMAL VIEWS — show loading message
+    viewContainer.innerHTML =
+      "<div style='margin-top:40px;font-weight:600;'>Refreshing bookings...</div>";
 
     const ok = await loadAdminData({ silentUnauthorized: true });
     if (ok && currentView) renderView(currentView);
@@ -733,6 +733,7 @@ const viewContainer = document.getElementById("viewContainer");
     refreshInFlight = false;
   }
 };
+
      /* ===================== ACTION LOCKING ===================== */
 const inFlightActions = new Map();
 // key: `${bookingId}:${action}`
