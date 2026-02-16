@@ -154,17 +154,19 @@ if (!verifyAdmin(req)) {
 
     try {
       const calendarResponse = await calendar.events.insert({
-        calendarId,
-        requestBody: {
-          summary,
-          location: booking.service_address,
-          description,
-          start: { dateTime: booking.scheduled_start },
-          end: { dateTime: booking.scheduled_end }
-        }
-      });
+  calendarId,
+  requestBody: {
+    summary,
+    location: booking.service_address,
+    description,
+    start: { dateTime: booking.scheduled_start },
+    end: { dateTime: booking.scheduled_end }
+  }
+});
 
-      googleEventId = calendarResponse.data.id;
+googleEventId = calendarResponse.data.id;
+const googleEventHtmlLink = calendarResponse.data.htmlLink;
+
 
       // =========================
       // 5️⃣ Finalize booking (VERIFY IT ACTUALLY UPDATED)
@@ -172,9 +174,10 @@ if (!verifyAdmin(req)) {
       const { data: updated, error: finalizeError } = await supabase
         .from("bookings")
         .update({
-          status: "confirmed",
-          google_event_id: googleEventId
-        })
+  status: "confirmed",
+  google_event_id: googleEventId,
+  google_event_html_link: googleEventHtmlLink
+})
         .eq("id", bookingId)
         .eq("status", "confirming")
         .is("google_event_id", null)
