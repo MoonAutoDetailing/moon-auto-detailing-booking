@@ -716,11 +716,15 @@ const viewContainer = document.getElementById("viewContainer");
 
     // HISTORY VIEW — do NOT wipe the DOM
     if (currentView === "history") {
-      if (reloadHistoryPage) {
-        await reloadHistoryPage(1);
-      }
-      return;
+  if (reloadHistoryPage) {
+    const ok = await reloadHistoryPage(1);
+    if (!ok) {
+      viewContainer.innerHTML =
+        "<div style='margin-top:40px;font-weight:600;'>Failed to refresh history.</div>";
     }
+  }
+  return;
+}
 
     // NORMAL VIEWS — show loading message
     viewContainer.innerHTML =
