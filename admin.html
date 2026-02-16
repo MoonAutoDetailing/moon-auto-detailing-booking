@@ -637,51 +637,43 @@ function startRealtimeBookings() {
 
   hardLog("STARTING REALTIME BOOKINGS SUBSCRIPTION");
 
-  realtimeChannel = supabase.channel("admin-bookings-live")
+  realtimeChannel = supabase
+    .channel("admin-bookings-live")
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "bookings" },
-      async payload => {
-  async payload => {
-  try {
-    hardLog("REALTIME BOOKING CHANGE DETECTED");
+      async (payload) => {
+        try {
+          hardLog("REALTIME BOOKING CHANGE DETECTED");
 
-    // Detect NEW booking inserts only
-    if (payload.eventType === "INSERT") {
-      const booking = payload.new;
+          // Detect NEW booking inserts only
+          if (payload.eventType === "INSERT") {
+            const booking = payload.new;
 
-      if (booking && !knownBookingIds.has(booking.id)) {
-        knownBookingIds.add(booking.id);
+            if (booking && !knownBookingIds.has(booking.id)) {
+              knownBookingIds.add(booking.id);
 
-        // play sound safely (autoplay can fail in browsers)
-        try { bookingSound.play(); } catch {}
+              bookingSound.play().catch(() => {});
+              showToast("New booking received!");
 
-        showToast("New booking received!");
+              document.title = "• New Booking!";
+              setTimeout(() => {
+                document.title = "Moon Auto Detailing — Admin";
+              }, 5000);
+            }
+          }
 
-        document.title = "• New Booking!";
-        setTimeout(() => {
-          document.title = "Moon Auto Detailing — Admin";
-        }, 5000);
+          const ok = await loadAdminData({ silentUnauthorized: true });
+          if (ok && currentView) renderView(currentView);
+        } catch (err) {
+          console.error(err);
+          hardLog("REALTIME ERROR " + (err?.message || err));
+        }
       }
-    }
-
-    // refresh data safely
-    const ok = await loadAdminData({ silentUnauthorized: true });
-    if (ok && currentView) {
-      renderView(currentView);
-    }
-
-  } catch (err) {
-    console.error(err);
-    hardLog("REALTIME ERROR " + (err?.message || err));
-  }
-}
-
-}
-
     )
     .subscribe();
 }
+
      
 function stopRealtimeBookings() {
   try {
