@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Moon Auto Detailing — Booking Confirmed</title>
+  <style>
+    body { font-family: "Poppins", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; background: #000; }
+    .wrap { max-width: 860px; margin: 40px auto; padding: 0 20px; }
+    .card { background: #fff; border-radius: 22px; padding: 34px; box-shadow: 0 18px 40px rgba(0,0,0,0.12), 0 6px 18px rgba(0,0,0,0.08); }
+    h1 { margin: 0 0 8px; text-align: center; color: #7fb8e6; }
+    .sub { text-align: center; color: #6b7280; margin: 0 0 24px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    .box { border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px; background: #f9fbff; }
+    .label { font-weight: 700; color: #111; margin-bottom: 6px; }
+    .val { color: #111; }
+    .muted { color: #6b7280; font-size: 14px; margin-top: 18px; text-align: center; }
+    .btn {
+      display: block;
+      width: 100%;
+      margin-top: 18px;
+      padding: 14px 24px;
+      background: #7fb8e6;
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      box-shadow: 0 6px 16px rgba(127,184,230,0.45);
+      cursor: pointer;
+    }
+    .btn:hover { background: #6aaee2; }
+    @media (max-width: 640px) {
+      .wrap { margin: 0; padding: 0 6px; }
+      .card { border-radius: 0; padding: 20px 16px; }
+      .row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Booking Request Received</h1>
+      <p class="sub">We’ve received your request. You’ll get a follow-up once it’s confirmed.</p>
+
+      <div class="row">
+        <div class="box">
+          <div class="label">Name</div>
+          <div id="c_name" class="val">—</div>
+        </div>
+        <div class="box">
+          <div class="label">Service</div>
+          <div id="c_service" class="val">—</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="box">
+          <div class="label">Start</div>
+          <div id="c_start" class="val">—</div>
+        </div>
+        <div class="box">
+          <div class="label">Estimated End</div>
+          <div id="c_end" class="val">—</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="box" style="grid-column: 1 / -1;">
+          <div class="label">Service Address</div>
+          <div id="c_addr" class="val">—</div>
+        </div>
+      </div>
+
+      <button id="manageBtn" class="btn" type="button" disabled>Manage booking (coming next)</button>
+
+      <p class="muted">
+        If you need to update anything immediately, reply to your confirmation message once it arrives.
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const raw = sessionStorage.getItem("moon_booking_confirmation");
+    if (!raw) {
+      // No session payload (direct visit or refresh)
+      document.getElementById("c_name").textContent = "—";
+      document.getElementById("c_service").textContent = "—";
+      document.getElementById("c_start").textContent = "—";
+      document.getElementById("c_end").textContent = "—";
+      document.getElementById("c_addr").textContent = "—";
+    } else {
+      try {
+        const p = JSON.parse(raw);
+        document.getElementById("c_name").textContent = p.full_name || "—";
+        document.getElementById("c_service").textContent = p.serviceLabel || "—";
+        document.getElementById("c_start").textContent = p.prettyStart || "—";
+        document.getElementById("c_end").textContent = p.prettyEnd || "—";
+        document.getElementById("c_addr").textContent = p.service_address || "—";
+      } catch {
+        // ignore
+      }
+      // one-time use to avoid stale confirmations on later visits
+      sessionStorage.removeItem("moon_booking_confirmation");
+    }
+  </script>
+</body>
+</html>
