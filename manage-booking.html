@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Manage Your Booking — Moon Auto Detailing</title>
+
+<style>
+body { font-family:"Poppins",system-ui; margin:0; background:#000; }
+.wrap { max-width:860px; margin:40px auto; padding:0 20px; }
+.card { background:#fff; border-radius:22px; padding:34px; box-shadow:0 18px 40px rgba(0,0,0,.12); }
+h1 { text-align:center; color:#7fb8e6; margin-bottom:6px; }
+.sub { text-align:center; color:#6b7280; margin-bottom:24px; }
+.box { border:1px solid #e5e7eb; border-radius:14px; padding:14px; margin-top:14px; background:#f9fbff; }
+.label { font-weight:700; }
+.btn { width:100%; padding:14px; margin-top:14px; border:none; border-radius:999px; font-weight:600; cursor:pointer; }
+.cancel { background:#b00020; color:white; }
+.reschedule { background:#7fb8e6; color:white; }
+.hidden { display:none; }
+</style>
+</head>
+
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>Manage Booking</h1>
+    <p class="sub">Reschedule or cancel your appointment</p>
+
+    <div id="loading">Loading booking…</div>
+
+    <div id="content" class="hidden">
+      <div class="box"><div class="label">Customer</div><div id="name"></div></div>
+      <div class="box"><div class="label">Service</div><div id="service"></div></div>
+      <div class="box"><div class="label">Vehicle</div><div id="vehicle"></div></div>
+      <div class="box"><div class="label">Start</div><div id="start"></div></div>
+      <div class="box"><div class="label">Address</div><div id="addr"></div></div>
+
+      <button id="rescheduleBtn" class="btn reschedule">Request Reschedule</button>
+      <button id="cancelBtn" class="btn cancel">Cancel Booking</button>
+    </div>
+
+    <div id="done" class="hidden">
+      <h2 id="doneText"></h2>
+    </div>
+  </div>
+</div>
+
+<script>
+const token = new URLSearchParams(location.search).get("token");
+if (!token) document.body.innerHTML = "Invalid link";
+
+async function loadBooking() {
+  const res = await fetch(`/api/manage-booking-get?token=${token}`);
+  if (!res.ok) {
+    document.body.innerHTML = "Booking not found";
+    return;
+  }
+
+  const b = await res.json();
+
+  document.getElementById("name").textContent = b.customer_name;
+  document.getElementById("service").textContent = b.service;
+  document.getElementById("vehicle").textContent = b.vehicle;
+  document.getElementById("addr").textContent = b.service_address;
+  document.getElementById("start").textContent = new Date(b.scheduled_start).toLocaleString();
+
+  document.getElementById("loading").style.display = "none";
+  document.getElementById("content").classList.remove("hidden");
+}
+
+async function callApi(endpoint) {
+  const res = await fetch(endpoint, {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ token })
+  });
+
+  const data = await res.json();
+  document.getElementById("content").style.display="none";
+  document.getElementById("done").classList.remove("hidden");
+  document.getElementById("doneText").textContent = data.message;
+}
+
+document.getElementById("cancelBtn").onclick = () => callApi("/api/customer-cancel-booking");
+document.getElementById("rescheduleBtn").onclick = () => callApi("/api/customer-reschedule-booking");
+
+loadBooking();
+</script>
+</body>
+</html>
