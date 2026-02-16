@@ -258,6 +258,20 @@ const googleEventHtmlLink = calendarResponse.data.htmlLink;
       body: JSON.stringify({ booking_id: bookingId })
     }).catch(err => console.error("Confirmation email failed:", err));
 
+    // 🔔 Send booking confirmed email (fire and forget)
+try {
+  await fetch(`${process.env.VERCEL_URL ? "https://" + process.env.VERCEL_URL : ""}/api/send-booking-confirmed-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      bookingId: booking.id
+    })
+  });
+} catch (err) {
+  console.error("Failed to trigger confirmation email", err);
+}
+
+
     return res.status(200).json({ ok: true });
 
   } catch (err) {
