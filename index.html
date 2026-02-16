@@ -1993,7 +1993,12 @@ try {
 }
 
 // 👇 MUST be outside try block
-const expandedBlocks = blocks.map(b => expandBookingBlock(b));
+const expandedBlocks = blocks.map(b => {
+  const expanded = expandBookingBlock(b);
+  expanded.status = b.status;   // preserve booking status
+  return expanded;
+});
+
 
 // =========================
 // RED BLOCK ADJACENCY MAPS (PER DAY)
