@@ -47,25 +47,18 @@ h1 { margin-bottom: 10px; }
 }
 /* expanded booking card */
 .card.expanded {
-  background: rgba(233,241,251,0.92);
+  background: rgba(111,147,196,0.28);   /* darker glass, not white */
   backdrop-filter: blur(18px);
-  color: #111;
-  border: none;
+  color: white;
+  border: 1px solid rgba(255,255,255,0.18);
   box-shadow: 0 25px 60px rgba(0,0,0,0.55);
 }
+
      .card.expanded .status-badge {
   color: white;
 }
 
 
-/* make text readable when expanded */
-.card.expanded .booking-header {
-  color: #111;
-}
-
-.card.expanded .label {
-  color: #333;
-}
 .card.expanded[data-today-accent="true"] {
   border-left: 4px solid var(--moon-primary);
 }
