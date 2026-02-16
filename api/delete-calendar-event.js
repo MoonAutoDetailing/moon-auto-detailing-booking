@@ -27,7 +27,7 @@ export default async function handler(req, res) {
     // 3️⃣ Fetch booking
     const { data: booking, error } = await supabase
       .from("bookings")
-      .select("google_event_id")
+      .select("google_event_id, status")
       .eq("id", bookingId)
       .single();
 
@@ -59,12 +59,38 @@ export default async function handler(req, res) {
     const calendar = google.calendar({ version: "v3", auth });
 
     // 5️⃣ Delete Event (HARD FAILURE)
-    await calendar.events.delete({
-      calendarId: process.env.GOOGLE_CALENDAR_ID.trim(),
-      eventId: booking.google_event_id
-    });
+await calendar.events.delete({
+  calendarId: process.env.GOOGLE_CALENDAR_ID.trim(),
+  eventId: booking.google_event_id
+});
 
-    return res.status(200).json({ ok: true });
+// 6️⃣ Mark booking as reschedule_requested + clear google fields
+await supabase
+  .from("bookings")
+  .update({
+    status: "reschedule_requested",
+    google_event_id: null,
+    google_event_html_link: null
+  })
+  .eq("id", bookingId);
+
+// 7️⃣ Email customer the rebooking link (fire-and-forget)
+try {
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "https://moon-auto-detailing-booking.vercel.app";
+
+  await fetch(`${baseUrl}/api/send-reschedule-link-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bookingId })
+  });
+} catch (e) {
+  console.error("Failed to trigger send-reschedule-link-email:", e?.message || e);
+}
+
+return res.status(200).json({ ok: true });
+
 
   } catch (err) {
     console.error("DELETE CALENDAR ERROR:", err);
