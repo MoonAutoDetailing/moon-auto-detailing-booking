@@ -37,8 +37,10 @@ export default async function handler(req, res) {
     }
 
     if (booking.status === "reschedule_requested") {
-      return res.status(200).json({ message: "Reschedule already requested." });
-    }
+  return res.status(200).json({
+    message: "Reschedule already requested. Please check your email for the reschedule link."
+  });
+}
 
     // =========================
     // 2) Remove calendar event
@@ -73,13 +75,34 @@ export default async function handler(req, res) {
     // 3) Update booking status
     // =========================
     await supabase
-      .from("bookings")
-      .update({ status: "reschedule_requested" })
-      .eq("id", booking.id);
+  .from("bookings")
+  .update({
+    status: "reschedule_requested",
+    google_event_id: null,
+    google_event_html_link: null
+  })
+  .eq("id", booking.id);
+
+    // 4) Email customer the rebooking link (fire-and-forget)
+try {
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "https://moon-auto-detailing-booking.vercel.app";
+
+  await fetch(`${baseUrl}/api/send-reschedule-link-email`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bookingId: booking.id })
+  });
+} catch (e) {
+  console.error("Failed to trigger send-reschedule-link-email:", e?.message || e);
+}
+
 
     return res.status(200).json({
-      message: "We received your reschedule request. We'll contact you shortly."
-    });
+  message: "Reschedule started. Please check your email to pick a new time."
+});
+
 
   } catch (err) {
     console.error("customer-reschedule-booking error:", err);
