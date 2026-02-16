@@ -91,19 +91,34 @@
       document.getElementById("c_end").textContent = "—";
       document.getElementById("c_addr").textContent = "—";
     } else {
-      try {
-        const p = JSON.parse(raw);
-        document.getElementById("c_name").textContent = p.full_name || "—";
-        document.getElementById("c_service").textContent = p.serviceLabel || "—";
-        document.getElementById("c_start").textContent = p.prettyStart || "—";
-        document.getElementById("c_end").textContent = p.prettyEnd || "—";
-        document.getElementById("c_addr").textContent = p.service_address || "—";
-      } catch {
-        // ignore
-      }
-      // one-time use to avoid stale confirmations on later visits
-      sessionStorage.removeItem("moon_booking_confirmation");
+      } else {
+  try {
+    const p = JSON.parse(raw);
+
+    document.getElementById("c_name").textContent = p.full_name || "—";
+    document.getElementById("c_service").textContent = p.serviceLabel || "—";
+    document.getElementById("c_start").textContent = p.prettyStart || "—";
+    document.getElementById("c_end").textContent = p.prettyEnd || "—";
+    document.getElementById("c_addr").textContent = p.service_address || "—";
+
+    // =========================
+    // CONNECT MANAGE BUTTON (FIXED SCOPE)
+    // =========================
+    if (p.manage_token) {
+      document.getElementById("manageBtn").onclick = () => {
+        window.location.href = `/manage-booking.html?token=${p.manage_token}`;
+      };
+    } else {
+      document.getElementById("manageBtn").style.display = "none";
     }
+
+  } catch {
+    // ignore parse error
+  }
+
+  sessionStorage.removeItem("moon_booking_confirmation");
+}
+
     // =========================
 // CONNECT MANAGE BUTTON
 // =========================
