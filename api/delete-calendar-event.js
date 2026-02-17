@@ -26,10 +26,11 @@ export default async function handler(req, res) {
 
     // 3️⃣ Fetch booking
     const { data: booking, error } = await supabase
-      .from("bookings")
-      .select("google_event_id, status")
-      .eq("id", bookingId)
-      .single();
+  .from("bookings")
+  .select("google_event_id")
+  .eq("id", bookingId)
+  .single();
+
 
     if (error || !booking) {
       return res.status(404).json({ ok: false, message: "Booking not found" });
@@ -64,29 +65,22 @@ await calendar.events.delete({
   eventId: booking.google_event_id
 });
 
-// 6️⃣ Mark booking as reschedule_requested + fetch email + token
-const { data: updatedBooking, error: updateError } = await supabase
+      // Clear Google event fields only (utility behavior)
+const { error: clearError } = await supabase
   .from("bookings")
   .update({
-    status: "reschedule_requested",
     google_event_id: null,
     google_event_html_link: null
   })
-  .eq("id", bookingId)
-  .select(`
-    id,
-    manage_token,
-    customers (
-      email,
-      full_name
-    )
-  `)
-  .single();
+  .eq("id", bookingId);
 
-if (updateError || !updatedBooking) {
-  console.error("Booking update failed:", updateError);
-  return res.status(500).json({ ok: false, message: "Booking update failed" });
+if (clearError) {
+  console.error("Failed clearing Google fields:", clearError);
+  return res.status(500).json({ ok: false, message: "Failed clearing Google fields" });
 }
+
+return res.status(200).json({ ok: true });
+
 
 
 // 7️⃣ Email customer the rebooking link (fire-and-forget)
