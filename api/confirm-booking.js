@@ -80,7 +80,7 @@ if (!verifyAdmin(req)) {
     // =========================
     const { data: customer, error: customerError } = await supabase
       .from("customers")
-      .select("full_name, phone, email, sms_opt_out")
+      .select("full_name, email, phone")
       .eq("id", booking.customer_id)
       .single();
 
