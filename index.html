@@ -2287,17 +2287,19 @@ setRedBlockRadii(redBlock, { roundTop, roundBottom });
         const startTime = new Date(t);
         const minute = startTime.getMinutes();
 
-        const quarterWidth = 100 / 4;
-        const sliceLeft = (minute / 15) * quarterWidth;
+        const slicesPerHour = 60 / SLOT_MINUTES;
+const slicePct = 100 / slicesPerHour;
 
-        const quarterHeight = 100 / 4;
-const sliceTop = (minute / 15) * quarterHeight;
+// guard: only render aligned times
+if (minute % SLOT_MINUTES !== 0) continue;
 
+const sliceIndex = minute / SLOT_MINUTES;
+const sliceTop = sliceIndex * slicePct;
 const block = document.createElement("div");
 block.className = "green-slot-pill";
 block.style.position = "absolute";
 block.style.top = `${sliceTop}%`;
-block.style.height = `${quarterHeight}%`;
+block.style.height = `${slicePct}%`;
 block.style.width = "80%";
 block.style.left = "10%";
         block.style.borderRadius = "999px";
