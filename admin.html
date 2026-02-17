@@ -1107,6 +1107,13 @@ if (b.google_event_id) {
         .update({ status: "reschedule_requested" })
         .eq("id", b.id);
 
+         await adminFetch("/api/send-reschedule-link-email", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ bookingId: b.id })
+});
+
+
       if (error) throw error;
 
       await loadAdminData();
