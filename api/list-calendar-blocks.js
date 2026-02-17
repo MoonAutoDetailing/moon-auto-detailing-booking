@@ -89,15 +89,16 @@ const confirmedBlocks = items
   })
   .filter(Boolean);
 
-// =========================
-// 2) Pending bookings from Supabase
-// =========================
-const { data: pendingBookings } = await supabase
+// pending bookings — OVERLAP SAFE (must match check-availability logic)
+const { data: pendingBookings, error: pendingError } = await supabase
   .from("bookings")
   .select("scheduled_start, scheduled_end")
   .eq("status", "pending")
-  .gte("scheduled_start", timeMin)
-  .lte("scheduled_end", timeMax);
+  .lt("scheduled_start", timeMax)   // starts before window ends
+  .gt("scheduled_end", timeMin);    // ends after window begins
+
+if (pendingError) throw pendingError;
+
 
 const pendingBlocks = (pendingBookings || []).map(b => ({
   start: b.scheduled_start,
