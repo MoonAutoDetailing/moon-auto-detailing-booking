@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import verifyAdmin from "./_verifyAdmin.js";
+import { sendBookingCompletedEmailCore } from "../lib/email/sendBookingCompletedEmail.js";
+
 
 export default async function handler(req, res) {
   try {
@@ -24,16 +26,13 @@ export default async function handler(req, res) {
       .update({ status: "completed" })
       .eq("id", bookingId);
 
-    // trigger completion email
-    try {
-      await fetch(`${process.env.VERCEL_URL ? "https://" + process.env.VERCEL_URL : ""}/api/send-booking-completed-email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ booking_id: bookingId })
-      });
-    } catch (err) {
-      console.error("Completion email failed", err);
-    }
+    // Send completion email (direct call)
+try {
+  await sendBookingCompletedEmailCore(bookingId);
+} catch (err) {
+  console.error("Completion email failed", err);
+}
+
 
     return res.status(200).json({ ok: true });
 
