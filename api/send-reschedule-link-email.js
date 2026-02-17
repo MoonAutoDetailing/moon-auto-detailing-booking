@@ -50,10 +50,18 @@ export default async function handler(req, res) {
       "https://moon-auto-detailing-booking.vercel.app/index.html?reschedule_token=" +
       booking.manage_token;
 
-    await sendEmail({
-      to: booking.customers.email,
-      subject: "Choose a new time for your detailing appointment",
-      html: `
+    await sendBookingEmail({
+  to: booking.customers.email,
+  subject: "Choose a new time for your detailing appointment",
+  html: `
+    <p>Hi ${firstName},</p>
+    <p>Your appointment is ready to be rescheduled.</p>
+    <p>Please choose a new time using the link below:</p>
+    <p><a href="${rebookingLink}">${rebookingLink}</a></p>
+    <p>Your service details are already saved — you only need to pick a new date and time.</p>
+    <p>Moon Auto Detailing</p>
+  `
+});
         <p>Hi ${firstName},</p>
         <p>Your appointment is ready to be rescheduled.</p>
         <p>Please choose a new time using the link below:</p>
