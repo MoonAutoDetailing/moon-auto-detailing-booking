@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
 import twilio from "twilio";
 import verifyAdmin from "./_verifyAdmin.js";
+import sendBookingConfirmedEmail from "./send-booking-confirmed-email.js";
 
 
 export default async function handler(req, res) {
@@ -250,16 +251,12 @@ const googleEventHtmlLink = calendarResponse.data.htmlLink;
       }
     }
         // =========================
-    // 🔔 Send booking confirmed email (fire and forget)
+    // 🔔 Send booking confirmed email (internal call)
 try {
-  await fetch(`${process.env.VERCEL_URL ? "https://" + process.env.VERCEL_URL : ""}/api/send-booking-confirmed-email`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-  booking_id: booking.id
-})
-
-  });
+  await sendBookingConfirmedEmail(
+    { method: "POST", body: { booking_id: booking.id } },
+    { status: () => ({ json: () => {} }) }
+  );
 } catch (err) {
   console.error("Failed to trigger confirmation email", err);
 }
