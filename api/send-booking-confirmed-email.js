@@ -8,11 +8,18 @@ function requireEnv(name) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  if (req.method === "OPTIONS") return res.status(204).end();
-  if (req.method !== "POST") return res.status(405).end();
+  // Support internal server calls (mock res has no setHeader)
+  if (res?.setHeader) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    if (req.method === "OPTIONS") return res.status(204).end();
+  }
+
+  if (req.method !== "POST") {
+    return res?.status ? res.status(405).end() : null;
+  }
+
 
   try {
     const { booking_id } = req.body;
