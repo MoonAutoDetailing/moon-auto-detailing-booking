@@ -2381,21 +2381,15 @@ if (toggleBtn && calContainer) {
   });
 }
 
-    // =========================
-// CHECK FOR RESCHEDULE MODE
-// =========================
-const params = new URLSearchParams(window.location.search);
-RESCHEDULE_TOKEN = params.get("reschedule_token");
-
-if (RESCHEDULE_TOKEN) {
-  RESCHEDULE_MODE = true;
-  setStatus("muted", "Loading your booking...");
-  await loadRescheduleBooking();
-}
-
     // Initial load
-loadCalendar();
-    loadServiceVariants();
+loadServiceVariants().then(async () => {
+  if (RESCHEDULE_MODE) {
+    setStatus("muted", "Loading your booking...");
+    await loadRescheduleBooking();
+  }
+  await loadCalendar();
+});
+
     selfTestTimeSlots();
 function waitForGooglePlaces() {
   if (window.google && google.maps?.places) {
