@@ -1053,7 +1053,17 @@ header.onclick = () => {
   try {
     if (!confirm("Are you sure you want to deny this booking?")) return;
 
-    await updateStatus(b.id, "denied", card);
+    const res = await adminFetch("/api/admin-deny-booking", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ bookingId: b.id })
+});
+
+const data = await res.json();
+if (!res.ok || !data.ok) {
+  throw new Error(data.error || "Deny failed");
+}
+
     await loadAdminData({ silentUnauthorized: true });
     if (currentView) renderView(currentView);
 
