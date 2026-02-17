@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { sendBookingEmail } from "./_sendEmail.js";
+import { sendRescheduleLinkEmailCore } from "../lib/email/sendRescheduleLinkEmail.js";
+
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -46,30 +48,12 @@ export default async function handler(req, res) {
 
     const firstName = booking.customers.full_name.split(" ")[0];
 
-    const rebookingLink =
-      "https://moon-auto-detailing-booking.vercel.app/index.html?reschedule_token=" +
-      booking.manage_token;
-
-    await sendBookingEmail({
-  to: booking.customers.email,
-  subject: "Choose a new time for your detailing appointment",
-  html: `
-    <p>Hi ${firstName},</p>
-    <p>Your appointment is ready to be rescheduled.</p>
-    <p>Please choose a new time using the link below:</p>
-    <p><a href="${rebookingLink}">${rebookingLink}</a></p>
-    <p>Your service details are already saved — you only need to pick a new date and time.</p>
-    <p>Moon Auto Detailing</p>
-  `
+    await sendRescheduleLinkEmailCore({
+  email: booking.customers.email,
+  fullName: booking.customers.full_name,
+  manageToken: booking.manage_token
 });
-        <p>Hi ${firstName},</p>
-        <p>Your appointment is ready to be rescheduled.</p>
-        <p>Please choose a new time using the link below:</p>
-        <p><a href="${rebookingLink}">${rebookingLink}</a></p>
-        <p>Your service details are already saved — you only need to pick a new date and time.</p>
-        <p>Moon Auto Detailing</p>
-      `
-    });
+
 
     return res.status(200).json({ success: true });
 
