@@ -28,11 +28,12 @@ export default async function handler(req, res) {
     const { data: booking, error } = await supabase
       .from("bookings")
       .select(`
-        scheduled_start,
-        service_address,
-        manage_token,
-        customers:customer_id ( full_name, email )
-      `)
+  scheduled_start,
+  scheduled_end,
+  service_address,
+  manage_token,
+  customers:customer_id ( full_name, email )
+`)
       .eq("id", booking_id)
       .single();
 
