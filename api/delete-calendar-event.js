@@ -86,16 +86,6 @@ if (clearError) {
   console.error("Failed clearing Google fields:", clearError);
   return res.status(500).json({ ok: false, message: "Failed clearing Google fields" });
 }
-      // Send reschedule email (fire-and-forget)
-try {
-  await sendRescheduleLinkEmailCore({
-    email: booking.customers.email,
-    fullName: booking.customers.full_name,
-    manageToken: booking.manage_token
-  });
-} catch (err) {
-  console.error("Reschedule email failed:", err);
-}
 
 
 return res.status(200).json({ ok: true });
