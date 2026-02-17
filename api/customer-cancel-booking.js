@@ -92,6 +92,19 @@ const isLateCancel = hoursUntilService < 24;
   })
   .eq("id", booking.id);
 
+    // Send cancellation email (only for normal cancellations)
+if (!isLateCancel) {
+  try {
+    await fetch(`${process.env.VERCEL_URL ? "https://" + process.env.VERCEL_URL : ""}/api/send-booking-cancelled-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ booking_id: booking.id })
+    });
+  } catch (err) {
+    console.error("Cancel email failed", err);
+  }
+}
+
 
    return res.status(200).json({
   message: isLateCancel
