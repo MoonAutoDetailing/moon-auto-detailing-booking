@@ -939,6 +939,15 @@ label[for="start"] {
   </div> <!-- page-wrap -->
 
   <script type="module">
+
+    // =============================
+// RESCHEDULE MODE DETECTION
+// =============================
+const urlParams = new URLSearchParams(window.location.search);
+
+const RESCHEDULE_TOKEN = urlParams.get("reschedule_token");
+const RESCHEDULE_MODE = Boolean(RESCHEDULE_TOKEN);
+
                                                                                                     //DEBUG SWITCH!!                                                                           
 
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
@@ -1002,6 +1011,13 @@ elEnd.addEventListener("paste", (e) => e.preventDefault());
     let variantsCache = []; // {id, vehicle_size, price, duration_minutes, service:{category,level}}
     let selectedVariant = null;
     let isSubmitting = false;
+    // =========================
+// =========================
+// RESCHEDULE MODE STATE
+// =========================
+let RESCHEDULE_BOOKING_ID = null;
+
+
     
     // Phase 5 state
 let selectedStartISO = null;
@@ -1608,10 +1624,132 @@ async function hasBookingConflict(requestedStartISO, requestedEndISO) {
   }
 
   return count > 0;
-}    
+}
+
+    // =========================
+// LOAD BOOKING FOR RESCHEDULE
+// =========================
+async function loadRescheduleBooking() {
+  try {
+    const res = await fetch(`/api/get-booking-by-token?token=${RESCHEDULE_TOKEN}`);
+    const data = await res.json();
+
+    if (!data?.booking) {
+      setStatus("bad", "Invalid or expired reschedule link.");
+      return;
+    }
+
+    const b = data.booking;
+    RESCHEDULE_BOOKING_ID = b.id;
+    // Load service variant so calendar can compute duration
+try {
+  const { data: variant, error: variantErr } = await supabase
+    .from("service_variants")
+    .select(`
+      id,
+      vehicle_size,
+      price,
+      duration_minutes,
+      service:services(category, level)
+    `)
+    .eq("id", b.service_variant_id)
+    .single();
+
+  if (variantErr || !variant) {
+    throw new Error("Failed loading service variant for reschedule.");
+  }
+
+  selectedVariant = {
+    id: variant.id,
+    vehicle_size: variant.vehicle_size,
+    price: variant.price,
+    duration_minutes: variant.duration_minutes,
+    service: variant.service
+  };
+
+  console.log("Reschedule variant loaded:", selectedVariant);
+
+} catch (err) {
+  console.error(err);
+  setStatus("bad", "Failed loading booking details.");
+  return;
+}
+
+
+    // Prefill customer fields
+    elFullName.value = b.customers.full_name;
+    elEmail.value = b.customers.email;
+    elPhone.value = b.customers.phone || "";
+    elAddress.value = b.customers.address || "";
+    elServiceAddress.value = b.service_address;
+    elSubmit.textContent = "Submit New Time";
+
+    // Lock all fields except time
+    [
+      elFullName,
+      elEmail,
+      elPhone,
+      elAddress,
+      elVehicleSize,
+      elServiceVariant,
+      elYear,
+      elMake,
+      elModel,
+      elPlate,
+      elServiceAddress
+    ].forEach(el => el.disabled = true);
+  
+
+    setStatus("ok", "Please choose your new appointment time.");
+
+  } catch (err) {
+    console.error(err);
+    setStatus("bad", "Failed to load booking.");
+  }
+}
+
+    // Rebuild calendar using correct duration
+await loadCalendar();
+
+
+    
     async function submitBooking() {
       if (isSubmitting) return;
 isSubmitting = true;
+
+      // =============================
+// RESCHEDULE MODE SHORT-CIRCUIT
+// =============================
+if (RESCHEDULE_MODE) {
+  try {
+    if (!selectedStartISO) {
+      throw new Error("No time selected.");
+    }
+
+    const response = await fetch("/api/submit-reschedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token: RESCHEDULE_TOKEN,
+        new_start: selectedStartISO
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Reschedule failed.");
+    }
+
+    window.location.href = "/booking-confirmed.html";
+    return; // CRITICAL: prevent booking flow below
+  } catch (err) {
+    alert(err.message);
+    isSubmitting = false;
+    return;
+  }
+}
+
 
       elSubmit.disabled = true;
       setStatus("muted", "Submitting…");
@@ -1754,7 +1892,7 @@ try {
   throw new Error("Unable to verify availability. Please try again.");
 }
 
-
+        
         // Step 3: create booking (status pending)
 const { data: bookingRows, error: bookingError } = await supabase
   .from("bookings")
@@ -2244,6 +2382,18 @@ if (toggleBtn && calContainer) {
       ? "View availability calendar"
       : "Hide availability calendar";
   });
+}
+
+    // =========================
+// CHECK FOR RESCHEDULE MODE
+// =========================
+const params = new URLSearchParams(window.location.search);
+RESCHEDULE_TOKEN = params.get("reschedule_token");
+
+if (RESCHEDULE_TOKEN) {
+  RESCHEDULE_MODE = true;
+  setStatus("muted", "Loading your booking...");
+  await loadRescheduleBooking();
 }
 
     // Initial load

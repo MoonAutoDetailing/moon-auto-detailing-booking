@@ -27,10 +27,10 @@ export default async function handler(req, res) {
     // 1) Fetch booking by token
     // =========================
     const { data: booking, error } = await supabase
-      .from("bookings")
-      .select("id, google_event_id, status")
-      .eq("manage_token", token)
-      .single();
+  .from("bookings")
+  .select("id, google_event_id, status, scheduled_start")
+  .eq("manage_token", token)
+  .single();
 
     if (error || !booking) {
       return res.status(404).json({ message: "Booking not found" });
@@ -39,6 +39,16 @@ export default async function handler(req, res) {
     if (booking.status === "cancelled") {
       return res.status(200).json({ message: "Booking already cancelled" });
     }
+
+    // =========================
+// 24-HOUR CANCEL RULE
+// =========================
+const now = new Date();
+const startTime = new Date(booking.scheduled_start);
+const hoursUntilService = (startTime - now) / (1000 * 60 * 60);
+
+const isLateCancel = hoursUntilService < 24;
+
 
     // =========================
     // 2) Delete Google Calendar event (if exists)
@@ -74,13 +84,19 @@ export default async function handler(req, res) {
     // 3) Update booking status
     // =========================
     await supabase
-      .from("bookings")
-      .update({ status: "cancelled" })
-      .eq("id", booking.id);
+  .from("bookings")
+  .update({
+    status: isLateCancel ? "cancel_requested_late" : "cancelled"
+  })
+  .eq("id", booking.id);
 
-    return res.status(200).json({
-      message: "Your booking has been cancelled."
-    });
+
+   return res.status(200).json({
+  message: isLateCancel
+    ? "Your cancellation request was received. Our team will follow up shortly."
+    : "Your booking has been cancelled."
+});
+
 
   } catch (err) {
     console.error("customer-cancel-booking error:", err);

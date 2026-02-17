@@ -250,14 +250,6 @@ const googleEventHtmlLink = calendarResponse.data.htmlLink;
       }
     }
         // =========================
-    // 7️⃣ Send confirmation email (fire-and-forget)
-    // =========================
-    fetch("https://moon-auto-detailing-booking.vercel.app/api/send-booking-confirmed-email", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ booking_id: bookingId })
-    }).catch(err => console.error("Confirmation email failed:", err));
-
     // 🔔 Send booking confirmed email (fire and forget)
 try {
   await fetch(`${process.env.VERCEL_URL ? "https://" + process.env.VERCEL_URL : ""}/api/send-booking-confirmed-email`, {

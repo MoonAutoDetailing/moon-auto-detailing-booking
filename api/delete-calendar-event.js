@@ -26,10 +26,11 @@ export default async function handler(req, res) {
 
     // 3️⃣ Fetch booking
     const { data: booking, error } = await supabase
-      .from("bookings")
-      .select("google_event_id")
-      .eq("id", bookingId)
-      .single();
+  .from("bookings")
+  .select("google_event_id")
+  .eq("id", bookingId)
+  .single();
+
 
     if (error || !booking) {
       return res.status(404).json({ ok: false, message: "Booking not found" });
@@ -59,12 +60,51 @@ export default async function handler(req, res) {
     const calendar = google.calendar({ version: "v3", auth });
 
     // 5️⃣ Delete Event (HARD FAILURE)
-    await calendar.events.delete({
-      calendarId: process.env.GOOGLE_CALENDAR_ID.trim(),
-      eventId: booking.google_event_id
-    });
+await calendar.events.delete({
+  calendarId: process.env.GOOGLE_CALENDAR_ID.trim(),
+  eventId: booking.google_event_id
+});
 
-    return res.status(200).json({ ok: true });
+      // Clear Google event fields only (utility behavior)
+const { error: clearError } = await supabase
+  .from("bookings")
+  .update({
+    google_event_id: null,
+    google_event_html_link: null
+  })
+  .eq("id", bookingId);
+
+if (clearError) {
+  console.error("Failed clearing Google fields:", clearError);
+  return res.status(500).json({ ok: false, message: "Failed clearing Google fields" });
+}
+
+return res.status(200).json({ ok: true });
+
+
+
+// 7️⃣ Email customer the rebooking link (fire-and-forget)
+try {
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "https://moon-auto-detailing-booking.vercel.app";
+
+  await fetch(`${baseUrl}/api/send-reschedule-link-email`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    email: updatedBooking.customers.email,
+    name: updatedBooking.customers.full_name,
+    token: updatedBooking.manage_token
+  })
+});
+
+} catch (e) {
+  console.error("Failed to trigger send-reschedule-link-email:", e?.message || e);
+}
+
+return res.status(200).json({ ok: true });
+
 
   } catch (err) {
     console.error("DELETE CALENDAR ERROR:", err);
