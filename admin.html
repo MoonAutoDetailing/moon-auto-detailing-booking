@@ -1129,7 +1129,12 @@ if (b.google_event_id) {
     setBookingButtonsDisabled(card, true);
 
     try {
-      await updateStatus(b.id, "completed", card);
+      await adminFetch("/api/admin-complete-booking", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ bookingId: b.id })
+});
+
       await loadAdminData();
     } finally {
       unlockBookingAction(b.id, "complete");
