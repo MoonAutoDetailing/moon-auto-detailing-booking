@@ -55,10 +55,12 @@ const { data: booking } = await supabase
 // Send "reschedule submitted" email (fire-and-forget)
 try {
   await sendRescheduleSubmittedEmailCore({
-    email: booking.customers.email,
-    fullName: booking.customers.full_name,
-    newStart: start
-  });
+  email: booking.customers.email,
+  fullName: booking.customers.full_name,
+  newStart: start,
+  newEnd: end
+});
+
 } catch (err) {
   console.error("Reschedule submitted email failed:", err);
 }
