@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
+import { sendRescheduleLinkEmailCore } from "../lib/email/sendRescheduleLinkEmail.js";
+
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -83,20 +85,31 @@ export default async function handler(req, res) {
   })
   .eq("id", booking.id);
 
-    // 4) Email customer the rebooking link (fire-and-forget)
+    // 4) Send reschedule email (direct call)
 try {
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "https://moon-auto-detailing-booking.vercel.app";
+  const { data: bookingWithCustomer } = await supabase
+    .from("bookings")
+    .select(`
+      manage_token,
+      customers (
+        full_name,
+        email
+      )
+    `)
+    .eq("id", booking.id)
+    .single();
 
-  await fetch(`${baseUrl}/api/send-reschedule-link-email`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ bookingId: booking.id })
-  });
-} catch (e) {
-  console.error("Failed to trigger send-reschedule-link-email:", e?.message || e);
+  if (bookingWithCustomer?.customers?.email) {
+    await sendRescheduleLinkEmailCore({
+      email: bookingWithCustomer.customers.email,
+      fullName: bookingWithCustomer.customers.full_name,
+      manageToken: bookingWithCustomer.manage_token
+    });
+  }
+} catch (err) {
+  console.error("Reschedule email failed:", err);
 }
+
 
 
     return res.status(200).json({
