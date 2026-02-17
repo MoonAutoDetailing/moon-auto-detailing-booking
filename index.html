@@ -1701,17 +1701,14 @@ try {
   
 
     setStatus("ok", "Please choose your new appointment time.");
+    await loadServiceVariants();
+await loadCalendar();
 
   } catch (err) {
     console.error(err);
     setStatus("bad", "Failed to load booking.");
   }
 }
-
-    // Rebuild calendar using correct duration
-await loadCalendar();
-
-
     
     async function submitBooking() {
       if (isSubmitting) return;
