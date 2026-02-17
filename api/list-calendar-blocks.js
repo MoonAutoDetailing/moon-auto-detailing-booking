@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 
 /**
- * Read-only endpoint: returns confirmed booking blocks from Google Calendar.
+ * Read-only endpoint: returns confirmed booking blocks from Google Calendar. 
  * This is intentionally minimal and redacts event details.
  *
  * Query params:
