@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
+import { sendBookingCancelledEmailCore } from "../lib/email/sendBookingCancelledEmail.js";
+
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -95,13 +97,9 @@ const isLateCancel = hoursUntilService < 24;
     // Send cancellation email (only for normal cancellations)
 if (!isLateCancel) {
   try {
-    await fetch(`${process.env.VERCEL_URL ? "https://" + process.env.VERCEL_URL : ""}/api/send-booking-cancelled-email`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ booking_id: booking.id })
-    });
+    await sendBookingCancelledEmailCore(booking.id);
   } catch (err) {
-    console.error("Cancel email failed", err);
+    console.error("Cancel email failed:", err);
   }
 }
 
