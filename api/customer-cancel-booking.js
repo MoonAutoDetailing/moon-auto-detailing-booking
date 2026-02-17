@@ -40,14 +40,16 @@ export default async function handler(req, res) {
       return res.status(200).json({ message: "Booking already cancelled" });
     }
 
-    // =========================
-// 24-HOUR CANCEL RULE
 // =========================
-const now = new Date();
-const startTime = new Date(booking.scheduled_start);
-const hoursUntilService = (startTime - now) / (1000 * 60 * 60);
+// 24-HOUR CANCEL RULE (UTC SAFE)
+// =========================
+const nowUtcMs = Date.now(); // always UTC
+const startUtcMs = Date.parse(booking.scheduled_start); // ISO → UTC ms
+
+const hoursUntilService = (startUtcMs - nowUtcMs) / 36e5;
 
 const isLateCancel = hoursUntilService < 24;
+
 
 
     // =========================
@@ -89,6 +91,19 @@ const isLateCancel = hoursUntilService < 24;
     status: isLateCancel ? "cancel_requested_late" : "cancelled"
   })
   .eq("id", booking.id);
+
+    // Send cancellation email (only for normal cancellations)
+if (!isLateCancel) {
+  try {
+    await fetch(`${process.env.VERCEL_URL ? "https://" + process.env.VERCEL_URL : ""}/api/send-booking-cancelled-email`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ booking_id: booking.id })
+    });
+  } catch (err) {
+    console.error("Cancel email failed", err);
+  }
+}
 
 
    return res.status(200).json({

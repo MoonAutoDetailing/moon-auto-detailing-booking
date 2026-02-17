@@ -256,8 +256,9 @@ try {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      bookingId: booking.id
-    })
+  booking_id: booking.id
+})
+
   });
 } catch (err) {
   console.error("Failed to trigger confirmation email", err);
