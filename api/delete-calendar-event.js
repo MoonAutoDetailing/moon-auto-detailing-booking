@@ -1,7 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
 import verifyAdmin from "./_verifyAdmin.js";
-import sendRescheduleLinkEmail from "./send-reschedule-link-email.js";
+import { sendRescheduleLinkEmailCore } from "../lib/email/sendRescheduleLinkEmail.js";
+
 
 
 export default async function handler(req, res) {
@@ -25,10 +26,16 @@ export default async function handler(req, res) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // 3️⃣ Fetch booking
     const { data: booking, error } = await supabase
   .from("bookings")
-  .select("google_event_id")
+  .select(`
+    google_event_id,
+    manage_token,
+    customers (
+      full_name,
+      email
+    )
+  `)
   .eq("id", bookingId)
   .single();
 
@@ -79,36 +86,19 @@ if (clearError) {
   console.error("Failed clearing Google fields:", clearError);
   return res.status(500).json({ ok: false, message: "Failed clearing Google fields" });
 }
-
-return res.status(200).json({ ok: true });
-
-
-
-// 7️⃣ Email customer the rebooking link (fire-and-forget)
+      // Send reschedule email (fire-and-forget)
 try {
-  const baseUrl = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "https://moon-auto-detailing-booking.vercel.app";
-
-  // Send reschedule email (internal call)
-try {
-  await sendRescheduleLinkEmail(
-    {
-      method: "POST",
-      body: { bookingId: updatedBooking.id }
-    },
-    { status: () => ({ json: () => {} }) }
-  );
-} catch (e) {
-  console.error("Failed to send reschedule email:", e);
+  await sendRescheduleLinkEmailCore({
+    email: booking.customers.email,
+    fullName: booking.customers.full_name,
+    manageToken: booking.manage_token
+  });
+} catch (err) {
+  console.error("Reschedule email failed:", err);
 }
 
-} catch (e) {
-  console.error("Failed to trigger send-reschedule-link-email:", e?.message || e);
-}
 
 return res.status(200).json({ ok: true });
-
 
   } catch (err) {
     console.error("DELETE CALENDAR ERROR:", err);
