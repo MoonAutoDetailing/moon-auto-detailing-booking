@@ -967,7 +967,7 @@ const BUSINESS_RULES = {
     // =========================
 // SCHEDULING CONSTANTS (v1.1)
 // =========================
-const SLOT_MINUTES = 15;              // internal resolution
+const SLOT_MINUTES = 10;              // internal resolution
 const TRAVEL_BUFFER_MINUTES = 30;     // fixed heuristic travel buffer
 const MIN_BOOKABLE_GAP_MINUTES = 120; // anti-fragment rule (2 hours)
 
@@ -1048,8 +1048,8 @@ let selectedStartISO = null;
     count: slots.length
   });
 
-  // Expect count = 40 for 8:00–18:00 in 15-min slots
-  // (10 hours * 4 slots per hour = 40)
+  // Expect count = 60 for 8:00–18:00 in 10-min slots
+// (10 hours * 6 slots per hour = 60)
 }
 
 
@@ -2229,7 +2229,8 @@ row.appendChild(hourLabel);
           const startMinuteOffset =
             (overlapStart - hourStart) / 60000;
 
-          const CELL_HEIGHT = 34; // must match .hourly-cell height
+          const CELL_HEIGHT = 40; // must match .hourly-cell height
+
 
 const pxTop = (startMinuteOffset / 60) * CELL_HEIGHT;
 const pxHeight = (overlapMinutes / 60) * CELL_HEIGHT;
@@ -2287,17 +2288,19 @@ setRedBlockRadii(redBlock, { roundTop, roundBottom });
         const startTime = new Date(t);
         const minute = startTime.getMinutes();
 
-        const quarterWidth = 100 / 4;
-        const sliceLeft = (minute / 15) * quarterWidth;
+        const slicesPerHour = 60 / SLOT_MINUTES;
+const slicePct = 100 / slicesPerHour;
 
-        const quarterHeight = 100 / 4;
-const sliceTop = (minute / 15) * quarterHeight;
+// guard: only render aligned times
+if (minute % SLOT_MINUTES !== 0) continue;
 
+const sliceIndex = minute / SLOT_MINUTES;
+const sliceTop = sliceIndex * slicePct;
 const block = document.createElement("div");
 block.className = "green-slot-pill";
 block.style.position = "absolute";
 block.style.top = `${sliceTop}%`;
-block.style.height = `${quarterHeight}%`;
+block.style.height = `${slicePct}%`;
 block.style.width = "80%";
 block.style.left = "10%";
         block.style.borderRadius = "999px";
