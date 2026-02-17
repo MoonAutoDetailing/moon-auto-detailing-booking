@@ -1670,6 +1670,40 @@ async function loadRescheduleBooking() {
       if (isSubmitting) return;
 isSubmitting = true;
 
+      // =============================
+// RESCHEDULE MODE SHORT-CIRCUIT
+// =============================
+if (RESCHEDULE_MODE) {
+  try {
+    if (!selectedStartISO) {
+      throw new Error("No time selected.");
+    }
+
+    const response = await fetch("/api/submit-reschedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token: RESCHEDULE_TOKEN,
+        new_start: selectedStartISO
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Reschedule failed.");
+    }
+
+    window.location.href = "/booking-confirmed.html";
+    return; // CRITICAL: prevent booking flow below
+  } catch (err) {
+    alert(err.message);
+    isSubmitting = false;
+    return;
+  }
+}
+
+
       elSubmit.disabled = true;
       setStatus("muted", "Submitting…");
 
