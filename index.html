@@ -1641,6 +1641,40 @@ async function loadRescheduleBooking() {
 
     const b = data.booking;
     RESCHEDULE_BOOKING_ID = b.id;
+    // Load service variant so calendar can compute duration
+try {
+  const { data: variant, error: variantErr } = await supabase
+    .from("service_variants")
+    .select(`
+      id,
+      vehicle_size,
+      price,
+      duration_minutes,
+      service:services(category, level)
+    `)
+    .eq("id", b.service_variant_id)
+    .single();
+
+  if (variantErr || !variant) {
+    throw new Error("Failed loading service variant for reschedule.");
+  }
+
+  selectedVariant = {
+    id: variant.id,
+    vehicle_size: variant.vehicle_size,
+    price: variant.price,
+    duration_minutes: variant.duration_minutes,
+    service: variant.service
+  };
+
+  console.log("Reschedule variant loaded:", selectedVariant);
+
+} catch (err) {
+  console.error(err);
+  setStatus("bad", "Failed loading booking details.");
+  return;
+}
+
 
     // Prefill customer fields
     elFullName.value = b.customers.full_name;
@@ -1673,6 +1707,10 @@ async function loadRescheduleBooking() {
     setStatus("bad", "Failed to load booking.");
   }
 }
+
+    // Rebuild calendar using correct duration
+await loadCalendar();
+
 
     
     async function submitBooking() {
