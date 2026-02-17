@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { sendBookingEmail } from "./_sendEmail.js";
+import { formatBookingTimeRange } from "../lib/time/formatBookingTime.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -45,20 +46,24 @@ export default async function handler(req, res) {
       console.error("Booking lookup failed:", error);
       return res.status(404).json({ message: "Booking not found" });
     }
+    const timeRange = formatBookingTimeRange(
+  booking.scheduled_start,
+  booking.scheduled_end
+);
 
     await sendBookingEmail({
-      to: booking.customers.email,
-      subject: "Moon Auto Detailing — Booking Confirmed",
-      html: `
-        <h2>Your detailing appointment is confirmed</h2>
-        <p>Hi ${booking.customers.full_name},</p>
-        <p>Your appointment has been confirmed.</p>
-        <p><b>Start:</b> ${new Date(booking.scheduled_start).toLocaleString()}</p>
-        <p><b>End:</b> ${new Date(booking.scheduled_end).toLocaleString()}</p>
-        <p><b>Address:</b> ${booking.service_address}</p>
-        <p>We look forward to servicing your vehicle.</p>
-      `
-    });
+  to: booking.customers.email,
+  subject: "Moon Auto Detailing — Booking Confirmed",
+  html: `
+    <h2>Your detailing appointment is confirmed</h2>
+    <p>Hi ${booking.customers.full_name},</p>
+    <p>Your appointment has been confirmed.</p>
+    <p><b>Appointment Time:</b> ${timeRange}</p>
+    <p><b>Address:</b> ${booking.service_address}</p>
+    <p>We look forward to servicing your vehicle.</p>
+  `
+});
+
 
     return res.status(200).json({ ok: true });
 
