@@ -1,5 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import verifyAdmin from "./_verifyAdmin.js";
+import { sendBookingDeniedEmailCore } from "../lib/email/sendBookingDeniedEmail.js";
+
 
 export default async function handler(req, res) {
   try {
@@ -25,16 +27,13 @@ export default async function handler(req, res) {
       .update({ status: "denied" })
       .eq("id", bookingId);
 
-    // trigger email
-    try {
-      await fetch(`${process.env.VERCEL_URL ? "https://" + process.env.VERCEL_URL : ""}/api/send-booking-denied-email`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ booking_id: bookingId })
-      });
-    } catch (err) {
-      console.error("Denied email failed", err);
-    }
+  // trigger email (direct call, no HTTP)
+try {
+  await sendBookingDeniedEmailCore(bookingId);
+} catch (err) {
+  console.error("Denied email failed", err);
+}
+
 
     return res.status(200).json({ ok: true });
 
