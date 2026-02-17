@@ -939,6 +939,15 @@ label[for="start"] {
   </div> <!-- page-wrap -->
 
   <script type="module">
+
+    // =============================
+// RESCHEDULE MODE DETECTION
+// =============================
+const urlParams = new URLSearchParams(window.location.search);
+
+const RESCHEDULE_TOKEN = urlParams.get("reschedule_token");
+const RESCHEDULE_MODE = Boolean(RESCHEDULE_TOKEN);
+
                                                                                                     //DEBUG SWITCH!!                                                                           
 
     import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
@@ -1003,11 +1012,11 @@ elEnd.addEventListener("paste", (e) => e.preventDefault());
     let selectedVariant = null;
     let isSubmitting = false;
     // =========================
+// =========================
 // RESCHEDULE MODE STATE
 // =========================
-let RESCHEDULE_MODE = false;
 let RESCHEDULE_BOOKING_ID = null;
-let RESCHEDULE_TOKEN = null;
+
 
     
     // Phase 5 state
@@ -1845,32 +1854,6 @@ try {
   throw new Error("Unable to verify availability. Please try again.");
 }
 
-        // =========================
-// RESCHEDULE SUBMIT FLOW
-// =========================
-if (RESCHEDULE_MODE) {
-
-  const updateRes = await fetch("/api/submit-reschedule", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      bookingId: RESCHEDULE_BOOKING_ID,
-      start: scheduled_start,
-      end: scheduled_end
-    })
-  });
-
-  const updateData = await updateRes.json();
-
-  if (!updateRes.ok) {
-    throw new Error(updateData.error || "Reschedule failed");
-  }
-
-  setStatus("ok", "Your new time was submitted for approval.");
-
-  window.location.href = "/booking-confirmed.html";
-  return;
-}
         
         // Step 3: create booking (status pending)
 const { data: bookingRows, error: bookingError } = await supabase
