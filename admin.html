@@ -1043,9 +1043,6 @@ header.onclick = () => {
   }
 };
        
-    const denyBtn = document.createElement("button");
-    denyBtn.textContent = "Deny";
-    denyBtn.className = "cancel";
     denyBtn.onclick = async () => {
   if (!lockBookingAction(b.id, "deny")) return;
   setBookingButtonsDisabled(card, true);
@@ -1054,27 +1051,27 @@ header.onclick = () => {
     if (!confirm("Are you sure you want to deny this booking?")) return;
 
     const res = await adminFetch("/api/admin-deny-booking", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ bookingId: b.id })
-});
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookingId: b.id })
+    });
 
-const data = await res.json();
-if (!res.ok || !data.ok) {
-  throw new Error(data.error || "Deny failed");
-}
+    const data = await res.json();
 
-    await loadAdminData({ silentUnauthorized: true });
-    if (currentView) renderView(currentView);
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error || "Deny failed");
+    }
 
+    await loadAdminData();
   } catch (err) {
     alert("Deny failed.");
-    hardLog(`DENY ERROR ${err?.message || err}`);
+    hardLog(`DENY ERROR ${err.message}`);
   } finally {
     unlockBookingAction(b.id, "deny");
     setBookingButtonsDisabled(card, false);
   }
 };
+
 
 
     actions.appendChild(confirmBtn);
