@@ -1,4 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
+import { sendRescheduleSubmittedEmailCore } from "../lib/email/sendRescheduleSubmittedEmail.js";
+
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -39,6 +41,28 @@ export default async function handler(req, res) {
       console.error("Reschedule update failed:", error);
       return res.status(500).json({ error: "Failed to update booking" });
     }
+    // Fetch customer for notification
+const { data: booking } = await supabase
+  .from("bookings")
+  .select(`
+    customers (
+      full_name,
+      email
+    )
+  `)
+  .eq("id", bookingId)
+  .single();
+// Send "reschedule submitted" email (fire-and-forget)
+try {
+  await sendRescheduleSubmittedEmailCore({
+    email: booking.customers.email,
+    fullName: booking.customers.full_name,
+    newStart: start
+  });
+} catch (err) {
+  console.error("Reschedule submitted email failed:", err);
+}
+
 
     return res.status(200).json({ success: true });
 
