@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { sendBookingEmail } from "./_sendEmail.js";
+import { formatBookingTimeRange } from "../lib/time/formatBookingTime.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -42,23 +43,28 @@ export default async function handler(req, res) {
 
     const manageUrl =
       `https://moon-auto-detailing-booking.vercel.app/manage-booking.html?token=${booking.manage_token}`;
+    const timeRange = formatBookingTimeRange(
+  booking.scheduled_start,
+  booking.scheduled_end
+);
 
     await sendBookingEmail({
-      to: booking.customers.email,
-      subject: "Moon Auto Detailing — Booking Request Received",
-      html: `
-        <h2>We received your booking request</h2>
-        <p>Hi ${booking.customers.full_name},</p>
-        <p>Your detailing request has been received and is awaiting confirmation.</p>
-        <p><b>Date:</b> ${new Date(booking.scheduled_start).toLocaleString()}</p>
-        <p><b>Address:</b> ${booking.service_address}</p>
-        <p>
-          You can manage your booking here:<br/>
-          <a href="${manageUrl}">${manageUrl}</a>
-        </p>
-        <p>We will confirm your appointment shortly.</p>
-      `
-    });
+  to: booking.customers.email,
+  subject: "Moon Auto Detailing — Booking Request Received",
+  html: `
+    <h2>We received your booking request</h2>
+    <p>Hi ${booking.customers.full_name},</p>
+    <p>Your detailing request has been received and is awaiting confirmation.</p>
+    <p><b>Appointment Time:</b> ${timeRange}</p>
+    <p><b>Address:</b> ${booking.service_address}</p>
+    <p>
+      You can manage your booking here:<br/>
+      <a href="${manageUrl}">${manageUrl}</a>
+    </p>
+    <p>We will confirm your appointment shortly.</p>
+  `
+});
+
 
     return res.status(200).json({ ok: true });
 
