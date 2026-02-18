@@ -2012,6 +2012,12 @@ inputEl.classList.add("locked-address");
 
   if (customerAddress) attachAutocomplete(customerAddress);
   if (serviceAddress) attachAutocomplete(serviceAddress);
+  
+  // 🔁 Recalculate availability when service address changes
+elServiceAddress.addEventListener("change", async () => {
+  if (!selectedVariant) return; // need service duration first
+  await loadCalendar();
+});
 }
 // =========================
 // HOURLY CALENDAR (STATE + HELPERS)
@@ -2158,9 +2164,12 @@ for (let d = 0; d < 7; d++) {
   }
 
   try {
-    const resp = await fetch(
-  `/api/get-availability?day=${day.toISOString()}&duration_minutes=${selectedVariant.duration_minutes}`
+    const address = encodeURIComponent(elServiceAddress.value || "");
+
+const resp = await fetch(
+  `/api/get-availability?day=${day.toISOString()}&duration_minutes=${selectedVariant.duration_minutes}&service_address=${address}`
 );
+
 
 const data = await resp.json();
 
