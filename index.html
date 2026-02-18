@@ -1274,6 +1274,89 @@ if (!hasBlockOnThisDay) {
   return getOpenDayAnchors(dayDate, serviceDurationMinutes);
 }
 
+  // =========================
+// NEW: runExposureLogic()
+// Extracted from original pipeline
+// =========================
+function runExposureLogic(validTimes, dayDate, serviceDurationMinutes, expandedBlocks) {
+  if (!validTimes.length) return [];
+
+  const hasBlockOnThisDay = expandedBlocks.some(b => {
+    const blockDay = new Date(b.start);
+    return blockDay.toDateString() === dayDate.toDateString();
+  });
+
+  if (!hasBlockOnThisDay) {
+    return getOpenDayAnchors(dayDate, serviceDurationMinutes);
+  }
+
+  // ---- split into gaps (copied from original logic) ----
+  const gaps = [];
+  let currentGap = [validTimes[0]];
+
+  for (let i = 1; i < validTimes.length; i++) {
+    const prev = validTimes[i - 1];
+    const curr = validTimes[i];
+    const diffMinutes = (curr - prev) / 60000;
+
+    if (diffMinutes === SLOT_MINUTES) currentGap.push(curr);
+    else {
+      gaps.push(currentGap);
+      currentGap = [curr];
+    }
+  }
+  gaps.push(currentGap);
+
+  const exposed = [];
+  const businessClose = getBusinessCloseDate(dayDate);
+
+  for (const gap of gaps) {
+    const gapStart = gap[0];
+    let gapEnd = businessClose;
+
+    for (const b of expandedBlocks) {
+      if (b.start > gapStart && b.start < gapEnd) {
+        gapEnd = b.start;
+      }
+    }
+
+    exposed.push(gapStart);
+
+    const gapLengthMinutes = (gapEnd - gapStart) / 60000;
+
+    if (gapLengthMinutes > 240 && gap.length > 1) {
+      const midpoint = gapStart.getTime() + (gapLengthMinutes / 2) * 60000;
+
+      let closest = null;
+      let smallestDiff = Infinity;
+
+      for (const t of gap) {
+        const diff = Math.abs(t.getTime() - midpoint);
+        if (diff < smallestDiff) {
+          smallestDiff = diff;
+          closest = t;
+        }
+      }
+
+      if (closest && closest.getTime() !== gapStart.getTime()) {
+        exposed.push(closest);
+      }
+    }
+  }
+
+  return exposed;
+}
+// =========================
+// NEW: Convert server slots into exposed slots
+// =========================
+function getExposedStartTimesFromServerSlots(serverSlotsISO, dayDate, duration, expandedBlocks) {
+  if (!serverSlotsISO?.length) return [];
+
+  const validTimes = serverSlotsISO.map(x => new Date(x));
+  return runExposureLogic(validTimes, dayDate, duration, expandedBlocks);
+}
+
+
 
   // Split valid times into continuous gaps
   const gaps = [];
@@ -2170,14 +2253,21 @@ for (let d = 0; d < 7; d++) {
 
   try {
     const resp = await fetch(
-      `/api/get-availability?day=${day.toISOString()}&duration_minutes=${selectedVariant.duration_minutes}`
-    );
+  `/api/get-availability?day=${day.toISOString()}&duration_minutes=${selectedVariant.duration_minutes}`
+);
 
-    const data = await resp.json();
+const data = await resp.json();
 
-    exposedByDay[dayKey] = (data.slots || []).map(x =>
-      new Date(x).getTime()
-    );
+// 🔥 CRITICAL FIX: run exposure logic on server-valid slots
+const exposedSlots = getExposedStartTimesFromServerSlots(
+  data.slots || [],
+  day,
+  selectedVariant.duration_minutes,
+  expandedBlocks
+);
+
+exposedByDay[dayKey] = exposedSlots.map(d => d.getTime());
+
 
   } catch (err) {
     console.error("Availability fetch failed", err);
