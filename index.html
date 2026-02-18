@@ -2175,14 +2175,7 @@ const resp = await fetch(
 const data = await resp.json();
 
 // 🔥 CRITICAL FIX: run exposure logic on server-valid slots
-const exposedSlots = getExposedStartTimesFromServerSlots(
-  data.slots || [],
-  day,
-  selectedVariant.duration_minutes,
-  expandedBlocks
-);
-
-exposedByDay[dayKey] = exposedSlots.map(d => d.getTime());
+exposedByDay[dayKey] = (data.slots || []).map(s => new Date(s).getTime());
 
 
   } catch (err) {
