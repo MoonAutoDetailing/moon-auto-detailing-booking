@@ -63,7 +63,7 @@ async function fetchBookings(timeMin, timeMax) {
 // --------------------
 // Dynamic travel gate
 // --------------------
-async function passesTravelGate(start, end, bookings) {
+async function passesTravelGate(start, end, bookings, candidateAddress) {
 
   const prev = bookings
     .filter(b => new Date(b.scheduled_end) <= start)
@@ -77,7 +77,7 @@ async function passesTravelGate(start, end, bookings) {
   // CASE 1 — FIRST JOB OF DAY (home → candidate)
   // --------------------------------------------------
   if (!prev) {
-    const minsFromHome = await getTravelMinutes(BASE_ADDRESS, bookings.length ? bookings[0].service_address : BASE_ADDRESS);
+    const minsFromHome = await getTravelMinutes(BASE_ADDRESS, candidateAddress);
 
     const dayStart = new Date(start);
     dayStart.setHours(BUSINESS_RULES.openHour,0,0,0);
@@ -90,7 +90,7 @@ async function passesTravelGate(start, end, bookings) {
   // --------------------------------------------------
   if (prev) {
     const prevEnd = new Date(prev.scheduled_end);
-    const minsFromPrev = await getTravelMinutes(prev.service_address, prev.service_address);
+    const minsFromPrev = await getTravelMinutes(prev.service_address, candidateAddress);
 
     if (addMinutes(prevEnd, minsFromPrev) > start) return false;
   }
@@ -100,7 +100,7 @@ async function passesTravelGate(start, end, bookings) {
   // --------------------------------------------------
   if (next) {
     const nextStart = new Date(next.scheduled_start);
-    const minsToNext = await getTravelMinutes(next.service_address, next.service_address);
+    const minsToNext = await getTravelMinutes(candidateAddress, next.service_address);
 
     if (addMinutes(end, minsToNext) > nextStart) return false;
   }
@@ -109,7 +109,7 @@ async function passesTravelGate(start, end, bookings) {
   // CASE 4 — LAST JOB OF DAY (candidate → home)
   // --------------------------------------------------
   if (!next) {
-    const minsToHome = await getTravelMinutes(BASE_ADDRESS, BASE_ADDRESS);
+    const minsToHome = await getTravelMinutes(candidateAddress, BASE_ADDRESS);
 
     const close = new Date(start);
     close.setHours(BUSINESS_RULES.closeHour,0,0,0);
@@ -127,7 +127,7 @@ async function passesTravelGate(start, end, bookings) {
 // --------------------
 export default async function handler(req, res) {
   try {
-    const { day, duration_minutes } = req.query;
+    const { day, duration_minutes, service_address } = req.query;
 
     const dayDate = new Date(day);
     if (!BUSINESS_RULES.allowedWeekdays.includes(dayDate.getDay())) {
@@ -151,7 +151,12 @@ export default async function handler(req, res) {
 
       if (overlap) continue;
 
-      const travelOK = await passesTravelGate(start, end, bookings);
+      const travelOK = await passesTravelGate(
+  start,
+  end,
+  bookings,
+  service_address || BASE_ADDRESS
+);
       if (!travelOK) continue;
 
       valid.push(start.toISOString());
