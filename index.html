@@ -1405,9 +1405,6 @@ function passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, day
     return false;
   }
 
-  const serviceEnd = addMinutes(start, serviceDurationMinutes);
-
-
   // ---- FIND PREVIOUS BOUNDARY ----
   let previousBoundary = businessOpen;
 
