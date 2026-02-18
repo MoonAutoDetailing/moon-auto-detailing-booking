@@ -2387,28 +2387,30 @@ if (toggleBtn && calContainer) {
 // INITIAL APP BOOTSTRAP
 // =========================
 
-await loadServiceVariants();
+async function bootApp() {
+  await loadServiceVariants();
 
-if (RESCHEDULE_MODE) {
-  await loadRescheduleBooking();
-} else {
-  await loadCalendar();
-}
-
-window.initAddressAutocomplete = initAddressAutocomplete;
-
-// Run debug slot test
-selfTestTimeSlots();
-
-// Wait until Google Places loads before attaching autocomplete
-function waitForGooglePlaces() {
-  if (window.google && google.maps?.places) {
-    initAddressAutocomplete();
+  if (RESCHEDULE_MODE) {
+    await loadRescheduleBooking();
   } else {
-    setTimeout(waitForGooglePlaces, 100);
+    await loadCalendar();
   }
+
+  selfTestTimeSlots();
+
+  function waitForGooglePlaces() {
+    if (window.google && google.maps?.places) {
+      initAddressAutocomplete();
+    } else {
+      setTimeout(waitForGooglePlaces, 100);
+    }
+  }
+
+  waitForGooglePlaces();
 }
-waitForGooglePlaces();
+
+bootApp();
+
 
                                                               
   </script>
