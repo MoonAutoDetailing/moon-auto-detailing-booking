@@ -129,6 +129,12 @@ export default async function handler(req, res) {
   try {
     const { day, duration_minutes, service_address } = req.query;
 
+const candidateAddress =
+  service_address && service_address.trim().length > 5
+    ? service_address
+    : BASE_ADDRESS;
+
+
     const dayDate = new Date(day);
     if (!BUSINESS_RULES.allowedWeekdays.includes(dayDate.getDay())) {
       return res.json({ slots: [] });
@@ -151,12 +157,9 @@ export default async function handler(req, res) {
 
       if (overlap) continue;
 
-      const travelOK = await passesTravelGate(
-  start,
-  end,
-  bookings,
-  service_address || BASE_ADDRESS
-);
+      const travelOK = await passesTravelGate(start, end, bookings, candidateAddress);
+      console.log("Travel check:", { candidateAddress });
+        
       if (!travelOK) continue;
 
       valid.push(start.toISOString());
