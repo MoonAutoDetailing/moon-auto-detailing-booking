@@ -21,10 +21,25 @@ async function fetchGoogleRoute(origin, destination) {
       "X-Goog-FieldMask": "routes.duration"
     },
     body: JSON.stringify({
-      origin: { location: { latLng: origin } },
-      destination: { location: { latLng: destination } },
-      travelMode: "DRIVE"
-    })
+  origin: {
+    location: {
+      latLng: {
+        latitude: origin.lat,
+        longitude: origin.lng
+      }
+    }
+  },
+  destination: {
+    location: {
+      latLng: {
+        latitude: destination.lat,
+        longitude: destination.lng
+      }
+    }
+  },
+  travelMode: "DRIVE"
+})
+
   });
 
   // HTTP failure guard
