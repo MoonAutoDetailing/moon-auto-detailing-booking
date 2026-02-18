@@ -72,33 +72,41 @@ async function passesTravelGate(start, end, bookings) {
     .filter(b => new Date(b.scheduled_start) >= end)
     .sort((a,b)=> new Date(a.scheduled_start)-new Date(b.scheduled_start))[0];
 
-  // base -> first job
-  if (!prev) {
-    const mins = await getTravelMinutes(BASE_ADDRESS, next?.service_address ?? BASE_ADDRESS);
-    if (start < addMinutes(start, mins)) return false;
-  }
+  // ⭐ FIRST BOOKING OF DAY — ALWAYS ALLOW
+  if (!prev && !next) return true;
 
-  // prev -> candidate
+  // 1️⃣ Travel from previous booking → candidate
   if (prev) {
-    const mins = await getTravelMinutes(prev.service_address, BASE_ADDRESS);
     const prevEnd = new Date(prev.scheduled_end);
-    if (start < addMinutes(prevEnd, mins)) return false;
+    const travelFromPrev = await getTravelMinutes(prev.service_address, BASE_ADDRESS);
+
+    if (start < addMinutes(prevEnd, travelFromPrev)) {
+      return false;
+    }
   }
 
-  // candidate -> next
+  // 2️⃣ Travel from candidate → next booking
   if (next) {
-    const mins = await getTravelMinutes(BASE_ADDRESS, next.service_address);
-    if (addMinutes(end, mins) > new Date(next.scheduled_start)) return false;
+    const nextStart = new Date(next.scheduled_start);
+    const travelToNext = await getTravelMinutes(BASE_ADDRESS, next.service_address);
+
+    if (addMinutes(end, travelToNext) > nextStart) {
+      return false;
+    }
   }
 
-  // candidate -> base end-of-day
+  // 3️⃣ Must be able to return home before close of business
   const close = new Date(start);
   close.setHours(BUSINESS_RULES.closeHour,0,0,0);
-  const backHome = await getTravelMinutes(BASE_ADDRESS, BASE_ADDRESS);
-  if (addMinutes(end, backHome) > close) return false;
+
+  const travelHome = await getTravelMinutes(BASE_ADDRESS, BASE_ADDRESS);
+  if (addMinutes(end, travelHome) > close) {
+    return false;
+  }
 
   return true;
 }
+
 
 // --------------------
 // Main handler
