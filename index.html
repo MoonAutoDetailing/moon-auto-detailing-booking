@@ -968,7 +968,6 @@ const BUSINESS_RULES = {
 // SCHEDULING CONSTANTS (v1.1)
 // =========================
 const SLOT_MINUTES = 10;              // internal resolution
-const TRAVEL_BUFFER_MINUTES = 30;     // fixed heuristic travel buffer
 const MIN_BOOKABLE_GAP_MINUTES = 120; // anti-fragment rule (2 hours)
 
     
@@ -1138,12 +1137,14 @@ function intervalsOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && aEnd > bStart;
 }
     
-// Expand a booking block to include travel buffer
-function expandBookingBlock(block, bufferMinutes = TRAVEL_BUFFER_MINUTES) {
-  const start = new Date(block.start);
-  const end = addMinutes(new Date(block.end), bufferMinutes);
-  return { start, end };
+// Expand a booking block
+function expandBookingBlock(block) {
+  return {
+    start: new Date(block.start),
+    end: new Date(block.end)
+  };
 }
+
 
 function setRedBlockRadii(el, { roundTop, roundBottom }) {
   const RADIUS = "17px";
@@ -1189,15 +1190,15 @@ function getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlock
 if (start < now) continue;
 
     const end = addMinutes(start, serviceDurationMinutes);
-const endWithTravel = addMinutes(end, TRAVEL_BUFFER_MINUTES);
 
-// service + travel buffer must fit before close
-if (endWithTravel > businessClose) continue;
+// Service must finish before close (travel handled later by server)
+if (end > businessClose) continue;
 
-// candidate must also reserve its travel buffer after service
+// Overlap check against real service time only
 const conflicts = expandedBlocks.some(b =>
-  intervalsOverlap(start, endWithTravel, b.start, b.end)
+  intervalsOverlap(start, end, b.start, b.end)
 );
+
 if (conflicts) continue;
 
     valid.push(start);
@@ -1304,7 +1305,7 @@ for (const start of gap) {
     continue;
   }
 
-  const endWithTravel = addMinutes(start, serviceDurationMinutes + TRAVEL_BUFFER_MINUTES);
+ const serviceEnd = addMinutes(start, serviceDurationMinutes);
 
   let nextBoundary = businessClose;
   for (const b of expandedBlocks) {
@@ -1313,7 +1314,7 @@ for (const start of gap) {
     }
   }
 
-  const remainingAfter = (nextBoundary - endWithTravel) / 60000;
+  const remainingAfter = (nextBoundary - serviceEnd) / 60000;
   const usableAfter = remainingAfter >= MIN_BOOKABLE_GAP_MINUTES ? remainingAfter : 0;
 
   candidates.push({ start, usableAfter });
@@ -1404,10 +1405,8 @@ function passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, day
     return false;
   }
 
-  const endWithTravel = addMinutes(
-    start,
-    serviceDurationMinutes + TRAVEL_BUFFER_MINUTES
-  );
+  const serviceEnd = addMinutes(start, serviceDurationMinutes);
+
 
   // ---- FIND PREVIOUS BOUNDARY ----
   let previousBoundary = businessOpen;
@@ -1428,7 +1427,7 @@ function passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, day
   }
 
   const gapBefore = (start - previousBoundary) / 60000;
-  const gapAfter = (nextBoundary - endWithTravel) / 60000;
+const gapAfter = (nextBoundary - serviceEnd) / 60000;
 
   const isStartOfDay = previousBoundary.getTime() === businessOpen.getTime();
 
