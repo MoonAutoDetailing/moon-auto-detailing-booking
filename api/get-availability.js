@@ -60,24 +60,95 @@ async function fetchBookings(timeMin, timeMax) {
   return data || [];
 }
 
+
+// --------------------
+// Binary search helpers
+// --------------------
+function findPrevBooking(bookingsByEnd, slotStart) {
+  let lo = 0;
+  let hi = bookingsByEnd.length - 1;
+  let result = null;
+
+  while (lo <= hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    const endTime = new Date(bookingsByEnd[mid].scheduled_end).getTime();
+
+    if (endTime <= slotStart) {
+      result = bookingsByEnd[mid];
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+
+  return result;
+}
+
+function findNextBooking(bookingsByStart, slotEnd) {
+  let lo = 0;
+  let hi = bookingsByStart.length - 1;
+  let result = null;
+
+  while (lo <= hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    const startTime = new Date(bookingsByStart[mid].scheduled_start).getTime();
+
+    if (startTime >= slotEnd) {
+      result = bookingsByStart[mid];
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
+  }
+
+  return result;
+}
+
+function pairKey(originAddress, destAddress) {
+  return `${originAddress}||${destAddress}`;
+}
+
+async function precomputeTravelGraph(bookings, candidateAddress, memoryCache) {
+  const travelGraph = new Map();
+  const addressPairs = new Set();
+
+  addressPairs.add(pairKey(BASE_ADDRESS, candidateAddress));
+  addressPairs.add(pairKey(candidateAddress, BASE_ADDRESS));
+
+  for (const booking of bookings) {
+    addressPairs.add(pairKey(BASE_ADDRESS, booking.service_address));
+    addressPairs.add(pairKey(booking.service_address, BASE_ADDRESS));
+    addressPairs.add(pairKey(booking.service_address, candidateAddress));
+    addressPairs.add(pairKey(candidateAddress, booking.service_address));
+  }
+
+  for (let i = 0; i < bookings.length - 1; i++) {
+    const currentAddress = bookings[i].service_address;
+    const nextAddress = bookings[i + 1].service_address;
+    addressPairs.add(pairKey(currentAddress, nextAddress));
+    addressPairs.add(pairKey(nextAddress, currentAddress));
+  }
+
+  await Promise.all(
+    Array.from(addressPairs).map(async (key) => {
+      const [originAddress, destAddress] = key.split("||");
+      const minutes = await getTravelMinutes(originAddress, destAddress, memoryCache);
+      travelGraph.set(key, minutes);
+    })
+  );
+
+  return travelGraph;
+}
+
 // --------------------
 // Dynamic travel gate
 // --------------------
-async function passesTravelGate(start, end, bookings, candidateAddress) {
-
-  const prev = bookings
-    .filter(b => new Date(b.scheduled_end) <= start)
-    .sort((a,b)=> new Date(b.scheduled_end) - new Date(a.scheduled_end))[0];
-
-  const next = bookings
-    .filter(b => new Date(b.scheduled_start) >= end)
-    .sort((a,b)=> new Date(a.scheduled_start) - new Date(b.scheduled_start))[0];
-
+function passesTravelGate(start, end, prev, next, candidateAddress, travelGraph) {
   // --------------------------------------------------
   // CASE 1 — FIRST JOB OF DAY (home → candidate)
   // --------------------------------------------------
   if (!prev) {
-    const minsFromHome = await getTravelMinutes(BASE_ADDRESS, candidateAddress);
+    const minsFromHome = travelGraph.get(pairKey(BASE_ADDRESS, candidateAddress));
 
     const dayStart = new Date(start);
     dayStart.setHours(BUSINESS_RULES.openHour,0,0,0);
@@ -90,7 +161,7 @@ async function passesTravelGate(start, end, bookings, candidateAddress) {
   // --------------------------------------------------
   if (prev) {
     const prevEnd = new Date(prev.scheduled_end);
-    const minsFromPrev = await getTravelMinutes(prev.service_address, candidateAddress);
+    const minsFromPrev = travelGraph.get(pairKey(prev.service_address, candidateAddress));
 
     if (addMinutes(prevEnd, minsFromPrev) > start) return false;
   }
@@ -100,7 +171,7 @@ async function passesTravelGate(start, end, bookings, candidateAddress) {
   // --------------------------------------------------
   if (next) {
     const nextStart = new Date(next.scheduled_start);
-    const minsToNext = await getTravelMinutes(candidateAddress, next.service_address);
+    const minsToNext = travelGraph.get(pairKey(candidateAddress, next.service_address));
 
     if (addMinutes(end, minsToNext) > nextStart) return false;
   }
@@ -109,7 +180,7 @@ async function passesTravelGate(start, end, bookings, candidateAddress) {
   // CASE 4 — LAST JOB OF DAY (candidate → home)
   // --------------------------------------------------
   if (!next) {
-    const minsToHome = await getTravelMinutes(candidateAddress, BASE_ADDRESS);
+    const minsToHome = travelGraph.get(pairKey(candidateAddress, BASE_ADDRESS));
 
     const close = new Date(start);
     close.setHours(BUSINESS_RULES.closeHour,0,0,0);
@@ -145,21 +216,36 @@ const candidateAddress =
       addMinutes(dayDate, 1440).toISOString()
     );
 
+    const bookingsByStart = [...bookings].sort(
+      (a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start)
+    );
+    const bookingsByEnd = [...bookings].sort(
+      (a, b) => new Date(a.scheduled_end) - new Date(b.scheduled_end)
+    );
+
+    const memoryCache = {
+      geocodeCache: new Map(),
+      routeCache: new Map()
+    };
+    const travelGraph = await precomputeTravelGraph(bookingsByStart, candidateAddress, memoryCache);
+
     const slots = generateSlotsForDay(dayDate);
     const valid = [];
+
 
     for (const start of slots) {
       const end = addMinutes(start, Number(duration_minutes));
 
-      const overlap = bookings.some(b =>
+
+      const overlap = bookingsByStart.some(b =>
         intervalsOverlap(start, end, new Date(b.scheduled_start), new Date(b.scheduled_end))
       );
 
       if (overlap) continue;
 
-      const travelOK = await passesTravelGate(start, end, bookings, candidateAddress);
-      console.log("Travel check:", { candidateAddress });
-        
+      const prev = findPrevBooking(bookingsByEnd, start.getTime());
+      const next = findNextBooking(bookingsByStart, end.getTime());
+      const travelOK = passesTravelGate(start, end, prev, next, candidateAddress, travelGraph);
       if (!travelOK) continue;
 
       valid.push(start.toISOString());
