@@ -17,7 +17,8 @@ async function fetchGoogleRoute(origin, destination) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "X-Goog-Api-Key": process.env.GOOGLE_MAPS_API_KEY
+      "X-Goog-Api-Key": process.env.GOOGLE_MAPS_API_KEY,
+      "X-Goog-FieldMask": "routes.duration"
     },
     body: JSON.stringify({
       origin: { location: { latLng: origin } },
@@ -26,10 +27,35 @@ async function fetchGoogleRoute(origin, destination) {
     })
   });
 
+  // HTTP failure guard
+  if (!res.ok) {
+    console.error("ROUTES HTTP ERROR", await res.text());
+    return null;
+  }
+
   const data = await res.json();
-  const seconds = data.routes[0].duration.replace("s", "");
-  return Number(seconds) / 60;
+
+  // ⭐ CRITICAL DEFENSIVE GUARDS
+  if (!data.routes || data.routes.length === 0) {
+    console.warn("ROUTES: no route returned", data);
+    return null;
+  }
+
+  const durationStr = data.routes[0]?.duration;
+  if (!durationStr) {
+    console.warn("ROUTES: duration missing", data.routes[0]);
+    return null;
+  }
+
+  const seconds = Number(durationStr.replace("s", ""));
+  if (!Number.isFinite(seconds)) {
+    console.warn("ROUTES: invalid duration", durationStr);
+    return null;
+  }
+
+  return seconds / 60; // minutes
 }
+
 
 export default async function getTravelMinutes(originAddress, destAddress) {
   const origin = await geocodeAddress(originAddress);
@@ -50,8 +76,16 @@ export default async function getTravelMinutes(originAddress, destAddress) {
   if (cached) return cached.minutes_rounded;
 
   // 2️⃣ Call Google Routes
-  const minutes = await fetchGoogleRoute(origin, dest);
-  const rounded = roundUpTo10(minutes);
+let minutes = await fetchGoogleRoute(origin, dest);
+
+// ⭐ FAIL-SAFE: routing must never break booking
+if (!minutes) {
+  console.warn("Travel routing fallback used");
+  minutes = 30; // safe default travel time
+}
+
+const rounded = roundUpTo10(minutes);
+
 
   // 3️⃣ Save cache
   await supabase.from("travel_cache").upsert({
