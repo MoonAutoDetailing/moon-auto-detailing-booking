@@ -1273,6 +1273,8 @@ const hasBlockOnThisDay = expandedBlocks.some(b => {
 if (!hasBlockOnThisDay) {
   return getOpenDayAnchors(dayDate, serviceDurationMinutes);
 }
+  return runExposureLogic(valid, dayDate, serviceDurationMinutes, expandedBlocks);
+}
 
  // =========================
 // SERVER EXPOSURE PIPELINE
