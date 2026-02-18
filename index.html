@@ -2383,22 +2383,32 @@ if (toggleBtn && calContainer) {
   });
 }
 
-     // =========================
- // INITIAL APP BOOTSTRAP
- // =========================
+    // =========================
+// INITIAL APP BOOTSTRAP
+// =========================
 
- async function bootApp() {
-  await loadServiceVariants();
+await loadServiceVariants();
 
-  if (RESCHEDULE_MODE) {
-    await loadRescheduleBooking();
-  } else {
-    await loadCalendar();
-  }
+if (RESCHEDULE_MODE) {
+  await loadRescheduleBooking();
+} else {
+  await loadCalendar();
 }
 
-bootApp();
+window.initAddressAutocomplete = initAddressAutocomplete;
 
+// Run debug slot test
+selfTestTimeSlots();
+
+// Wait until Google Places loads before attaching autocomplete
+function waitForGooglePlaces() {
+  if (window.google && google.maps?.places) {
+    initAddressAutocomplete();
+  } else {
+    setTimeout(waitForGooglePlaces, 100);
+  }
+}
+waitForGooglePlaces();
 
                                                               
   </script>
