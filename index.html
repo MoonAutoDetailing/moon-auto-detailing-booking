@@ -2387,13 +2387,18 @@ if (toggleBtn && calContainer) {
  // INITIAL APP BOOTSTRAP
  // =========================
 
- await loadServiceVariants();
+ async function bootApp() {
+  await loadServiceVariants();
 
- if (RESCHEDULE_MODE) {
-   await loadRescheduleBooking();
- } else {
-   await loadCalendar();
- }
+  if (RESCHEDULE_MODE) {
+    await loadRescheduleBooking();
+  } else {
+    await loadCalendar();
+  }
+}
+
+bootApp();
+
 
                                                               
   </script>
