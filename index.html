@@ -1010,6 +1010,8 @@ elEnd.addEventListener("paste", (e) => e.preventDefault());
     let variantsCache = []; // {id, vehicle_size, price, duration_minutes, service:{category,level}}
     let selectedVariant = null;
     let isSubmitting = false;
+    let calendarLoading = false;
+    let calendarReloadDebounce = null;
     // =========================
 // =========================
 // RESCHEDULE MODE STATE
@@ -1579,7 +1581,7 @@ recalcEndTimePreview();
 
   if (!selectedVariant) {
     elServiceMeta.textContent = "";
-    await loadCalendar(); // Clear availability if no service
+    scheduleCalendarReload(); // Clear availability if no service
     return;
   }
 
@@ -1592,7 +1594,7 @@ recalcEndTimePreview();
   recalcEndTimePreview();
 
   // 🔥 FORCE CALENDAR REBUILD
-  await loadCalendar();
+  scheduleCalendarReload();
 });
 
 
@@ -1688,7 +1690,6 @@ try {
 
     setStatus("ok", "Please choose your new appointment time.");
     await loadServiceVariants();
-await loadCalendar();
 
   } catch (err) {
     console.error(err);
@@ -2004,6 +2005,10 @@ function initAddressAutocomplete() {
       inputEl.readOnly = true;
 inputEl.classList.add("locked-address");
 
+  if (inputEl.id === "serviceAddress" && selectedVariant) {
+    scheduleCalendarReload();
+  }
+
 });
   }
 
@@ -2012,12 +2017,6 @@ inputEl.classList.add("locked-address");
 
   if (customerAddress) attachAutocomplete(customerAddress);
   if (serviceAddress) attachAutocomplete(serviceAddress);
-  
-  // 🔁 Recalculate availability when service address changes
-elServiceAddress.addEventListener("change", async () => {
-  if (!selectedVariant) return; // need service duration first
-  await loadCalendar();
-});
 }
 // =========================
 // HOURLY CALENDAR (STATE + HELPERS)
@@ -2037,17 +2036,27 @@ function addDays(d, n) {
   return `${h}:00 ${ampm}`;
 }
 
+function scheduleCalendarReload() {
+  if (calendarReloadDebounce) clearTimeout(calendarReloadDebounce);
+  calendarReloadDebounce = setTimeout(() => {
+    loadCalendar();
+  }, 150);
+}
+
 // =========================
 // HOURLY CALENDAR (RENDER)
 // =========================
 async function loadCalendar() {
+  if (calendarLoading) return;
+  calendarLoading = true;
   console.log("loadCalendar started");
 
-  const hourlyCal = document.getElementById("hourlyCal");
-  const calLabel = document.getElementById("calLabel");
-  if (!hourlyCal) return;
+  try {
+    const hourlyCal = document.getElementById("hourlyCal");
+    const calLabel = document.getElementById("calLabel");
+    if (!hourlyCal) return;
 
-  hourlyCal.innerHTML = "";
+    hourlyCal.innerHTML = "";
   const dayLabelColumn = document.getElementById("dayLabelColumn");
 if (dayLabelColumn) dayLabelColumn.innerHTML = "";
 
@@ -2336,6 +2345,9 @@ block.style.left = "10%";
     }
 
     hourlyCal.appendChild(row);
+  }
+  } finally {
+    calendarLoading = false;
   }
 }
 

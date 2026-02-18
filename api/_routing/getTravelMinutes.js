@@ -72,9 +72,17 @@ async function fetchGoogleRoute(origin, destination) {
 }
 
 
-export default async function getTravelMinutes(originAddress, destAddress) {
-  const origin = await geocodeAddress(originAddress);
-  const dest = await geocodeAddress(destAddress);
+export default async function getTravelMinutes(originAddress, destAddress, memoryCache = {}) {
+  const geocodeCache = memoryCache.geocodeCache;
+  const routeCache = memoryCache.routeCache;
+
+  const origin = await geocodeAddress(originAddress, geocodeCache);
+  const dest = await geocodeAddress(destAddress, geocodeCache);
+  const routeKey = `${origin.lat},${origin.lng}|${dest.lat},${dest.lng}`;
+
+  if (routeCache?.has(routeKey)) {
+    return routeCache.get(routeKey);
+  }
 
   // 1️⃣ Check cache
   const { data: cached } = await supabase
@@ -88,7 +96,10 @@ export default async function getTravelMinutes(originAddress, destAddress) {
     })
     .single();
 
-  if (cached) return cached.minutes_rounded;
+  if (cached) {
+    routeCache?.set(routeKey, cached.minutes_rounded);
+    return cached.minutes_rounded;
+  }
 
   // 2️⃣ Call Google Routes
 let minutes = await fetchGoogleRoute(origin, dest);
@@ -110,6 +121,8 @@ const rounded = roundUpTo10(minutes);
     dest_lng: dest.lng,
     minutes_rounded: rounded
   });
+
+  routeCache?.set(routeKey, rounded);
 
   return rounded;
 }

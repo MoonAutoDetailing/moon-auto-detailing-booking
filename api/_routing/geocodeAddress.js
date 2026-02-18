@@ -20,7 +20,11 @@ async function fetchGoogleGeocode(address) {
   return { lat: loc.lat, lng: loc.lng };
 }
 
-export default async function geocodeAddress(address) {
+export default async function geocodeAddress(address, memoryCache) {
+  if (memoryCache?.has(address)) {
+    return memoryCache.get(address);
+  }
+
   // 1️⃣ Check cache first
   const { data: cached } = await supabase
     .from("geocode_cache")
@@ -29,7 +33,9 @@ export default async function geocodeAddress(address) {
     .single();
 
   if (cached) {
-    return { lat: cached.lat, lng: cached.lng };
+    const cachedCoords = { lat: cached.lat, lng: cached.lng };
+    memoryCache?.set(address, cachedCoords);
+    return cachedCoords;
   }
 
   // 2️⃣ Call Google if cache miss
@@ -41,6 +47,8 @@ export default async function geocodeAddress(address) {
     lat: coords.lat,
     lng: coords.lng
   });
+
+  memoryCache?.set(address, coords);
 
   return coords;
 }
