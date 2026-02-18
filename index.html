@@ -2159,25 +2159,35 @@ for (const b of expandedBlocks) {
 
 
   // =========================
-  // BUILD EXPOSED START MAP
-  // =========================
-  const exposedByDay = {};
+  // BUILD EXPOSED START MAP (SERVER SOURCE OF TRUTH)
+const exposedByDay = {};
 
-  for (let d = 0; d < 7; d++) {
+for (let d = 0; d < 7; d++) {
+  const day = addDays(calWeekStart, d);
+  const dayKey = day.toDateString();
 
-    const day = addDays(calWeekStart, d);
-
-    const exposed = selectedVariant
-      ? getExposedStartTimesForDay(
-          day,
-          Number(selectedVariant.duration_minutes),
-          expandedBlocks
-        )
-      : [];
-
-    exposedByDay[day.toDateString()] =
-      exposed.map(x => x.getTime());
+  if (!selectedVariant) {
+    exposedByDay[dayKey] = [];
+    continue;
   }
+
+  try {
+    const resp = await fetch(
+      `/api/get-availability?day=${day.toISOString()}&duration_minutes=${selectedVariant.duration_minutes}`
+    );
+
+    const data = await resp.json();
+
+    exposedByDay[dayKey] = (data.slots || []).map(x =>
+      new Date(x).getTime()
+    );
+
+  } catch (err) {
+    console.error("Availability fetch failed", err);
+    exposedByDay[dayKey] = [];
+  }
+}
+
 
   // =========================
   // RENDER GRID ROWS
