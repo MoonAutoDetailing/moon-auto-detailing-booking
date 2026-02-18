@@ -2383,24 +2383,19 @@ if (toggleBtn && calContainer) {
   });
 }
 
-    // Initial load
-loadServiceVariants().then(async () => {
-  if (RESCHEDULE_MODE) {
-    setStatus("muted", "Loading your booking...");
-    await loadRescheduleBooking();
-  }
-  await loadCalendar();
-});
+     // =========================
+ // INITIAL APP BOOTSTRAP
+ // =========================
 
-    selfTestTimeSlots();
-function waitForGooglePlaces() {
-  if (window.google && google.maps?.places) {
-    initAddressAutocomplete();
-  } else {
-    setTimeout(waitForGooglePlaces, 100);
-  }
-}
-waitForGooglePlaces();                                                                  //PLACES API LINK//
+ await loadServiceVariants();
+
+ if (RESCHEDULE_MODE) {
+   await loadRescheduleBooking();
+ } else {
+   await loadCalendar();
+ }
+
+                                                              
   </script>
     <script
   src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAszMW1x5-TUHnlDkxpms-z4rDfHxDcTyI&libraries=places&loading=async"
