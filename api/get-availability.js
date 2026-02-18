@@ -64,48 +64,62 @@ async function fetchBookings(timeMin, timeMax) {
 // Dynamic travel gate
 // --------------------
 async function passesTravelGate(start, end, bookings) {
+
   const prev = bookings
     .filter(b => new Date(b.scheduled_end) <= start)
-    .sort((a,b)=> new Date(b.scheduled_end)-new Date(a.scheduled_end))[0];
+    .sort((a,b)=> new Date(b.scheduled_end) - new Date(a.scheduled_end))[0];
 
   const next = bookings
     .filter(b => new Date(b.scheduled_start) >= end)
-    .sort((a,b)=> new Date(a.scheduled_start)-new Date(b.scheduled_start))[0];
+    .sort((a,b)=> new Date(a.scheduled_start) - new Date(b.scheduled_start))[0];
 
-  // ⭐ FIRST BOOKING OF DAY — ALWAYS ALLOW
-  if (!prev && !next) return true;
+  // --------------------------------------------------
+  // CASE 1 — FIRST JOB OF DAY (home → candidate)
+  // --------------------------------------------------
+  if (!prev) {
+    const minsFromHome = await getTravelMinutes(BASE_ADDRESS, bookings.length ? bookings[0].service_address : BASE_ADDRESS);
 
-  // 1️⃣ Travel from previous booking → candidate
+    const dayStart = new Date(start);
+    dayStart.setHours(BUSINESS_RULES.openHour,0,0,0);
+
+    if (addMinutes(dayStart, minsFromHome) > start) return false;
+  }
+
+  // --------------------------------------------------
+  // CASE 2 — BETWEEN JOBS (prev job → candidate)
+  // --------------------------------------------------
   if (prev) {
     const prevEnd = new Date(prev.scheduled_end);
-    const travelFromPrev = await getTravelMinutes(prev.service_address, BASE_ADDRESS);
+    const minsFromPrev = await getTravelMinutes(prev.service_address, prev.service_address);
 
-    if (start < addMinutes(prevEnd, travelFromPrev)) {
-      return false;
-    }
+    if (addMinutes(prevEnd, minsFromPrev) > start) return false;
   }
 
-  // 2️⃣ Travel from candidate → next booking
+  // --------------------------------------------------
+  // CASE 3 — BETWEEN JOBS (candidate → next job)
+  // --------------------------------------------------
   if (next) {
     const nextStart = new Date(next.scheduled_start);
-    const travelToNext = await getTravelMinutes(BASE_ADDRESS, next.service_address);
+    const minsToNext = await getTravelMinutes(next.service_address, next.service_address);
 
-    if (addMinutes(end, travelToNext) > nextStart) {
-      return false;
-    }
+    if (addMinutes(end, minsToNext) > nextStart) return false;
   }
 
-  // 3️⃣ Must be able to return home before close of business
-  const close = new Date(start);
-  close.setHours(BUSINESS_RULES.closeHour,0,0,0);
+  // --------------------------------------------------
+  // CASE 4 — LAST JOB OF DAY (candidate → home)
+  // --------------------------------------------------
+  if (!next) {
+    const minsToHome = await getTravelMinutes(BASE_ADDRESS, BASE_ADDRESS);
 
-  const travelHome = await getTravelMinutes(BASE_ADDRESS, BASE_ADDRESS);
-  if (addMinutes(end, travelHome) > close) {
-    return false;
+    const close = new Date(start);
+    close.setHours(BUSINESS_RULES.closeHour,0,0,0);
+
+    if (addMinutes(end, minsToHome) > close) return false;
   }
 
   return true;
 }
+
 
 
 // --------------------
