@@ -2027,6 +2027,45 @@ function addDays(d, n) {
   return `${h}:00 ${ampm}`;
 }
 
+// =========================
+// LOAD SERVICE VARIANTS
+// =========================
+async function loadServiceVariants() {
+  try {
+    const { data, error } = await supabase
+      .from("service_variants")
+      .select("id, name, duration_minutes, vehicle_size")
+      .order("name");
+
+    if (error) throw error;
+
+    console.log("Loaded service variants", data);
+
+    window.serviceVariants = data;
+
+    const vehicleSelect = document.getElementById("vehicleSize");
+    const serviceSelect = document.getElementById("serviceVariant");
+
+    vehicleSelect.addEventListener("change", () => {
+      const size = vehicleSelect.value;
+      serviceSelect.innerHTML = `<option value="">Select service</option>`;
+
+      const filtered = data.filter(v => v.vehicle_size === size);
+
+      filtered.forEach(v => {
+        const opt = document.createElement("option");
+        opt.value = v.id;
+        opt.textContent = `${v.name} (${v.duration_minutes} min)`;
+        serviceSelect.appendChild(opt);
+      });
+
+      serviceSelect.disabled = false;
+    });
+
+  } catch (err) {
+    console.error("Failed loading service variants:", err);
+  }
+}
 
 // =========================
 // HOURLY CALENDAR (RENDER)
