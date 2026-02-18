@@ -1274,10 +1274,10 @@ if (!hasBlockOnThisDay) {
   return getOpenDayAnchors(dayDate, serviceDurationMinutes);
 }
 
-  // =========================
-// NEW: runExposureLogic()
-// Extracted from original pipeline
+ // =========================
+// SERVER EXPOSURE PIPELINE
 // =========================
+
 function runExposureLogic(validTimes, dayDate, serviceDurationMinutes, expandedBlocks) {
   if (!validTimes.length) return [];
 
@@ -1290,7 +1290,6 @@ function runExposureLogic(validTimes, dayDate, serviceDurationMinutes, expandedB
     return getOpenDayAnchors(dayDate, serviceDurationMinutes);
   }
 
-  // ---- split into gaps (copied from original logic) ----
   const gaps = [];
   let currentGap = [validTimes[0]];
 
@@ -1346,107 +1345,11 @@ function runExposureLogic(validTimes, dayDate, serviceDurationMinutes, expandedB
 
   return exposed;
 }
-// =========================
-// NEW: Convert server slots into exposed slots
-// =========================
+
 function getExposedStartTimesFromServerSlots(serverSlotsISO, dayDate, duration, expandedBlocks) {
   if (!serverSlotsISO?.length) return [];
-
   const validTimes = serverSlotsISO.map(x => new Date(x));
   return runExposureLogic(validTimes, dayDate, duration, expandedBlocks);
-}
-
-
-
-  // Split valid times into continuous gaps
-  const gaps = [];
-  let currentGap = [valid[0]];
-
-  for (let i = 1; i < valid.length; i++) {
-    const prev = valid[i - 1];
-    const curr = valid[i];
-    const diffMinutes = (curr - prev) / 60000;
-
-    if (diffMinutes === SLOT_MINUTES) {
-      currentGap.push(curr);
-    } else {
-      gaps.push(currentGap);
-      currentGap = [curr];
-    }
-  }
-  gaps.push(currentGap);
-
-  const exposed = [];
-  const businessClose = getBusinessCloseDate(dayDate);
-  for (const gap of gaps) {
-
-
-  let candidates = [];
-
-for (const start of gap) {
-  if (!passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate)) {
-    continue;
-  }
-
- const serviceEnd = addMinutes(start, serviceDurationMinutes);
-
-  let nextBoundary = businessClose;
-  for (const b of expandedBlocks) {
-    if (b.start > start && b.start < nextBoundary) {
-      nextBoundary = b.start;
-    }
-  }
-
-  const remainingAfter = (nextBoundary - serviceEnd) / 60000;
-  const usableAfter = remainingAfter >= MIN_BOOKABLE_GAP_MINUTES ? remainingAfter : 0;
-
-  candidates.push({ start, usableAfter });
-}
-
-if (!candidates.length) continue;
-
-// Always expose earliest valid time in this gap
-candidates.sort((a, b) => a.start - b.start);
-exposed.push(candidates[0].start);
-
-
-// If gap is large enough, take second-best if meaningful
-const gapStart = gap[0];
-let gapEnd = businessClose;
-
-for (const b of expandedBlocks) {
-  if (b.start > gapStart && b.start < gapEnd) {
-    gapEnd = b.start;
-  }
-}
-
-const gapLengthMinutes = (gapEnd - gapStart) / 60000;
-
-
-if (gapLengthMinutes > 240 && candidates.length > 1) {
-
-  const midpoint = gapStart.getTime() + (gapLengthMinutes / 2) * 60000;
-
-  let closest = null;
-  let smallestDiff = Infinity;
-
-  for (const c of candidates) {
-    const diff = Math.abs(c.start.getTime() - midpoint);
-    if (diff < smallestDiff) {
-      smallestDiff = diff;
-      closest = c.start;
-    }
-  }
-
-  if (closest && closest.getTime() !== candidates[0].start.getTime()) {
-  exposed.push(closest);
-}
-
-} // closes if (gapLengthMinutes > 240 ...)
-
-} // closes for (const gap of gaps)
-
-return exposed;
 }
 
 
