@@ -12,8 +12,9 @@ async function fetchGoogleGeocode(address) {
   const data = await res.json();
 
   if (!data.results?.length) {
-    throw new Error("Geocode failed for address: " + address);
-  }
+  console.error("GEOCODE FAILED", address, data);
+  throw new Error("Geocode failed");
+}
 
   const loc = data.results[0].geometry.location;
   return { lat: loc.lat, lng: loc.lng };
