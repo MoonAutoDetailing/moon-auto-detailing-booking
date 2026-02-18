@@ -2381,34 +2381,40 @@ if (toggleBtn && calContainer) {
   });
 }
 
-    // =========================
+   // =========================
 // INITIAL APP BOOTSTRAP
 // =========================
 
 async function bootApp() {
-  await loadServiceVariants();
+  try {
+    await loadServiceVariants();
 
-  if (RESCHEDULE_MODE) {
-    await loadRescheduleBooking();
-  } else {
-    await loadCalendar();
-  }
-
-  selfTestTimeSlots();
-
-  function waitForGooglePlaces() {
-    if (window.google && google.maps?.places) {
-      initAddressAutocomplete();
+    if (RESCHEDULE_MODE) {
+      await loadRescheduleBooking();
     } else {
-      setTimeout(waitForGooglePlaces, 100);
+      await loadCalendar();
     }
-  }
 
-  waitForGooglePlaces();
+    selfTestTimeSlots();
+
+    // Wait for Google Places to load
+    function waitForGooglePlaces() {
+      if (window.google && google.maps?.places) {
+        initAddressAutocomplete();
+      } else {
+        setTimeout(waitForGooglePlaces, 100);
+      }
+    }
+
+    waitForGooglePlaces();
+
+  } catch (err) {
+    console.error("BOOT FAILURE", err);
+  }
 }
 
 bootApp();
-}
+
                                                               
   </script>
     <script
