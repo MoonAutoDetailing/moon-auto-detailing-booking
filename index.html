@@ -1481,6 +1481,49 @@ function computeScheduledEnd(startLocal, durationMinutes) {
   const pad = n => String(n).padStart(2, "0");
   return `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}T${pad(endDate.getHours())}:${pad(endDate.getMinutes())}`;
 }
+
+  // =========================
+// LOAD SERVICE VARIANTS (PRODUCTION)
+// =========================
+async function loadServiceVariants() {
+  setStatus("muted", "Loading services…");
+  resetServiceDropdown("Loading…");
+
+  const { data, error } = await supabase
+    .from("service_variants")
+    .select("id, vehicle_size, price, duration_minutes, service:services(category, level)")
+    .eq("active", true);
+
+  if (error) {
+    setStatus("bad", "Failed to load services. See log.");
+    log("Service load error", error);
+    resetServiceDropdown("Failed to load services");
+    return;
+  }
+
+  if (!Array.isArray(data)) {
+    setStatus("bad", "Service data shape invalid. See log.");
+    log("Service data not array", data);
+    resetServiceDropdown("Service data invalid");
+    return;
+  }
+
+  variantsCache = data.map(v => ({
+    id: v.id,
+    vehicle_size: normalizeVehicleSize(v.vehicle_size),
+    price: v.price,
+    duration_minutes: v.duration_minutes,
+    service: v.service || null
+  }));
+
+  setStatus("muted", "");
+  log("Loaded service variants", { count: variantsCache.length });
+
+  const vs = normalizeVehicleSize(elVehicleSize.value);
+  if (vs) renderServiceDropdown(vs);
+  else resetServiceDropdown("Select vehicle size first…");
+}
+
     function resetServiceDropdown(msg) {
       elServiceVariant.innerHTML = `<option value="">${msg}</option>`;
       elServiceVariant.disabled = true;
