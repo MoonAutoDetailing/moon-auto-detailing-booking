@@ -494,7 +494,7 @@ function getNextBooking(bookingsByStart, end) {
 // --------------------
 // Main handler
 // --------------------
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   try {
     const { day, duration_minutes, service_address } = req.query;
     console.log("API received address:", service_address);
