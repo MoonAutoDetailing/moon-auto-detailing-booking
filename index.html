@@ -939,6 +939,7 @@ label[for="start"] {
   </div> <!-- page-wrap -->
 
   <script type="module">
+    let availabilityRequestVersion = 0;
 
     // =============================
 // RESCHEDULE MODE DETECTION
@@ -1621,6 +1622,11 @@ async function loadRescheduleBooking() {
   try {
     const res = await fetch(`/api/get-booking-by-token?token=${RESCHEDULE_TOKEN}`);
     const data = await res.json();
+    // Ignore stale responses (race condition fix)
+if (requestVersion !== availabilityRequestVersion) {
+  console.log("Ignoring stale availability response");
+  return;
+}
 
     if (!data?.booking) {
       setStatus("bad", "Invalid or expired reschedule link.");
@@ -2047,6 +2053,9 @@ function scheduleCalendarReload() {
 // HOURLY CALENDAR (RENDER)
 // =========================
 async function loadCalendar() {
+const requestVersion = ++availabilityRequestVersion;
+
+  
   if (calendarLoading) return;
   calendarLoading = true;
   console.log("loadCalendar started");
