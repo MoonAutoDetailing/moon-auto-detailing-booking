@@ -1422,7 +1422,55 @@ if (!isEndOfDay && gapAfter > 0 && gapAfter < MIN_BOOKABLE_GAP_MINUTES) {
 
   return true;
 }
+    
+function passesFragmentRuleTravelAware(
+  start,
+  serviceDurationMinutes,
+  prev,
+  next,
+  candidateAddress,
+  travelGraph,
+  dayDate,
+  openUtcHour,
+  closeUtcHour
+) {
+  const businessOpen = new Date(dayDate);
+  businessOpen.setUTCHours(openUtcHour, 0, 0, 0);
 
+  const businessClose = new Date(dayDate);
+  businessClose.setUTCHours(closeUtcHour, 0, 0, 0);
+
+  const serviceEnd = addMinutes(start, serviceDurationMinutes);
+  if (serviceEnd > businessClose) return false;
+
+  // Adjust boundaries to include travel buffer
+  let previousBoundary = businessOpen;
+  if (prev) {
+    const prevEnd = new Date(prev.scheduled_end);
+    const minsFromPrev =
+      travelGraph.get(pairKey(prev.service_address, candidateAddress)) ?? 0;
+    previousBoundary = addMinutes(prevEnd, minsFromPrev);
+  }
+
+  let nextBoundary = businessClose;
+  if (next) {
+    const nextStart = new Date(next.scheduled_start);
+    const minsToNext =
+      travelGraph.get(pairKey(candidateAddress, next.service_address)) ?? 0;
+    nextBoundary = addMinutes(nextStart, -minsToNext);
+  }
+
+  const gapBefore = (start - previousBoundary) / 60000;
+  const gapAfter = (nextBoundary - serviceEnd) / 60000;
+
+  const isStartOfDay = previousBoundary.getTime() === businessOpen.getTime();
+  if (!isStartOfDay && gapBefore > 0 && gapBefore < MIN_BOOKABLE_GAP_MINUTES) return false;
+
+  const isEndOfDay = nextBoundary.getTime() === businessClose.getTime();
+  if (!isEndOfDay && gapAfter > 0 && gapAfter < MIN_BOOKABLE_GAP_MINUTES) return false;
+
+  return true;
+}
 
 // =========================
 // BUSINESS HOURS VALIDATION
@@ -1963,6 +2011,10 @@ function initAddressAutocomplete() {
 
   function attachAutocomplete(inputEl) {
     const autocomplete = new google.maps.places.Autocomplete(inputEl, options);
+    autocomplete.addListener("place_changed", () => {
+  console.log("Address selected — reloading calendar");
+  loadCalendar();
+});
 
     autocomplete.addListener("place_changed", () => {
   const place = autocomplete.getPlace();
