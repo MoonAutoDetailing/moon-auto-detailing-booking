@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { google } from "googleapis";
 import getTravelMinutes from "./_routing/getTravelMinutes.js";
 
 const supabase = createClient(
@@ -16,6 +17,69 @@ const BUSINESS_RULES = {
 };
 
 const BASE_ADDRESS = process.env.BASE_ADDRESS;
+
+function requireEnv(name) {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing env ${name}`);
+  return v;
+}
+
+async function fetchCalendarBlocks(dayDate) {
+  const dayStart = new Date(dayDate);
+  dayStart.setHours(0,0,0,0);
+  const dayEnd = addMinutes(dayStart, 1440);
+
+  const calendarId = requireEnv("GOOGLE_CALENDAR_ID").trim();
+  const saJson = requireEnv("GOOGLE_SERVICE_ACCOUNT_JSON");
+  const decoded = Buffer.from(saJson, "base64").toString("utf-8");
+  const creds = JSON.parse(decoded);
+
+  const auth = new google.auth.JWT({
+    email: creds.client_email,
+    key: creds.private_key,
+    scopes: ["https://www.googleapis.com/auth/calendar.readonly"],
+  });
+
+  const calendar = google.calendar({ version: "v3", auth });
+
+  const resp = await calendar.events.list({
+    calendarId,
+    timeMin: dayStart.toISOString(),
+    timeMax: dayEnd.toISOString(),
+    singleEvents: true,
+    orderBy: "startTime",
+    showDeleted: false,
+    maxResults: 2500,
+  });
+
+  const items = resp.data.items || [];
+
+  return items
+    .filter((e) => e.status !== "cancelled")
+    .map((e) => {
+      if (e.start?.dateTime && e.end?.dateTime) {
+        return {
+          start: new Date(e.start.dateTime),
+          end: new Date(e.end.dateTime)
+        };
+      }
+
+      if (e.start?.date && e.end?.date) {
+        const d = new Date(e.start.date);
+        const allDayStart = new Date(d);
+        allDayStart.setHours(BUSINESS_RULES.openHour,0,0,0);
+        const allDayEnd = new Date(d);
+        allDayEnd.setHours(BUSINESS_RULES.closeHour,0,0,0);
+        return {
+          start: allDayStart,
+          end: allDayEnd
+        };
+      }
+
+      return null;
+    })
+    .filter(Boolean);
+}
 
 // --------------------
 // Helper utilities
@@ -44,6 +108,155 @@ function generateSlotsForDay(dayDate) {
     slots.push(new Date(t));
   }
   return slots;
+}
+
+function expandBlocksToRanges(blocks) {
+  return (blocks || []).map((b) => ({
+    start: new Date(b.start),
+    end: new Date(b.end)
+  }));
+}
+
+function getBusinessCloseDate(dayDate) {
+  const d = new Date(dayDate);
+  d.setHours(BUSINESS_RULES.closeHour, 0, 0, 0);
+  return d;
+}
+
+function getOpenDayAnchors(dayDate, serviceDurationMinutes) {
+  const anchors = [];
+
+  const base = new Date(dayDate);
+  base.setHours(BUSINESS_RULES.openHour, 0, 0, 0);
+
+  const increments = [0, 150, 300, 450];
+  const businessClose = getBusinessCloseDate(dayDate);
+
+  for (const offset of increments) {
+    const start = addMinutes(base, offset);
+    const serviceEnd = addMinutes(start, serviceDurationMinutes);
+
+    if (serviceEnd <= businessClose) {
+      anchors.push(start);
+    }
+  }
+
+  return anchors;
+}
+
+function runExposureLogic(validTimes, dayDate, serviceDurationMinutes, expandedBlocks) {
+  if (!validTimes.length) return [];
+
+  const hasBlockOnThisDay = expandedBlocks.some(b => {
+    const blockDay = new Date(b.start);
+    return blockDay.toDateString() === dayDate.toDateString();
+  });
+
+  if (!hasBlockOnThisDay) {
+    return getOpenDayAnchors(dayDate, serviceDurationMinutes);
+  }
+
+  const gaps = [];
+  let currentGap = [validTimes[0]];
+
+  for (let i = 1; i < validTimes.length; i++) {
+    const prev = validTimes[i - 1];
+    const curr = validTimes[i];
+    const diffMinutes = (curr - prev) / 60000;
+
+    if (diffMinutes === SLOT_MINUTES) currentGap.push(curr);
+    else {
+      gaps.push(currentGap);
+      currentGap = [curr];
+    }
+  }
+  gaps.push(currentGap);
+
+  const exposed = [];
+  const businessClose = getBusinessCloseDate(dayDate);
+
+  for (const gap of gaps) {
+    const gapStart = gap[0];
+    let gapEnd = businessClose;
+
+    for (const b of expandedBlocks) {
+      if (b.start > gapStart && b.start < gapEnd) {
+        gapEnd = b.start;
+      }
+    }
+
+    exposed.push(gapStart);
+
+    const gapLengthMinutes = (gapEnd - gapStart) / 60000;
+
+    if (gapLengthMinutes > 240 && gap.length > 1) {
+      const midpoint = gapStart.getTime() + (gapLengthMinutes / 2) * 60000;
+
+      let closest = null;
+      let smallestDiff = Infinity;
+
+      for (const t of gap) {
+        const diff = Math.abs(t.getTime() - midpoint);
+        if (diff < smallestDiff) {
+          smallestDiff = diff;
+          closest = t;
+        }
+      }
+
+      if (closest && closest.getTime() !== gapStart.getTime()) {
+        exposed.push(closest);
+      }
+    }
+  }
+
+  return exposed;
+}
+
+function passesFragmentRule(start, serviceDurationMinutes, expandedBlocks, dayDate) {
+  const businessOpen = new Date(dayDate);
+  businessOpen.setHours(BUSINESS_RULES.openHour, 0, 0, 0);
+
+  const serviceClose = new Date(dayDate);
+  serviceClose.setHours(BUSINESS_RULES.closeHour, 0, 0, 0);
+
+  const serviceEnd = addMinutes(start, serviceDurationMinutes);
+
+  if (serviceEnd > serviceClose) {
+    return false;
+  }
+
+  let previousBoundary = businessOpen;
+
+  for (const b of expandedBlocks) {
+    if (b.end <= start && b.end > previousBoundary) {
+      previousBoundary = b.end;
+    }
+  }
+
+  let nextBoundary = serviceClose;
+
+  for (const b of expandedBlocks) {
+    if (b.start >= start && b.start < nextBoundary) {
+      nextBoundary = b.start;
+    }
+  }
+
+  const gapBefore = (start - previousBoundary) / 60000;
+  const gapAfter = (nextBoundary - serviceEnd) / 60000;
+
+  const isStartOfDay = previousBoundary.getTime() === businessOpen.getTime();
+
+  if (!isStartOfDay && gapBefore > 0 && gapBefore < MIN_BOOKABLE_GAP_MINUTES) {
+    return false;
+  }
+
+  const isEndOfDay = nextBoundary.getTime() === serviceClose.getTime();
+
+  if (!isEndOfDay && gapAfter > 0 && gapAfter < MIN_BOOKABLE_GAP_MINUTES) {
+    return false;
+  }
+
+  return true;
 }
 
 // --------------------
@@ -187,12 +400,15 @@ const candidateAddress =
 
     const slots = generateSlotsForDay(dayDate);
     const valid = [];
+    const serviceDurationMinutes = Number(duration_minutes);
+
 
     let prevPointer = -1;
     let nextPointer = 0;
 
     for (const start of slots) {
-      const end = addMinutes(start, Number(duration_minutes));
+      const end = addMinutes(start, serviceDurationMinutes);
+
 
       while (
         prevPointer + 1 < bookingsByEnd.length &&
@@ -219,10 +435,20 @@ const candidateAddress =
       const travelOK = passesTravelGate(start, end, prev, next, candidateAddress, travelGraph);
       if (!travelOK) continue;
 
-      valid.push(start.toISOString());
+      const overlapsCalendarBlock = expandedBlocks.some(b =>
+        intervalsOverlap(start, end, b.start, b.end)
+      );
+      if (overlapsCalendarBlock) continue;
+
+      if (!passesFragmentRule(start, serviceDurationMinutes, expandedBlocks, dayDate)) continue;
+
+      valid.push(start);
     }
 
-    res.json({ slots: valid });
+    const exposed = runExposureLogic(valid, dayDate, serviceDurationMinutes, expandedBlocks)
+      .map(start => start.toISOString());
+
+    res.json({ slots: exposed });
 
   } catch (err) {
     console.error(err);
