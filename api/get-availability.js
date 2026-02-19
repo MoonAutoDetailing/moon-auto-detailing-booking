@@ -391,18 +391,6 @@ function passesTravelGate(start, end, prev, next, candidateAddress, travelGraph)
     if (addMinutes(end, minsToNext) > nextStart) return false;
   }
 
-  // --------------------------------------------------
-  // CASE 4 — LAST JOB OF DAY (candidate → home)
-  // --------------------------------------------------
-  if (!next) {
-    const minsToHome = travelGraph.get(pairKey(candidateAddress, BASE_ADDRESS));
-
-    const close = new Date(start);
-    close.setHours(BUSINESS_RULES.closeHour,0,0,0);
-
-    if (addMinutes(end, minsToHome) > close) return false;
-  }
-
   return true;
 }
 
