@@ -116,11 +116,10 @@ async function fetchCalendarBlocks(dayDate, openUtcHour, closeUtcHour) {
       }
 
       if (e.start?.date && e.end?.date) {
-        const d = new Date(e.start.date);
-        const allDayStart = new Date(d);
+        const allDayStart = new Date(dayDate);
 allDayStart.setUTCHours(openUtcHour, 0, 0, 0);
 
-const allDayEnd = new Date(d);
+const allDayEnd = new Date(dayDate);
 allDayEnd.setUTCHours(closeUtcHour, 0, 0, 0);
 
 return { start: allDayStart, end: allDayEnd };
@@ -382,18 +381,24 @@ async function precomputeTravelGraph(bookings, candidateAddress, memoryCache) {
   addressPairs.add(pairKey(candidateAddress, BASE_ADDRESS));
 
   for (const booking of bookings) {
-    addressPairs.add(pairKey(BASE_ADDRESS, booking.service_address));
-    addressPairs.add(pairKey(booking.service_address, BASE_ADDRESS));
-    addressPairs.add(pairKey(booking.service_address, candidateAddress));
-    addressPairs.add(pairKey(candidateAddress, booking.service_address));
-  }
+  const addr = (booking.service_address || "").trim();
+  if (!addr) continue;
+
+  addressPairs.add(pairKey(BASE_ADDRESS, addr));
+  addressPairs.add(pairKey(addr, BASE_ADDRESS));
+  addressPairs.add(pairKey(addr, candidateAddress));
+  addressPairs.add(pairKey(candidateAddress, addr));
+}
+
 
   for (let i = 0; i < bookings.length - 1; i++) {
-    const currentAddress = bookings[i].service_address;
-    const nextAddress = bookings[i + 1].service_address;
-    addressPairs.add(pairKey(currentAddress, nextAddress));
-    addressPairs.add(pairKey(nextAddress, currentAddress));
-  }
+    const currentAddress = (bookings[i].service_address || "").trim();
+const nextAddress = (bookings[i + 1].service_address || "").trim();
+if (currentAddress && nextAddress) {
+  addressPairs.add(pairKey(currentAddress, nextAddress));
+  addressPairs.add(pairKey(nextAddress, currentAddress));
+}
+
 
   await Promise.all(
     Array.from(addressPairs).map(async (key) => {
@@ -414,7 +419,7 @@ function passesTravelGate(start, end, prev, next, candidateAddress, travelGraph,
   // CASE 1 — FIRST JOB OF DAY (home → candidate)
   // --------------------------------------------------
   if (!prev) {
-    const minsFromHome = travelGraph.get(pairKey(BASE_ADDRESS, candidateAddress));
+    const minsFromHome = travelGraph.get(pairKey(BASE_ADDRESS, candidateAddress)) ?? 0;
 
     const dayStart = new Date(dayDate);
 dayStart.setUTCHours(openUtcHour, 0, 0, 0);
@@ -427,7 +432,7 @@ dayStart.setUTCHours(openUtcHour, 0, 0, 0);
   // --------------------------------------------------
   if (prev) {
     const prevEnd = new Date(prev.scheduled_end);
-    const minsFromPrev = travelGraph.get(pairKey(prev.service_address, candidateAddress));
+    const minsFromPrev = travelGraph.get(pairKey(prev.service_address, candidateAddress)) ?? 0;
 
     if (addMinutes(prevEnd, minsFromPrev) > start) return false;
   }
@@ -437,7 +442,7 @@ dayStart.setUTCHours(openUtcHour, 0, 0, 0);
   // --------------------------------------------------
   if (next) {
     const nextStart = new Date(next.scheduled_start);
-    const minsToNext = travelGraph.get(pairKey(candidateAddress, next.service_address));
+    const minsToNext = travelGraph.get(pairKey(candidateAddress, next.service_address)) ?? 0;
 
     if (addMinutes(end, minsToNext) > nextStart) return false;
   }
