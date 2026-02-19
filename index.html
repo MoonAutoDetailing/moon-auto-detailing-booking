@@ -2009,6 +2009,12 @@ inputEl.classList.add("locked-address");
 
   if (customerAddress) attachAutocomplete(customerAddress);
   if (serviceAddress) attachAutocomplete(serviceAddress);
+    // Also reload when the service address is manually edited/pasted
+  if (serviceAddress) {
+    serviceAddress.addEventListener("input", () => {
+      if (selectedVariant) scheduleCalendarReload();
+    });
+  }
 }
 // =========================
 // HOURLY CALENDAR (STATE + HELPERS)
