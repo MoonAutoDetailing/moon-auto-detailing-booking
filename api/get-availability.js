@@ -17,6 +17,9 @@ const BUSINESS_RULES = {
 };
 
 const BASE_ADDRESS = process.env.BASE_ADDRESS;
+if (!BASE_ADDRESS) {
+  throw new Error("Missing BASE_ADDRESS env variable");
+}
 
 const BUSINESS_TZ = "America/New_York";
 
@@ -525,12 +528,18 @@ if (!BUSINESS_RULES.allowedWeekdays.includes(weekday)) {
       addMinutes(dayDate, 1440).toISOString()
     );
 
-    const bookingsByStart = [...bookings].sort(
-      (a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start)
-    );
-    const bookingsByEnd = [...bookings].sort(
-      (a, b) => new Date(a.scheduled_end) - new Date(b.scheduled_end)
-    );
+    const travelGateBookings = [
+  ...bookings,
+  ...calendarAsBookings
+];
+
+const bookingsByStart = [...travelGateBookings].sort(
+  (a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start)
+);
+
+const bookingsByEnd = [...travelGateBookings].sort(
+  (a, b) => new Date(a.scheduled_end) - new Date(b.scheduled_end)
+);
 
     const calendarBlocks = await fetchCalendarBlocks(dayDate, openUtcHour, closeUtcHour);
 const calendarRanges = expandBlocksToRanges(calendarBlocks);
