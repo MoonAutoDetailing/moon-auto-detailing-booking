@@ -444,11 +444,13 @@ function getNextBooking(bookingsByStart, end) {
 export default async function handler(req, res) {
   try {
     const { day, duration_minutes, service_address } = req.query;
+    console.log("API received address:", service_address);
 
 const candidateAddress =
   service_address && service_address.trim().length > 5
     ? service_address
     : BASE_ADDRESS;
+    console.log("Candidate address used for travel:", candidateAddress);
 
 
     const dayDate = new Date(day);
@@ -473,16 +475,21 @@ const candidateAddress =
       routeCache: new Map()
     };
     const travelGraph = await precomputeTravelGraph(bookingsByStart, candidateAddress, memoryCache);
+    console.log("Travel graph size:", travelGraph.size);
+
     // --------------------
 // Fetch REAL Google Calendar blocks (source of truth)
 const calendarBlocks = await fetchCalendarBlocks(dayDate);
 const calendarRanges = expandBlocksToRanges(calendarBlocks);
 
 // Pending bookings (Supabase) must behave like fixed blocks for shaping rules
-const bookingRanges = bookingsByStart.map((b) => ({
-  start: new Date(b.scheduled_start),
-  end: new Date(b.scheduled_end)
-}));
+const bookingRanges = bookingsByStart
+  .filter(b => b.status === "pending")
+  .map(b => ({
+    start: new Date(b.scheduled_start),
+    end: new Date(b.scheduled_end)
+  }));
+
 
 const expandedBlocksRaw = [...calendarRanges, ...bookingRanges];
 const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw);
@@ -516,10 +523,20 @@ const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw
 
     // Apply TRAVEL FILTER after slot shaping (green blocks only)
     const travelFiltered = shaped.filter((start) => {
+      const allowed = passesTravelGate(start, end, prev, next, candidateAddress, travelGraph);
+
+if (!allowed) {
+  console.log("Slot removed by travel:", start.toISOString());
+}
+
+return allowed;
+
       const end = addMinutes(start, serviceDurationMinutes);
       const prev = getPrevBooking(bookingsByEnd, start);
       const next = getNextBooking(bookingsByStart, end);
       return passesTravelGate(start, end, prev, next, candidateAddress, travelGraph);
+
+    
     });
 
     const exposed = travelFiltered.map(start => start.toISOString());
