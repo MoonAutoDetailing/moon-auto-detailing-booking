@@ -2197,9 +2197,9 @@ const resp = await fetch(
 
 
 const data = await resp.json();
-    // ✅ ignore stale responses (older calendar loads finishing late)
+    // ignore stale responses (older calendar loads finishing late)
 if (requestVersion !== availabilityRequestVersion) {
-  console.log("Ignoring stale availability response", { isoDay, requestVersion, availabilityRequestVersion });
+  console.log("Ignoring stale availability response", { dayParam, requestVersion, availabilityRequestVersion });
   return;
 }
 
