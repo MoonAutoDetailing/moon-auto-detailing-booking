@@ -503,12 +503,6 @@ const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw
     for (const start of slots) {
       const end = addMinutes(start, serviceDurationMinutes);
 
-      const overlap = bookingsByStart.some(b =>
-        intervalsOverlap(start, end, new Date(b.scheduled_start), new Date(b.scheduled_end))
-      );
-
-      if (overlap) continue;
-
       const overlapsCalendarBlock = expandedBlocks.some(b =>
         intervalsOverlap(start, end, b.start, b.end)
       );
