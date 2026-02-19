@@ -2188,6 +2188,7 @@ console.log("Availability request params", {
   duration_minutes: durationMinutes,
   service_address: serviceAddress
 });
+console.log("Sending service address:", serviceAddress);
 
 const resp = await fetch(
   `/api/get-availability?day=${dayParam}&duration_minutes=${durationMinutes}&service_address=${encodeURIComponent(serviceAddress)}`
