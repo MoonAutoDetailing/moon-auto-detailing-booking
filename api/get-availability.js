@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { google } from "googleapis";
 import getTravelMinutes from "./_routing/getTravelMinutes.js";
 
 const supabase = createClient(
@@ -60,6 +61,120 @@ async function fetchBookings(timeMin, timeMax) {
   return data || [];
 }
 
+
+
+function requireEnv(name) {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing env ${name}`);
+  return v;
+}
+
+async function fetchCalendarBlocks(dayDate) {
+  const calendarId = requireEnv("GOOGLE_CALENDAR_ID").trim();
+  const saJson = requireEnv("GOOGLE_SERVICE_ACCOUNT_JSON");
+  const decoded = Buffer.from(saJson, "base64").toString("utf-8");
+  const creds = JSON.parse(decoded);
+
+  const auth = new google.auth.JWT({
+    email: creds.client_email,
+    key: creds.private_key,
+    scopes: ["https://www.googleapis.com/auth/calendar.readonly"],
+  });
+
+  const calendar = google.calendar({ version: "v3", auth });
+
+  const dayStart = new Date(dayDate);
+  dayStart.setHours(0, 0, 0, 0);
+  const dayEnd = addMinutes(dayStart, 1440);
+
+  const resp = await calendar.events.list({
+    calendarId,
+    timeMin: dayStart.toISOString(),
+    timeMax: dayEnd.toISOString(),
+    singleEvents: true,
+    orderBy: "startTime",
+    showDeleted: false,
+    maxResults: 2500,
+  });
+
+  const items = resp.data.items || [];
+
+  return items
+    .filter((e) => e.status !== "cancelled")
+    .map((e) => {
+      if (e.start?.dateTime && e.end?.dateTime) {
+        return {
+          start: e.start.dateTime,
+          end: e.end.dateTime
+        };
+      }
+
+      if (e.start?.date && e.end?.date) {
+        const blockDay = e.start.date;
+        return {
+          start: `${blockDay}T08:00:00`,
+          end: `${blockDay}T18:00:00`
+        };
+      }
+
+      return null;
+    })
+    .filter(Boolean);
+}
+
+function expandBlocksToRanges(blocks) {
+  return blocks.map(block => ({
+    start: new Date(block.start),
+    end: new Date(block.end)
+  }));
+}
+
+function passesFragmentRule(start, serviceDurationMinutes, expandedBlocks, dayDate) {
+  const businessOpen = new Date(dayDate);
+  businessOpen.setHours(BUSINESS_RULES.openHour, 0, 0, 0);
+
+  const serviceClose = new Date(dayDate);
+  serviceClose.setHours(BUSINESS_RULES.closeHour, 0, 0, 0);
+
+  const serviceEnd = addMinutes(start, serviceDurationMinutes);
+
+  if (serviceEnd > serviceClose) {
+    return false;
+  }
+
+  let previousBoundary = businessOpen;
+
+  for (const b of expandedBlocks) {
+    if (b.end <= start && b.end > previousBoundary) {
+      previousBoundary = b.end;
+    }
+  }
+
+  let nextBoundary = serviceClose;
+
+  for (const b of expandedBlocks) {
+    if (b.start >= start && b.start < nextBoundary) {
+      nextBoundary = b.start;
+    }
+  }
+
+  const gapBefore = (start - previousBoundary) / 60000;
+  const gapAfter = (nextBoundary - serviceEnd) / 60000;
+
+  const isStartOfDay = previousBoundary.getTime() === businessOpen.getTime();
+
+  if (!isStartOfDay && gapBefore > 0 && gapBefore < MIN_BOOKABLE_GAP_MINUTES) {
+    return false;
+  }
+
+  const isEndOfDay = nextBoundary.getTime() === serviceClose.getTime();
+
+  if (!isEndOfDay && gapAfter > 0 && gapAfter < MIN_BOOKABLE_GAP_MINUTES) {
+    return false;
+  }
+
+  return true;
+}
 
 // --------------------
 // Binary search helpers
@@ -228,6 +343,8 @@ const candidateAddress =
       routeCache: new Map()
     };
     const travelGraph = await precomputeTravelGraph(bookingsByStart, candidateAddress, memoryCache);
+    const calendarBlocks = await fetchCalendarBlocks(dayDate);
+    const expandedBlocks = expandBlocksToRanges(calendarBlocks);
 
     const slots = generateSlotsForDay(dayDate);
     const valid = [];
@@ -247,6 +364,13 @@ const candidateAddress =
       const next = findNextBooking(bookingsByStart, end.getTime());
       const travelOK = passesTravelGate(start, end, prev, next, candidateAddress, travelGraph);
       if (!travelOK) continue;
+
+      const overlapsCalendarBlock = expandedBlocks.some(b =>
+        intervalsOverlap(start, end, b.start, b.end)
+      );
+      if (overlapsCalendarBlock) continue;
+
+      if (!passesFragmentRule(start, Number(duration_minutes), expandedBlocks, dayDate)) continue;
 
       valid.push(start.toISOString());
     }

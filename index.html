@@ -2196,23 +2196,7 @@ const resp = await fetch(
 
 const data = await resp.json();
 
-const exposedStarts = getExposedStartTimesFromServerSlots(
-  data.slots || [],
-  day,
-  durationMinutes,
-  expandedBlocks
-);
-
-exposedByDay[dayKey] = exposedStarts
-  .filter(start => {
-    const end = addMinutes(start, durationMinutes);
-    const overlapsExpanded = expandedBlocks.some(b =>
-      intervalsOverlap(start, end, b.start, b.end)
-    );
-    if (overlapsExpanded) return false;
-    return passesFragmentFilter(start, durationMinutes, expandedBlocks, day);
-  })
-  .map(s => s.getTime());
+exposedByDay[dayKey] = (data.slots || []).map(s => new Date(s).getTime());
 
 
   } catch (err) {
