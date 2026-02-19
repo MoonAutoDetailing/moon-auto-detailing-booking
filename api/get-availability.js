@@ -1,6 +1,6 @@
-const { createClient } = require("@supabase/supabase-js");
-const { google } = require("googleapis");
-const getTravelMinutes = require("./_routing/getTravelMinutes");
+import { createClient } from "@supabase/supabase-js";
+import { google } from "googleapis";
+import getTravelMinutes from "./_routing/getTravelMinutes.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -86,10 +86,10 @@ async function fetchCalendarBlocks(dayDate, openUtcHour, closeUtcHour) {
   const creds = JSON.parse(decoded);
 
   const auth = new google.auth.JWT({
-    email: creds.client_email,
-    key: creds.private_key,
-    scopes: ["https://www.googleapis.com/auth/calendar.readonly"],
-  });
+  email: creds.client_email,
+  key: creds.private_key.replace(/\\n/g, "\n"),
+  scopes: ["https://www.googleapis.com/auth/calendar.readonly"],
+});
 
   const calendar = google.calendar({ version: "v3", auth });
 
@@ -371,6 +371,9 @@ function pairKey(originAddress, destAddress) {
 }
 
 async function precomputeTravelGraph(bookings, candidateAddress, memoryCache) {
+  bookings.sort(
+  (a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start)
+);
   const travelGraph = new Map();
   const addressPairs = new Set();
 
@@ -573,6 +576,9 @@ const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw
     const slots = generateSlotsForDay(dayDate, openUtcHour, closeUtcHour);
     const valid = [];
     const serviceDurationMinutes = Number(duration_minutes);
+    if (!Number.isFinite(serviceDurationMinutes) || serviceDurationMinutes <= 0) {
+  return res.json({ slots: [] });
+}
 
     for (const start of slots) {
       const end = addMinutes(start, serviceDurationMinutes);
