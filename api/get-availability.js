@@ -395,6 +395,48 @@ function passesTravelGate(start, end, prev, next, candidateAddress, travelGraph)
 }
 
 
+function getPrevBooking(bookingsByEnd, start) {
+  if (!bookingsByEnd || !bookingsByEnd.length) return null;
+  const t = start.getTime();
+  let lo = 0;
+  let hi = bookingsByEnd.length - 1;
+  let ans = -1;
+
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const midEnd = new Date(bookingsByEnd[mid].scheduled_end).getTime();
+    if (midEnd <= t) {
+      ans = mid;
+      lo = mid + 1;
+    } else {
+      hi = mid - 1;
+    }
+  }
+
+  return ans >= 0 ? bookingsByEnd[ans] : null;
+}
+
+function getNextBooking(bookingsByStart, end) {
+  if (!bookingsByStart || !bookingsByStart.length) return null;
+  const t = end.getTime();
+  let lo = 0;
+  let hi = bookingsByStart.length - 1;
+  let ans = bookingsByStart.length;
+
+  while (lo <= hi) {
+    const mid = (lo + hi) >> 1;
+    const midStart = new Date(bookingsByStart[mid].scheduled_start).getTime();
+    if (midStart >= t) {
+      ans = mid;
+      hi = mid - 1;
+    } else {
+      lo = mid + 1;
+    }
+  }
+
+  return ans < bookingsByStart.length ? bookingsByStart[ans] : null;
+}
+
 
 // --------------------
 // Main handler
@@ -434,7 +476,15 @@ const candidateAddress =
     // --------------------
 // Fetch REAL Google Calendar blocks (source of truth)
 const calendarBlocks = await fetchCalendarBlocks(dayDate);
-const expandedBlocksRaw = expandBlocksToRanges(calendarBlocks);
+const calendarRanges = expandBlocksToRanges(calendarBlocks);
+
+// Pending bookings (Supabase) must behave like fixed blocks for shaping rules
+const bookingRanges = bookingsByStart.map((b) => ({
+  start: new Date(b.scheduled_start),
+  end: new Date(b.scheduled_end)
+}));
+
+const expandedBlocksRaw = [...calendarRanges, ...bookingRanges];
 const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw);
 
 
@@ -443,38 +493,14 @@ const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw
     const valid = [];
     const serviceDurationMinutes = Number(duration_minutes);
 
-
-    let prevPointer = -1;
-    let nextPointer = 0;
-
     for (const start of slots) {
       const end = addMinutes(start, serviceDurationMinutes);
-
-
-      while (
-        prevPointer + 1 < bookingsByEnd.length &&
-        new Date(bookingsByEnd[prevPointer + 1].scheduled_end) <= start
-      ) {
-        prevPointer++;
-      }
-
-      while (
-        nextPointer < bookingsByStart.length &&
-        new Date(bookingsByStart[nextPointer].scheduled_start) < end
-      ) {
-        nextPointer++;
-      }
 
       const overlap = bookingsByStart.some(b =>
         intervalsOverlap(start, end, new Date(b.scheduled_start), new Date(b.scheduled_end))
       );
 
       if (overlap) continue;
-
-      const prev = prevPointer >= 0 ? bookingsByEnd[prevPointer] : null;
-      const next = nextPointer < bookingsByStart.length ? bookingsByStart[nextPointer] : null;
-      const travelOK = passesTravelGate(start, end, prev, next, candidateAddress, travelGraph);
-      if (!travelOK) continue;
 
       const overlapsCalendarBlock = expandedBlocks.some(b =>
         intervalsOverlap(start, end, b.start, b.end)
@@ -486,8 +512,17 @@ const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw
       valid.push(start);
     }
 
-    const exposed = runExposureLogic(valid, dayDate, serviceDurationMinutes, expandedBlocks)
-      .map(start => start.toISOString());
+    const shaped = runExposureLogic(valid, dayDate, serviceDurationMinutes, expandedBlocks);
+
+    // Apply TRAVEL FILTER after slot shaping (green blocks only)
+    const travelFiltered = shaped.filter((start) => {
+      const end = addMinutes(start, serviceDurationMinutes);
+      const prev = getPrevBooking(bookingsByEnd, start);
+      const next = getNextBooking(bookingsByStart, end);
+      return passesTravelGate(start, end, prev, next, candidateAddress, travelGraph);
+    });
+
+    const exposed = travelFiltered.map(start => start.toISOString());
 
     res.json({ slots: exposed });
 
