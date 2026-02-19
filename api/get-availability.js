@@ -397,6 +397,21 @@ const candidateAddress =
       routeCache: new Map()
     };
     const travelGraph = await precomputeTravelGraph(bookingsByStart, candidateAddress, memoryCache);
+    // --------------------
+// Fetch Google Calendar blocks (admin blocks / events)
+// --------------------
+const { data: calendarBlocks } = await supabase
+  .from("calendar_blocks")
+  .select("start_time,end_time")
+  .gte("start_time", dayDate.toISOString())
+  .lte("start_time", addMinutes(dayDate, 1440).toISOString());
+
+// Convert DB rows → Date ranges used by slot engine
+const expandedBlocks = (calendarBlocks || []).map(b => ({
+  start: new Date(b.start_time),
+  end: new Date(b.end_time)
+}));
+
 
     const slots = generateSlotsForDay(dayDate);
     const valid = [];
