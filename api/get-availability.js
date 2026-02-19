@@ -1,6 +1,6 @@
-import { createClient } from "@supabase/supabase-js";
-import { google } from "googleapis";
-import getTravelMinutes from "./_routing/getTravelMinutes.js";
+const { createClient } = require("@supabase/supabase-js");
+const { google } = require("googleapis");
+const getTravelMinutes = require("./_routing/getTravelMinutes");
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -374,34 +374,36 @@ async function precomputeTravelGraph(bookings, candidateAddress, memoryCache) {
   const travelGraph = new Map();
   const addressPairs = new Set();
 
+  // Always include home <-> candidate
   addressPairs.add(pairKey(BASE_ADDRESS, candidateAddress));
   addressPairs.add(pairKey(candidateAddress, BASE_ADDRESS));
 
+  // Include home/candidate <-> each booking address
   for (const booking of bookings) {
-  const addr = (booking.service_address || "").trim();
-  if (!addr) continue;
+    const addr = (booking.service_address || "").trim();
+    if (!addr) continue;
 
-  addressPairs.add(pairKey(BASE_ADDRESS, addr));
-  addressPairs.add(pairKey(addr, BASE_ADDRESS));
-  addressPairs.add(pairKey(addr, candidateAddress));
-  addressPairs.add(pairKey(candidateAddress, addr));
-}
+    addressPairs.add(pairKey(BASE_ADDRESS, addr));
+    addressPairs.add(pairKey(addr, BASE_ADDRESS));
+    addressPairs.add(pairKey(addr, candidateAddress));
+    addressPairs.add(pairKey(candidateAddress, addr));
+  }
 
-
+  // Include consecutive booking <-> booking pairs (optional)
   for (let i = 0; i < bookings.length - 1; i++) {
     const currentAddress = (bookings[i].service_address || "").trim();
-const nextAddress = (bookings[i + 1].service_address || "").trim();
-if (currentAddress && nextAddress) {
-  addressPairs.add(pairKey(currentAddress, nextAddress));
-  addressPairs.add(pairKey(nextAddress, currentAddress));
-}
-
+    const nextAddress = (bookings[i + 1].service_address || "").trim();
+    if (currentAddress && nextAddress) {
+      addressPairs.add(pairKey(currentAddress, nextAddress));
+      addressPairs.add(pairKey(nextAddress, currentAddress));
+    }
+  }
 
   await Promise.all(
     Array.from(addressPairs).map(async (key) => {
       const [originAddress, destAddress] = key.split("||");
       const minutes = await getTravelMinutes(originAddress, destAddress, memoryCache);
-      travelGraph.set(key, minutes);
+      travelGraph.set(key, minutes ?? 0);
     })
   );
 
@@ -536,25 +538,22 @@ const calendarAsBookings = calendarRanges.map(b => ({
   service_address: BASE_ADDRESS
 }));
 
-const memoryCache = { ... }
+const memoryCache = {
+  geocodeCache: new Map(),
+  routeCache: new Map()
+};
 
 const travelBookings = [
   ...bookingsByStart,
   ...calendarAsBookings
 ];
 
-const travelGraph = await precomputeTravelGraph(travelBookings, candidateAddress, memoryCache);
+const travelGraph = await precomputeTravelGraph(
+  travelBookings,
+  candidateAddress,
+  memoryCache
+);
 
-    const memoryCache = {
-      geocodeCache: new Map(),
-      routeCache: new Map()
-    };
-    const travelBookings = [
-  ...bookingsByStart,
-  ...calendarAsBookings
-];
-
-const travelGraph = await precomputeTravelGraph(travelBookings, candidateAddress, memoryCache);
 
     console.log("Travel graph size:", travelGraph.size);
 
