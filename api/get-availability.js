@@ -513,10 +513,8 @@ const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw
       valid.push(start);
     }
 
-    const shaped = runExposureLogic(valid, dayDate, serviceDurationMinutes, expandedBlocks);
-
-    // Apply TRAVEL FILTER after slot shaping (green blocks only)
-    const travelFiltered = shaped.filter((start) => {
+    // 1) Apply TRAVEL FILTER to the full valid set (so green blocks can "shift")
+const validAfterTravel = valid.filter((start) => {
   const end = addMinutes(start, serviceDurationMinutes);
   const prev = getPrevBooking(bookingsByEnd, start);
   const next = getNextBooking(bookingsByStart, end);
@@ -531,16 +529,36 @@ const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw
   );
 
   if (!allowed) {
-    console.log("Slot removed by travel:", start.toISOString());
+    console.log("VALID slot removed by travel:", start.toISOString(), {
+      prevEnd: prev?.scheduled_end,
+      nextStart: next?.scheduled_start,
+      candidateAddress
+    });
   }
 
   return allowed;
 });
 
+// 2) Now run your shaping engine on the travel-valid set
+const shaped = runExposureLogic(
+  validAfterTravel,
+  dayDate,
+  serviceDurationMinutes,
+  expandedBlocks
+);
 
-    const exposed = travelFiltered.map(start => start.toISOString());
+const exposed = shaped.map((start) => start.toISOString());
 
-    res.json({ slots: exposed });
+// IMPORTANT: log BEFORE responding (your current log is after res.json)
+console.log("DEBUG SERVER FINAL SLOTS", {
+  day,
+  service_address: candidateAddress,
+  count: exposed.length,
+  slots: exposed
+});
+
+return res.json({ slots: exposed });
+
 
   } catch (err) {
     console.error(err);
