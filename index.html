@@ -1351,15 +1351,6 @@ function runExposureLogic(validTimes, dayDate, serviceDurationMinutes, expandedB
   return exposed;
 }
 
-function getExposedStartTimesFromServerSlots(serverSlotsISO, dayDate, duration, expandedBlocks) {
-  if (!serverSlotsISO?.length) return [];
-  const validTimes = serverSlotsISO.map(x => new Date(x));
-  return runExposureLogic(validTimes, dayDate, duration, expandedBlocks);
-}
-
-
-
-
 function selfTestExposedStarts(dayDate, serviceDurationMinutes, expandedBlocks) {
   if (!DEBUG) return;
 
@@ -1622,12 +1613,7 @@ async function loadRescheduleBooking() {
   try {
     const res = await fetch(`/api/get-booking-by-token?token=${RESCHEDULE_TOKEN}`);
     const data = await res.json();
-    // Ignore stale responses (race condition fix)
-if (requestVersion !== availabilityRequestVersion) {
-  console.log("Ignoring stale availability response");
-  return;
-}
-
+    
     if (!data?.booking) {
       setStatus("bad", "Invalid or expired reschedule link.");
       return;
@@ -2205,16 +2191,25 @@ const resp = await fetch(
 
 
 const data = await resp.json();
+    // ✅ ignore stale responses (older calendar loads finishing late)
+if (requestVersion !== availabilityRequestVersion) {
+  console.log("Ignoring stale availability response", { isoDay, requestVersion, availabilityRequestVersion });
+  return;
+}
 
 exposedByDay[dayKey] = (data.slots || []).map(s => new Date(s).getTime());
-
-
-  } catch (err) {
+} 
+  
+  catch (err) {
     console.error("Availability fetch failed", err);
     exposedByDay[dayKey] = [];
   }
 }
-
+    // ✅ prevent stale render after full availability load
+if (requestVersion !== availabilityRequestVersion) {
+  console.log("Ignoring stale availability render", { requestVersion, availabilityRequestVersion });
+  return;
+}
 
   // =========================
   // RENDER GRID ROWS
