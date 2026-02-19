@@ -523,21 +523,26 @@ const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw
 
     // Apply TRAVEL FILTER after slot shaping (green blocks only)
     const travelFiltered = shaped.filter((start) => {
-      const allowed = passesTravelGate(start, end, prev, next, candidateAddress, travelGraph);
+  const end = addMinutes(start, serviceDurationMinutes);
+  const prev = getPrevBooking(bookingsByEnd, start);
+  const next = getNextBooking(bookingsByStart, end);
 
-if (!allowed) {
-  console.log("Slot removed by travel:", start.toISOString());
-}
+  const allowed = passesTravelGate(
+    start,
+    end,
+    prev,
+    next,
+    candidateAddress,
+    travelGraph
+  );
 
-return allowed;
+  if (!allowed) {
+    console.log("Slot removed by travel:", start.toISOString());
+  }
 
-      const end = addMinutes(start, serviceDurationMinutes);
-      const prev = getPrevBooking(bookingsByEnd, start);
-      const next = getNextBooking(bookingsByStart, end);
-      return passesTravelGate(start, end, prev, next, candidateAddress, travelGraph);
+  return allowed;
+});
 
-    
-    });
 
     const exposed = travelFiltered.map(start => start.toISOString());
 
