@@ -2097,10 +2097,6 @@ function scheduleCalendarReload() {
 // HOURLY CALENDAR (RENDER)
 // =========================
 async function loadCalendar() {
-const requestVersion = ++availabilityRequestVersion;
-
-  
-  if (calendarLoading) return;
   calendarLoading = true;
   console.log("loadCalendar started");
 
@@ -2252,7 +2248,7 @@ const data = await resp.json();
     // ignore stale responses (older calendar loads finishing late)
 if (requestVersion !== availabilityRequestVersion) {
   console.log("Ignoring stale availability response", { dayParam, requestVersion, availabilityRequestVersion });
-  return;
+  continue;
 }
 
 exposedByDay[dayKey] = (data.slots || []).map(s => new Date(s).getTime());
