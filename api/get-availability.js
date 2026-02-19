@@ -528,7 +528,17 @@ if (!BUSINESS_RULES.allowedWeekdays.includes(weekday)) {
       addMinutes(dayDate, 1440).toISOString()
     );
 
-    const travelGateBookings = [
+    const calendarBlocks = await fetchCalendarBlocks(dayDate, openUtcHour, closeUtcHour);
+const calendarRanges = expandBlocksToRanges(calendarBlocks);
+
+const calendarAsBookings = calendarRanges.map(b => ({
+  scheduled_start: b.start.toISOString(),
+  scheduled_end: b.end.toISOString(),
+  service_address: BASE_ADDRESS
+}));
+
+    // Merge Supabase bookings + Google calendar blocks for travel gate
+const travelGateBookings = [
   ...bookings,
   ...calendarAsBookings
 ];
@@ -540,15 +550,6 @@ const bookingsByStart = [...travelGateBookings].sort(
 const bookingsByEnd = [...travelGateBookings].sort(
   (a, b) => new Date(a.scheduled_end) - new Date(b.scheduled_end)
 );
-
-    const calendarBlocks = await fetchCalendarBlocks(dayDate, openUtcHour, closeUtcHour);
-const calendarRanges = expandBlocksToRanges(calendarBlocks);
-
-const calendarAsBookings = calendarRanges.map(b => ({
-  scheduled_start: b.start.toISOString(),
-  scheduled_end: b.end.toISOString(),
-  service_address: BASE_ADDRESS
-}));
 
 const memoryCache = {
   geocodeCache: new Map(),
