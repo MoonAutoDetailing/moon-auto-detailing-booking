@@ -2097,6 +2097,7 @@ function scheduleCalendarReload() {
 // HOURLY CALENDAR (RENDER)
 // =========================
 async function loadCalendar() {
+  const requestVersion = ++availabilityRequestVersion;
   calendarLoading = true;
   console.log("loadCalendar started");
 
@@ -2242,9 +2243,18 @@ console.log("Sending service address:", serviceAddress);
 const resp = await fetch(
   `/api/get-availability?day=${dayParam}&duration_minutes=${durationMinutes}&service_address=${encodeURIComponent(serviceAddress)}`
 );
-
-
 const data = await resp.json();
+
+    // 🚨 CRITICAL: ignore stale responses
+if (requestVersion !== availabilityRequestVersion) {
+  console.log("Ignoring stale availability response", {
+    dayParam,
+    requestVersion,
+    availabilityRequestVersion
+  });
+  continue;
+}
+    
     // ignore stale responses (older calendar loads finishing late)
 if (requestVersion !== availabilityRequestVersion) {
   console.log("Ignoring stale availability response", { dayParam, requestVersion, availabilityRequestVersion });
@@ -2264,7 +2274,15 @@ if (requestVersion !== availabilityRequestVersion) {
   console.log("Ignoring stale availability render", { requestVersion, availabilityRequestVersion });
   return;
 }
-
+    // 🚨 FINAL STALE GUARD — stop outdated calendar render
+if (requestVersion !== availabilityRequestVersion) {
+  console.log("Ignoring stale availability render", {
+    requestVersion,
+    availabilityRequestVersion
+  });
+  return;
+}
+   
   // =========================
   // RENDER GRID ROWS
   // =========================
