@@ -76,7 +76,7 @@ function requireEnv(name) {
   return v;
 }
 
-async function fetchCalendarBlocks(dayDate) {
+async function fetchCalendarBlocks(dayDate, openUtcHour, closeUtcHour) {
   const dayStart = new Date(dayDate);  
   const dayEnd = addMinutes(dayStart, 1440);
 
@@ -118,13 +118,13 @@ async function fetchCalendarBlocks(dayDate) {
       if (e.start?.date && e.end?.date) {
         const d = new Date(e.start.date);
         const allDayStart = new Date(d);
-        start.setUTCHours(openUtcHour, 0, 0, 0);
-        const allDayEnd = new Date(d);
-        end.setUTCHours(closeUtcHour, 0, 0, 0);
-        return {
-          start: allDayStart,
-          end: allDayEnd
-        };
+allDayStart.setUTCHours(openUtcHour, 0, 0, 0);
+
+const allDayEnd = new Date(d);
+allDayEnd.setUTCHours(closeUtcHour, 0, 0, 0);
+
+return { start: allDayStart, end: allDayEnd };
+
       }
 
       return null;
@@ -147,7 +147,7 @@ function roundUpToSlot(date) {
   return new Date(Math.ceil(ms / slotMs) * slotMs);
 }
 
-function generateSlotsForDay(dayDate) {
+function generateSlotsForDay(dayDate, openUtcHour, closeUtcHour) {
   const start = new Date(dayDate);
   start.setUTCHours(openUtcHour, 0, 0, 0);
 
@@ -241,7 +241,7 @@ function getOpenDayAnchors(dayDate, serviceDurationMinutes, openUtcHour, closeUt
   return anchors;
 }
 
-function runExposureLogic(validTimes, dayDate, serviceDurationMinutes, expandedBlocks) {
+function runExposureLogic(validTimes, dayDate, serviceDurationMinutes, expandedBlocks, openUtcHour, closeUtcHour) {
   if (!validTimes.length) return [];
 
   const hasBlockOnThisDay = expandedBlocks.some(b => {
@@ -250,7 +250,7 @@ function runExposureLogic(validTimes, dayDate, serviceDurationMinutes, expandedB
   });
 
   if (!hasBlockOnThisDay) {
-    return getOpenDayAnchors(dayDate, serviceDurationMinutes);
+    return getOpenDayAnchors(dayDate, serviceDurationMinutes, openUtcHour, closeUtcHour);
   }
 
   const gaps = [];
@@ -409,15 +409,15 @@ async function precomputeTravelGraph(bookings, candidateAddress, memoryCache) {
 // --------------------
 // Dynamic travel gate
 // --------------------
-function passesTravelGate(start, end, prev, next, candidateAddress, travelGraph) {
+function passesTravelGate(start, end, prev, next, candidateAddress, travelGraph, dayDate, openUtcHour) {
   // --------------------------------------------------
   // CASE 1 — FIRST JOB OF DAY (home → candidate)
   // --------------------------------------------------
   if (!prev) {
     const minsFromHome = travelGraph.get(pairKey(BASE_ADDRESS, candidateAddress));
 
-    const dayStart = new Date(start);
-    dayStart.setHours(BUSINESS_RULES.openHour,0,0,0);
+    const dayStart = new Date(dayDate);
+dayStart.setUTCHours(openUtcHour, 0, 0, 0);
 
     if (addMinutes(dayStart, minsFromHome) > start) return false;
   }
@@ -534,7 +534,7 @@ if (!BUSINESS_RULES.allowedWeekdays.includes(weekday)) {
 
     // --------------------
 // Fetch REAL Google Calendar blocks (source of truth)
-const calendarBlocks = await fetchCalendarBlocks(dayDate);
+const calendarBlocks = await fetchCalendarBlocks(dayDate, openUtcHour, closeUtcHour);
 const calendarRanges = expandBlocksToRanges(calendarBlocks);
 
 // Pending bookings (Supabase) must behave like fixed blocks for shaping rules
@@ -573,13 +573,15 @@ const validAfterTravel = valid.filter((start) => {
   const next = getNextBooking(bookingsByStart, end);
 
   const allowed = passesTravelGate(
-    start,
-    end,
-    prev,
-    next,
-    candidateAddress,
-    travelGraph
-  );
+  start,
+  end,
+  prev,
+  next,
+  candidateAddress,
+  travelGraph,
+  dayDate,
+  openUtcHour
+);
 
   if (!allowed) {
     console.log("VALID slot removed by travel:", start.toISOString(), {
@@ -597,7 +599,9 @@ const shaped = runExposureLogic(
   validAfterTravel,
   dayDate,
   serviceDurationMinutes,
-  expandedBlocks
+  expandedBlocks,
+  openUtcHour,
+  closeUtcHour
 );
 
 const exposed = shaped.map((start) => start.toISOString());
