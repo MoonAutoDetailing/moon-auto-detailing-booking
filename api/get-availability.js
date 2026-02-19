@@ -273,50 +273,6 @@ async function fetchBookings(timeMin, timeMax) {
   return data || [];
 }
 
-
-// --------------------
-// Binary search helpers
-// --------------------
-function findPrevBooking(bookingsByEnd, slotStart) {
-  let lo = 0;
-  let hi = bookingsByEnd.length - 1;
-  let result = null;
-
-  while (lo <= hi) {
-    const mid = Math.floor((lo + hi) / 2);
-    const endTime = new Date(bookingsByEnd[mid].scheduled_end).getTime();
-
-    if (endTime <= slotStart) {
-      result = bookingsByEnd[mid];
-      lo = mid + 1;
-    } else {
-      hi = mid - 1;
-    }
-  }
-
-  return result;
-}
-
-function findNextBooking(bookingsByStart, slotEnd) {
-  let lo = 0;
-  let hi = bookingsByStart.length - 1;
-  let result = null;
-
-  while (lo <= hi) {
-    const mid = Math.floor((lo + hi) / 2);
-    const startTime = new Date(bookingsByStart[mid].scheduled_start).getTime();
-
-    if (startTime >= slotEnd) {
-      result = bookingsByStart[mid];
-      hi = mid - 1;
-    } else {
-      lo = mid + 1;
-    }
-  }
-
-  return result;
-}
-
 function pairKey(originAddress, destAddress) {
   return `${originAddress}||${destAddress}`;
 }
@@ -441,17 +397,32 @@ const candidateAddress =
       routeCache: new Map()
     };
     const travelGraph = await precomputeTravelGraph(bookingsByStart, candidateAddress, memoryCache);
-    const calendarBlocks = await fetchCalendarBlocks(dayDate);
-    const expandedBlocks = expandBlocksToRanges(calendarBlocks);
 
     const slots = generateSlotsForDay(dayDate);
     const valid = [];
     const serviceDurationMinutes = Number(duration_minutes);
 
 
+    let prevPointer = -1;
+    let nextPointer = 0;
+
     for (const start of slots) {
       const end = addMinutes(start, serviceDurationMinutes);
 
+
+      while (
+        prevPointer + 1 < bookingsByEnd.length &&
+        new Date(bookingsByEnd[prevPointer + 1].scheduled_end) <= start
+      ) {
+        prevPointer++;
+      }
+
+      while (
+        nextPointer < bookingsByStart.length &&
+        new Date(bookingsByStart[nextPointer].scheduled_start) < end
+      ) {
+        nextPointer++;
+      }
 
       const overlap = bookingsByStart.some(b =>
         intervalsOverlap(start, end, new Date(b.scheduled_start), new Date(b.scheduled_end))
@@ -459,8 +430,8 @@ const candidateAddress =
 
       if (overlap) continue;
 
-      const prev = findPrevBooking(bookingsByEnd, start.getTime());
-      const next = findNextBooking(bookingsByStart, end.getTime());
+      const prev = prevPointer >= 0 ? bookingsByEnd[prevPointer] : null;
+      const next = nextPointer < bookingsByStart.length ? bookingsByStart[nextPointer] : null;
       const travelOK = passesTravelGate(start, end, prev, next, candidateAddress, travelGraph);
       if (!travelOK) continue;
 
