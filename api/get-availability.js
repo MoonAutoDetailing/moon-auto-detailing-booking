@@ -243,10 +243,7 @@ function getOpenDayAnchors(dayDate, serviceDurationMinutes, openUtcHour, closeUt
 function runExposureLogic(validTimes, dayDate, serviceDurationMinutes, expandedBlocks, openUtcHour, closeUtcHour) {
   if (!validTimes.length) return [];
 
-  const hasBlockOnThisDay = expandedBlocks.some(b => {
-    const blockDay = new Date(b.start);
-    return blockDay.toDateString() === dayDate.toDateString();
-  });
+  const hasBlockOnThisDay = expandedBlocks.length > 0;
 
   if (!hasBlockOnThisDay) {
     return getOpenDayAnchors(dayDate, serviceDurationMinutes, openUtcHour, closeUtcHour);
@@ -534,13 +531,27 @@ if (!BUSINESS_RULES.allowedWeekdays.includes(weekday)) {
       geocodeCache: new Map(),
       routeCache: new Map()
     };
-    const travelGraph = await precomputeTravelGraph(bookingsByStart, candidateAddress, memoryCache);
+    const travelBookings = [
+  ...bookingsByStart,
+  ...calendarAsBookings
+];
+
+const travelGraph = await precomputeTravelGraph(travelBookings, candidateAddress, memoryCache);
+
     console.log("Travel graph size:", travelGraph.size);
 
     // --------------------
 // Fetch REAL Google Calendar blocks (source of truth)
 const calendarBlocks = await fetchCalendarBlocks(dayDate, openUtcHour, closeUtcHour);
 const calendarRanges = expandBlocksToRanges(calendarBlocks);
+
+    // Convert confirmed calendar blocks into pseudo-bookings for travel routing
+const calendarAsBookings = calendarRanges.map(b => ({
+  scheduled_start: b.start.toISOString(),
+  scheduled_end: b.end.toISOString(),
+  service_address: BASE_ADDRESS // fallback when event address unavailable
+}));
+
 
 // Pending bookings (Supabase) must behave like fixed blocks for shaping rules
 const bookingRanges = bookingsByStart
