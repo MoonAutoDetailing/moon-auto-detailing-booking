@@ -18,15 +18,66 @@ const BUSINESS_RULES = {
 
 const BASE_ADDRESS = process.env.BASE_ADDRESS;
 
+const BUSINESS_TZ = "America/New_York";
+
+function tzOffsetMinutes(date, timeZone) {
+  const dtf = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23"
+  });
+
+  const parts = dtf.formatToParts(date);
+  const map = {};
+  for (const p of parts) map[p.type] = p.value;
+
+  const asUTC = Date.UTC(
+    Number(map.year),
+    Number(map.month) - 1,
+    Number(map.day),
+    Number(map.hour),
+    Number(map.minute),
+    Number(map.second)
+  );
+
+  return (asUTC - date.getTime()) / 60000;
+}
+
+function getOffsetHoursForDay(dayStr) {
+  // use noon UTC to avoid edge cases
+  const probe = new Date(`${dayStr}T12:00:00Z`);
+  const offMin = tzOffsetMinutes(probe, BUSINESS_TZ); // e.g. -300 in winter
+  return -offMin / 60; // e.g. 5
+}
+
+function getDayStartUtcForBusinessTZ(dayStr) {
+  const offH = getOffsetHoursForDay(dayStr);
+  return new Date(Date.parse(`${dayStr}T00:00:00Z`) + offH * 3600000);
+}
+
+function getBusinessUtcHours(dayStr) {
+  const offH = getOffsetHoursForDay(dayStr);
+  return {
+    openUtcHour: BUSINESS_RULES.openHour + offH,
+    closeUtcHour: BUSINESS_RULES.closeHour + offH,
+    offsetHours: offH
+  };
+}
+
+
 function requireEnv(name) {
   const v = process.env[name];
   if (!v) throw new Error(`Missing env ${name}`);
   return v;
 }
 
-async function fetchCalendarBlocks(dayDate) {
-  const dayStart = new Date(dayDate);
-  dayStart.setHours(0,0,0,0);
+async function fetchCalendarBlocks(dayDate, openUtcHour, closeUtcHour) {
+  const dayStart = new Date(dayDate);  
   const dayEnd = addMinutes(dayStart, 1440);
 
   const calendarId = requireEnv("GOOGLE_CALENDAR_ID").trim();
@@ -65,15 +116,14 @@ async function fetchCalendarBlocks(dayDate) {
       }
 
       if (e.start?.date && e.end?.date) {
-        const d = new Date(e.start.date);
-        const allDayStart = new Date(d);
-        allDayStart.setHours(BUSINESS_RULES.openHour,0,0,0);
-        const allDayEnd = new Date(d);
-        allDayEnd.setHours(BUSINESS_RULES.closeHour,0,0,0);
-        return {
-          start: allDayStart,
-          end: allDayEnd
-        };
+        const allDayStart = new Date(dayDate);
+allDayStart.setUTCHours(openUtcHour, 0, 0, 0);
+
+const allDayEnd = new Date(dayDate);
+allDayEnd.setUTCHours(closeUtcHour, 0, 0, 0);
+
+return { start: allDayStart, end: allDayEnd };
+
       }
 
       return null;
@@ -96,12 +146,12 @@ function roundUpToSlot(date) {
   return new Date(Math.ceil(ms / slotMs) * slotMs);
 }
 
-function generateSlotsForDay(dayDate) {
+function generateSlotsForDay(dayDate, openUtcHour, closeUtcHour) {
   const start = new Date(dayDate);
-  start.setHours(BUSINESS_RULES.openHour,0,0,0);
+  start.setUTCHours(openUtcHour, 0, 0, 0);
 
   const end = new Date(dayDate);
-  end.setHours(BUSINESS_RULES.closeHour,0,0,0);
+  end.setUTCHours(closeUtcHour, 0, 0, 0);
 
   const slots = [];
   for (let t = new Date(start); t < end; t = addMinutes(t, SLOT_MINUTES)) {
@@ -117,12 +167,12 @@ function expandBlocksToRanges(blocks) {
   }));
 }
 
-function normalizeBlocksToBusinessHours(dayDate, blocks) {
+function normalizeBlocksToBusinessHours(dayDate, blocks, openUtcHour, closeUtcHour) {
   const open = new Date(dayDate);
-  open.setHours(BUSINESS_RULES.openHour, 0, 0, 0);
+  open.setUTCHours(openUtcHour, 0, 0, 0);
 
   const close = new Date(dayDate);
-  close.setHours(BUSINESS_RULES.closeHour, 0, 0, 0);
+  close.setUTCHours(closeUtcHour, 0, 0, 0);
 
   const clipped = (blocks || [])
     .map(b => {
@@ -163,20 +213,20 @@ function normalizeBlocksToBusinessHours(dayDate, blocks) {
 }
 
 
-function getBusinessCloseDate(dayDate) {
+function getBusinessCloseDate(dayDate, closeUtcHour) {
   const d = new Date(dayDate);
-  d.setHours(BUSINESS_RULES.closeHour, 0, 0, 0);
+  d.setUTCHours(closeUtcHour, 0, 0, 0);
   return d;
 }
 
-function getOpenDayAnchors(dayDate, serviceDurationMinutes) {
+function getOpenDayAnchors(dayDate, serviceDurationMinutes, openUtcHour, closeUtcHour) {
   const anchors = [];
 
   const base = new Date(dayDate);
-  base.setHours(BUSINESS_RULES.openHour, 0, 0, 0);
+  base.setUTCHours(openUtcHour, 0, 0, 0);
 
   const increments = [0, 150, 300, 450];
-  const businessClose = getBusinessCloseDate(dayDate);
+  const businessClose = getBusinessCloseDate(dayDate, closeUtcHour);
 
   for (const offset of increments) {
     const start = addMinutes(base, offset);
@@ -190,16 +240,13 @@ function getOpenDayAnchors(dayDate, serviceDurationMinutes) {
   return anchors;
 }
 
-function runExposureLogic(validTimes, dayDate, serviceDurationMinutes, expandedBlocks) {
+function runExposureLogic(validTimes, dayDate, serviceDurationMinutes, expandedBlocks, openUtcHour, closeUtcHour) {
   if (!validTimes.length) return [];
 
-  const hasBlockOnThisDay = expandedBlocks.some(b => {
-    const blockDay = new Date(b.start);
-    return blockDay.toDateString() === dayDate.toDateString();
-  });
+  const hasBlockOnThisDay = expandedBlocks.length > 0;
 
   if (!hasBlockOnThisDay) {
-    return getOpenDayAnchors(dayDate, serviceDurationMinutes);
+    return getOpenDayAnchors(dayDate, serviceDurationMinutes, openUtcHour, closeUtcHour);
   }
 
   const gaps = [];
@@ -219,7 +266,7 @@ function runExposureLogic(validTimes, dayDate, serviceDurationMinutes, expandedB
   gaps.push(currentGap);
 
   const exposed = [];
-  const businessClose = getBusinessCloseDate(dayDate);
+  const businessClose = getBusinessCloseDate(dayDate, closeUtcHour);
 
   for (const gap of gaps) {
     const gapStart = gap[0];
@@ -258,12 +305,12 @@ function runExposureLogic(validTimes, dayDate, serviceDurationMinutes, expandedB
   return exposed;
 }
 
-function passesFragmentRule(start, serviceDurationMinutes, expandedBlocks, dayDate) {
+function passesFragmentRule(start, serviceDurationMinutes, expandedBlocks, dayDate, openUtcHour, closeUtcHour) {
   const businessOpen = new Date(dayDate);
-  businessOpen.setHours(BUSINESS_RULES.openHour, 0, 0, 0);
+  businessOpen.setUTCHours(openUtcHour, 0, 0, 0);
 
   const serviceClose = new Date(dayDate);
-  serviceClose.setHours(BUSINESS_RULES.closeHour, 0, 0, 0);
+  serviceClose.setUTCHours(closeUtcHour, 0, 0, 0);
 
   const serviceEnd = addMinutes(start, serviceDurationMinutes);
 
@@ -331,18 +378,24 @@ async function precomputeTravelGraph(bookings, candidateAddress, memoryCache) {
   addressPairs.add(pairKey(candidateAddress, BASE_ADDRESS));
 
   for (const booking of bookings) {
-    addressPairs.add(pairKey(BASE_ADDRESS, booking.service_address));
-    addressPairs.add(pairKey(booking.service_address, BASE_ADDRESS));
-    addressPairs.add(pairKey(booking.service_address, candidateAddress));
-    addressPairs.add(pairKey(candidateAddress, booking.service_address));
-  }
+  const addr = (booking.service_address || "").trim();
+  if (!addr) continue;
+
+  addressPairs.add(pairKey(BASE_ADDRESS, addr));
+  addressPairs.add(pairKey(addr, BASE_ADDRESS));
+  addressPairs.add(pairKey(addr, candidateAddress));
+  addressPairs.add(pairKey(candidateAddress, addr));
+}
+
 
   for (let i = 0; i < bookings.length - 1; i++) {
-    const currentAddress = bookings[i].service_address;
-    const nextAddress = bookings[i + 1].service_address;
-    addressPairs.add(pairKey(currentAddress, nextAddress));
-    addressPairs.add(pairKey(nextAddress, currentAddress));
-  }
+    const currentAddress = (bookings[i].service_address || "").trim();
+const nextAddress = (bookings[i + 1].service_address || "").trim();
+if (currentAddress && nextAddress) {
+  addressPairs.add(pairKey(currentAddress, nextAddress));
+  addressPairs.add(pairKey(nextAddress, currentAddress));
+}
+
 
   await Promise.all(
     Array.from(addressPairs).map(async (key) => {
@@ -358,15 +411,15 @@ async function precomputeTravelGraph(bookings, candidateAddress, memoryCache) {
 // --------------------
 // Dynamic travel gate
 // --------------------
-function passesTravelGate(start, end, prev, next, candidateAddress, travelGraph) {
+function passesTravelGate(start, end, prev, next, candidateAddress, travelGraph, dayDate, openUtcHour) {
   // --------------------------------------------------
   // CASE 1 — FIRST JOB OF DAY (home → candidate)
   // --------------------------------------------------
   if (!prev) {
-    const minsFromHome = travelGraph.get(pairKey(BASE_ADDRESS, candidateAddress));
+    const minsFromHome = travelGraph.get(pairKey(BASE_ADDRESS, candidateAddress)) ?? 0;
 
-    const dayStart = new Date(start);
-    dayStart.setHours(BUSINESS_RULES.openHour,0,0,0);
+    const dayStart = new Date(dayDate);
+dayStart.setUTCHours(openUtcHour, 0, 0, 0);
 
     if (addMinutes(dayStart, minsFromHome) > start) return false;
   }
@@ -376,7 +429,7 @@ function passesTravelGate(start, end, prev, next, candidateAddress, travelGraph)
   // --------------------------------------------------
   if (prev) {
     const prevEnd = new Date(prev.scheduled_end);
-    const minsFromPrev = travelGraph.get(pairKey(prev.service_address, candidateAddress));
+    const minsFromPrev = travelGraph.get(pairKey(prev.service_address, candidateAddress)) ?? 0;
 
     if (addMinutes(prevEnd, minsFromPrev) > start) return false;
   }
@@ -386,7 +439,7 @@ function passesTravelGate(start, end, prev, next, candidateAddress, travelGraph)
   // --------------------------------------------------
   if (next) {
     const nextStart = new Date(next.scheduled_start);
-    const minsToNext = travelGraph.get(pairKey(candidateAddress, next.service_address));
+    const minsToNext = travelGraph.get(pairKey(candidateAddress, next.service_address)) ?? 0;
 
     if (addMinutes(end, minsToNext) > nextStart) return false;
   }
@@ -453,8 +506,12 @@ const candidateAddress =
     console.log("Candidate address used for travel:", candidateAddress);
 
 
-    const dayDate = new Date(day);
-    if (!BUSINESS_RULES.allowedWeekdays.includes(dayDate.getDay())) {
+    const { openUtcHour, closeUtcHour } = getBusinessUtcHours(day);
+const dayDate = getDayStartUtcForBusinessTZ(day); // NY midnight expressed as a UTC Date
+
+    const [yy, mm, dd] = day.split("-").map(Number);
+const weekday = new Date(Date.UTC(yy, mm - 1, dd)).getUTCDay();
+if (!BUSINESS_RULES.allowedWeekdays.includes(weekday)) {
       return res.json({ slots: [] });
     }
 
@@ -474,13 +531,27 @@ const candidateAddress =
       geocodeCache: new Map(),
       routeCache: new Map()
     };
-    const travelGraph = await precomputeTravelGraph(bookingsByStart, candidateAddress, memoryCache);
+    const travelBookings = [
+  ...bookingsByStart,
+  ...calendarAsBookings
+];
+
+const travelGraph = await precomputeTravelGraph(travelBookings, candidateAddress, memoryCache);
+
     console.log("Travel graph size:", travelGraph.size);
 
     // --------------------
 // Fetch REAL Google Calendar blocks (source of truth)
-const calendarBlocks = await fetchCalendarBlocks(dayDate);
+const calendarBlocks = await fetchCalendarBlocks(dayDate, openUtcHour, closeUtcHour);
 const calendarRanges = expandBlocksToRanges(calendarBlocks);
+
+    // Convert confirmed calendar blocks into pseudo-bookings for travel routing
+const calendarAsBookings = calendarRanges.map(b => ({
+  scheduled_start: b.start.toISOString(),
+  scheduled_end: b.end.toISOString(),
+  service_address: BASE_ADDRESS // fallback when event address unavailable
+}));
+
 
 // Pending bookings (Supabase) must behave like fixed blocks for shaping rules
 const bookingRanges = bookingsByStart
@@ -492,11 +563,9 @@ const bookingRanges = bookingsByStart
 
 
 const expandedBlocksRaw = [...calendarRanges, ...bookingRanges];
-const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw);
+const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw, openUtcHour, closeUtcHour);
 
-
-
-    const slots = generateSlotsForDay(dayDate);
+    const slots = generateSlotsForDay(dayDate, openUtcHour, closeUtcHour);
     const valid = [];
     const serviceDurationMinutes = Number(duration_minutes);
 
@@ -508,7 +577,7 @@ const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw
       );
       if (overlapsCalendarBlock) continue;
 
-      if (!passesFragmentRule(start, serviceDurationMinutes, expandedBlocks, dayDate)) continue;
+      if (!passesFragmentRule(start, serviceDurationMinutes, expandedBlocks, dayDate, openUtcHour, closeUtcHour)) continue;
 
       valid.push(start);
     }
@@ -520,13 +589,15 @@ const validAfterTravel = valid.filter((start) => {
   const next = getNextBooking(bookingsByStart, end);
 
   const allowed = passesTravelGate(
-    start,
-    end,
-    prev,
-    next,
-    candidateAddress,
-    travelGraph
-  );
+  start,
+  end,
+  prev,
+  next,
+  candidateAddress,
+  travelGraph,
+  dayDate,
+  openUtcHour
+);
 
   if (!allowed) {
     console.log("VALID slot removed by travel:", start.toISOString(), {
@@ -544,7 +615,9 @@ const shaped = runExposureLogic(
   validAfterTravel,
   dayDate,
   serviceDurationMinutes,
-  expandedBlocks
+  expandedBlocks,
+  openUtcHour,
+  closeUtcHour
 );
 
 const exposed = shaped.map((start) => start.toISOString());
