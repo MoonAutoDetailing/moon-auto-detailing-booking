@@ -117,6 +117,52 @@ function expandBlocksToRanges(blocks) {
   }));
 }
 
+function normalizeBlocksToBusinessHours(dayDate, blocks) {
+  const open = new Date(dayDate);
+  open.setHours(BUSINESS_RULES.openHour, 0, 0, 0);
+
+  const close = new Date(dayDate);
+  close.setHours(BUSINESS_RULES.closeHour, 0, 0, 0);
+
+  const clipped = (blocks || [])
+    .map(b => {
+      const s = new Date(b.start);
+      const e = new Date(b.end);
+
+      // discard invalid
+      if (!Number.isFinite(s.getTime()) || !Number.isFinite(e.getTime())) return null;
+
+      // clamp to business hours
+      const start = new Date(Math.max(s.getTime(), open.getTime()));
+      const end = new Date(Math.min(e.getTime(), close.getTime()));
+
+      // discard if outside or zero-length after clamp
+      if (end <= start) return null;
+      return { start, end };
+    })
+    .filter(Boolean)
+    .sort((a, b) => a.start - b.start);
+
+  // merge overlaps/adjacent
+  const merged = [];
+  for (const b of clipped) {
+    const last = merged[merged.length - 1];
+    if (!last) {
+      merged.push(b);
+      continue;
+    }
+    if (b.start <= last.end) {
+      // overlap/adjacent
+      last.end = new Date(Math.max(last.end.getTime(), b.end.getTime()));
+    } else {
+      merged.push(b);
+    }
+  }
+
+  return merged;
+}
+
+
 function getBusinessCloseDate(dayDate) {
   const d = new Date(dayDate);
   d.setHours(BUSINESS_RULES.closeHour, 0, 0, 0);
@@ -400,7 +446,8 @@ const candidateAddress =
     // --------------------
 // Fetch REAL Google Calendar blocks (source of truth)
 const calendarBlocks = await fetchCalendarBlocks(dayDate);
-const expandedBlocks = expandBlocksToRanges(calendarBlocks);
+const expandedBlocksRaw = expandBlocksToRanges(calendarBlocks);
+const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw);
 
 
 
