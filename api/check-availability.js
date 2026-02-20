@@ -26,12 +26,12 @@ export default async function handler(req, res) {
 
     // Look for overlapping bookings
     const { data } = await supabase
-      .from("bookings")
-      .select("id")
-      .not("status", "in", "(cancelled, denied)")
-      .lt("scheduled_start", end)
-      .gt("scheduled_end", start)
-      .limit(1);
+  .from("bookings")
+  .select("id")
+  .in("status", ["confirmed", "pending", "reschedule_requested"])
+  .lt("scheduled_start", end)
+  .gt("scheduled_end", start)
+  .limit(1);
 
     const isAvailable = !data || data.length === 0;
 
