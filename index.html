@@ -188,7 +188,13 @@ h1 {
 }                        /*MEDIA CONFIGURATION END*/
     #hourlyCal {
   position: relative;
-      z-index: 6;
+  z-index: 1;
+}
+    .booking-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
 }
     
     .hourly-row div:first-child,
@@ -2107,6 +2113,11 @@ async function loadCalendar() {
     if (!hourlyCal) return;
 
     hourlyCal.innerHTML = "";
+    
+    const bookingLayer = document.createElement("div");
+bookingLayer.className = "booking-layer";
+hourlyCal.appendChild(bookingLayer);
+    
   const dayLabelColumn = document.getElementById("dayLabelColumn");
 if (dayLabelColumn) dayLabelColumn.innerHTML = "";
 
@@ -2322,21 +2333,37 @@ row.appendChild(hourLabel);
           const startMinuteOffset =
             (overlapStart - hourStart) / 60000;
 
-          const CELL_HEIGHT = 40; // must match .hourly-cell height
+          /* ===== GOOGLE CALENDAR STYLE POSITIONING ===== */
 
+/* Height of one hourly row in the grid (matches CSS) */
+const ROW_HEIGHT = 40;
 
-let pxTop = (startMinuteOffset / 60) * CELL_HEIGHT;
-let pxHeight = (overlapMinutes / 60) * CELL_HEIGHT;
+/* Height of the weekday header row */
+const HEADER_HEIGHT = 46;
 
-/* bleed overlap so blocks span across row gaps */
-pxTop -= 2;
-pxHeight += 4;
-          
-const redBlock = document.createElement("div");
+/* Get calendar + column geometry */
+const calendarRect = hourlyCal.getBoundingClientRect();
+const cellRect = cell.getBoundingClientRect();
+
+/* Horizontal positioning (center inside the day column) */
+const dayColumnLeft = cellRect.left - calendarRect.left;
+const dayColumnWidth = cellRect.width;
+
+/* Minutes from start of business day */
+const minutesFromDayStart =
+  (overlapStart.getHours() - BUSINESS_RULES.openHour) * 60 +
+  overlapStart.getMinutes();
+
+/* Vertical positioning relative to entire calendar */
+const pxTop = HEADER_HEIGHT + (minutesFromDayStart / 60) * ROW_HEIGHT;
+const pxHeight = (overlapMinutes / 60) * ROW_HEIGHT;
+
+/* Apply absolute positioning in the booking layer */
 redBlock.style.position = "absolute";
+redBlock.style.left = `${dayColumnLeft + dayColumnWidth * 0.1}px`;
+redBlock.style.width = `${dayColumnWidth * 0.8}px`;
 redBlock.style.top = `${pxTop}px`;
 redBlock.style.height = `${pxHeight}px`;
-redBlock.style.width = "80%";
 redBlock.style.left = "10%";
           // Color by booking status
 redBlock.style.background = b.status === "pending" ? "#f59e0b" : "#e44b4b";
@@ -2366,7 +2393,7 @@ setRedBlockRadii(redBlock, { roundTop, roundBottom });
 // --- END FIXED MERGE LOGIC ---
 
 
-          cell.appendChild(redBlock);
+          bookingLayer.appendChild(redBlock);
           redBlocksInCell.push(redBlock);
         }
       }
