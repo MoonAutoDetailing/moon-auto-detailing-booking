@@ -2325,8 +2325,13 @@ row.appendChild(hourLabel);
           const CELL_HEIGHT = 40; // must match .hourly-cell height
 
 
-const pxTop = (startMinuteOffset / 60) * CELL_HEIGHT;
-const pxHeight = (overlapMinutes / 60) * CELL_HEIGHT;
+let pxTop = (startMinuteOffset / 60) * CELL_HEIGHT;
+let pxHeight = (overlapMinutes / 60) * CELL_HEIGHT;
+
+/* bleed overlap so blocks span across row gaps */
+pxTop -= 2;
+pxHeight += 4;
+          
 const redBlock = document.createElement("div");
 redBlock.style.position = "absolute";
 redBlock.style.top = `${pxTop}px`;
@@ -2336,13 +2341,10 @@ redBlock.style.left = "10%";
           // Color by booking status
 redBlock.style.background = b.status === "pending" ? "#f59e0b" : "#e44b4b";
 
-          // prevent 1px seams from percent/subpixel rounding between fragments
-redBlock.style.outline = b.status === "pending"
-  ? "1px solid #f59e0b"
-  : "1px solid #e44b4b";
-redBlock.style.outlineOffset = "-1px";
           redBlock.style.pointerEvents = "none";
           redBlock.style.transform = "translateZ(0)";
+          redBlock.style.zIndex = "5";
+          
           // --- FIXED MERGE LOGIC ---
 const fragStartMs = Math.floor(overlapStart.getTime() / 60000) * 60000;
 const fragEndMs = Math.floor(overlapEnd.getTime() / 60000) * 60000;
