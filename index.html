@@ -2187,28 +2187,33 @@ const expandedBlocks = blocks.map(b => {
 
 
 // =========================
-// RED BLOCK ADJACENCY MAPS (PER DAY)
+// ADJACENCY MAPS BY STATUS (Google-style merging)
 // =========================
-const dayStarts = new Map();
-const dayEnds = new Map();
+const dayStartsConfirmed = new Map();
+const dayEndsConfirmed = new Map();
+const dayStartsPending = new Map();
+const dayEndsPending = new Map();
 
 for (const b of expandedBlocks) {
   const start = new Date(b.start);
   const end = new Date(b.end);
 
-  // Force both into LOCAL minute precision
   const startMs = Math.floor(start.getTime() / 60000) * 60000;
   const endMs = Math.floor(end.getTime() / 60000) * 60000;
 
   const dayKey = new Date(startMs).toDateString();
 
-  if (!dayStarts.has(dayKey)) dayStarts.set(dayKey, new Set());
-  if (!dayEnds.has(dayKey)) dayEnds.set(dayKey, new Set());
+  const isPending = b.status === "pending";
 
-  dayStarts.get(dayKey).add(startMs);
-  dayEnds.get(dayKey).add(endMs);
+  const startsMap = isPending ? dayStartsPending : dayStartsConfirmed;
+  const endsMap   = isPending ? dayEndsPending   : dayEndsConfirmed;
+
+  if (!startsMap.has(dayKey)) startsMap.set(dayKey, new Set());
+  if (!endsMap.has(dayKey))   endsMap.set(dayKey, new Set());
+
+  startsMap.get(dayKey).add(startMs);
+  endsMap.get(dayKey).add(endMs);
 }
-
 
   // =========================
   // BUILD EXPOSED START MAP (SERVER SOURCE OF TRUTH)
@@ -2353,9 +2358,17 @@ const blockEndMs = Math.floor(new Date(b.end).getTime() / 60000) * 60000;
 const isTopFragment = fragStartMs === blockStartMs;
 const isBottomFragment = fragEndMs === blockEndMs;
 
-const hasBlockAbove = dayEnds.get(dayKey)?.has(blockStartMs);
-const hasBlockBelow = dayStarts.get(dayKey)?.has(blockEndMs);
+// Choose adjacency map based on booking status
+const startsMap = b.status === "pending"
+  ? dayStartsPending
+  : dayStartsConfirmed;
 
+const endsMap = b.status === "pending"
+  ? dayEndsPending
+  : dayEndsConfirmed;
+
+const hasBlockAbove = endsMap.get(dayKey)?.has(blockStartMs);
+const hasBlockBelow = startsMap.get(dayKey)?.has(blockEndMs);
 const roundTop = isTopFragment;
 const roundBottom = isBottomFragment;
 
