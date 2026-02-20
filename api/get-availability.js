@@ -349,6 +349,18 @@ function passesFragmentRule(start, serviceDurationMinutes, expandedBlocks, dayDa
   return true;
 }
 
+// --------------------------------------------------
+// STATUS GUARD — which bookings actually block time
+// --------------------------------------------------
+function bookingBlocksAvailability(status) {
+  return [
+    "confirmed",
+    "pending",
+    "completed",
+    "reschedule_requested"
+  ].includes(status);
+}
+
 // --------------------
 // Fetch bookings
 // --------------------
@@ -356,7 +368,7 @@ async function fetchBookings(timeMin, timeMax) {
   const { data } = await supabase
     .from("bookings")
     .select("scheduled_start, scheduled_end, service_address, status")
-    .in("status", ["confirmed","pending"])
+    .in("status", ["confirmed","pending","completed","reschedule_requested"])
     .gte("scheduled_start", timeMin)
     .lte("scheduled_start", timeMax);
 
@@ -521,6 +533,8 @@ if (!BUSINESS_RULES.allowedWeekdays.includes(weekday)) {
       dayDate.toISOString(),
       addMinutes(dayDate, 1440).toISOString()
     );
+    // 🚨 SAFETY FILTER — ignore non-blocking lifecycle states
+const blockingBookings = bookings.filter(b => bookingBlocksAvailability(b.status));
 
     const calendarBlocks = await fetchCalendarBlocks(dayDate, openUtcHour, closeUtcHour);
 const calendarRanges = expandBlocksToRanges(calendarBlocks);
@@ -538,11 +552,11 @@ const travelGateBookings = [
   ...calendarAsBookings
 ];
 
-const bookingsByStart = [...travelGateBookings].sort(
+const bookingsByStart = [...blockingBookings].sort(
   (a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start)
 );
 
-const bookingsByEnd = [...travelGateBookings].sort(
+const bookingsByEnd = [...blockingBookings].sort(
   (a, b) => new Date(a.scheduled_end) - new Date(b.scheduled_end)
 );
 
@@ -568,7 +582,7 @@ const travelGraph = await precomputeTravelGraph(
 
 // Pending bookings (Supabase) must behave like fixed blocks for shaping rules
 const bookingRanges = bookingsByStart
-  .filter(b => b.status === "pending")
+  .filter(b => bookingBlocksAvailability(b.status))
   .map(b => ({
     start: new Date(b.scheduled_start),
     end: new Date(b.scheduled_end)
