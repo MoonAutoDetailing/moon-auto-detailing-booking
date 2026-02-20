@@ -188,7 +188,8 @@ h1 {
 }                        /*MEDIA CONFIGURATION END*/
     #hourlyCal {
   position: relative;
-      z-index: 6;
+  z-index: 6;
+  overflow: visible;  /* ← ADD */
 }
     
     .hourly-row div:first-child,
@@ -504,8 +505,10 @@ label[for="start"] {
 }
 
 .hourly-cell {
+  position: relative;
+  overflow: visible;   /* ← ADD THIS */
   height: 26px;
-  border-radius: 6px; /* square calendar look */
+  border-radius: 6px;
   background: rgba(0, 0, 0, 0.04);
   transition: all 0.18s ease;
   box-shadow: none; /* remove pill shadow */
@@ -1150,7 +1153,7 @@ function expandBookingBlock(block) {
 
 
 function setRedBlockRadii(el, { roundTop, roundBottom }) {
-  const RADIUS = "17px";
+  const RADIUS = "18px";
 
 const rTop = roundTop ? RADIUS : "0px";
 const rBot = roundBottom ? RADIUS : "0px";
@@ -2335,6 +2338,7 @@ redBlock.style.width = "80%";
 redBlock.style.left = "10%";
           // Color by booking status
 redBlock.style.background = b.status === "pending" ? "#f59e0b" : "#e44b4b";
+          redBlock.style.boxShadow = "0 2px 6px rgba(0,0,0,0.18)";
 
           // prevent 1px seams from percent/subpixel rounding between fragments
 redBlock.style.outline = b.status === "pending"
