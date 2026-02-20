@@ -2336,6 +2336,9 @@ const redBlock = document.createElement("div");
 redBlock.style.position = "absolute";
 redBlock.style.top = `${pxTop}px`;
 redBlock.style.height = `${pxHeight}px`;
+          // allow fragments to overlap across grid rows (Google Calendar behaviour)
+redBlock.style.marginTop = "-6px";
+redBlock.style.marginBottom = "-6px";
 redBlock.style.width = "80%";
 redBlock.style.left = "10%";
           // Color by booking status
