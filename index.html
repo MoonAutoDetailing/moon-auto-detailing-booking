@@ -2368,59 +2368,60 @@ setRedBlockRadii(redBlock, { roundTop, roundBottom });
            // =========================
       // GREEN SLOT RENDERING (RESTORED + TRAVEL AWARE)
       // =========================
-      const exposedInThisHour = (exposedByDay[dayKey] || [])
-        .filter(t => {
-          const dt = new Date(t);
-          return dt >= hourStart && dt < hourEnd;
-        });
+      // Which exposed start times fall inside this hour?
+const exposedInThisHour = (exposedByDay[dayKey] || []).filter(ts => {
+  const slotStart = new Date(ts);
+  const slotEnd = new Date(slotStart.getTime() + 60 * 60000);
+  return hourStart < slotEnd && hourEnd > slotStart;
+});
 
-      for (const slotMs of exposedInThisHour) {
-        const slotTime = new Date(slotMs);
+for (const slotMs of exposedInThisHour) {
+  const slotStart = new Date(slotMs);
 
-        const minuteOffset = slotTime.getMinutes();
-        const CELL_HEIGHT = parseFloat(getComputedStyle(cell).height);
+  const minuteOffset = (slotStart.getMinutes() / 60);
+  const CELL_HEIGHT = parseFloat(getComputedStyle(cell).height);
 
-        const pxTop = (minuteOffset / 60) * CELL_HEIGHT;
+  const pxTop = minuteOffset * CELL_HEIGHT;
+  const pxHeight = (SLOT_MINUTES / 60) * CELL_HEIGHT;
 
-        const green = document.createElement("div");
-        green.style.position = "absolute";
-        green.style.top = `${pxTop}px`;
-        green.style.height = "6px";
-        green.style.width = "72%";
-        green.style.left = "14%";
-        green.style.borderRadius = "999px";
-        green.style.background = "rgba(34,197,94,0.9)";
-        green.style.cursor = "pointer";
-        green.classList.add("green-slot-pill");
+  const greenBlock = document.createElement("div");
+  greenBlock.className = "green-slot-pill";
+  greenBlock.style.position = "absolute";
+  greenBlock.style.top = `${pxTop}px`;
+  greenBlock.style.height = `${pxHeight}px`;
+  greenBlock.style.width = "72%";
+  greenBlock.style.left = "14%";
+  greenBlock.style.background = "rgba(34,197,94,0.75)";
+  greenBlock.style.borderRadius = "6px";
+  greenBlock.style.cursor = "pointer";
 
-        // Click handler (select time)
-        green.addEventListener("click", () => {
-          document
-            .querySelectorAll(".green-slot-pill.selected")
-            .forEach(el => el.classList.remove("selected"));
+  greenBlock.addEventListener("click", () => {
+    const startTime = new Date(slotMs);
 
-          green.classList.add("selected");
+    document.querySelectorAll(".green-slot-pill.selected")
+      .forEach(el => el.classList.remove("selected"));
 
-          const startTime = new Date(slotMs);
-          elStart.value = formatDateToDateTimeLocal(startTime);
-          selectedStartISO = startTime.toISOString();
+    greenBlock.classList.add("selected");
 
-          recalcEndTimePreview();
-        });
+    elStart.value = formatDateToDateTimeLocal(startTime);
+    selectedStartISO = startTime.toISOString();
+    recalcEndTimePreview();
+  });
 
-        cell.appendChild(green);
-        greenBlocksInCell.push(green);
-      }
+  cell.appendChild(greenBlock);
+}
 
-      row.appendChild(cell);
-    }
+row.appendChild(cell);
+          }
 
     hourlyCal.appendChild(row);
   }
-  } finally {
-    calendarLoading = false;
-  }
+
+} finally {
+  calendarLoading = false;
 }
+}
+
 
 // =========================
 // CALENDAR NAVIGATION
