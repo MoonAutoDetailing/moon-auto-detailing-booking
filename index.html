@@ -484,7 +484,7 @@ label[for="start"] {
   display: grid;
   grid-template-columns: 52px repeat(7, 1fr);
   align-items: center;
-  gap: 4px;
+  gap: 0px;
 }
 
 .hourly-header > div:not(.day-label) {
@@ -509,6 +509,7 @@ label[for="start"] {
   overflow: visible;   /* ← ADD THIS */
   height: 26px;
   border-radius: 6px;
+  margin: 2px; 
   background: transparent;
   transition: all 0.18s ease;
   box-shadow: none; /* remove pill shadow */
