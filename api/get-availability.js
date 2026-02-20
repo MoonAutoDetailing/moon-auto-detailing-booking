@@ -533,9 +533,10 @@ if (!BUSINESS_RULES.allowedWeekdays.includes(weekday)) {
       dayDate.toISOString(),
       addMinutes(dayDate, 1440).toISOString()
     );
+
     // 🚨 SAFETY FILTER — ignore non-blocking lifecycle states
 const blockingBookings = bookings.filter(b => bookingBlocksAvailability(b.status));
-
+    
     const calendarBlocks = await fetchCalendarBlocks(dayDate, openUtcHour, closeUtcHour);
 const calendarRanges = expandBlocksToRanges(calendarBlocks);
 
