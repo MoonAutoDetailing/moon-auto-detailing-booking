@@ -2100,6 +2100,8 @@ async function loadCalendar() {
   const requestVersion = ++availabilityRequestVersion;
   calendarLoading = true;
   console.log("loadCalendar started");
+  // CLEAR OLD AVAILABILITY CACHE BEFORE RELOAD
+availabilityByDay = {};
 
   try {
     const hourlyCal = document.getElementById("hourlyCal");
