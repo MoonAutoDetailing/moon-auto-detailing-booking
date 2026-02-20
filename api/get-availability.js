@@ -247,7 +247,11 @@ function getOpenDayAnchors(dayDate, serviceDurationMinutes, openUtcHour, closeUt
 function runExposureLogic(validTimes, dayDate, serviceDurationMinutes, expandedBlocks, openUtcHour, closeUtcHour) {
   if (!validTimes.length) return [];
 
-  const hasBlockOnThisDay = expandedBlocks.length > 0;
+  // Detect if there is a REAL blocking window during business hours
+const hasBlockOnThisDay = expandedBlocks.some(b =>
+  b.start < getBusinessCloseDate(dayDate, closeUtcHour) &&
+  b.end > new Date(dayDate.setUTCHours(openUtcHour,0,0,0))
+);
 
   if (!hasBlockOnThisDay) {
     return getOpenDayAnchors(dayDate, serviceDurationMinutes, openUtcHour, closeUtcHour);
@@ -567,6 +571,14 @@ const travelBookings = [
   ...blockingBookings,
   ...calendarAsBookings
 ];
+    const travelGateByStart = [...travelBookings].sort(
+  (a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start)
+);
+
+const travelGateByEnd = [...travelBookings].sort(
+  (a, b) => new Date(a.scheduled_end) - new Date(b.scheduled_end)
+);
+    
 const travelGraph = await precomputeTravelGraph(
   travelBookings,
   candidateAddress,
@@ -610,8 +622,8 @@ const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw
     // 1) Apply TRAVEL FILTER to the full valid set (so green blocks can "shift")
 const validAfterTravel = valid.filter((start) => {
   const end = addMinutes(start, serviceDurationMinutes);
-  const prev = getPrevBooking(dbBookingsByEnd, start);
-const next = getNextBooking(dbBookingsByStart, end);
+  const prev = getPrevBooking(travelGateByEnd, start);
+const next = getNextBooking(travelGateByStart, end);
 
   const allowed = passesTravelGate(
   start,
