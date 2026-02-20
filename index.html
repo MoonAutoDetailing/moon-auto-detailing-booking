@@ -529,7 +529,7 @@ label[for="start"] {
 
     /* Alternating row backgrounds */
 .row-light .hourly-cell {
-  background: rgba(0, 0, 0, 0.04);
+  background: rgba(0, 0, 0, 0.03);
 }
 
 .row-dark .hourly-cell {
@@ -2348,13 +2348,10 @@ redBlock.style.width = "80%";
 redBlock.style.left = "10%";
           // Color by booking status
 redBlock.style.background = b.status === "pending" ? "#f59e0b" : "#e44b4b";
-          redBlock.style.boxShadow = "0 2px 6px rgba(0,0,0,0.18)";
 
           // prevent 1px seams from percent/subpixel rounding between fragments
-redBlock.style.outline = b.status === "pending"
-  ? "1px solid #f59e0b"
-  : "1px solid #e44b4b";
-redBlock.style.outlineOffset = "-1px";
+redBlock.style.border = "0";
+          
           redBlock.style.pointerEvents = "none";
           redBlock.style.transform = "translateZ(0)";
           redBlock.style.zIndex = "2";
@@ -2373,6 +2370,7 @@ const hasBlockBelow = dayStarts.get(dayKey)?.has(blockEndMs);
 
 const roundTop = isTopFragment && !hasBlockAbove;
 const roundBottom = isBottomFragment && !hasBlockBelow;
+          redBlock.style.boxShadow = (roundTop || roundBottom) ? "0 2px 6px rgba(0,0,0,0.18)" : "none";
 
 setRedBlockRadii(redBlock, { roundTop, roundBottom });
 
