@@ -1150,7 +1150,7 @@ function expandBookingBlock(block) {
 
 
 function setRedBlockRadii(el, { roundTop, roundBottom }) {
-  const RADIUS = "17px";
+  const RADIUS = "6px";
 
 const rTop = roundTop ? RADIUS : "0px";
 const rBot = roundBottom ? RADIUS : "0px";
@@ -2322,7 +2322,8 @@ row.appendChild(hourLabel);
           const startMinuteOffset =
             (overlapStart - hourStart) / 60000;
 
-          const CELL_HEIGHT = 40; // must match .hourly-cell height
+          // Get REAL rendered cell height (critical for 10-min precision)
+const CELL_HEIGHT = cell.getBoundingClientRect().height;
 
 
 const pxTop = (startMinuteOffset / 60) * CELL_HEIGHT;
@@ -2331,16 +2332,11 @@ const redBlock = document.createElement("div");
 redBlock.style.position = "absolute";
 redBlock.style.top = `${pxTop}px`;
 redBlock.style.height = `${pxHeight}px`;
-redBlock.style.width = "80%";
-redBlock.style.left = "10%";
+redBlock.style.width = "72%";
+redBlock.style.left = "14%";
           // Color by booking status
 redBlock.style.background = b.status === "pending" ? "#f59e0b" : "#e44b4b";
-
-          // prevent 1px seams from percent/subpixel rounding between fragments
-redBlock.style.outline = b.status === "pending"
-  ? "1px solid #f59e0b"
-  : "1px solid #e44b4b";
-redBlock.style.outlineOffset = "-1px";
+          
           redBlock.style.pointerEvents = "none";
           redBlock.style.transform = "translateZ(0)";
           // --- FIXED MERGE LOGIC ---
