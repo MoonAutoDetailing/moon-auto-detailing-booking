@@ -113,9 +113,10 @@ async function fetchCalendarBlocks(dayDate, openUtcHour, closeUtcHour) {
     .map((e) => {
       if (e.start?.dateTime && e.end?.dateTime) {
         return {
-          start: new Date(e.start.dateTime),
-          end: new Date(e.end.dateTime)
-        };
+  start: new Date(e.start.dateTime),
+  end: new Date(e.end.dateTime),
+  location: (e.location || "").trim()
+};
       }
 
       if (e.start?.date && e.end?.date) {
@@ -125,7 +126,7 @@ allDayStart.setUTCHours(openUtcHour, 0, 0, 0);
 const allDayEnd = new Date(dayDate);
 allDayEnd.setUTCHours(closeUtcHour, 0, 0, 0);
 
-return { start: allDayStart, end: allDayEnd };
+return { start: allDayStart, end: allDayEnd, location: (e.location || "").trim() };
 
       }
 
@@ -337,14 +338,7 @@ function passesFragmentRule(start, serviceDurationMinutes, expandedBlocks, dayDa
     }
   }
 
-  const gapBefore = (start - previousBoundary) / 60000;
-  const gapAfter = (nextBoundary - serviceEnd) / 60000;
-
-  const isStartOfDay = previousBoundary.getTime() === businessOpen.getTime();
-
-  if (!isStartOfDay && gapBefore > 0 && gapBefore < MIN_BOOKABLE_GAP_MINUTES) {
-    return false;
-  }
+    const gapAfter = (nextBoundary - serviceEnd) / 60000;
 
   const isEndOfDay = nextBoundary.getTime() === serviceClose.getTime();
 
@@ -531,10 +525,11 @@ if (!BUSINESS_RULES.allowedWeekdays.includes(weekday)) {
     const calendarBlocks = await fetchCalendarBlocks(dayDate, openUtcHour, closeUtcHour);
 const calendarRanges = expandBlocksToRanges(calendarBlocks);
 
-const calendarAsBookings = calendarRanges.map(b => ({
+const calendarAsBookings = calendarBlocks.map(b => ({
   scheduled_start: b.start.toISOString(),
   scheduled_end: b.end.toISOString(),
-  service_address: BASE_ADDRESS
+  service_address: (b.location && b.location.trim().length > 5) ? b.location.trim() : BASE_ADDRESS,
+  status: "confirmed"
 }));
 
     // Merge Supabase bookings + Google calendar blocks for travel gate
