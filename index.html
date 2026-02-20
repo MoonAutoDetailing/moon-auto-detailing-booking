@@ -1149,19 +1149,6 @@ function expandBookingBlock(block) {
 }
 
 
-function setRedBlockRadii(el, { roundTop, roundBottom }) {
-  const RADIUS = "6px";
-
-const rTop = roundTop ? RADIUS : "0px";
-const rBot = roundBottom ? RADIUS : "0px";
-
-  el.style.borderTopLeftRadius = rTop;
-  el.style.borderTopRightRadius = rTop;
-  el.style.borderBottomLeftRadius = rBot;
-  el.style.borderBottomRightRadius = rBot;
-}
-
-
  // =========================
 // PHASE 3 VALID START TIMES (INTERNAL)
 // =========================
@@ -2339,27 +2326,6 @@ redBlock.style.background = b.status === "pending" ? "#f59e0b" : "#e44b4b";
           
           redBlock.style.pointerEvents = "none";
           redBlock.style.transform = "translateZ(0)";
-          // --- FIXED MERGE LOGIC ---
-const fragStartMs = Math.floor(overlapStart.getTime() / 60000) * 60000;
-const fragEndMs = Math.floor(overlapEnd.getTime() / 60000) * 60000;
-
-const blockStartMs = Math.floor(new Date(b.start).getTime() / 60000) * 60000;
-const blockEndMs = Math.floor(new Date(b.end).getTime() / 60000) * 60000;
-
-const isTopFragment = fragStartMs === blockStartMs;
-const isBottomFragment = fragEndMs === blockEndMs;
-
-const hasBlockAbove = dayEnds.get(dayKey)?.has(blockStartMs);
-const hasBlockBelow = dayStarts.get(dayKey)?.has(blockEndMs);
-
-const roundTop = isTopFragment && !hasBlockAbove;
-const roundBottom = isBottomFragment && !hasBlockBelow;
-
-setRedBlockRadii(redBlock, { roundTop, roundBottom });
-
-// --- END FIXED MERGE LOGIC ---
-
-
           cell.appendChild(redBlock);
           redBlocksInCell.push(redBlock);
         }
