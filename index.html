@@ -2341,11 +2341,16 @@ redBlock.style.left = "10%";
           // Color by booking status
 redBlock.style.background = b.status === "pending" ? "#f59e0b" : "#e44b4b";
 
-          // prevent 1px seams from percent/subpixel rounding between fragments
-redBlock.style.outline = b.status === "pending"
-  ? "1px solid #f59e0b"
-  : "1px solid #e44b4b";
-redBlock.style.outlineOffset = "-1px";
+          // visual polish: outline ignores border-radius (square corners). Use inset stroke + shadow instead.
+const blockColor = (b.status === "pending") ? "#f59e0b" : "#e44b4b";
+
+// keep the “stroke” effect without killing rounded corners
+redBlock.style.boxShadow = `0 0 0 1px ${blockColor} inset, 0 2px 6px rgba(0,0,0,0.18)`;
+
+// make sure nothing else draws a square edge
+redBlock.style.border = "0";
+redBlock.style.overflow = "hidden";
+          
           redBlock.style.pointerEvents = "none";
           redBlock.style.transform = "translateZ(0)";
           // --- FIXED MERGE LOGIC ---
