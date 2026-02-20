@@ -2322,8 +2322,8 @@ row.appendChild(hourLabel);
           const startMinuteOffset =
             (overlapStart - hourStart) / 60000;
 
-          // Get REAL rendered cell height (critical for 10-min precision)
-const CELL_HEIGHT = cell.getBoundingClientRect().height;
+// Get real CSS height of grid cells (works before layout paint)
+const CELL_HEIGHT = parseFloat(getComputedStyle(cell).height);
 
 
 const pxTop = (startMinuteOffset / 60) * CELL_HEIGHT;
