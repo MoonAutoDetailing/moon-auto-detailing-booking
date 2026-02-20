@@ -526,13 +526,11 @@ label[for="start"] {
   background: rgba(0,0,0,0.04);
   z-index: 0;
 }
-
-    /* Alternating row backgrounds */
-.row-light .hourly-cell {
+    .row-light .hourly-cell::before {
   background: rgba(0, 0, 0, 0.03);
 }
 
-.row-dark .hourly-cell {
+.row-dark .hourly-cell::before {
   background: rgba(0, 0, 0, 0.08);
 }
 
