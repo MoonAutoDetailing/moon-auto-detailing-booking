@@ -547,17 +547,11 @@ const calendarAsBookings = calendarBlocks.map(b => ({
   status: "confirmed"
 }));
 
-    // Merge Supabase bookings + Google calendar blocks for travel gate
-const travelGateBookings = [
-  ...bookings,
-  ...calendarAsBookings
-];
-
-const bookingsByStart = [...blockingBookings].sort(
+const dbBookingsByStart = [...blockingBookings].sort(
   (a, b) => new Date(a.scheduled_start) - new Date(b.scheduled_start)
 );
 
-const bookingsByEnd = [...blockingBookings].sort(
+const dbBookingsByEnd = [...blockingBookings].sort(
   (a, b) => new Date(a.scheduled_end) - new Date(b.scheduled_end)
 );
 
@@ -566,11 +560,13 @@ const memoryCache = {
   routeCache: new Map()
 };
 
+// --------------------------------------------------
+// Travel graph must see DB bookings + Google events
+// --------------------------------------------------
 const travelBookings = [
-  ...bookingsByStart,
+  ...blockingBookings,
   ...calendarAsBookings
 ];
-
 const travelGraph = await precomputeTravelGraph(
   travelBookings,
   candidateAddress,
@@ -582,12 +578,10 @@ const travelGraph = await precomputeTravelGraph(
 
 
 // Pending bookings (Supabase) must behave like fixed blocks for shaping rules
-const bookingRanges = bookingsByStart
-  .filter(b => bookingBlocksAvailability(b.status))
-  .map(b => ({
-    start: new Date(b.scheduled_start),
-    end: new Date(b.scheduled_end)
-  }));
+const bookingRanges = blockingBookings.map(b => ({
+  start: new Date(b.scheduled_start),
+  end: new Date(b.scheduled_end)
+}));
 
 
 const expandedBlocksRaw = [...calendarRanges, ...bookingRanges];
@@ -616,8 +610,8 @@ const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw
     // 1) Apply TRAVEL FILTER to the full valid set (so green blocks can "shift")
 const validAfterTravel = valid.filter((start) => {
   const end = addMinutes(start, serviceDurationMinutes);
-  const prev = getPrevBooking(bookingsByEnd, start);
-  const next = getNextBooking(bookingsByStart, end);
+  const prev = getPrevBooking(dbBookingsByEnd, start);
+const next = getNextBooking(dbBookingsByStart, end);
 
   const allowed = passesTravelGate(
   start,
