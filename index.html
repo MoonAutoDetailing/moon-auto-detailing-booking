@@ -2333,19 +2333,19 @@ row.appendChild(hourLabel);
           const startMinuteOffset =
             (overlapStart - hourStart) / 60000;
 
-          /* ===== GOOGLE CALENDAR STYLE POSITIONING ===== */
+          /* ===== GOOGLE CALENDAR STYLE POSITIONING (FIXED) ===== */
 
-/* Height of one hourly row in the grid (matches CSS) */
-const ROW_HEIGHT = 40;
+/* MUST match CSS */
+const ROW_HEIGHT = 26;
 
-/* Height of the weekday header row */
-const HEADER_HEIGHT = 46;
+/* Dynamically read header height (never hardcode) */
+const HEADER_HEIGHT = header.getBoundingClientRect().height;
 
-/* Get calendar + column geometry */
+/* Calendar geometry */
 const calendarRect = hourlyCal.getBoundingClientRect();
 const cellRect = cell.getBoundingClientRect();
 
-/* Horizontal positioning (center inside the day column) */
+/* Horizontal position within day column */
 const dayColumnLeft = cellRect.left - calendarRect.left;
 const dayColumnWidth = cellRect.width;
 
@@ -2354,23 +2354,34 @@ const minutesFromDayStart =
   (overlapStart.getHours() - BUSINESS_RULES.openHour) * 60 +
   overlapStart.getMinutes();
 
-/* Vertical positioning relative to entire calendar */
+/* Vertical positioning */
 const pxTop = HEADER_HEIGHT + (minutesFromDayStart / 60) * ROW_HEIGHT;
 const pxHeight = (overlapMinutes / 60) * ROW_HEIGHT;
 
-/* Apply absolute positioning in the booking layer */
+/* Build block */
+const redBlock = document.createElement("div");
+
+/* Attach to booking overlay layer (NOT the grid cell) */
+bookingLayer.appendChild(redBlock);
+
+/* Absolute positioning across full calendar */
 redBlock.style.position = "absolute";
 redBlock.style.left = `${dayColumnLeft + dayColumnWidth * 0.1}px`;
 redBlock.style.width = `${dayColumnWidth * 0.8}px`;
 redBlock.style.top = `${pxTop}px`;
 redBlock.style.height = `${pxHeight}px`;
-redBlock.style.left = "10%";
-          // Color by booking status
-redBlock.style.background = b.status === "pending" ? "#f59e0b" : "#e44b4b";
 
-          redBlock.style.pointerEvents = "none";
-          redBlock.style.transform = "translateZ(0)";
-          redBlock.style.zIndex = "5";
+/* Colors */
+redBlock.style.background =
+  b.status === "pending" ? "#f59e0b" : "#e44b4b";
+
+/* Google calendar style */
+redBlock.style.borderRadius = "18px";
+redBlock.style.boxShadow = "0 2px 6px rgba(0,0,0,0.15)";
+redBlock.style.pointerEvents = "none";
+
+/* Sit ABOVE the grey grid */
+redBlock.style.zIndex = "60";
           
           // --- FIXED MERGE LOGIC ---
 const fragStartMs = Math.floor(overlapStart.getTime() / 60000) * 60000;
