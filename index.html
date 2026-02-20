@@ -2356,8 +2356,8 @@ const isBottomFragment = fragEndMs === blockEndMs;
 const hasBlockAbove = dayEnds.get(dayKey)?.has(blockStartMs);
 const hasBlockBelow = dayStarts.get(dayKey)?.has(blockEndMs);
 
-const roundTop = isTopFragment && !hasBlockAbove;
-const roundBottom = isBottomFragment && !hasBlockBelow;
+const roundTop = isTopFragment;
+const roundBottom = isBottomFragment;
 
 setRedBlockRadii(redBlock, { roundTop, roundBottom });
 
