@@ -509,12 +509,21 @@ label[for="start"] {
   overflow: visible;   /* ← ADD THIS */
   height: 26px;
   border-radius: 6px;
-  background: rgba(0, 0, 0, 0.04);
+  background: transparent;
   transition: all 0.18s ease;
   box-shadow: none; /* remove pill shadow */
   display: flex;
   align-items: center;
   justify-content: center;
+}
+    
+    .hourly-cell::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  background: rgba(0,0,0,0.04);
+  z-index: 0;
 }
 
     /* Alternating row backgrounds */
@@ -2347,6 +2356,7 @@ redBlock.style.outline = b.status === "pending"
 redBlock.style.outlineOffset = "-1px";
           redBlock.style.pointerEvents = "none";
           redBlock.style.transform = "translateZ(0)";
+          redBlock.style.zIndex = "2";
           // --- FIXED MERGE LOGIC ---
 const fragStartMs = Math.floor(overlapStart.getTime() / 60000) * 60000;
 const fragEndMs = Math.floor(overlapEnd.getTime() / 60000) * 60000;
