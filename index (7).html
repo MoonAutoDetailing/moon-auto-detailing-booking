@@ -1,0 +1,2524 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Moon Auto Detailing — Booking</title>
+  <style>
+    body {font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background-color: #000000;}
+    label { display:block; font-weight:600; margin: 10px 0 6px; }
+    input, select, button, textarea { width: 100%; padding: 10px; font-size: 16px; }
+    textarea { min-height: 70px; }
+    button { cursor: pointer; font-weight: 700; }
+    .muted { color: #555; font-size: 14px; }
+    .ok { color: #0a7a2f; font-weight: 700; }
+    .bad { color: #b00020; font-weight: 700; }
+    pre { background: #0b1020; color: #e7ecff; padding: 12px; border-radius: 10px; overflow:auto; }
+    input[readonly] {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+    /*LOCKING ADDRESS VALIDATION*/
+    
+    input.locked-address {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+    /* =====================
+   UI POLISH (SAFE) - DESKTOP DEFAULT           
+   ===================== */
+
+    .row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 36px;
+}
+    .row {
+  margin-bottom: 18px;
+}
+
+.row.full {
+  grid-template-columns: 1fr;
+}
+
+.row > div {
+  width: 100%;
+}
+
+
+.page-wrap {
+  max-width: 860px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+h1 {
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.page-subtitle {
+  text-align: center;
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.section-title {
+  font-size: 18px;
+  margin-top: 18px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 4px;
+}
+                                /*Mobile Media Configuration*/
+/* =====================
+   MOBILE ONLY
+   ===================== */
+@media (max-width: 640px) {
+ body {
+  margin: 0;
+}
+  .page-wrap {
+  max-width: 100%;
+  margin: 0;
+  padding: 0 6px;
+}
+  #hourlyCal {
+  width: 100%;
+}
+
+#calWrap {
+  width: 100%;
+}
+  /* Stack rows ONLY on mobile */
+  .row {
+    grid-template-columns: 1fr;
+  }
+  .booking-card .section-title {
+  margin-top: 32px;
+}
+
+  /* Reduce card padding */
+  .booking-card {
+  border-radius: 0;
+  padding: 20px 16px;
+}
+
+  /* Datetime inputs stay centered */
+  input[type="datetime-local"] {
+    width: 100%;
+    display: block;
+  }
+
+  /* Center submit button on mobile only */
+  #submitBtn {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .booking-card {
+  overflow: visible;
+}
+  body {
+  overflow-x: hidden;
+}
+
+#calendarContainer {
+  width: 100%;
+}
+
+#calWrap {
+  width: 100%;
+}
+
+#hourlyCal {
+  width: 100%;
+}
+
+.cal-label {
+  min-width: 0 !important;
+  flex: 1 1 auto;
+  text-align: center;
+  white-space: nowrap;
+}
+
+#hourlyCal {
+  width: 100%;
+}
+  /* ===== CLEAN MOBILE GRID FIT ===== */
+
+/* shrink time label */
+.hourly-row div:first-child,
+.hourly-header div:first-child {
+  font-size: 9px;
+  padding-left: 2px;
+  white-space: nowrap;
+  text-align: left;
+}
+
+/* slightly shrink pills */
+.hourly-cell {
+  height: 40px;
+}
+
+/* slightly tighten day header */
+.day-label {
+  padding: 6px 0;
+  font-size: 11px;
+}
+  .calendar-toolbar {
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .calendar-left {
+    justify-content: center;
+  }
+
+  .today-btn {
+    width: 120px; /* fixed width */
+  }
+
+}
+  
+}                        /*MEDIA CONFIGURATION END*/
+    #hourlyCal {
+  position: relative;
+      z-index: 6;
+}
+    
+    .hourly-row div:first-child,
+.hourly-header div:first-child {
+  font-size: 11px;
+  padding-left: 4px;
+  white-space: nowrap;
+}
+
+#calWrap {
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
+#calWrap {
+  position: relative;
+}
+
+
+
+  /* Prevent overflow issues, BOX INPUT SIZES AND STYLES */
+  input,
+select,
+textarea {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+
+  border-radius: 14px;
+  border: 1px solid #cfcfcf;
+  background: #ffffff;
+
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+    input,
+select,
+textarea,
+button {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+  /* Button sizing */
+#submitBtn {
+  width: 100%;
+  padding: 14px 24px;
+}
+
+
+input + input,
+input + select,
+select + input,
+select + select,
+textarea {
+  margin-top: 8px;
+}
+
+    /* =========================
+   MOON SITE TYPOGRAPHY + ALIGNMENT
+   ========================= */
+
+/* Center all form labels and helper text */
+label,
+.muted,
+.ok,
+.bad {
+  text-align: center;
+}
+
+/* Center inputs visually */
+input,
+select,
+textarea {
+  text-align: center;
+}
+
+/* Headline styling */
+h1 {
+  color: #7fb8e6; /* baby blue from site */
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+/* Section headers */
+h3 {
+  text-align: center;
+  font-weight: 600;
+}
+/* =========================
+   BOOKING BOX STYLE
+   ========================= */
+
+.card {border-radius: 0px; padding: 26px; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12), 0 6px 18px rgba(0, 0, 0, 0.08);
+      }
+    /* =========================
+   PRIMARY BUTTON (SITE MATCH)
+   ========================= */
+
+#submitBtn {
+  background: #7fb8e6;
+  color: #ffffff;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  box-shadow: 0 6px 16px rgba(127, 184, 230, 0.45);
+  border: none;
+  outline: none;
+}
+
+#submitBtn:hover {
+  background: #6aaee2;
+}
+
+    .booking-card {
+  background: #ffffff !important;
+  border-radius: 22px;
+  padding: 34px;
+  box-shadow:
+    0 18px 40px rgba(0, 0, 0, 0.12),
+    0 6px 18px rgba(0, 0, 0, 0.08);
+}
+    /* Subtle section separation */
+.booking-card .section-title {
+  margin-top: 48px;
+}
+
+.booking-card .section-title + .row,
+.booking-card .section-title + textarea {
+  background: rgba(0, 0, 0, 0.02);
+  padding: 18px;
+  border-radius: 14px;
+}
+    /* Force rounded inputs everywhere (desktop + mobile) */
+input,
+select,
+textarea {
+  border-radius: 16px !important;
+}
+input[type="datetime-local"] {
+  border-radius: 16px !important;
+  overflow: hidden;
+}
+/* Hide debug log in production UI */
+#log {
+  display: none !important;
+}
+    /* =====================
+   CALENDAR TOGGLE BUTTON (MOON STYLE)
+   ===================== */
+
+.calendar-toggle-btn {
+  display: block;
+  margin: 18px auto;
+  padding: 12px 28px;
+  background: #7fb8e6;
+  color: #ffffff;
+  border: none;
+  border-radius: 999px;
+  width: 100%;
+max-width: 100%;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  box-shadow: 0 6px 16px rgba(127, 184, 230, 0.45);
+  transition: all 0.2s ease;
+}
+
+.calendar-toggle-btn:hover {
+  background: #6aaee2;
+  transform: translateY(-1px);
+}
+
+
+    /* =====================
+   WEEKLY CALENDAR (READ-ONLY)
+   ===================== */
+
+#weeklyCal {
+  display: grid;
+  grid-template-columns: 70px repeat(7, 1fr);
+  gap: 6px;
+  padding: 12px;
+  border-radius: 16px;
+  background: rgba(0,0,0,0.02);
+}
+
+.cal-head {
+  text-align: center;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 6px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+}
+
+.cal-time {
+  text-align: right;
+  font-size: 12px;
+  padding: 8px;
+  color: #6b7280;
+}
+
+.cal-cell {
+  position: relative;
+  height: 36px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+}
+    /* Alternate day column shading using overlay */
+.cal-day-even::before,
+.cal-day-odd::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  z-index: 0;
+}
+
+.cal-day-even::before {
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.cal-day-odd::before {
+  background: rgba(0, 0, 0, 0.07);
+}
+
+/* Ensure cell content stays above overlay */
+.cal-cell > * {
+  position: relative;
+  z-index: 1;
+}
+
+
+.cal-block {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  background: rgba(107,114,128,0.35);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+@media (max-width: 640px) {
+  #weeklyCal {
+    grid-template-columns: 58px repeat(7, 1fr);
+  }
+  .cal-cell {
+    height: 40px;
+  }
+}                     
+    
+/* =====================
+   DATETIME INPUT POLISH
+   ===================== */
+
+#start,
+#end {
+  background: #ffffff;
+  border-radius: 18px;
+  border: 1px solid #e5e7eb;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
+  font-weight: 500;
+  padding: 12px 14px;
+}
+
+#end {
+  background: #f8fbff;
+  color: #7fb8e6;
+  font-weight: 600;
+}
+/* =====================
+   DESIRED START LABEL BLUE
+   ===================== */
+
+label[for="start"] {
+  color: #7fb8e6;
+}
+
+    /* =====================
+   HOURLY GRID CALENDAR
+   ===================== */
+#calWrap {
+  position: relative;
+  overflow: visible;
+  z-index: 0;
+}
+
+.hourly-header,
+.hourly-row {
+  display: grid;
+  grid-template-columns: 52px repeat(7, 1fr);
+  align-items: center;
+  gap: 4px;
+}
+
+.hourly-header > div:not(.day-label) {
+  font-weight: 600;
+  text-align: center;
+  color: #7fb8e6;
+}
+
+    .hourly-header div:first-child {
+  position: sticky;
+  left: 0;
+  background: white;
+  z-index: 6;
+}
+
+.hourly-cell {
+  position: relative;
+}
+
+.hourly-cell {
+  height: 26px;
+  border-radius: 6px; /* square calendar look */
+  background: rgba(0, 0, 0, 0.04);
+  transition: all 0.18s ease;
+  box-shadow: none; /* remove pill shadow */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+    /* Alternating row backgrounds */
+.row-light .hourly-cell {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+.row-dark .hourly-cell {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.hourly-cell.booked {
+  background: #e44b4b;
+  color: #fff;
+  font-weight: 700;
+}
+
+.day-top {
+  font-size: 13px;
+}
+
+.day-bottom {
+  font-size: 12px;
+}
+    .day-label > div {
+  background: transparent !important;
+}
+
+.hourly-cell.exposed {
+  cursor: pointer;
+}
+
+.day-label {
+  position: sticky;
+  left: 0;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  background: #7fb8e6;
+  color: #ffffff;
+
+  padding: 10px 0;
+  border-radius: 10px;
+
+  font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  line-height: 1.1;
+  text-align: center;
+
+  white-space: nowrap;
+
+  box-shadow: 0 6px 16px rgba(127, 184, 230, 0.45);
+  background-clip: padding-box;
+
+  z-index: 10;
+}
+
+.day-label.today {    /*CURRENT DAY CALENDAR COLOR*/
+  background: #facc15;
+  color: #111;
+}
+
+/* =====================
+   CALENDAR TOOLBAR LAYOUT (STRUCTURAL FIX)
+   ===================== */
+
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  gap: 12px;
+}
+
+/* Left group: arrows + month */
+.calendar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Keep label centered inside its group */
+.cal-label {
+  font-weight: 600;
+  color: #7fb8e6;
+  font-size: 15px;
+  text-align: center;
+  min-width: 140px;
+}
+
+/* Fix button sizing so they NEVER stretch */
+.nav-btn,
+.today-btn {
+  width: 90px;
+  height: 36px;
+  padding: 0;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Month label centered */
+.cal-label {
+  font-weight: 600;
+  color: #7fb8e6;
+  font-size: 15px;
+  text-align: center;
+  flex: 1;
+}
+
+/* Small circular nav buttons */
+.nav-btn {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  background: #7fb8e6;
+  color: white;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(127,184,230,0.35);
+}
+
+/* Compact Today button */
+.today-btn {
+  padding: 6px 14px;
+  border-radius: 18px;
+  background: #7fb8e6;
+  color: white;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 4px 10px rgba(127,184,230,0.35);
+}
+
+
+
+.cal-label {
+  font-weight: 700;
+  font-size: 16px;
+  color: #7fb8e6;
+  flex: 1;
+  text-align: center;
+}
+
+.today-btn {
+  background: #7fb8e6;
+  border: none;
+  color: white;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 4px 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(127, 184, 230, 0.35);
+}
+
+.nav-btn {
+  background: #7fb8e6;
+  border: none;
+  color: white;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(127, 184, 230, 0.35);
+}
+
+.nav-btn:hover,
+.today-btn:hover {
+  background: #6aaee2;
+}
+    #calLabel {
+  font-weight: 600;
+  color: #7fb8e6;
+  font-size: 15px;
+}
+
+/* =====================
+   LEFT AXIS HOUR PILLS
+   ===================== */
+
+.hour-pill {
+  background: #7fb8e6;
+  color: #ffffff;
+
+  font-size: 9px;
+  font-weight: 600;
+
+  border-radius: 10px;
+
+  padding: 4px 8px;
+  height: 26px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  white-space: nowrap;
+
+  box-shadow: 0 4px 10px rgba(127,184,230,0.35);
+}
+
+
+/* Pulse animation for green slots */
+@keyframes pulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+
+    .green-slot-pill {
+  animation: pulse 1.6s ease-in-out infinite;
+}
+    .green-slot-pill {
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.green-slot-pill:hover {
+  background: rgba(34,197,94,1);
+  transform: translateY(-1px);
+}
+    .green-slot-pill.selected {
+  animation: none; /* stop pulse */
+  background: #15803d; /* dark green */
+  box-shadow: 0 0 0 3px #065f46; /* darker outline */
+}
+
+
+    /* =====================
+   EXPOSED ANCHOR LAYOUT
+   ===================== */
+
+.exposed-day-row {
+  padding: 18px;
+  border-radius: 22px;
+  background: linear-gradient(to bottom, #ffffff, #f9fbff);
+  box-shadow: 0 18px 40px rgba(0,0,0,0.08);
+  margin-bottom: 16px;
+}
+
+.exposed-times-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.exposed-slot-btn {
+  background: rgba(34,197,94,0.25);
+  border: none;
+  border-radius: 999px;
+  padding: 8px 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.exposed-slot-btn:hover {
+  background: rgba(34,197,94,0.45);
+  transform: translateY(-1px);
+}
+
+.exposed-slot-btn.selected {
+  background: rgba(34,197,94,0.75);
+  box-shadow: 0 0 0 3px rgba(127,184,230,0.6);
+}
+
+.exposed-muted {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+  </style>                              <!--PAGE UI DESIGN END-->
+
+  
+</head>
+<body>
+  <div class="page-wrap">
+       <div class="card booking-card">
+  <h1>Moon Auto Detailing — Booking</h1>          <!--ACTUAL PHYSICAL TEXT STARTS-->                    
+    <p class="page-subtitle">
+  Mobile Auto Detailing, WE come to YOU. Book in now, no payment required today.                      <!--ALL BOOKING CONTENT-->
+</p>
+
+    <h3 class="section-title">1. Customer Information</h3> <!--Customer-Information-->
+    <div class="row">
+      <div>
+        <label for="fullName">Full name</label>
+        <input id="fullName" type="text" placeholder="First Last" autocomplete="name" required />
+      </div>
+      <div>
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="you@email.com" autocomplete="email" required />
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label for="phone">Phone</label>
+        <input id="phone" type="tel" placeholder="(518) 555-1234" autocomplete="tel" />
+      </div>
+      <div>
+        <label for="address">Address</label>
+        <input
+  id="address"
+  type="text"
+  autocomplete="street-address"
+  inputmode="text"
+  placeholder="Street, City, State ZIP"
+  required
+/>
+
+      </div>
+    </div>
+
+    <h3 class="section-title">2. Vehicle Details</h3> <!--Vehicle-Details-->
+    <div class="row">
+    <div>
+        <label for="vehicleSize">Vehicle size</label> <!--Vehicle size-->
+        <select id="vehicleSize" required>
+          <option value="">Select size…</option>
+          <option value="compact">compact</option>
+          <option value="midsized">midsized</option>
+          <option value="oversized">oversized</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="serviceVariant">Service</label> <!--Select-service-->
+        <select id="serviceVariant" required disabled>
+          <option value="">Select vehicle size first…</option>
+        </select>
+        <div id="serviceMeta" class="muted"></div>
+      </div>
+    </div>
+      
+    <div class="row"> 
+      <div>
+        <label for="year">Year</label>
+        <input id="year" type="number" min="1900" max="2100" placeholder="2015" />
+      </div>
+      <div>
+        <label for="make">Make</label>
+        <input id="make" type="text" placeholder="Toyota" />
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label for="model">Model</label>
+        <input id="model" type="text" placeholder="Corolla" />
+      </div>
+      <div>
+        <label for="plate">License plate</label>
+        <input id="plate" type="text" placeholder="ABC-1234" />
+      </div>
+    </div>
+
+    <h3 class="section-title">3. Appointment Time</h3>
+                                                                 <!-- Confirmed Bookings Calendar (read-only reference) -->
+<button
+  type="button"
+  id="toggleCalendarBtn"
+  class="calendar-toggle-btn"
+>
+
+  View availability calendar
+</button>
+
+<div id="calendarContainer" style="display:none;">
+  <div id="calWrap" style="margin-top:16px;">
+  <div class="calendar-toolbar">
+  <div class="calendar-left">
+    <button type="button" id="calPrev" class="nav-btn">‹</button>
+    <div id="calLabel" class="cal-label"></div>
+    <button type="button" id="calNext" class="nav-btn">›</button>
+  </div>
+
+  <button type="button" id="calToday" class="today-btn">Today</button>
+</div>
+  <div id="hourlyCal"></div>
+</div>
+  
+  </div> <!-- calendarContainer -->
+
+    <div class="row">
+      <div>
+        <label for="start">Desired Start Time</label>
+        <input id="start" type="datetime-local" required />
+      </div>
+      <div>
+        <label for="end" style="color:#7fb8e6;">Scheduled End Time</label>
+       <input id="end" type="datetime-local" readonly />
+      </div>
+    </div>
+    <label for="serviceAddress">Address where service will be performed </label>
+    <input
+  id="serviceAddress"
+  type="text"
+  autocomplete="street-address"
+  inputmode="text"
+  placeholder="Start typing service address…"
+  required
+/>
+
+    <button id="submitBtn" class="primary-btn">
+  Submit Booking Request
+</button>
+      <p class="muted" style="margin-top:14px;">
+  Your request will be reviewed and confirmed shortly. You’ll receive a follow-up once it’s scheduled.
+</p>
+
+    <div id="status" class="muted" style="margin-top:10px;"></div>
+    <pre id="log" style="margin-top:10px; display:none;"></pre>
+  </div> <!-- booking-card -->
+    
+  </div> <!-- page-wrap -->
+
+  <script type="module">
+    let availabilityRequestVersion = 0;
+
+    // =============================
+// RESCHEDULE MODE DETECTION
+// =============================
+const urlParams = new URLSearchParams(window.location.search);
+
+const RESCHEDULE_TOKEN = urlParams.get("reschedule_token");
+const RESCHEDULE_MODE = Boolean(RESCHEDULE_TOKEN);
+
+                                                                                                    //DEBUG SWITCH!!                                                                           
+
+    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+    const DEBUG = true;   //SWITCH HERE
+
+    // =========================
+    // CONFIG (REPLACE)
+    // =========================
+// =========================
+// BUSINESS RULES (STEP 2)
+// =========================
+const BUSINESS_RULES = {
+  openHour: 8,     // 8:00 AM
+  closeHour: 18,  // 6:00 PM (hard stop)
+  allowedWeekdays: [1, 2, 3, 4, 5] // Monday–Friday (JS: 0 = Sunday)
+};
+    // =========================
+// SCHEDULING CONSTANTS (v1.1)
+// =========================
+const SLOT_MINUTES = 10;              // internal resolution
+const MIN_BOOKABLE_GAP_MINUTES = 120; // anti-fragment rule (2 hours)
+
+    
+    const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbWh1Z3p0cnBpcHJucW1jeWFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MDk1NjMsImV4cCI6MjA4NjA4NTU2M30.Mo0uRGWCjU1fOa1br2P8j1ogEZf7mDm2JseV8DFnPwI";
+
+    if (!SUPABASE_URL.startsWith("http")) {
+      throw new Error("Set SUPABASE_URL and SUPABASE_ANON_KEY in index.html");
+    }
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Elements
+    const elVehicleSize = document.getElementById("vehicleSize");
+    const elServiceVariant = document.getElementById("serviceVariant");
+    const elServiceMeta = document.getElementById("serviceMeta");
+    const elStatus = document.getElementById("status");
+    const elLog = document.getElementById("log");
+    const elSubmit = document.getElementById("submitBtn");
+
+    const elFullName = document.getElementById("fullName");
+    const elEmail = document.getElementById("email");
+    const elPhone = document.getElementById("phone");
+    const elAddress = document.getElementById("address");
+
+    const elYear = document.getElementById("year");
+    const elMake = document.getElementById("make");
+    const elModel = document.getElementById("model");
+    const elPlate = document.getElementById("plate");
+
+    const elStart = document.getElementById("start");
+    const elEnd = document.getElementById("end");
+    const elServiceAddress = document.getElementById("serviceAddress");
+
+    // Hard-lock end time input (defensive)
+elEnd.addEventListener("keydown", (e) => e.preventDefault());
+elEnd.addEventListener("paste", (e) => e.preventDefault());
+
+    // State
+    let variantsCache = []; // {id, vehicle_size, price, duration_minutes, service:{category,level}}
+    let selectedVariant = null;
+    let isSubmitting = false;
+    let calendarLoading = false;
+    let calendarReloadDebounce = null;
+    // =========================
+// =========================
+// RESCHEDULE MODE STATE
+// =========================
+let RESCHEDULE_BOOKING_ID = null;
+
+
+    
+    // Phase 5 state
+let selectedStartISO = null;
+
+                                                                            //SWITCH CHANGES THIS DEBUG
+    function log(message, obj) {
+  if (!DEBUG) return;
+
+  const ts = new Date().toISOString();
+  const line = obj
+    ? `${ts}  ${message}\n${JSON.stringify(obj, null, 2)}\n`
+    : `${ts}  ${message}\n`;
+
+  console.log(message, obj ?? "");
+  elLog.textContent = (elLog.textContent || "") + line;
+}
+
+    function selfTestTimeSlots() {
+  if (!DEBUG) return;
+
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const slots = generateSlotsForDay(today);
+  log("Self-test: first/last slot", {
+    first: slots[0] ? slots[0].toString() : null,
+    last: slots[slots.length - 1] ? slots[slots.length - 1].toString() : null,
+    count: slots.length
+  });
+
+  // Expect count = 60 for 8:00–18:00 in 10-min slots
+// (10 hours * 6 slots per hour = 60)
+}
+
+
+    function setStatus(type, text) {
+      elStatus.className = type === "ok" ? "ok" : type === "bad" ? "bad" : "muted";
+      elStatus.textContent = text;
+    }
+
+    function normalizeVehicleSize(v) {
+      return (v || "").trim().toLowerCase();
+    }
+
+    function requireNonEmpty(name, value) {
+      const v = (value || "").trim();
+      if (!v) throw new Error(`${name} is required`);
+      return v;
+    }
+
+    function parseLocalDateTimeToISO(dtLocal) {
+      // dtLocal is "YYYY-MM-DDTHH:MM"
+      // Interpret as local time, convert to ISO string with timezone.
+      const d = new Date(dtLocal);
+      if (Number.isNaN(d.getTime())) throw new Error("Invalid date/time value");
+      return d.toISOString();
+    }
+// === ADD THESE TWO FUNCTIONS RIGHT HERE (step 1) ===
+function parseDateTimeLocalToDate(dtLocal) {
+  // dtLocal is "YYYY-MM-DDTHH:MM" from <input type="datetime-local">
+  const [datePart, timePart] = dtLocal.split("T");
+  const [y, m, d] = datePart.split("-").map(Number);
+  const [hh, mm] = timePart.split(":").map(Number);
+  // Create a LOCAL Date (no UTC conversion)
+  return new Date(y, m - 1, d, hh, mm, 0, 0);
+}
+
+function formatDateToDateTimeLocal(d) {
+  const pad = (n) => String(n).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const mm = pad(d.getMonth() + 1);
+  const dd = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const min = pad(d.getMinutes());
+  return `${yyyy}-${mm}-${dd}T${hh}:${min}`;
+}
+
+    // =========================
+// 15-MIN INTERNAL TIME HELPERS (PHASE 1)
+// Pure functions only: no DOM, no Supabase, no fetch
+// =========================
+
+// Return a new Date that is rounded UP to the next 15-minute boundary
+function roundUpToSlot(date, slotMinutes = SLOT_MINUTES) {
+  const d = new Date(date);
+  const ms = d.getTime();
+  const slotMs = slotMinutes * 60_000;
+  const rounded = Math.ceil(ms / slotMs) * slotMs;
+  return new Date(rounded);
+}
+
+// Add minutes to a Date (returns new Date)
+function addMinutes(date, minutes) {
+  return new Date(date.getTime() + minutes * 60_000);
+}
+
+// Generate all slot start times (15-min) for a given day within business hours
+// Returns array of Date objects: [08:00, 08:15, ... , 17:45]
+function generateSlotsForDay(dayDate, openHour = BUSINESS_RULES.openHour, closeHour = BUSINESS_RULES.closeHour, slotMinutes = SLOT_MINUTES) {
+  const day = new Date(dayDate);
+  day.setHours(0, 0, 0, 0);
+
+  const start = new Date(day);
+  start.setHours(openHour, 0, 0, 0);
+
+  const end = new Date(day);
+  end.setHours(closeHour, 0, 0, 0);
+
+  const slots = [];
+  for (let t = new Date(start); t < end; t = addMinutes(t, slotMinutes)) {
+    slots.push(new Date(t));
+  }
+  return slots;
+}
+
+// Utility: overlap check (half-open interval logic)
+function intervalsOverlap(aStart, aEnd, bStart, bEnd) {
+  return aStart < bEnd && aEnd > bStart;
+}
+    
+// Expand a booking block
+function expandBookingBlock(block) {
+  return {
+    start: new Date(block.start),
+    end: new Date(block.end)
+  };
+}
+
+
+function setRedBlockRadii(el, { roundTop, roundBottom }) {
+  const RADIUS = "17px";
+
+const rTop = roundTop ? RADIUS : "0px";
+const rBot = roundBottom ? RADIUS : "0px";
+
+  el.style.borderTopLeftRadius = rTop;
+  el.style.borderTopRightRadius = rTop;
+  el.style.borderBottomLeftRadius = rBot;
+  el.style.borderBottomRightRadius = rBot;
+}
+
+
+ // =========================
+// PHASE 3 VALID START TIMES (INTERNAL)
+// =========================
+
+function isAllowedWeekday(date) {
+  return BUSINESS_RULES.allowedWeekdays.includes(date.getDay());
+}
+
+function getBusinessCloseDate(dayDate) {
+  const d = new Date(dayDate);
+  d.setHours(BUSINESS_RULES.closeHour, 0, 0, 0);
+  return d;
+}
+
+// Returns array of Date start times that are internally valid (15-min aligned)
+function getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks) {
+  if (!Number.isFinite(serviceDurationMinutes) || serviceDurationMinutes <= 0) return [];
+
+  // weekday gate
+  if (!isAllowedWeekday(dayDate)) return [];
+
+  const daySlots = generateSlotsForDay(dayDate);
+  const businessClose = getBusinessCloseDate(dayDate);
+  const valid = [];
+
+  for (const start of daySlots) {
+    const now = new Date();
+
+if (start < now) continue;
+
+    const end = addMinutes(start, serviceDurationMinutes);
+
+// Service must finish before close (travel handled later by server)
+if (end > businessClose) continue;
+
+// Overlap check against real service time only
+const conflicts = expandedBlocks.some(b =>
+  intervalsOverlap(start, end, b.start, b.end)
+);
+
+if (conflicts) continue;
+
+    valid.push(start);
+  }
+
+  return valid;
+}
+
+// DEV-ONLY SELF TEST
+function selfTestValidStarts(dayDate, serviceDurationMinutes, expandedBlocks) {
+  if (!DEBUG) return;
+
+  const valid = getValidStartTimesForDay(
+    dayDate,
+    serviceDurationMinutes,
+    expandedBlocks
+  );
+
+  console.log("Valid start times (preview)", {
+    day: dayDate.toDateString(),
+    duration_minutes: serviceDurationMinutes,
+    count: valid.length,
+    first10: valid.slice(0, 10).map(d =>
+      d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    )
+  });
+}
+
+   // =========================
+// PHASE 4: EXPOSED (CUSTOMER-SAFE) START TIMES
+// =========================
+
+    function getOpenDayAnchors(dayDate, serviceDurationMinutes) {
+  const anchors = [];
+
+  const base = new Date(dayDate);
+  base.setHours(BUSINESS_RULES.openHour, 0, 0, 0);
+
+  const increments = [0, 150, 300, 450]; // 2.5 hour spacing
+
+  const businessClose = getBusinessCloseDate(dayDate);
+
+  for (const offset of increments) {
+    const start = addMinutes(base, offset);
+
+    const serviceEnd = addMinutes(start, serviceDurationMinutes);
+
+    // Service must finish by 6pm (travel can exceed)
+    if (serviceEnd <= businessClose) {
+      anchors.push(start);
+    }
+  }
+
+  return anchors;
+}
+
+function isOnHour(date) {
+  return date.getMinutes() === 0;
+}
+
+function getExposedStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks) {
+  const valid = getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks);
+  if (!valid.length) return [];
+  // =========================
+// OPEN DAY RULE (per-day)
+// =========================
+const hasBlockOnThisDay = expandedBlocks.some(b => {
+  const blockDay = new Date(b.start);
+  return blockDay.toDateString() === dayDate.toDateString();
+});
+
+if (!hasBlockOnThisDay) {
+  return getOpenDayAnchors(dayDate, serviceDurationMinutes);
+}
+  return runExposureLogic(valid, dayDate, serviceDurationMinutes, expandedBlocks);
+}
+
+ // =========================
+// SERVER EXPOSURE PIPELINE
+// =========================
+
+function runExposureLogic(validTimes, dayDate, serviceDurationMinutes, expandedBlocks) {
+  if (!validTimes.length) return [];
+
+  const hasBlockOnThisDay = expandedBlocks.some(b => {
+    const blockDay = new Date(b.start);
+    return blockDay.toDateString() === dayDate.toDateString();
+  });
+
+  if (!hasBlockOnThisDay) {
+    return getOpenDayAnchors(dayDate, serviceDurationMinutes);
+  }
+
+  const gaps = [];
+  let currentGap = [validTimes[0]];
+
+  for (let i = 1; i < validTimes.length; i++) {
+    const prev = validTimes[i - 1];
+    const curr = validTimes[i];
+    const diffMinutes = (curr - prev) / 60000;
+
+    if (diffMinutes === SLOT_MINUTES) currentGap.push(curr);
+    else {
+      gaps.push(currentGap);
+      currentGap = [curr];
+    }
+  }
+  gaps.push(currentGap);
+
+  const exposed = [];
+  const businessClose = getBusinessCloseDate(dayDate);
+
+  for (const gap of gaps) {
+    const gapStart = gap[0];
+    let gapEnd = businessClose;
+
+    for (const b of expandedBlocks) {
+      if (b.start > gapStart && b.start < gapEnd) {
+        gapEnd = b.start;
+      }
+    }
+
+    exposed.push(gapStart);
+
+    const gapLengthMinutes = (gapEnd - gapStart) / 60000;
+
+    if (gapLengthMinutes > 240 && gap.length > 1) {
+      const midpoint = gapStart.getTime() + (gapLengthMinutes / 2) * 60000;
+
+      let closest = null;
+      let smallestDiff = Infinity;
+
+      for (const t of gap) {
+        const diff = Math.abs(t.getTime() - midpoint);
+        if (diff < smallestDiff) {
+          smallestDiff = diff;
+          closest = t;
+        }
+      }
+
+      if (closest && closest.getTime() !== gapStart.getTime()) {
+        exposed.push(closest);
+      }
+    }
+  }
+
+  return exposed;
+}
+
+function selfTestExposedStarts(dayDate, serviceDurationMinutes, expandedBlocks) {
+  if (!DEBUG) return;
+
+  const exposed = getExposedStartTimesForDay(
+    dayDate,
+    serviceDurationMinutes,
+    expandedBlocks
+  );
+
+  console.log("Exposed start times (customer-safe)", {
+    day: dayDate.toDateString(),
+    duration_minutes: serviceDurationMinutes,
+    count: exposed.length,
+    times: exposed.map(d =>
+      d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+    )
+  });
+}
+    // =========================
+// PHASE 4.5 — FRAGMENT FILTER
+// =========================
+function passesFragmentFilter(start, serviceDurationMinutes, expandedBlocks, dayDate) {
+
+  const businessOpen = new Date(dayDate);
+  businessOpen.setHours(BUSINESS_RULES.openHour, 0, 0, 0);
+
+  const serviceClose = new Date(dayDate);
+  serviceClose.setHours(BUSINESS_RULES.closeHour, 0, 0, 0);
+
+  const serviceEnd = addMinutes(start, serviceDurationMinutes);
+
+  // HARD RULE: service must finish by close (6 PM)
+  if (serviceEnd > serviceClose) {
+    return false;
+  }
+
+  // ---- FIND PREVIOUS BOUNDARY ----
+  let previousBoundary = businessOpen;
+
+  for (const b of expandedBlocks) {
+    if (b.end <= start && b.end > previousBoundary) {
+      previousBoundary = b.end;
+    }
+  }
+
+  // ---- FIND NEXT BOUNDARY ----
+  let nextBoundary = serviceClose;
+
+  for (const b of expandedBlocks) {
+    if (b.start >= start && b.start < nextBoundary) {
+      nextBoundary = b.start;
+    }
+  }
+
+  const gapBefore = (start - previousBoundary) / 60000;
+const gapAfter = (nextBoundary - serviceEnd) / 60000;
+
+  const isStartOfDay = previousBoundary.getTime() === businessOpen.getTime();
+
+if (!isStartOfDay && gapBefore > 0 && gapBefore < MIN_BOOKABLE_GAP_MINUTES) {
+  return false;
+}
+
+  const isEndOfDay = nextBoundary.getTime() === serviceClose.getTime();
+
+if (!isEndOfDay && gapAfter > 0 && gapAfter < MIN_BOOKABLE_GAP_MINUTES) {
+  return false;
+}
+
+  return true;
+}
+    
+function passesFragmentRuleTravelAware(
+  start,
+  serviceDurationMinutes,
+  prev,
+  next,
+  candidateAddress,
+  travelGraph,
+  dayDate,
+  openUtcHour,
+  closeUtcHour
+) {
+  const businessOpen = new Date(dayDate);
+  businessOpen.setUTCHours(openUtcHour, 0, 0, 0);
+
+  const businessClose = new Date(dayDate);
+  businessClose.setUTCHours(closeUtcHour, 0, 0, 0);
+
+  const serviceEnd = addMinutes(start, serviceDurationMinutes);
+  if (serviceEnd > businessClose) return false;
+
+  // Adjust boundaries to include travel buffer
+  let previousBoundary = businessOpen;
+  if (prev) {
+    const prevEnd = new Date(prev.scheduled_end);
+    const minsFromPrev =
+      travelGraph.get(pairKey(prev.service_address, candidateAddress)) ?? 0;
+    previousBoundary = addMinutes(prevEnd, minsFromPrev);
+  }
+
+  let nextBoundary = businessClose;
+  if (next) {
+    const nextStart = new Date(next.scheduled_start);
+    const minsToNext =
+      travelGraph.get(pairKey(candidateAddress, next.service_address)) ?? 0;
+    nextBoundary = addMinutes(nextStart, -minsToNext);
+  }
+
+  const gapBefore = (start - previousBoundary) / 60000;
+  const gapAfter = (nextBoundary - serviceEnd) / 60000;
+
+  const isStartOfDay = previousBoundary.getTime() === businessOpen.getTime();
+  if (!isStartOfDay && gapBefore > 0 && gapBefore < MIN_BOOKABLE_GAP_MINUTES) return false;
+
+  const isEndOfDay = nextBoundary.getTime() === businessClose.getTime();
+  if (!isEndOfDay && gapAfter > 0 && gapAfter < MIN_BOOKABLE_GAP_MINUTES) return false;
+
+  return true;
+}
+
+// =========================
+// BUSINESS HOURS VALIDATION
+// =========================
+function isBookingWithinBusinessRules(startLocal, endLocal) {
+  // Must be same calendar day
+  if (
+    startLocal.getFullYear() !== endLocal.getFullYear() ||
+    startLocal.getMonth() !== endLocal.getMonth() ||
+    startLocal.getDate() !== endLocal.getDate()
+  ) {
+    return false;
+  }
+
+  // Weekday check (Mon–Fri only)
+  const day = startLocal.getDay();
+  if (!BUSINESS_RULES.allowedWeekdays.includes(day)) {
+    return false;
+  }
+
+  // Time window check
+  const startHour = startLocal.getHours() + startLocal.getMinutes() / 60;
+  const endHour = endLocal.getHours() + endLocal.getMinutes() / 60;
+
+  if (startHour < BUSINESS_RULES.openHour) return false;
+  if (endHour > BUSINESS_RULES.closeHour) return false;
+
+  return true;
+}
+
+   function recalcEndTimePreview() {
+  if (!elStart.value) return;
+  if (!selectedVariant?.duration_minutes) return;
+
+  const startLocal = parseDateTimeLocalToDate(elStart.value);
+  const durationMinutes = Number(selectedVariant.duration_minutes);
+
+  const endLocal = new Date(startLocal.getTime() + durationMinutes * 60_000);
+  elEnd.value = formatDateToDateTimeLocal(endLocal);
+}
+
+
+// 👇 ADD THIS FUNCTION DIRECTLY HERE
+function computeScheduledEnd(startLocal, durationMinutes) {
+  const startDate = new Date(startLocal);
+  if (Number.isNaN(startDate.getTime())) {
+    throw new Error("Invalid scheduled start time");
+  }
+
+  const endDate = new Date(startDate.getTime() + durationMinutes * 60 * 1000);
+
+  const pad = n => String(n).padStart(2, "0");
+  return `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}T${pad(endDate.getHours())}:${pad(endDate.getMinutes())}`;
+}
+
+  
+    function resetServiceDropdown(msg) {
+      elServiceVariant.innerHTML = `<option value="">${msg}</option>`;
+      elServiceVariant.disabled = true;
+      elServiceMeta.textContent = "";
+      selectedVariant = null;
+    }
+
+    function renderServiceDropdown(vehicleSize) {
+      const filtered = variantsCache
+        .filter(v => v.vehicle_size === vehicleSize)
+        .map(v => {
+          const cat = v.service?.category ?? "Unknown Category";
+          const lvl = (v.service?.level ?? "?");
+          const label = `${cat} — Level ${lvl} (${v.vehicle_size}) — ${v.duration_minutes} min — $${v.price}`;
+          return { id: v.id, label };
+        });
+
+      if (!filtered.length) {
+        resetServiceDropdown("No services available for this vehicle size");
+        log("No service variants found for vehicle size", { vehicleSize, totalVariants: variantsCache.length });
+        return;
+      }
+
+      elServiceVariant.disabled = false;
+      elServiceVariant.innerHTML = `<option value="">Select service…</option>` +
+        filtered.map(o => `<option value="${o.id}">${o.label}</option>`).join("");
+    }
+
+    async function loadServiceVariants() {
+      setStatus("muted", "Loading services…");
+      resetServiceDropdown("Loading…");
+
+                                              // Explicit embedded relation; DO NOT rely on implicit joins returning null silently
+                                              //THIS IS SERVICE_VARIANTS NOT LOADING DEBUG 
+      const { data, error } = await supabase
+        .from("service_variants")
+        .select("id, vehicle_size, price, duration_minutes, service:services(category, level)")
+        .eq("active", true);
+
+      if (error) {
+        setStatus("bad", "Failed to load services. See log.");
+        log("Service load error", error);
+        resetServiceDropdown("Failed to load services");
+        return;
+      }
+
+      if (!Array.isArray(data)) {
+        setStatus("bad", "Service data shape invalid. See log.");
+        log("Service data not array", data);
+        resetServiceDropdown("Service data invalid");
+        return;
+      }
+
+      // Validate minimum fields; log anomalies, don't crash
+      variantsCache = data.map(v => ({
+        id: v.id,
+        vehicle_size: normalizeVehicleSize(v.vehicle_size),
+        price: v.price,
+        duration_minutes: v.duration_minutes,
+        service: v.service || null
+      }));
+
+      setStatus("muted", "");
+      log("Loaded service variants", { count: variantsCache.length });            //SERVICE VARIANTS DEBUG ENDS HERE
+
+      // If user already selected vehicle size, render
+      const vs = normalizeVehicleSize(elVehicleSize.value);
+      if (vs) renderServiceDropdown(vs);
+      else resetServiceDropdown("Select vehicle size first…");
+    }
+
+    elVehicleSize.addEventListener("change", () => {
+      const vs = normalizeVehicleSize(elVehicleSize.value);
+      if (!vs) {
+        resetServiceDropdown("Select vehicle size first…");
+        return;
+      }
+      if (!["compact","midsized","oversized"].includes(vs)) {
+        resetServiceDropdown("Invalid vehicle size");
+        log("Invalid vehicle size selected", { vs });
+        return;
+      }
+      renderServiceDropdown(vs);
+    });
+
+    elServiceVariant.addEventListener("change", async () => {
+  const id = elServiceVariant.value;
+  selectedVariant = variantsCache.find(v => v.id === id) || null;
+      selectedStartISO = null;
+elStart.value = "";
+recalcEndTimePreview();
+
+  if (!selectedVariant) {
+    elServiceMeta.textContent = "";
+    scheduleCalendarReload(); // Clear availability if no service
+    return;
+  }
+
+  const cat = selectedVariant.service?.category ?? "Unknown Category";
+  const lvl = selectedVariant.service?.level ?? "?";
+
+  elServiceMeta.textContent =
+    `Selected: ${cat} Level ${lvl} — ${selectedVariant.duration_minutes} minutes`;
+
+  recalcEndTimePreview();
+
+  // 🔥 FORCE CALENDAR REBUILD
+  scheduleCalendarReload();
+});
+
+
+    // Core booking flow (no read-after-write after inserts)
+async function hasBookingConflict(requestedStartISO, requestedEndISO) {
+  const { count, error } = await supabase
+  .from("booking_time_windows")
+  .select("scheduled_start", { count: "exact", head: true })
+  .lt("scheduled_start", requestedEndISO)
+  .gt("scheduled_end", requestedStartISO);
+
+  if (error) {
+    log("Conflict check failed", error);
+    throw new Error("Unable to verify availability. Please try again.");
+  }
+
+  return count > 0;
+}
+
+    // =========================
+// LOAD BOOKING FOR RESCHEDULE
+// =========================
+async function loadRescheduleBooking() {
+  try {
+    const res = await fetch(`/api/get-booking-by-token?token=${RESCHEDULE_TOKEN}`);
+    const data = await res.json();
+    
+    if (!data?.booking) {
+      setStatus("bad", "Invalid or expired reschedule link.");
+      return;
+    }
+
+    const b = data.booking;
+    RESCHEDULE_BOOKING_ID = b.id;
+    // Load service variant so calendar can compute duration
+try {
+  const { data: variant, error: variantErr } = await supabase
+    .from("service_variants")
+    .select(`
+      id,
+      vehicle_size,
+      price,
+      duration_minutes,
+      service:services(category, level)
+    `)
+    .eq("id", b.service_variant_id)
+    .single();
+
+  if (variantErr || !variant) {
+    throw new Error("Failed loading service variant for reschedule.");
+  }
+
+  selectedVariant = {
+    id: variant.id,
+    vehicle_size: variant.vehicle_size,
+    price: variant.price,
+    duration_minutes: variant.duration_minutes,
+    service: variant.service
+  };
+
+  console.log("Reschedule variant loaded:", selectedVariant);
+
+} catch (err) {
+  console.error(err);
+  setStatus("bad", "Failed loading booking details.");
+  return;
+}
+
+
+    // Prefill customer fields
+    elFullName.value = b.customers.full_name;
+    elEmail.value = b.customers.email;
+    elPhone.value = b.customers.phone || "";
+    elAddress.value = b.customers.address || "";
+    elServiceAddress.value = b.service_address;
+    elSubmit.textContent = "Submit New Time";
+
+    // Lock all fields except time
+    [
+      elFullName,
+      elEmail,
+      elPhone,
+      elAddress,
+      elVehicleSize,
+      elServiceVariant,
+      elYear,
+      elMake,
+      elModel,
+      elPlate,
+      elServiceAddress
+    ].forEach(el => el.disabled = true);
+  
+
+    setStatus("ok", "Please choose your new appointment time.");
+    await loadServiceVariants();
+
+  } catch (err) {
+    console.error(err);
+    setStatus("bad", "Failed to load booking.");
+  }
+}
+    
+    async function submitBooking() {
+      if (isSubmitting) return;
+isSubmitting = true;
+
+      // =============================
+// RESCHEDULE MODE SHORT-CIRCUIT
+// =============================
+if (RESCHEDULE_MODE) {
+  try {
+    if (!selectedStartISO) {
+      throw new Error("No time selected.");
+    }
+
+    const response = await fetch("/api/submit-reschedule", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        token: RESCHEDULE_TOKEN,
+        new_start: selectedStartISO
+      })
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result.error || "Reschedule failed.");
+    }
+
+    window.location.href = "/booking-confirmed.html";
+    return; // CRITICAL: prevent booking flow below
+  } catch (err) {
+    alert(err.message);
+    isSubmitting = false;
+    return;
+  }
+}
+
+
+      elSubmit.disabled = true;
+      setStatus("muted", "Submitting…");
+
+      try {
+        const vehicle_size = normalizeVehicleSize(requireNonEmpty("Vehicle size", elVehicleSize.value));
+        if (!["compact","midsized","oversized"].includes(vehicle_size)) throw new Error("Vehicle size must be compact, midsized, or oversized (lowercase)");
+
+        const service_variant_id = requireNonEmpty("Service", elServiceVariant.value);
+        const email = requireNonEmpty("Email", elEmail.value).toLowerCase();
+
+        const full_name = requireNonEmpty("Full name", elFullName.value);
+        const address = requireNonEmpty("Customer address", elAddress.value);
+        const phone = (elPhone.value || "").trim() || null;
+
+        const service_address = requireNonEmpty("Service address", elServiceAddress.value);
+
+        // --- Step 2: derive end time from service duration (LOCAL time) ---
+const startLocal = parseDateTimeLocalToDate(
+  requireNonEmpty("Scheduled start", elStart.value)
+);
+        const now = new Date();
+if (startLocal < now) {
+  throw new Error("You cannot book a time in the past.");
+}
+
+
+const durationMinutes = Number(selectedVariant?.duration_minutes);
+if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+  throw new Error("Invalid service duration. Please re-select your service.");
+}
+      log("Duration minutes used", {
+  raw: selectedVariant?.duration_minutes,
+  coerced: durationMinutes
+});
+
+// Add duration in LOCAL time
+const endLocal = new Date(startLocal.getTime() + durationMinutes * 60_000);
+
+// Autofill + lock the end-time input for UI consistency
+elEnd.value = formatDateToDateTimeLocal(endLocal);
+
+// Convert to ISO ONLY for database usage
+const scheduled_start = startLocal.toISOString();
+const scheduled_end = endLocal.toISOString();
+// --- End Step 2 ---
+
+        if (new Date(scheduled_end) <= new Date(scheduled_start)) throw new Error("Scheduled end must be after scheduled start");
+        // --- Step 2.5: enforce business hours & weekdays ---
+if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
+  throw new Error(
+    "Bookings are available Monday–Friday only, between 8:00 AM and 6:00 PM. " +
+    "The selected service must fully complete by 6:00 PM."
+  );
+}
+// --- End Step 2.5 ---
+
+        // Calendar conflict check (block overlaps)
+        
+        // Step 1: find existing customer by email (SELECT allowed only by email header policy)
+        const customerLookupClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          auth: { persistSession: false },
+          global: { headers: { "x-customer-email": email } }
+        });
+
+        const { data: existingCustomers, error: selErr } = await customerLookupClient
+          .from("customers")
+          .select("id,email")
+          .eq("email", email)
+          .limit(1);
+
+        if (selErr) {
+          // If RLS blocks this, you WILL see it here
+          log("Customer select error (RLS?)", selErr);
+          throw new Error("Customer lookup failed (likely RLS). See log.");
+        }
+
+        let customer_id;
+        if (existingCustomers && existingCustomers.length === 1) {
+          customer_id = existingCustomers[0].id;
+          log("Found existing customer", { customer_id, email });
+        } else {
+          // New customer: generate UUID client-side, insert WITHOUT .select()
+          customer_id = crypto.randomUUID();
+          const { error: insCustErr } = await supabase
+            .from("customers")
+            .insert([{ id: customer_id, full_name, email, phone, address }]);
+
+          if (insCustErr) {
+            log("Customer insert error", insCustErr);
+            throw new Error("Customer creation failed. See log.");
+          }
+          log("Created new customer (no select after insert)", { customer_id, email });
+        }
+
+        // Step 2: create vehicle record (new every booking), client-generated UUID, insert WITHOUT .select()
+        const vehicle_id = crypto.randomUUID();
+        const vehicle_year = elYear.value ? Number(elYear.value) : null;
+        const vehicle_make = (elMake.value || "").trim() || null;
+        const vehicle_model = (elModel.value || "").trim() || null;
+        const license_plate = (elPlate.value || "").trim() || null;
+
+        const { error: insVehErr } = await supabase
+          .from("vehicles")
+          .insert([{
+            id: vehicle_id,
+            customer_id,
+            vehicle_size,
+            vehicle_year,
+            vehicle_make,
+            vehicle_model,
+            license_plate
+          }]);
+
+        if (insVehErr) {
+          log("Vehicle insert error", insVehErr);
+          throw new Error("Vehicle creation failed. See log.");
+        }
+        log("Created vehicle (no select after insert)", { vehicle_id });
+
+        // =========================
+// SERVER AVAILABILITY CHECK (race condition protection)
+// =========================
+try {
+  const availabilityRes = await fetch("/api/check-availability", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      start: scheduled_start,
+      end: scheduled_end
+    })
+  });
+
+  const availability = await availabilityRes.json();
+
+  if (!availability.available) {
+    throw new Error("That time was just booked by another customer. Please choose a new time.");
+  }
+} catch (err) {
+  throw new Error("Unable to verify availability. Please try again.");
+}
+
+        
+        // Step 3: create booking (status pending)
+const { data: bookingRows, error: bookingError } = await supabase
+  .from("bookings")
+  .insert({
+    scheduled_start,
+    scheduled_end,
+    service_address,
+    status: "pending",
+    customer_id,
+    vehicle_id,
+    service_variant_id
+  })
+  .select();
+
+// Extract inserted row safely
+const bookingRow = bookingRows?.[0];
+
+if (bookingError || !bookingRow) {
+  log("Booking insert error", bookingError);
+
+  // Handle overlap constraint cleanly
+  if (bookingError?.code === "23P01" || bookingError?.message?.includes("bookings_no_overlap")) {
+    throw new Error("Selected time is unavailable. Please choose another slot.");
+  }
+
+  throw new Error("Booking creation failed. Please try again.");
+}
+
+
+
+        setStatus("ok", "Your booking has been received and will be confirmed shortly.");
+                // =========================
+        // PHASE A — CONFIRMATION REDIRECT (NO RLS READS)
+        // =========================
+        const cat = selectedVariant?.service?.category ?? "Service";
+        const lvl = selectedVariant?.service?.level ?? "";
+        const serviceLabel = lvl ? `${cat} Level ${lvl}` : `${cat}`;
+
+        const prettyStart = startLocal.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+        const prettyEnd = endLocal.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+
+        const confirmationPayload = {
+  full_name,
+  email,
+  phone,
+  serviceLabel,
+  service_address,
+  scheduled_start_iso: scheduled_start,
+  scheduled_end_iso: scheduled_end,
+  prettyStart,
+  prettyEnd,
+  manage_token: bookingRow.manage_token // temporary until email phase
+};
+
+
+        sessionStorage.setItem("moon_booking_confirmation", JSON.stringify(confirmationPayload));
+        // Fire-and-forget booking email
+fetch("/api/send-booking-created-email", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ booking_id: bookingRow.id })
+}).catch(err => console.error("Email trigger failed", err));
+
+        window.location.href = "/booking-confirmed.html";
+        return; // hard stop: do not continue
+
+        log("Booking created", { customer_id, vehicle_id, service_variant_id });
+
+      } catch (e) {
+        setStatus("bad", e?.message || "Unknown error");
+        log("Submit failure", { message: e?.message, stack: e?.stack });
+      } finally {
+        isSubmitting = false;
+        elSubmit.disabled = false;
+      }
+    }
+
+    elStart.addEventListener("change", recalcEndTimePreview);
+    elSubmit.addEventListener("click", submitBooking);
+
+    // =========================
+// GOOGLE PLACES AUTOCOMPLETE
+// =========================
+function initAddressAutocomplete() {
+  if (!window.google || !google.maps?.places) return;
+
+  const options = {
+    types: ["address"],
+    componentRestrictions: { country: "us" },
+    fields: ["address_components"]
+  };
+
+  function attachAutocomplete(inputEl) {
+    const autocomplete = new google.maps.places.Autocomplete(inputEl, options);
+    autocomplete.addListener("place_changed", () => {
+  console.log("Address selected — reloading calendar");
+  loadCalendar();
+});
+
+    autocomplete.addListener("place_changed", () => {
+  const place = autocomplete.getPlace();
+  if (!place || !place.address_components) return;
+
+  const components = {};
+  for (const c of place.address_components) {
+    for (const t of c.types) {
+      components[t] = c.long_name;
+    }
+  }
+
+  const street =
+    [components.street_number, components.route]
+      .filter(Boolean)
+      .join(" ");
+
+  const city =
+    components.locality ||
+    components.sublocality ||
+    components.postal_town ||
+    "";
+
+  const state = components.administrative_area_level_1 || "";
+  const zip = components.postal_code || "";
+
+  const fullAddress = [street, city, state, zip]
+    .filter(Boolean)
+    .join(", ");
+
+  inputEl.value = fullAddress;
+      inputEl.readOnly = true;
+inputEl.classList.add("locked-address");
+
+  if (inputEl.id === "serviceAddress" && selectedVariant) {
+    scheduleCalendarReload();
+  }
+
+});
+  }
+
+  const customerAddress = document.getElementById("address");
+  const serviceAddress = document.getElementById("serviceAddress");
+
+  if (customerAddress) attachAutocomplete(customerAddress);
+  if (serviceAddress) attachAutocomplete(serviceAddress);
+    // Also reload when the service address is manually edited/pasted
+  if (serviceAddress) {
+    serviceAddress.addEventListener("input", () => {
+      if (selectedVariant) scheduleCalendarReload();
+    });
+  }
+}
+// =========================
+// HOURLY CALENDAR (STATE + HELPERS)
+// =========================
+let calWeekStart = new Date();
+calWeekStart.setHours(0, 0, 0, 0);
+calWeekStart.setDate(calWeekStart.getDate() - calWeekStart.getDay()); // Sunday
+
+function addDays(d, n) {
+  const x = new Date(d);
+  x.setDate(x.getDate() + n);
+  return x;
+}
+    function formatHourLabel(hour) {
+  const h = hour % 12 || 12;
+  const ampm = hour < 12 ? "AM" : "PM";
+  return `${h}:00 ${ampm}`;
+}
+
+function scheduleCalendarReload() {
+  if (calendarReloadDebounce) clearTimeout(calendarReloadDebounce);
+  calendarReloadDebounce = setTimeout(() => {
+    loadCalendar();
+  }, 150);
+}
+
+// =========================
+// HOURLY CALENDAR (RENDER)
+// =========================
+async function loadCalendar() {
+  const requestVersion = ++availabilityRequestVersion;
+  calendarLoading = true;
+  console.log("loadCalendar started");
+
+  try {
+    const hourlyCal = document.getElementById("hourlyCal");
+    const calLabel = document.getElementById("calLabel");
+    if (!hourlyCal) return;
+
+    hourlyCal.innerHTML = "";
+  const dayLabelColumn = document.getElementById("dayLabelColumn");
+if (dayLabelColumn) dayLabelColumn.innerHTML = "";
+
+
+  const weekEnd = addDays(calWeekStart, 7);
+
+  const start = calWeekStart;
+const end = addDays(weekEnd, -1);
+
+const options = { month: "long" };
+const monthName = start.toLocaleDateString(undefined, options);
+
+calLabel.textContent = `${monthName} ${start.getDate()}–${end.getDate()}`;
+
+
+    // =========================
+  // HEADER (DAYS)
+  // =========================
+  const header = document.createElement("div");
+  header.className = "hourly-header";
+
+  header.innerHTML = `<div></div>`; // empty corner (top-left)
+
+  for (let d = 0; d < 7; d++) {
+    const day = addDays(calWeekStart, d);
+
+    const isToday =
+      day.toDateString() === new Date().toDateString();
+
+    const dayCell = document.createElement("div");
+dayCell.className = "day-label"; // reuse existing style
+const weekday = day.toLocaleDateString(undefined, { weekday: "short" });
+const monthDay = day.toLocaleDateString(undefined, {
+  month: "numeric",
+  day: "numeric"
+});
+
+dayCell.innerHTML = `
+  <div class="day-top">${weekday}</div>
+  <div class="day-bottom">${monthDay}</div>
+`;
+
+if (isToday) {
+  dayCell.classList.add("today");
+}
+
+
+    header.appendChild(dayCell);
+  }
+
+  hourlyCal.appendChild(header);
+
+
+  // =========================
+  // FETCH BOOKING BLOCKS
+  // =========================
+  let blocks = [];
+
+try {
+  const resp = await fetch(
+    `/api/list-calendar-blocks?timeMin=${calWeekStart.toISOString()}&timeMax=${weekEnd.toISOString()}`
+  );
+
+  if (resp.ok) {
+    const data = await resp.json();
+    blocks = data.blocks || [];
+  }
+} catch (e) {
+  console.error("Calendar fetch failed:", e);
+}
+
+// 👇 MUST be outside try block
+const expandedBlocks = blocks.map(b => {
+  const expanded = expandBookingBlock(b);
+  expanded.status = b.status;   // preserve booking status
+  return expanded;
+});
+
+
+// =========================
+// RED BLOCK ADJACENCY MAPS (PER DAY)
+// =========================
+const dayStarts = new Map();
+const dayEnds = new Map();
+
+for (const b of expandedBlocks) {
+  const start = new Date(b.start);
+  const end = new Date(b.end);
+
+  // Force both into LOCAL minute precision
+  const startMs = Math.floor(start.getTime() / 60000) * 60000;
+  const endMs = Math.floor(end.getTime() / 60000) * 60000;
+
+  const dayKey = new Date(startMs).toDateString();
+
+  if (!dayStarts.has(dayKey)) dayStarts.set(dayKey, new Set());
+  if (!dayEnds.has(dayKey)) dayEnds.set(dayKey, new Set());
+
+  dayStarts.get(dayKey).add(startMs);
+  dayEnds.get(dayKey).add(endMs);
+}
+
+
+  // =========================
+  // BUILD EXPOSED START MAP (SERVER SOURCE OF TRUTH)
+const exposedByDay = {};
+
+for (let d = 0; d < 7; d++) {
+  const day = addDays(calWeekStart, d);
+  const dayKey = day.toDateString();
+
+  if (!selectedVariant) {
+    exposedByDay[dayKey] = [];
+    continue;
+  }
+
+  try {
+    const dayParam = day.toISOString().slice(0, 10);
+    const durationMinutes = Number(selectedVariant.duration_minutes);
+    const serviceAddress = (elServiceAddress.value || "").trim();
+
+if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+  exposedByDay[dayKey] = [];
+  continue;
+}
+
+console.log("Availability request params", {
+  day: dayParam,
+  duration_minutes: durationMinutes,
+  service_address: serviceAddress
+});
+console.log("Sending service address:", serviceAddress);
+
+const resp = await fetch(
+  `/api/get-availability?day=${dayParam}&duration_minutes=${durationMinutes}&service_address=${encodeURIComponent(serviceAddress)}`
+);
+const data = await resp.json();
+
+    // 🚨 CRITICAL: ignore stale responses
+if (requestVersion !== availabilityRequestVersion) {
+  console.log("Ignoring stale availability response", {
+    dayParam,
+    requestVersion,
+    availabilityRequestVersion
+  });
+  continue;
+}
+
+exposedByDay[dayKey] = (data.slots || []).map(s => new Date(s).getTime());
+} 
+  
+  catch (err) {
+    console.error("Availability fetch failed", err);
+    exposedByDay[dayKey] = [];
+  }
+}
+    
+    // 🚨 FINAL STALE GUARD — stop outdated calendar render
+if (requestVersion !== availabilityRequestVersion) {
+  console.log("Ignoring stale availability render", {
+    requestVersion,
+    availabilityRequestVersion
+  });
+  return;
+}
+   
+  // =========================
+  // RENDER GRID ROWS
+  // =========================
+    for (let h = BUSINESS_RULES.openHour; h < BUSINESS_RULES.closeHour; h++) {
+
+    const row = document.createElement("div");
+    row.className = "hourly-row " + (h % 2 === 0 ? "row-light" : "row-dark");
+
+    // First column = hour label
+    const hourLabel = document.createElement("div");
+hourLabel.className = "hour-pill";
+hourLabel.textContent = formatHourLabel(h);
+row.appendChild(hourLabel);
+
+    // Now build 7 day cells for this hour
+    for (let d = 0; d < 7; d++) {
+
+      const day = addDays(calWeekStart, d);
+      const dayKey = day.toDateString();
+      const exposedSet = new Set(exposedByDay[dayKey] || []);
+
+      const hourStart = new Date(day);
+      hourStart.setHours(h, 0, 0, 0);
+
+      const hourEnd = new Date(hourStart);
+      hourEnd.setHours(hourEnd.getHours() + 1);
+
+      const cell = document.createElement("div");
+      cell.className = "hourly-cell";
+      cell.style.position = "relative";
+
+      // Track blocks created in THIS cell
+      const redBlocksInCell = [];
+      const greenBlocksInCell = [];
+
+      // RED BLOCKS
+      for (const b of expandedBlocks) {
+
+        if (hourStart < b.end && hourEnd > b.start) {
+
+          const overlapStart = new Date(Math.max(hourStart, b.start));
+          const overlapEnd = new Date(Math.min(hourEnd, b.end));
+
+          const overlapMinutes =
+            (overlapEnd - overlapStart) / 60000;
+
+          const startMinuteOffset =
+            (overlapStart - hourStart) / 60000;
+
+          const CELL_HEIGHT = 40; // must match .hourly-cell height
+
+
+const pxTop = (startMinuteOffset / 60) * CELL_HEIGHT;
+const pxHeight = (overlapMinutes / 60) * CELL_HEIGHT;
+const redBlock = document.createElement("div");
+redBlock.style.position = "absolute";
+redBlock.style.top = `${pxTop}px`;
+redBlock.style.height = `${pxHeight}px`;
+redBlock.style.width = "80%";
+redBlock.style.left = "10%";
+          // Color by booking status
+redBlock.style.background = b.status === "pending" ? "#f59e0b" : "#e44b4b";
+
+          // prevent 1px seams from percent/subpixel rounding between fragments
+redBlock.style.outline = b.status === "pending"
+  ? "1px solid #f59e0b"
+  : "1px solid #e44b4b";
+redBlock.style.outlineOffset = "-1px";
+          redBlock.style.pointerEvents = "none";
+          redBlock.style.transform = "translateZ(0)";
+          // --- FIXED MERGE LOGIC ---
+const fragStartMs = Math.floor(overlapStart.getTime() / 60000) * 60000;
+const fragEndMs = Math.floor(overlapEnd.getTime() / 60000) * 60000;
+
+const blockStartMs = Math.floor(new Date(b.start).getTime() / 60000) * 60000;
+const blockEndMs = Math.floor(new Date(b.end).getTime() / 60000) * 60000;
+
+const isTopFragment = fragStartMs === blockStartMs;
+const isBottomFragment = fragEndMs === blockEndMs;
+
+const hasBlockAbove = dayEnds.get(dayKey)?.has(blockStartMs);
+const hasBlockBelow = dayStarts.get(dayKey)?.has(blockEndMs);
+
+const roundTop = isTopFragment && !hasBlockAbove;
+const roundBottom = isBottomFragment && !hasBlockBelow;
+
+setRedBlockRadii(redBlock, { roundTop, roundBottom });
+
+// --- END FIXED MERGE LOGIC ---
+
+
+          cell.appendChild(redBlock);
+          redBlocksInCell.push(redBlock);
+        }
+      }
+
+      // GREEN SLOTS
+      const exposedInThisHour = (exposedByDay[dayKey] || [])
+        .filter(t => {
+          const dt = new Date(t);
+          return dt >= hourStart && dt < hourEnd;
+        });
+
+      for (const t of exposedInThisHour) {
+
+        const startTime = new Date(t);
+        const minute = startTime.getMinutes();
+
+        const slicesPerHour = 60 / SLOT_MINUTES;
+const slicePct = 100 / slicesPerHour;
+
+// guard: only render aligned times
+if (minute % SLOT_MINUTES !== 0) continue;
+
+const sliceIndex = minute / SLOT_MINUTES;
+const sliceTop = sliceIndex * slicePct;
+const block = document.createElement("div");
+block.className = "green-slot-pill";
+block.style.position = "absolute";
+block.style.top = `${sliceTop}%`;
+block.style.height = `${slicePct}%`;
+block.style.width = "80%";
+block.style.left = "10%";
+        block.style.borderRadius = "999px";
+        block.style.background = "rgba(34,197,94,0.85)";
+        block.style.pointerEvents = "auto";
+        block.style.cursor = "pointer";
+
+        cell.appendChild(block);
+        greenBlocksInCell.push(block);
+
+        block.addEventListener("click", (e) => {
+          e.stopPropagation();
+
+          document
+            .querySelectorAll(".green-slot-pill.selected")
+            .forEach(el => el.classList.remove("selected"));
+
+          block.classList.add("selected");
+
+          elStart.value = formatDateToDateTimeLocal(startTime);
+          selectedStartISO = startTime.toISOString();
+
+          recalcEndTimePreview();
+        });
+      }
+
+      row.appendChild(cell);
+    }
+
+    hourlyCal.appendChild(row);
+  }
+  } finally {
+    calendarLoading = false;
+  }
+}
+
+// =========================
+// CALENDAR NAVIGATION
+// =========================
+document.getElementById("calPrev").onclick = () => {
+  calWeekStart = addDays(calWeekStart, -7);
+  loadCalendar();
+};
+
+document.getElementById("calNext").onclick = () => {
+  calWeekStart = addDays(calWeekStart, 7);
+  loadCalendar();
+};
+
+document.getElementById("calToday").onclick = () => {
+  calWeekStart = new Date();
+  calWeekStart.setHours(0,0,0,0);
+  calWeekStart.setDate(calWeekStart.getDate() - calWeekStart.getDay());
+  loadCalendar();
+};
+    //Epand blocks helper function
+  function selfTestExpandedBlocks(blocks) {
+  if (!DEBUG) return;
+
+  blocks.forEach((b, i) => {
+    log(`Expanded block ${i}`, {
+      start: b.start.toString(),
+      end: b.end.toString()
+    });
+  });
+}
+
+// =========================
+// CALENDAR TOGGLE (UI ONLY)
+// =========================
+const toggleBtn = document.getElementById("toggleCalendarBtn");
+const calContainer = document.getElementById("calendarContainer");
+
+if (toggleBtn && calContainer) {
+  toggleBtn.addEventListener("click", () => {
+    const isOpen = calContainer.style.display === "block";
+    calContainer.style.display = isOpen ? "none" : "block";
+    toggleBtn.textContent = isOpen
+      ? "View availability calendar"
+      : "Hide availability calendar";
+  });
+}
+
+   // =========================
+// INITIAL APP BOOTSTRAP
+// =========================
+
+async function bootApp() {
+  try {
+    await loadServiceVariants();
+
+    if (RESCHEDULE_MODE) {
+      await loadRescheduleBooking();
+    } else {
+      await loadCalendar();
+    }
+
+    selfTestTimeSlots();
+
+    // Wait for Google Places to load
+    function waitForGooglePlaces() {
+      if (window.google && google.maps?.places) {
+        initAddressAutocomplete();
+      } else {
+        setTimeout(waitForGooglePlaces, 100);
+      }
+    }
+
+    waitForGooglePlaces();
+
+  } catch (err) {
+    console.error("BOOT FAILURE", err);
+  }
+}
+
+bootApp();
+
+                                                              
+  </script>
+    <script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAszMW1x5-TUHnlDkxpms-z4rDfHxDcTyI&libraries=places&loading=async"
+  async
+  defer
+></script>
+
+
+</body>
+</html>
