@@ -2328,8 +2328,8 @@ row.appendChild(hourLabel);
           const CELL_HEIGHT = 26; // must match .hourly-cell height
 
 
-const pxTop = (startMinuteOffset / 60) * CELL_HEIGHT;
-const pxHeight = (overlapMinutes / 60) * CELL_HEIGHT;
+const pxTop = (startMinuteOffset / 60) * CELL_HEIGHT - 1;
+const pxHeight = (overlapMinutes / 60) * CELL_HEIGHT + 2;
 const redBlock = document.createElement("div");
 redBlock.style.position = "absolute";
 redBlock.style.top = `${pxTop}px`;
