@@ -2254,12 +2254,6 @@ if (requestVersion !== availabilityRequestVersion) {
   });
   continue;
 }
-    
-    // ignore stale responses (older calendar loads finishing late)
-if (requestVersion !== availabilityRequestVersion) {
-  console.log("Ignoring stale availability response", { dayParam, requestVersion, availabilityRequestVersion });
-  continue;
-}
 
 exposedByDay[dayKey] = (data.slots || []).map(s => new Date(s).getTime());
 } 
@@ -2269,11 +2263,7 @@ exposedByDay[dayKey] = (data.slots || []).map(s => new Date(s).getTime());
     exposedByDay[dayKey] = [];
   }
 }
-    // ✅ prevent stale render after full availability load
-if (requestVersion !== availabilityRequestVersion) {
-  console.log("Ignoring stale availability render", { requestVersion, availabilityRequestVersion });
-  return;
-}
+    
     // 🚨 FINAL STALE GUARD — stop outdated calendar render
 if (requestVersion !== availabilityRequestVersion) {
   console.log("Ignoring stale availability render", {
