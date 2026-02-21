@@ -2338,9 +2338,6 @@ const snappedTop = Math.round(pxTop);
 const snappedHeight = Math.round(pxHeight);
 redBlock.style.top = `${snappedTop}px`;
 redBlock.style.height = `${snappedHeight}px`;
-          // allow fragments to overlap across grid rows (Google Calendar behaviour)
-redBlock.style.marginTop = "-6px";
-redBlock.style.marginBottom = "-6px";
 redBlock.style.width = "80%";
 redBlock.style.left = "10%";
           // Color by booking status
@@ -2355,6 +2352,7 @@ redBlock.style.boxShadow = `0 0 0 1px ${blockColor} inset, 0 2px 6px rgba(0,0,0,
 // make sure nothing else draws a square edge
 redBlock.style.border = "0";
 redBlock.style.overflow = "hidden";
+redBlock.style.backgroundClip = "padding-box";
           
           redBlock.style.pointerEvents = "none";
           redBlock.style.transform = "translateZ(0)";
