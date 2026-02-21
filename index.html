@@ -2376,7 +2376,7 @@ redBlock.style.background = b.status === "pending" ? "#f59e0b" : "#e44b4b";
 const blockColor = (b.status === "pending") ? "#f59e0b" : "#e44b4b";
 
 // keep the “stroke” effect without killing rounded corners
-redBlock.style.boxShadow = `0 0 0 1px ${blockColor} inset, 0 2px 6px rgba(0,0,0,0.18)`;
+redBlock.style.boxShadow = `0 0 0 1px ${blockColor} inset`;
 
 // make sure nothing else draws a square edge
 redBlock.style.border = "0";
