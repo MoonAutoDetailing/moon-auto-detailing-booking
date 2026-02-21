@@ -2395,7 +2395,7 @@ const hasBlockBelow = startsMap.get(dayKey)?.has(blockEndMs);
 const roundTop = isTopFragment;
 const roundBottom = isBottomFragment;
 
-setRedBlockRadii(redBlock);
+setRedBlockRadii(redBlock, { roundTop, roundBottom });
 
 // --- END FIXED MERGE LOGIC ---
 
