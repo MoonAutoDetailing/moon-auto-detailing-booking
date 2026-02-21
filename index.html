@@ -2308,6 +2308,7 @@ row.appendChild(hourLabel);
       const cell = document.createElement("div");
       cell.className = "hourly-cell";
       cell.style.position = "relative";
+      cell.style.overflow = "visible";
 
       // Track blocks created in THIS cell
       const redBlocksInCell = [];
@@ -2334,10 +2335,28 @@ const pxTop = (startMinuteOffset / 60) * CELL_HEIGHT;
 const pxHeight = (overlapMinutes / 60) * CELL_HEIGHT;
 const redBlock = document.createElement("div");
 redBlock.style.position = "absolute";
+          redBlock.style.zIndex = "10";
 const snappedTop = Math.round(pxTop);
 const snappedHeight = Math.round(pxHeight);
-redBlock.style.top = `${snappedTop}px`;
-redBlock.style.height = `${snappedHeight}px`;
+
+// Bridge the visible seam between stacked hour-cells for multi-hour bookings
+const SEAM_OVERLAP_PX = 10; // adjust only if you still see a thin line (8–12 is typical)
+const continuesFromPrevHour = b.start < hourStart;
+const continuesIntoNextHour = b.end > hourEnd;
+
+let drawTop = snappedTop;
+let drawHeight = snappedHeight;
+
+if (continuesFromPrevHour) {
+  drawTop -= Math.floor(SEAM_OVERLAP_PX / 2);
+  drawHeight += Math.floor(SEAM_OVERLAP_PX / 2);
+}
+if (continuesIntoNextHour) {
+  drawHeight += Math.ceil(SEAM_OVERLAP_PX / 2);
+}
+
+redBlock.style.top = `${drawTop}px`;
+redBlock.style.height = `${drawHeight}px`;
 redBlock.style.width = "80%";
 redBlock.style.left = "10%";
           // Color by booking status
