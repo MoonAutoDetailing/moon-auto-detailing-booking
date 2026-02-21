@@ -2340,18 +2340,29 @@ const snappedTop = Math.round(pxTop);
 const snappedHeight = Math.round(pxHeight);
 
 // Bridge the visible seam between stacked hour-cells for multi-hour bookings
-const SEAM_OVERLAP_PX = 10; // adjust only if you still see a thin line (8–12 is typical)
+const SEAM_OVERLAP_PX = 10;
+
 const continuesFromPrevHour = b.start < hourStart;
 const continuesIntoNextHour = b.end > hourEnd;
+
+// These already exist later in the file — move them UP above seam logic
+const fragStartMs = Math.floor(overlapStart.getTime() / 60000) * 60000;
+const fragEndMs = Math.floor(overlapEnd.getTime() / 60000) * 60000;
+const blockStartMs = Math.floor(new Date(b.start).getTime() / 60000) * 60000;
+const blockEndMs = Math.floor(new Date(b.end).getTime() / 60000) * 60000;
+
+const isTopFragment = fragStartMs === blockStartMs;
+const isBottomFragment = fragEndMs === blockEndMs;
 
 let drawTop = snappedTop;
 let drawHeight = snappedHeight;
 
-if (continuesFromPrevHour) {
+// Overlap ONLY interior fragments
+if (continuesFromPrevHour && !isTopFragment) {
   drawTop -= Math.floor(SEAM_OVERLAP_PX / 2);
   drawHeight += Math.floor(SEAM_OVERLAP_PX / 2);
 }
-if (continuesIntoNextHour) {
+if (continuesIntoNextHour && !isBottomFragment) {
   drawHeight += Math.ceil(SEAM_OVERLAP_PX / 2);
 }
 
