@@ -2344,6 +2344,14 @@ const SEAM_OVERLAP_PX = 10;
 
 const continuesFromPrevHour = b.start < hourStart;
 const continuesIntoNextHour = b.end > hourEnd;
+          const fragStartMs = Math.floor(overlapStart.getTime() / 60000) * 60000;
+const fragEndMs   = Math.floor(overlapEnd.getTime() / 60000) * 60000;
+
+const blockStartMs = Math.floor(new Date(b.start).getTime() / 60000) * 60000;
+const blockEndMs   = Math.floor(new Date(b.end).getTime() / 60000) * 60000;
+
+const isTopFragment = fragStartMs === blockStartMs;
+const isBottomFragment = fragEndMs === blockEndMs;
 
 let drawTop = snappedTop;
 let drawHeight = snappedHeight;
@@ -2377,15 +2385,8 @@ redBlock.style.backgroundClip = "padding-box";
           
           redBlock.style.pointerEvents = "none";
           redBlock.style.transform = "translateZ(0)";
+          
           // --- FIXED MERGE LOGIC ---
-const fragStartMs = Math.floor(overlapStart.getTime() / 60000) * 60000;
-const fragEndMs = Math.floor(overlapEnd.getTime() / 60000) * 60000;
-
-const blockStartMs = Math.floor(new Date(b.start).getTime() / 60000) * 60000;
-const blockEndMs = Math.floor(new Date(b.end).getTime() / 60000) * 60000;
-
-const isTopFragment = fragStartMs === blockStartMs;
-const isBottomFragment = fragEndMs === blockEndMs;
 
 // Choose adjacency map based on booking status
 const startsMap = b.status === "pending"
