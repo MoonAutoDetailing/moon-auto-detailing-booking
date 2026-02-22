@@ -32,12 +32,21 @@ export default async function handler(req, res) {
   scheduled_end,
   service_address,
   status,
+  customer_id,
+  vehicle_id,
   service_variant_id,
   customers:customer_id (
     full_name,
     email,
     phone,
     address
+  ),
+  vehicles:vehicle_id (
+    vehicle_year,
+    vehicle_make,
+    vehicle_model,
+    license_plate,
+    vehicle_size
   )
 `)
 .eq("manage_token", token)
