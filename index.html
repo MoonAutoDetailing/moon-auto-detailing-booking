@@ -1767,6 +1767,26 @@ elPlate.value = vehicle.license_plate ?? vehicle.plate ?? "";
 
     setStatus("ok", "Please choose your new appointment time.");
     await loadServiceVariants();
+    // 🔴 Reschedule mode must manually rebuild the dropdown pipeline
+
+const vs = normalizeVehicleSize(selectedVariant?.vehicle_size);
+
+// Set vehicle size dropdown value
+elVehicleSize.value = vs;
+
+// Load service variants for that vehicle size
+await loadServiceVariants();
+
+// Render the service dropdown using the loaded variants
+renderServiceDropdown(vs);
+
+// Select the original service variant
+if (selectedVariant?.id) {
+  elServiceVariant.value = selectedVariant.id;
+}
+
+// Trigger the same handler that runs when a user manually selects a service
+elServiceVariant.dispatchEvent(new Event("change"));
 
    // ✅ Prefill vehicle size + service for reschedule mode (even though fields are disabled)
 
