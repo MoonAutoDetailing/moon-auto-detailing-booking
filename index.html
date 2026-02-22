@@ -1762,6 +1762,16 @@ try {
     setStatus("ok", "Please choose your new appointment time.");
     await loadServiceVariants();
 
+    // ✅ Prefill vehicle size + service for reschedule mode (even though fields are disabled)
+elVehicleSize.value = selectedVariant.vehicle_size;
+
+renderServiceDropdown(normalizeVehicleSize(selectedVariant.vehicle_size));
+
+elServiceVariant.value = selectedVariant.id;
+
+// Trigger the existing change handler so calendar rebuild logic runs
+elServiceVariant.dispatchEvent(new Event("change"));
+
   } catch (err) {
     console.error(err);
     setStatus("bad", "Failed to load booking.");
