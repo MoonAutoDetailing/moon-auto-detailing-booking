@@ -1689,8 +1689,19 @@ async function loadRescheduleBooking() {
 
     const b = data.booking;
     RESCHEDULE_BOOKING_ID = b.id;
+
+    // ✅ Allow reschedule page ONLY when booking is in reschedule mode
+if (b.status !== "reschedule_requested") {
+  setStatus("bad", "Invalid or expired reschedule link.");
+  return;
+}
+    
     // Load service variant so calendar can compute duration
 try {
+  if (!b.service_variant_id) {
+  setStatus("bad", "Booking is missing service information.");
+  return;
+}
   const { data: variant, error: variantErr } = await supabase
     .from("service_variants")
     .select(`
@@ -1773,10 +1784,15 @@ if (RESCHEDULE_MODE) {
     const response = await fetch("/api/submit-reschedule", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        token: RESCHEDULE_TOKEN,
-        new_start: selectedStartISO
-      })
+      // Compute end time using service duration
+const startLocal = new Date(selectedStartISO);
+const endLocal = new Date(startLocal.getTime() + selectedVariant.duration_minutes * 60000);
+
+body: JSON.stringify({
+  bookingId: RESCHEDULE_BOOKING_ID,
+  start: startLocal.toISOString(),
+  end: endLocal.toISOString()
+})
     });
 
     const result = await response.json();
