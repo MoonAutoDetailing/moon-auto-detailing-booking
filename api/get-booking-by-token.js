@@ -27,15 +27,17 @@ export default async function handler(req, res) {
     const { data, error } = await supabase
       .from("bookings")
       .select(`
-        id,
-        service_address,
-        status,
-        customers (
-          full_name,
-          email,
-          phone
-        )
-      `)
+  id,
+  scheduled_start,
+  scheduled_end,
+  service_address,
+  status,
+  customers (
+    full_name,
+    email,
+    phone
+  )
+`)
       .eq("manage_token", token)
       .single();
 
