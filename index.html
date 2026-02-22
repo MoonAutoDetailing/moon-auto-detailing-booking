@@ -1749,6 +1749,12 @@ elModel.value = vehicle.vehicle_model ?? vehicle.model ?? "";
 elPlate.value = vehicle.license_plate ?? vehicle.plate ?? "";
     elSubmit.textContent = "Submit New Time";
 
+    // ✅ vehicle size: prefer vehicle table, fallback to selectedVariant
+const vs = normalizeVehicleSize(
+  vehicle.vehicle_size ?? selectedVariant?.vehicle_size ?? ""
+);
+elVehicleSize.value = vs;
+
     // Lock all fields except time
     [
       elFullName,
@@ -1765,9 +1771,6 @@ elPlate.value = vehicle.license_plate ?? vehicle.plate ?? "";
     ].forEach(el => el.disabled = true);
   
     await loadServiceVariants(); // load ONCE
-
-const vs = selectedVariant.vehicle_size;
-elVehicleSize.value = vs;
 renderServiceDropdown(vs);
     
 // Now force-select the correct service variant
@@ -1781,6 +1784,7 @@ if (selectedVariant?.id) {
     lvl ? `${cat} Level ${lvl} — ${selectedVariant.duration_minutes} minutes`
         : `${cat} — ${selectedVariant.duration_minutes} minutes`;
 }
+      await loadCalendar();
     
    // ✅ Prefill vehicle size + service for reschedule mode (even though fields are disabled)
 
@@ -2440,7 +2444,6 @@ const blockColor = (b.status === "pending") ? "#f59e0b" : "#e44b4b";
 redBlock.style.boxShadow = `0 0 0 1px ${blockColor} inset`;
 
 // make sure nothing else draws a square edge
-redBlock.style.border = "setRedBlockRadii(redBlock);";
 redBlock.style.overflow = "hidden";
 redBlock.style.backgroundClip = "border-box";
           
