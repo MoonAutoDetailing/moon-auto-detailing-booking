@@ -1147,9 +1147,17 @@ function expandBookingBlock(block) {
     end: new Date(block.end)
   };
 }
+    
+function setRedBlockRadii(el, { roundTop, roundBottom }) {
+  const RADIUS = "999px";
 
-function setRedBlockRadii(el) {
-  el.style.borderRadius = "17px";
+  const rTop = roundTop ? RADIUS : "0px";
+  const rBot = roundBottom ? RADIUS : "0px";
+
+  el.style.borderTopLeftRadius = rTop;
+  el.style.borderTopRightRadius = rTop;
+  el.style.borderBottomLeftRadius = rBot;
+  el.style.borderBottomRightRadius = rBot;
 }
     
  // =========================
@@ -2372,7 +2380,7 @@ const blockColor = (b.status === "pending") ? "#f59e0b" : "#e44b4b";
 redBlock.style.boxShadow = `0 0 0 1px ${blockColor} inset`;
 
 // make sure nothing else draws a square edge
-redBlock.style.border = "0";
+redBlock.style.border = "setRedBlockRadii(redBlock);";
 redBlock.style.overflow = "hidden";
 redBlock.style.backgroundClip = "border-box";
           
@@ -2395,7 +2403,7 @@ const hasBlockBelow = startsMap.get(dayKey)?.has(blockEndMs);
 const roundTop = isTopFragment;
 const roundBottom = isBottomFragment;
 
-setRedBlockRadii(redBlock);
+setRedBlockRadii(redBlock, { roundTop, roundBottom });
 
 // --- END FIXED MERGE LOGIC ---
 
