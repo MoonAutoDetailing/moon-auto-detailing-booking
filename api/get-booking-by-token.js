@@ -32,6 +32,11 @@ export default async function handler(req, res) {
   scheduled_end,
   service_address,
   status,
+  service_id,
+  service_name,
+  service_duration,
+  vehicle_size,
+  package_type,
   customers (
     full_name,
     email,
