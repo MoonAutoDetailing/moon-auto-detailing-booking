@@ -1719,12 +1719,12 @@ try {
   }
 
   selectedVariant = {
-    id: variant.id,
-    vehicle_size: variant.vehicle_size,
-    price: variant.price,
-    duration_minutes: variant.duration_minutes,
-    service: variant.service
-  };
+  id: variant.id,
+  vehicle_size: normalizeVehicleSize(variant.vehicle_size), // ⭐ FIX
+  price: variant.price,
+  duration_minutes: variant.duration_minutes,
+  service: variant.service
+};
 
   console.log("Reschedule variant loaded:", selectedVariant);
 
@@ -1764,20 +1764,19 @@ elPlate.value = vehicle.license_plate ?? vehicle.plate ?? "";
       elServiceAddress
     ].forEach(el => el.disabled = true);
   
-    // 🔴 Reschedule mode must manually rebuild the dropdown pipeline
-
-const vehicleData = b.vehicles ?? b;
-const vs = normalizeVehicleSize(
-  vehicleData.vehicle_size ?? vehicleData.size ?? ""
-);
+    await loadServiceVariants(); // load ONCE
 
 elVehicleSize.value = vs;
-
-// Load variants ONCE
-await loadServiceVariants();
-
-// Render dropdown for this vehicle size
 renderServiceDropdown(vs);
+
+    // ⭐ Force select the service after dropdown is populated
+setTimeout(() => {
+  if (selectedVariant?.id) {
+    elServiceVariant.disabled = false; // ensure selectable
+    elServiceVariant.value = selectedVariant.id;
+    elServiceVariant.dispatchEvent(new Event("change"));
+  }
+}, 50);
 
 // Now force-select the correct service variant
 if (selectedVariant?.id) {
