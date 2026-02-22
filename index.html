@@ -1148,8 +1148,16 @@ function expandBookingBlock(block) {
   };
 }
 
-function setRedBlockRadii(el) {
-  el.style.borderRadius = "17px";
+function setRedBlockRadii(el, { roundTop, roundBottom }) {
+  const RADIUS = "17px";
+
+  const rTop = roundTop ? RADIUS : "0px";
+  const rBot = roundBottom ? RADIUS : "0px";
+
+  el.style.borderTopLeftRadius = rTop;
+  el.style.borderTopRightRadius = rTop;
+  el.style.borderBottomLeftRadius = rBot;
+  el.style.borderBottomRightRadius = rBot;
 }
     
  // =========================
