@@ -1790,24 +1790,6 @@ elServiceVariant.dispatchEvent(new Event("change"));
 
    // ✅ Prefill vehicle size + service for reschedule mode (even though fields are disabled)
 
-// loadServiceVariants() can indirectly clear selectedVariant.
-// So: keep a copy, then re-attach to variantsCache after load.
-const reschedVariant = selectedVariant;
-
-selectedVariant = variantsCache.find(v => v.id === reschedVariant?.id) || reschedVariant;
-
-const vs = normalizeVehicleSize(selectedVariant?.vehicle_size);
-if (vs) {
-  elVehicleSize.value = vs;
-  renderServiceDropdown(vs);
-}
-
-if (selectedVariant?.id) {
-  elServiceVariant.value = selectedVariant.id;
-  // Trigger the existing change handler so calendar rebuild logic runs
-  elServiceVariant.dispatchEvent(new Event("change"));
-}
-
   } catch (err) {
     console.error(err);
     setStatus("bad", "Failed to load booking.");
