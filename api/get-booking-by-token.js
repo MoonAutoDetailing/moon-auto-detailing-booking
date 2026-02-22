@@ -25,26 +25,26 @@ export default async function handler(req, res) {
 
     // Fetch booking + customer info
     const { data, error } = await supabase
-      .from("bookings")
-      .select(`
-  id,
-  scheduled_start,
-  scheduled_end,
-  service_address,
-  status,
-  service_id,
-  service_name,
-  service_duration,
-  vehicle_size,
-  package_type,
-  customers (
-    full_name,
-    email,
-    phone
-  )
-`)
-      .eq("manage_token", token)
-      .single();
+  .from("bookings")
+  .select(`
+    id,
+    scheduled_start,
+    scheduled_end,
+    service_address,
+    status,
+    service_id,
+    service_name,
+    service_duration,
+    vehicle_size,
+    package_type,
+    customers (
+      full_name,
+      email,
+      phone
+    )
+  `)
+  .or(`manage_token.eq.${token},reschedule_token.eq.${token}`)
+  .single();
 
     if (error || !data) {
       return res.status(404).json({ error: "Booking not found" });
