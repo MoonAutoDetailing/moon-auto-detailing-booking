@@ -1769,11 +1769,13 @@ elPlate.value = vehicle.license_plate ?? vehicle.plate ?? "";
     await loadServiceVariants();
     // 🔴 Reschedule mode must manually rebuild the dropdown pipeline
 
-const vs = normalizeVehicleSize(b.vehicles?.vehicle_size);
-    
-// Set vehicle size dropdown value
-elVehicleSize.value = vs;
+const vehicleData = b.vehicles ?? b;
+const vs = normalizeVehicleSize(
+  vehicleData.vehicle_size ?? vehicleData.size ?? ""
+);
 
+elVehicleSize.value = vs;
+    
 await loadServiceVariants();
 renderServiceDropdown(vs);
 
