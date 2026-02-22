@@ -1741,6 +1741,10 @@ try {
     elPhone.value = b.customers.phone || "";
     elAddress.value = b.customers.address || "";
     elServiceAddress.value = b.service_address;
+    elYear.value  = b.vehicles?.vehicle_year ?? "";
+elMake.value  = b.vehicles?.vehicle_make ?? "";
+elModel.value = b.vehicles?.vehicle_model ?? "";
+elPlate.value = b.vehicles?.license_plate ?? "";
     elSubmit.textContent = "Submit New Time";
 
     // Lock all fields except time
