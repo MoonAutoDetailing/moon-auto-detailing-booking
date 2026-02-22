@@ -27,29 +27,25 @@ export default async function handler(req, res) {
     const { data, error } = await supabase
   .from("bookings")
   .select(`
-  id,
-  scheduled_start,
-  scheduled_end,
-  service_address,
-  status,
-  customer_id,
-  vehicle_id,
-  service_variant_id,
-  customers:customer_id (
-    full_name,
-    email,
-    phone,
-    address
-  ),
-  vehicles:vehicle_id (
-    vehicle_year,
-    vehicle_make,
-    vehicle_model,
-    license_plate,
-    vehicle_size
-  )
-`)
-.eq("manage_token", token)
+    id,
+    status,
+    service_variant_id,
+    service_address,
+    customers:customer_id (
+      full_name,
+      email,
+      phone,
+      address
+    ),
+    vehicles:vehicle_id (
+      vehicle_size,
+      vehicle_year,
+      vehicle_make,
+      vehicle_model,
+      license_plate
+    )
+  `)
+  .eq("reschedule_token", token)
   .single();
 
     if (error || !data) {
