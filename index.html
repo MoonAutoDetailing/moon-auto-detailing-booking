@@ -1781,19 +1781,19 @@ if (RESCHEDULE_MODE) {
       throw new Error("No time selected.");
     }
 
-    const response = await fetch("/api/submit-reschedule", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      // Compute end time using service duration
+    // Compute end time using service duration BEFORE the fetch call
 const startLocal = new Date(selectedStartISO);
 const endLocal = new Date(startLocal.getTime() + selectedVariant.duration_minutes * 60000);
 
-body: JSON.stringify({
-  bookingId: RESCHEDULE_BOOKING_ID,
-  start: startLocal.toISOString(),
-  end: endLocal.toISOString()
-})
-    });
+const response = await fetch("/api/submit-reschedule", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    bookingId: RESCHEDULE_BOOKING_ID,
+    start: startLocal.toISOString(),
+    end: endLocal.toISOString()
+  })
+});
 
     const result = await response.json();
 
