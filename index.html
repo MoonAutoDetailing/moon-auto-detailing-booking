@@ -1766,18 +1766,10 @@ elPlate.value = vehicle.license_plate ?? vehicle.plate ?? "";
   
     await loadServiceVariants(); // load ONCE
 
+const vs = selectedVariant.vehicle_size;
 elVehicleSize.value = vs;
 renderServiceDropdown(vs);
-
-    // ⭐ Force select the service after dropdown is populated
-setTimeout(() => {
-  if (selectedVariant?.id) {
-    elServiceVariant.disabled = false; // ensure selectable
-    elServiceVariant.value = selectedVariant.id;
-    elServiceVariant.dispatchEvent(new Event("change"));
-  }
-}, 50);
-
+    
 // Now force-select the correct service variant
 if (selectedVariant?.id) {
   elServiceVariant.value = selectedVariant.id;
