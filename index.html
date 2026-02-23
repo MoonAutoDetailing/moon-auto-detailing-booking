@@ -1680,7 +1680,7 @@ async function hasBookingConflict(requestedStartISO, requestedEndISO) {
 async function loadRescheduleBooking() {
     // 🔴 ADD THIS BLOCK
   const params = new URLSearchParams(window.location.search);
-  const token = params.get("reschedule_token");
+  const token = RESCHEDULE_TOKEN;
   if (!token) {
     console.error("Missing reschedule token");
     setStatus("bad", "Invalid or expired reschedule link.");
@@ -1779,9 +1779,11 @@ elVehicleSize.value = vs;
       elServiceAddress
     ].forEach(el => el.disabled = true);
   
-    await loadServiceVariants(); // load ONCE
 renderServiceDropdown(vs);
-    
+
+// allow DOM to finish rebuilding the dropdown
+await new Promise(r => setTimeout(r, 0));
+
 // Now force-select the correct service variant
 if (selectedVariant?.id) {
   elServiceVariant.value = selectedVariant.id;
