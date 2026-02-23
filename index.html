@@ -1679,7 +1679,7 @@ async function hasBookingConflict(requestedStartISO, requestedEndISO) {
 // =========================
 async function loadRescheduleBooking() {
   try {
-    const res = await fetch(`/api/get-booking-by-token?token=${RESCHEDULE_TOKEN}`);
+    const resp = await fetch(`/api/get-booking-by-token?token=${token}`);
     const data = await res.json();
     
     if (!data?.booking) {
