@@ -360,8 +360,7 @@ function bookingBlocksAvailability(status) {
   return [
     "confirmed",
     "pending",
-    "completed",
-    "reschedule_requested"
+    "completed"
   ].includes(status);
 }
 
@@ -372,7 +371,7 @@ async function fetchBookings(timeMin, timeMax) {
   const { data } = await supabase
     .from("bookings")
     .select("scheduled_start, scheduled_end, service_address, status")
-    .in("status", ["confirmed","pending","completed","reschedule_requested"])
+    .in("status", ["confirmed","pending","completed"])
     .gte("scheduled_start", timeMin)
     .lte("scheduled_start", timeMax);
 
