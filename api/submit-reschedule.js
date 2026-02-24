@@ -42,9 +42,10 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Failed to update booking" });
     }
     // Fetch customer for notification
-const { data: booking } = await supabase
+const { data: booking, error: bookingErr } = await supabase
   .from("bookings")
   .select(`
+    manage_token,
     customers (
       full_name,
       email
@@ -52,6 +53,12 @@ const { data: booking } = await supabase
   `)
   .eq("id", bookingId)
   .single();
+
+if (bookingErr || !booking) {
+  console.error("Failed to load booking after reschedule:", bookingErr);
+  return res.status(500).json({ error: "Failed to load booking" });
+}
+
 // Send "reschedule submitted" email (fire-and-forget)
 try {
   await sendRescheduleSubmittedEmailCore({
@@ -65,8 +72,12 @@ try {
   console.error("Reschedule submitted email failed:", err);
 }
 
-
-    return res.status(200).json({ success: true });
+   return res.status(200).json({
+  success: true,
+  rescheduled: true,
+  bookingId,
+  manage_token: booking.manage_token
+});
 
   } catch (err) {
     console.error("submit-reschedule error:", err);
