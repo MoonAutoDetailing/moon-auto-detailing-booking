@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     const { data } = await supabase
   .from("bookings")
   .select("id")
-  .in("status", ["confirmed", "pending", "reschedule_requested"])
+  .in("status", ["confirmed", "pending"])
   .lt("scheduled_start", end)
   .gt("scheduled_end", start)
   .limit(1);
