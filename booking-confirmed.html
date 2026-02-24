@@ -55,6 +55,14 @@
       </div>
 
       <div class="row">
+        <div class="box" style="grid-column: 1 / -1;">
+          <div class="label">Total (cash only)</div>
+          <div id="c_price" class="val">—</div>
+          <div id="c_cash" class="val" style="margin-top:6px; color:#6b7280; font-size:14px;">—</div>
+        </div>
+      </div>
+
+      <div class="row">
         <div class="box">
           <div class="label">Start</div>
           <div id="c_start" class="val">—</div>
@@ -81,13 +89,16 @@
     </div>
   </div>
 
-  <script>
+  <script type="module">
+import { formatCurrency } from "./lib/formatCurrency.js";
 const raw = sessionStorage.getItem("moon_booking_confirmation");
 
 if (!raw) {
   // Direct visit or refresh
   document.getElementById("c_name").textContent = "—";
   document.getElementById("c_service").textContent = "—";
+  document.getElementById("c_price").textContent = "—";
+  document.getElementById("c_cash").textContent = "";
   document.getElementById("c_start").textContent = "—";
   document.getElementById("c_end").textContent = "—";
   document.getElementById("c_addr").textContent = "—";
@@ -97,6 +108,8 @@ if (!raw) {
 
     document.getElementById("c_name").textContent = p.full_name || "—";
     document.getElementById("c_service").textContent = p.serviceLabel || "—";
+  document.getElementById("c_price").textContent = formatCurrency(p.price);
+    document.getElementById("c_cash").textContent = "We are a cash-only business. Travel fees may be added later if applicable.";
     document.getElementById("c_start").textContent = p.prettyStart || "—";
     document.getElementById("c_end").textContent = p.prettyEnd || "—";
     document.getElementById("c_addr").textContent = p.service_address || "—";
