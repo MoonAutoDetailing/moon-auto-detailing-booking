@@ -48,12 +48,13 @@ export default async function handler(req, res) {
           vehicle_model
         ),
         service_variants:service_variant_id (
-          duration_minutes,
-          services:service_id (
-            category,
-            level
-          )
-        )
+  duration_minutes,
+  price,
+  services:service_id (
+    category,
+    level
+  )
+)
       `)
       .eq("manage_token", token)
       .single();
@@ -77,17 +78,18 @@ export default async function handler(req, res) {
       : "";
 
     return res.status(200).json({
-      id: booking.id,
-      status: booking.status,
-      scheduled_start: booking.scheduled_start,
-      scheduled_end: booking.scheduled_end,
-      service_address: booking.service_address,
-      google_event_html_link: booking.google_event_html_link,
-      customer_name: booking.customers?.full_name ?? "",
-      phone: booking.customers?.phone ?? "",
-      vehicle: vehicleLabel,
-      service: serviceLabel
-    });
+  id: booking.id,
+  status: booking.status,
+  scheduled_start: booking.scheduled_start,
+  scheduled_end: booking.scheduled_end,
+  service_address: booking.service_address,
+  google_event_html_link: booking.google_event_html_link,
+  customer_name: booking.customers?.full_name ?? "",
+  phone: booking.customers?.phone ?? "",
+  vehicle: vehicleLabel,
+  service: serviceLabel,
+  price: booking.service_variants?.price ?? null
+});
 
   } catch (err) {
     console.error("manage-booking-get error:", err);
