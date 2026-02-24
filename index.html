@@ -1841,10 +1841,10 @@ const response = await fetch("/api/submit-reschedule", {
    const manageToken = result.manage_token;
 
 if (manageToken) {
-  window.location.href = `/booking-confirmed.html?token=${manageToken}`;
+  window.location.href = `/manage-booking.html?token=${manageToken}`;
 } else {
-  // fallback so you don't hard-break if backend response is missing token
-  window.location.href = "/booking-confirmed.html";
+  // hard fallback
+  window.location.href = "/manage-booking.html";
 }
     return; // CRITICAL: prevent booking flow below
   } catch (err) {
