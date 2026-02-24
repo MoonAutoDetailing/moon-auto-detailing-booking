@@ -1688,7 +1688,7 @@ async function loadRescheduleBooking() {
   }
   
   try {
- const resp = await fetch(`/api/get-booking-by-token?token=${token}`);
+const resp = await fetch(`${window.location.origin}/api/get-booking-by-token?token=${token}`);
 const data = await resp.json();
     
     if (!data?.booking) {
