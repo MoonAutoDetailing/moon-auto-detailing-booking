@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       license_plate
     )
   `)
-  .eq("reschedule_token", token)
+.eq("manage_token", token)
   .single();
 
     if (error || !data) {
