@@ -1838,7 +1838,14 @@ const response = await fetch("/api/submit-reschedule", {
       throw new Error(result.error || "Reschedule failed.");
     }
 
-    window.location.href = "/booking-confirmed.html";
+   const manageToken = result.manage_token;
+
+if (manageToken) {
+  window.location.href = `/booking-confirmed.html?token=${manageToken}`;
+} else {
+  // fallback so you don't hard-break if backend response is missing token
+  window.location.href = "/booking-confirmed.html";
+}
     return; // CRITICAL: prevent booking flow below
   } catch (err) {
     alert(err.message);
