@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { sendBookingEmail } from "./_sendEmail.js";
 import { formatBookingTimeRange } from "../lib/time/formatBookingTime.js";
+import { pricingBlockHtml } from "../lib/email/_shared.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -33,11 +34,23 @@ export default async function handler(req, res) {
 
     const { data: booking, error } = await supabase
       .from("bookings")
-      .select(`
+            .select(`
+        id,
         scheduled_start,
         scheduled_end,
         service_address,
-        customers:customer_id ( full_name, email )
+        manage_token,
+        customers:customer_id (
+          full_name,
+          email
+        ),
+        service_variants:service_variant_id (
+          price,
+          services:service_id (
+            category,
+            level
+          )
+        )
       `)
       .eq("id", booking_id)
       .single();
@@ -46,25 +59,36 @@ export default async function handler(req, res) {
       console.error("Booking lookup failed:", error);
       return res.status(404).json({ message: "Booking not found" });
     }
-    const timeRange = formatBookingTimeRange(
-  booking.scheduled_start,
-  booking.scheduled_end
-);
+    const timeRange = formatBookingTimeRange(booking.scheduled_start, booking.scheduled_end);
+        const manageUrl =
+      `https://moon-auto-detailing-booking.vercel.app/manage-booking.html?token=${booking.manage_token}`;
+
+    const serviceLabel = booking.service_variants?.services
+      ? `${booking.service_variants.services.category} ${booking.service_variants.services.level}`
+      : "Service";
+
+    const pricingBlock = pricingBlockHtml({
+      serviceLabel,
+      price: booking.service_variants?.price
+    });
 
     await sendBookingEmail({
   to: booking.customers.email,
   subject: "Moon Auto Detailing — Booking Confirmed",
-  html: `
+    html: `
     <h2>Your detailing appointment is confirmed</h2>
     <p>Hi ${booking.customers.full_name},</p>
-    <p>Your appointment has been confirmed.</p>
-    <p><b>Appointment Time:</b> ${timeRange}</p>
+    <p>Your appointment has been confirmed for:</p>
+    <p><b>${timeRange}</b></p>
     <p><b>Address:</b> ${booking.service_address}</p>
+    ${pricingBlock}
+    <p>
+      Manage your booking:<br/>
+      <a href="${manageUrl}">${manageUrl}</a>
+    </p>
     <p>We look forward to servicing your vehicle.</p>
   `
 });
-
-
     return res.status(200).json({ ok: true });
 
   } catch (err) {
