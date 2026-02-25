@@ -2007,7 +2007,7 @@ const { data: bookingRows, error: bookingError } = await supabase
     status: "pending",
     customer_id,
     vehicle_id,
-    service_variant_id
+    service_variant_id: selectedVariant.id,
   })
   .select();
 
