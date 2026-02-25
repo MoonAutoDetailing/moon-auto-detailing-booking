@@ -32,13 +32,15 @@ export default async function handler(req, res) {
     const { data: booking, error } = await supabase
       .from("bookings")
       .select(`
-        id,
-        manage_token,
-        customers (
-          full_name,
-          email
-        )
-      `)
+  id,
+  manage_token,
+  reschedule_token,
+  customers(email, full_name),
+  service_variant:service_variants(
+    price,
+    service:services(category,level)
+  )
+`)
       .eq("id", bookingId)
       .single();
 
@@ -47,11 +49,17 @@ export default async function handler(req, res) {
     }
 
     const firstName = booking.customers.full_name.split(" ")[0];
+    const service = booking.service_variant?.service;
+const serviceLabel = service ? `${service.category} Detail Level ${service.level}` : "Service";
+const price = booking.service_variant?.price;
 
     await sendRescheduleLinkEmailCore({
   email: booking.customers.email,
   fullName: booking.customers.full_name,
-  manageToken: booking.manage_token
+  manageToken: booking.manage_token,
+  rescheduleToken: booking.reschedule_token,
+  serviceLabel,
+  price
 });
 
 
