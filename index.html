@@ -2049,6 +2049,8 @@ if (bookingError || !bookingRow) {
   prettyStart,
   prettyEnd,
   manage_token: bookingRow.manage_token // temporary until email phase
+  service_variant_id: selectedVariant.id,
+  price: Number(selectedVariant.price)
 };
 
 
