@@ -27,15 +27,21 @@ export default async function handler(req, res) {
     // Fetch booking + customer email
     const { data: booking, error } = await supabase
       .from("bookings")
-      .select(`
+.select(`
+  id,
   scheduled_start,
   scheduled_end,
   service_address,
   manage_token,
-  customers:customer_id ( full_name, email )
+  customers(full_name,email),
+  vehicles(vehicle_make,vehicle_model,vehicle_year),
+  service_variant:service_variants(
+    price,
+    service:services(category,level)
+  )
 `)
-      .eq("id", booking_id)
-      .single();
+.eq("id", booking_id)
+.single();
 
     if (error || !booking) {
       console.error("Booking lookup failed:", error);
@@ -48,6 +54,15 @@ export default async function handler(req, res) {
   booking.scheduled_start,
   booking.scheduled_end
 );
+    const serviceLabel =
+  booking.service_variant?.service
+    ? `${booking.service_variant.service.category} Level ${booking.service_variant.service.level}`
+    : "Service";
+
+const price =
+  booking.service_variant?.price != null
+    ? `$${Number(booking.service_variant.price).toFixed(2)}`
+    : "—";
 
     await sendBookingEmail({
   to: booking.customers.email,
@@ -56,12 +71,21 @@ export default async function handler(req, res) {
     <h2>We received your booking request</h2>
     <p>Hi ${booking.customers.full_name},</p>
     <p>Your detailing request has been received and is awaiting confirmation.</p>
+
     <p><b>Appointment Time:</b> ${timeRange}</p>
     <p><b>Address:</b> ${booking.service_address}</p>
-    <p>
+
+    <div style="margin-top:16px;padding:16px;border-radius:8px;background:#f3f4f6">
+      <p><b>Service:</b> ${serviceLabel}</p>
+      <p><b>Total (cash only):</b> ${price}</p>
+      <p>We are a cash-only business. Travel fees may be added later if applicable.</p>
+    </div>
+
+    <p style="margin-top:16px">
       You can manage your booking here:<br/>
       <a href="${manageUrl}">${manageUrl}</a>
     </p>
+
     <p>We will confirm your appointment shortly.</p>
   `
 });
