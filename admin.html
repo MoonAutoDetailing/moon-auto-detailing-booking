@@ -1204,6 +1204,12 @@ if (b.google_event_id) {
       setBookingButtonsDisabled(card, false);
     }
   };
+       // Send cancellation email (non-blocking)
+fetch("/api/send-booking-cancelled-email", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ bookingId })
+}).catch((e) => console.error("Cancel email failed", e));
 
   actions.appendChild(rescheduleBtn);
   actions.appendChild(completeBtn);
