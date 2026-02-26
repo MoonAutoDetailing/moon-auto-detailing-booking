@@ -48,12 +48,6 @@ if (error || !booking) {
   return res.status(404).json({ error: "Booking not found" });
 }
 
-const manageUrl =
-  `https://moon-auto-detailing-booking.vercel.app/manage-booking.html?token=${booking.manage_token}`;
-
-const rescheduleUrl =
-  `https://moon-auto-detailing-booking.vercel.app/index.html?reschedule_token=${booking.reschedule_token}`;
-
 const service = booking.service_variants?.services;
 const serviceLabel = service
   ? `${service.category} Detail ${service.level}`
@@ -62,10 +56,10 @@ const serviceLabel = service
 const price = booking.service_variants?.price ?? null;
 
 await sendRescheduleLinkEmailCore({
-  email: booking.customers.email,
-  fullName: booking.customers.full_name,
-  rescheduleUrl,
-  manageUrl,
+  to: booking.customers.email,
+  customerName: booking.customers.full_name,
+  manageToken: booking.manage_token,
+  rescheduleToken: booking.reschedule_token,
   serviceLabel,
   price
 });
