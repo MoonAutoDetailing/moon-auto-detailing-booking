@@ -48,8 +48,8 @@ export default async function handler(req, res) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    const manageUrl =
-      `https://moon-auto-detailing-booking.vercel.app/manage-booking.html?token=${booking.manage_token}`;
+    import { buildManageUrl } from "../lib/email/_shared.js";
+    const manageUrl = buildManageUrl(booking.manage_token);
     const timeRange = formatBookingTimeRange(
   booking.scheduled_start,
   booking.scheduled_end
