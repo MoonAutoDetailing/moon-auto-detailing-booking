@@ -36,9 +36,9 @@ const { data: booking, error } = await supabase
     reschedule_token,
     manage_token,
     customers:customer_id(full_name,email),
-    service_variants:service_variant_id(
+        service_variants:service_variant_id(
       price,
-      services:service_id(category,level)
+      services(category,level)
     )
   `)
   .eq("id", bookingId)
@@ -56,8 +56,8 @@ const serviceLabel = service
 const price = booking.service_variants?.price ?? null;
 
 await sendRescheduleLinkEmailCore({
-  to: booking.customers.email,
-  customerName: booking.customers.full_name,
+  email: booking.customers.email,
+  fullName: booking.customers.full_name,
   manageToken: booking.manage_token,
   rescheduleToken: booking.reschedule_token,
   serviceLabel,
