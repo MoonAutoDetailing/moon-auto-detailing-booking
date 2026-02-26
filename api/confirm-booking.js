@@ -7,10 +7,11 @@ import { sendBookingConfirmedEmailCore } from "../lib/email/sendBookingConfirmed
 
 
 export default async function handler(req, res) {
-  // 🔒 VERIFY ADMIN SESSION
-if (!verifyAdmin(req)) {
-  return res.status(401).json({ error: "Unauthorized" });
-}
+  try {
+    await verifyAdmin(req);
+  } catch (err) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false });
   }

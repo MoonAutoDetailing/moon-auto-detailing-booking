@@ -6,7 +6,9 @@ import { sendRescheduleLinkEmailCore } from "../lib/email/sendRescheduleLinkEmai
 
 
 export default async function handler(req, res) {
-    if (!verifyAdmin(req)) {
+  try {
+    await verifyAdmin(req);
+  } catch (err) {
     return res.status(401).json({ error: "Unauthorized" });
   }
   if (req.method !== "POST") {
