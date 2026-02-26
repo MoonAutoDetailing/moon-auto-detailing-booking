@@ -41,14 +41,16 @@ export default async function handler(req, res) {
       console.error("Reschedule update failed:", error);
       return res.status(500).json({ error: "Failed to update booking" });
     }
-    // Fetch customer for notification
+    
+    // Fetch booking + pricing for notification
 const { data: booking, error: bookingErr } = await supabase
   .from("bookings")
   .select(`
     manage_token,
-    customers (
-      full_name,
-      email
+    customers(full_name,email),
+    service_variants:service_variant_id(
+      price,
+      services:service_id(category,level)
     )
   `)
   .eq("id", bookingId)
@@ -61,11 +63,21 @@ if (bookingErr || !booking) {
 
 // Send "reschedule submitted" email (fire-and-forget)
 try {
-  await sendRescheduleSubmittedEmailCore({
-  email: booking.customers.email,
-  fullName: booking.customers.full_name,
+  const svc = booking.service_variants?.services;
+const serviceLabel = svc
+  ? `${svc.category} Detail ${svc.level}`
+  : "Service";
+
+const price = booking.service_variants?.price ?? null;
+
+await sendRescheduleSubmittedEmailCore({
+  to: booking.customers.email,
+  customerName: booking.customers.full_name,
   newStart: start,
-  newEnd: end
+  newEnd: end,
+  serviceLabel,
+  price,
+  manageToken: booking.manage_token
 });
 
 } catch (err) {
