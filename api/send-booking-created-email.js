@@ -65,6 +65,8 @@ const pricingHtml = pricingBlockHtml({
   price: booking.service_variant?.price ?? null
 });
 
+const manageUrl = buildManageUrl(booking.manage_token);
+
     await sendBookingEmail({
   to: booking.customers.email,
   subject: "Moon Auto Detailing — Booking Request Received",
