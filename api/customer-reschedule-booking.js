@@ -91,19 +91,31 @@ try {
     .from("bookings")
     .select(`
       manage_token,
-      customers (
-        full_name,
-        email
+      reschedule_token,
+      customers(full_name,email),
+      service_variants:service_variant_id(
+        price,
+        services:service_id(category,level)
       )
     `)
     .eq("id", booking.id)
     .single();
 
   if (bookingWithCustomer?.customers?.email) {
+    const svc = bookingWithCustomer.service_variants?.services;
+    const serviceLabel = svc
+      ? `${svc.category} Detail ${svc.level}`
+      : "Service";
+
+    const price = bookingWithCustomer.service_variants?.price ?? null;
+
     await sendRescheduleLinkEmailCore({
-      email: bookingWithCustomer.customers.email,
-      fullName: bookingWithCustomer.customers.full_name,
-      manageToken: bookingWithCustomer.manage_token
+      to: bookingWithCustomer.customers.email,
+      customerName: bookingWithCustomer.customers.full_name,
+      manageToken: bookingWithCustomer.manage_token,
+      rescheduleToken: bookingWithCustomer.reschedule_token,
+      serviceLabel,
+      price
     });
   }
 } catch (err) {
