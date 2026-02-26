@@ -254,19 +254,35 @@ const googleEventHtmlLink = calendarResponse.data.htmlLink;
         // =========================
     // 🔔 Send booking confirmed email (fire-and-forget)
 try {
+  const { data: variantRow, error: variantErr } = await supabase
+  .from("service_variants")
+  .select(`price, service:services(category,level)`)
+  .eq("id", booking.service_variant_id)
+  .single();
+
+if (variantErr) {
+  console.error("Service variant lookup failed:", variantErr);
+}
+
+const serviceLabel = variantRow?.service
+  ? `${variantRow.service.category} Detail ${variantRow.service.level}`
+  : "Service";
+
+const price = variantRow?.price ?? null;
+  
   await sendBookingConfirmedEmailCore({
-    email: customer.email,
-    fullName: customer.full_name,
-    start: booking.scheduled_start,
-    end: booking.scheduled_end,
-    address: booking.service_address
-  });
+  email: customer.email,
+  fullName: customer.full_name,
+  start: booking.scheduled_start,
+  end: booking.scheduled_end,
+  address: booking.service_address,
+  serviceLabel,
+  price
+});
+  
 } catch (err) {
   console.error("Confirmation email failed:", err);
 }
-
-
-
 
     return res.status(200).json({ ok: true });
 
