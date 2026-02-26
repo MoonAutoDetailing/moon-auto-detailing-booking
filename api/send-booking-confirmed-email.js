@@ -33,28 +33,22 @@ export default async function handler(req, res) {
     );
 
     const { data: booking, error } = await supabase
-      .from("bookings")
-            .select(`
-        id,
-        scheduled_start,
-        scheduled_end,
-        service_address,
-        manage_token,
-        customers:customer_id (
-          full_name,
-          email
-        ),
-        service_variants:service_variant_id (
-          price,
-          services:service_id (
-            category,
-            level
-          )
-        )
-      `)
-      .eq("id", booking_id)
-      .single();
-
+  .from("bookings")
+  .select(`
+    id,
+    scheduled_start,
+    scheduled_end,
+    service_address,
+    manage_token,
+    customers:customer_id(full_name,email),
+    service_variants:service_variant_id(
+      price,
+      services:service_id(category,level)
+    )
+  `)
+  .eq("id", booking_id)
+  .single();
+    
     if (error || !booking) {
       console.error("Booking lookup failed:", error);
       return res.status(404).json({ message: "Booking not found" });
