@@ -24,12 +24,12 @@ export default async function handler(req, res) {
     );
 
     const { bookingId } = req.body;
-    if (!bookingId) {
-      return res.status(400).json({ error: "Missing bookingId" });
-    }
+if (!bookingId) {
+  return res.status(400).json({ error: "Missing bookingId" });
+}
 
-    // Fetch booking + customer
-    const { data: booking, error } = await supabase
+// Fetch booking + customer
+const { data: booking, error } = await supabase
   .from("bookings")
   .select(`
     id,
@@ -41,28 +41,27 @@ export default async function handler(req, res) {
       services:service_id(category,level)
     )
   `)
-  .eq("reschedule_token", reschedule_token)
+  .eq("id", bookingId)
   .single();
 
-    if (error || !booking) {
-      return res.status(404).json({ error: "Booking not found" });
-    }
+if (error || !booking) {
+  return res.status(404).json({ error: "Booking not found" });
+}
 
-    const firstName = booking.customers.full_name.split(" ")[0];
-    const service = booking.service_variants?.services;
+const manageUrl =
+  `https://moon-auto-detailing-booking.vercel.app/manage-booking.html?token=${booking.manage_token}`;
+
+const rescheduleUrl =
+  `https://moon-auto-detailing-booking.vercel.app/index.html?reschedule_token=${booking.reschedule_token}`;
+
+const service = booking.service_variants?.services;
 const serviceLabel = service
   ? `${service.category} Detail ${service.level}`
   : "Service";
 
 const price = booking.service_variants?.price ?? null;
 
-    const serviceLabel = booking.service_variant?.service
-  ? `${booking.service_variant.service.category} Detail ${booking.service_variant.service.level}`
-  : "Service";
-
-const price = booking.service_variant?.price ?? null;
-
-    await sendRescheduleLinkEmailCore({
+await sendRescheduleLinkEmailCore({
   email: booking.customers.email,
   fullName: booking.customers.full_name,
   rescheduleUrl,
