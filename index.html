@@ -2038,19 +2038,22 @@ if (bookingError || !bookingRow) {
         const prettyStart = startLocal.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
         const prettyEnd = endLocal.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
-        const confirmationPayload = {
+        const selectedVariant = (window.__serviceVariantsCache || []).find(v => String(v.id) === String(serviceVariantId));
+const price = selectedVariant?.price ?? null;
+
+const confirmationPayload = {
   full_name,
   email,
   phone,
-  serviceLabel,
-  service_address,
+  serviceName: serviceLabel,
+  address: serviceAddress,
   scheduled_start_iso: scheduled_start,
   scheduled_end_iso: scheduled_end,
   prettyStart,
   prettyEnd,
   manage_token: bookingRow.manage_token, // temporary until email phase
   service_variant_id: selectedVariant.id,
-  price: Number(selectedVariant.price)
+  price,
 };
 
 
