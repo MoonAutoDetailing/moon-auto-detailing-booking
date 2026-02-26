@@ -49,9 +49,9 @@ const { data: booking, error: bookingErr } = await supabase
     manage_token,
     customers(full_name,email),
     service_variants:service_variant_id(
-      price,
-      services:service_id(category,level)
-    )
+  price,
+  services(category,level)
+)
   `)
   .eq("id", bookingId)
   .single();
