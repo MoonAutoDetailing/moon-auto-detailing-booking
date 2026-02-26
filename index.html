@@ -2044,15 +2044,19 @@ const confirmationPayload = {
   full_name,
   email,
   phone,
-  serviceName: serviceLabel,
-  address: service_address,
+
+  // FIXED KEYS (must match booking-confirmed.html)
+  serviceLabel: serviceLabel,
+  service_address: service_address,
+  price: price,
+
   scheduled_start_iso: scheduled_start,
   scheduled_end_iso: scheduled_end,
   prettyStart,
   prettyEnd,
-  manage_token: bookingRow.manage_token, // temporary until email phase
-  service_variant_id: selectedVariant.id,
-  price,
+
+  manage_token: bookingRow.manage_token,
+  service_variant_id: selectedVariant.id
 };
 
 
