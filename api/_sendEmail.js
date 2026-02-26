@@ -18,7 +18,9 @@ export async function sendBookingEmail({ to, subject, html }) {
     });
 
     console.log("Email sent:", result);
+    return { success: true, id: result?.data?.id ?? null };
   } catch (err) {
     console.error("Email send failed:", err);
+    return { success: false, error: err };
   }
 }

@@ -66,7 +66,7 @@ export default async function handler(req, res) {
       price: booking.service_variants?.price
     });
 
-    await sendBookingEmail({
+    const emailResult = await sendBookingEmail({
   to: booking.customers.email,
   subject: "Moon Auto Detailing — Booking Confirmed",
     html: `
@@ -83,6 +83,11 @@ export default async function handler(req, res) {
     <p>We look forward to servicing your vehicle.</p>
   `
 });
+    if (!emailResult?.success) {
+      console.error("[EMAIL] status=failure", emailResult?.error);
+    } else {
+      console.log("[EMAIL] status=success id=", emailResult.id);
+    }
     return res.status(200).json({ ok: true });
 
   } catch (err) {

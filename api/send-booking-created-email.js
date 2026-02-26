@@ -61,7 +61,7 @@ export default async function handler(req, res) {
       price: booking.service_variant?.price ?? null
     });
 
-    await sendBookingEmail({
+    const emailResult = await sendBookingEmail({
       to: booking.customers.email,
       subject: "Moon Auto Detailing — Booking Request Received",
       html: `
@@ -82,7 +82,11 @@ export default async function handler(req, res) {
         <p>We will confirm your appointment shortly.</p>
       `
     });
-
+    if (!emailResult?.success) {
+      console.error("[EMAIL] status=failure", emailResult?.error);
+    } else {
+      console.log("[EMAIL] status=success id=", emailResult.id);
+    }
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error("send-booking-created-email error:", err);
