@@ -33,14 +33,15 @@ export default async function handler(req, res) {
   .from("bookings")
   .select(`
     id,
+    reschedule_token,
     manage_token,
-    customers(full_name,email),
-    service_variant:service_variants(
+    customers:customer_id(full_name,email),
+    service_variants:service_variant_id(
       price,
-      service:services(category,level)
+      services:service_id(category,level)
     )
   `)
-  .eq("id", booking_id)
+  .eq("reschedule_token", reschedule_token)
   .single();
 
     if (error || !booking) {
@@ -48,9 +49,12 @@ export default async function handler(req, res) {
     }
 
     const firstName = booking.customers.full_name.split(" ")[0];
-    const service = booking.service_variant?.service;
-const serviceLabel = service ? `${service.category} Detail Level ${service.level}` : "Service";
-const price = booking.service_variant?.price;
+    const service = booking.service_variants?.services;
+const serviceLabel = service
+  ? `${service.category} Detail ${service.level}`
+  : "Service";
+
+const price = booking.service_variants?.price ?? null;
 
     const serviceLabel = booking.service_variant?.service
   ? `${booking.service_variant.service.category} Detail ${booking.service_variant.service.level}`
