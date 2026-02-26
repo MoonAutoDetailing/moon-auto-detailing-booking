@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { sendBookingEmail } from "./_sendEmail.js";
 import { formatBookingTimeRange } from "../lib/time/formatBookingTime.js";
 import { pricingBlockHtml } from "../lib/email/_shared.js";
+import { buildManageUrl } from "../lib/email/_shared.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -54,8 +55,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ message: "Booking not found" });
     }
     const timeRange = formatBookingTimeRange(booking.scheduled_start, booking.scheduled_end);
-        const manageUrl =
-      `https://moon-auto-detailing-booking.vercel.app/manage-booking.html?token=${booking.manage_token}`;
+        const manageUrl = buildManageUrl(booking.manage_token);
 
     const serviceLabel = booking.service_variants?.services
       ? `${booking.service_variants.services.category} ${booking.service_variants.services.level}`
