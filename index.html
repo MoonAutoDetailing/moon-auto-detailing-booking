@@ -2038,8 +2038,10 @@ if (bookingError || !bookingRow) {
         const prettyStart = startLocal.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
         const prettyEnd = endLocal.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
-        const selectedVariant = (window.__serviceVariantsCache || []).find(v => String(v.id) === String(serviceVariantId));
-const price = selectedVariant?.price ?? null;
+        const variantForPrice = (window.__serviceVariantsCache || [])
+  .find(v => String(v.id) === String(serviceVariantId));
+
+const price = variantForPrice?.price ?? null;
 
 const confirmationPayload = {
   full_name,
