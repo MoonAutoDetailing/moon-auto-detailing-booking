@@ -1,0 +1,1451 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Moon Auto Detailing — Admin</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+
+<style>
+     :root {
+  --moon-primary: #6f93c4;
+  --moon-primary-dark: #4f78a8;
+  --moon-light-bg: #e9f1fb;
+  --moon-soft: #9fb7d3;
+  --moon-shadow: rgba(0,0,0,0.08);
+}
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background: #0e0e0e;
+  min-height: 100vh;
+  color: white;
+}
+
+#pageOverlay {
+  color: white;
+}
+
+
+h1 { margin-bottom: 10px; }
+.day { margin-top: 24px; }
+/* collapsed booking row (glass pill) */
+.card {
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  padding: 14px 18px;
+  margin-top: 12px;
+  background: rgba(111,147,196,0.18);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  transition: 0.18s ease;
+}
+
+/* hover polish */
+.card:hover {
+  background: rgba(111,147,196,0.26);
+  transform: translateY(-1px);
+}
+/* expanded booking card */
+.card.expanded {
+  background: rgba(111,147,196,0.28);   /* darker glass, not white */
+  backdrop-filter: blur(18px);
+  color: white;
+  border: 1px solid rgba(255,255,255,0.18);
+  box-shadow: 0 25px 60px rgba(0,0,0,0.55);
+}
+
+     .card.expanded .status-badge {
+  color: white;
+}
+
+
+.card.expanded[data-today-accent="true"] {
+  border-left: 4px solid var(--moon-primary);
+}
+
+
+.row { margin-bottom: 6px; }
+.label { font-weight: 600; }
+.actions button {
+margin-right: 8px;
+padding: 8px 12px;
+font-weight: 700;
+cursor: pointer;
+}
+.confirm { background: #0a7a2f; color: white; border: none; }
+.cancel { background: #b00020; color: white; border: none; }
+.delay { background: #666; color: white; border: none; }
+     
+     #watermarkLogo {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: 1400px;
+  max-width: 95vw;
+  opacity: 0.08;
+  z-index: 1;
+  pointer-events: none;
+}
+
+
+     #watermarkUnderlay {
+  position: fixed;
+  inset: 0;                /* full screen */
+  background: #000000;     /* EXACT charcoal */
+  opacity: 0.12;           /* subtle */
+  z-index: 0;
+  pointer-events: none;
+}
+     #pageOverlay {
+  position: relative;
+  z-index: 2;
+  padding: 20px;
+  max-width: 1100px;
+  margin: 0 auto;      /* CENTER IT */
+  border-radius: 12px;
+  background: transparent;
+}
+
+     .moon-tab {
+  padding: 10px 16px;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--moon-primary);
+  color: white;
+  transition: all 0.15s ease;
+  margin-right: 12px;
+}
+     .moon-tab[data-view="pending"] {
+  box-shadow: 0 0 0 2px rgba(255, 204, 0, 0.6);
+}
+
+.moon-tab:hover {
+  background: var(--moon-primary-dark);
+}
+
+.moon-tab.active {
+  background: var(--moon-primary-dark);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+}
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.status-pending { background: #ffd966; color: #000; }
+.status-confirmed { background: #4f78a8; color: #fff; }
+.status-reschedule_requested { background: #8fb1e0; color: #000; }
+.status-completed { background: #888; color: #fff; }
+.status-cancelled { background: #b00020; color: #fff; }
+.status-denied { background: #6a1b9a; color: #fff; }
+.status-no_show { background: #555; color: #fff; }
+.status-confirming { background: #4f78a8; color: #fff; }
+.day h2 {
+  font-size: 20px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #ffffff30;
+  padding-bottom: 6px;
+}
+.status-badge { margin-top: 6px; }
+
+     .dashboard-title {
+  text-align: center;
+  margin-top: 60px;
+  color: var(--moon-primary);
+}
+     .booking-header {
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  color: white;
+}
+
+.booking-content {
+  margin-top: 10px;
+  display: none;
+}
+
+.card.expanded .booking-content {
+  display: block;
+}
+
+
+@media (max-width: 768px) {
+  .dashboard-title {
+    margin-top: 40px;
+  }
+}
+     #viewButtons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 70px; /* pushes below toggle button */
+  margin-bottom: 30px;
+}
+     /* ===== TOP BAR (tabs + refresh) ===== */
+#topBar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 60px;
+  margin-bottom: 30px;
+}
+
+/* prevent viewButtons from pushing layout down */
+#viewButtons {
+  margin: 0;
+}
+
+/* ================= LOGIN OVERLAY ================= */
+
+#loginOverlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, #0e0e0e 0%, #000 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+}
+
+#loginCard {
+  width: 360px;
+  padding: 40px 34px;
+  border-radius: 18px;
+  background: rgba(111,147,196,0.12);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  text-align: center;
+}
+
+#loginLogo {
+  width: 140px;
+  margin-bottom: 18px;
+  opacity: 0.95;
+}
+
+.loginTitle {
+  color: var(--moon-primary);
+  margin-bottom: 20px;
+  font-weight: 700;
+}
+
+#loginPassword {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: white;
+  outline: none;
+  margin-bottom: 14px;
+  font-size: 15px;
+}
+
+#loginPassword::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+
+#loginButton {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: var(--moon-primary);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+  transition: 0.15s;
+}
+
+#loginButton:hover {
+  background: var(--moon-primary-dark);
+}
+
+#loginError {
+  margin-top: 12px;
+  color: #ff6b6b;
+  display: none;
+  font-size: 14px;
+}
+#refreshNow {
+  padding: 8px 16px;
+  height: 38px;
+  align-self: center;
+  flex: 0 0 auto;
+}
+     #logoutBtn {
+  padding: 8px 14px;
+  height: 38px;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.25);
+  color: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+#logoutBtn:hover {
+  background: rgba(255,255,255,0.08);
+}
+
+
+/* ===================== TOAST NOTIFICATIONS ===================== */
+#toastContainer {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 999999;
+}
+
+.toast {
+  background: rgba(111,147,196,0.22);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.2);
+  padding: 14px 18px;
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  animation: slideIn 0.25s ease, fadeOut 0.5s ease 5s forwards;
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-30px); opacity: 0; }
+  to   { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; transform: translateX(-20px); }
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- HARD DEBUG PANEL -->
+<div
+id="hardLog"
+style="
+     position: fixed;
+     bottom: 0;
+     left: 0;
+     width: 100%;
+     max-height: 180px;
+     overflow-y: auto;
+     background: #111;
+     color: #0f0;
+     font-family: monospace;
+     font-size: 12px;
+     padding: 8px;
+     z-index: 9999;
+     border-top: 2px solid #0f0;
+     display: none;
+   "
+>
+<strong>DEBUG LOG</strong>
+</div>
+     <div id="watermarkUnderlay"></div>
+<img 
+  src="/NewLogoColor.png" 
+  id="watermarkLogo" 
+  alt="Moon Auto Detailing Logo" 
+/>
+<!-- ADMIN LOGIN OVERLAY -->
+<div id="loginOverlay">
+  <form id="loginCard" autocomplete="off">
+    <img src="/NewLogoColor.png" id="loginLogo" />
+
+    <h2 class="loginTitle">Admin Access</h2>
+
+    <!-- Fake fields to defeat Chrome autofill -->
+<input type="text" style="display:none">
+<input type="password" style="display:none">
+
+<input
+  id="loginPassword"
+  type="password"
+  placeholder="Password"
+  autocomplete="new-password"
+  autocapitalize="off"
+  autocorrect="off"
+  spellcheck="false"
+/>
+
+
+    <button id="loginButton" type="submit">Unlock Dashboard</button>
+
+    <div id="loginError">Wrong password</div>
+  </form>
+</div>
+
+<div id="pageOverlay">
+  <div id="topBar">
+  <div id="viewButtons"></div>
+
+  <button id="refreshNow" class="moon-tab">Refresh</button>
+
+  <button id="logoutBtn">Logout</button>
+</div>
+
+
+  <div id="viewContainer"></div>
+</div>
+
+     <button id="debugToggle" style="
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #6f93c4;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  z-index: 5;
+">
+  Toggle Debug
+</button>
+
+<div id="toastContainer"></div>
+<script type="module">
+// ================= ADMIN LOGIN UI =================
+let ADMIN_SESSION = null;
+sessionStorage.removeItem("moon_admin_session");
+function isLoggedIn() {
+  return !!ADMIN_SESSION;
+}
+
+async function performLogin(password) {
+  const res = await fetch("/api/admin-login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password })
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) throw new Error("Unauthorized");
+
+  ADMIN_SESSION = data.token;
+}
+
+async function requireLoginUI() {
+  if (ADMIN_SESSION) return;
+
+  // reset form every time to avoid dead promise after logout
+  const oldForm = document.getElementById("loginCard");
+  const newForm = oldForm.cloneNode(true);
+  oldForm.parentNode.replaceChild(newForm, oldForm);
+
+  const input = document.getElementById("loginPassword");
+  const error = document.getElementById("loginError");
+
+  return new Promise(resolve => {
+    async function attemptLogin() {
+      error.style.display = "none";
+
+      try {
+        await performLogin(input.value);
+        resolve();
+      } catch {
+        error.style.display = "block";
+        input.value = "";
+      }
+    }
+
+    newForm.onsubmit = e => {
+      e.preventDefault();
+      attemptLogin();
+    };
+  });
+}
+
+     
+function clearAdminSession() {
+  ADMIN_SESSION = null;
+}
+
+function showLoginOverlay() {
+  document.getElementById("loginOverlay").style.display = "flex";
+}
+
+function hideLoginOverlay() {
+  document.getElementById("loginOverlay").style.display = "none";
+}
+     document.getElementById("logoutBtn").onclick = async () => {
+  hardLog("ADMIN LOGOUT");
+
+  stopRealtimeBookings();
+  clearAdminSession();
+
+  currentView = null;
+  refreshInFlight = false;
+  viewContainer.innerHTML = "";
+  viewButtons.innerHTML = "";
+
+  const input = document.getElementById("loginPassword");
+  const err = document.getElementById("loginError");
+  if (input) input.value = "";
+  if (err) err.style.display = "none";
+
+  showLoginOverlay();
+
+  // 🔴 THIS IS THE MISSING PIECE
+  await requireLoginUI();
+  hideLoginOverlay();
+
+  await loadAdminData();
+  startRealtimeBookings();
+};
+
+
+async function bootAdminApp() {
+  try {
+    showLoginOverlay();
+    await requireLoginUI(); // may set ADMIN_SESSION
+
+    hardLog("ADMIN AUTH TRY");
+
+    // Try first data load. If unauthorized, force re-login.
+    const ok = await loadAdminData({ silentUnauthorized: true });
+    if (!ok) {
+      hardLog("ADMIN TOKEN INVALID — RELOGIN");
+      clearAdminSession();
+      showLoginOverlay();
+      await requireLoginUI();
+
+      const ok2 = await loadAdminData({ silentUnauthorized: false });
+      if (!ok2) throw new Error("Unauthorized after re-login");
+    }
+
+    hideLoginOverlay();
+    hardLog("ADMIN AUTH SUCCESS");
+    startRealtimeBookings();
+  } catch (err) {
+    hardLog("ADMIN AUTH FAILED");
+    console.error(err);
+  }
+}
+
+
+
+/* ===================== IMPORTS ===================== */
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
+/* ===================== HARD LOG ===================== */
+function hardLog(message) {
+const el = document.getElementById("hardLog");
+if (!el) return;
+const line = document.createElement("div");
+line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+el.appendChild(line);
+el.scrollTop = el.scrollHeight;
+}
+
+hardLog("ADMIN LOADED");
+     /* ===================== NOTIFICATION SOUND ===================== */
+const bookingSound = new Audio(
+  "https://cdn.jsdelivr.net/gh/jshawl/AudioFX/sounds/bling.mp3"
+);
+bookingSound.volume = 0.35;
+
+     // ===================== DEBUG TOGGLE =====================
+const debugToggle = document.getElementById("debugToggle");
+const hardLogPanel = document.getElementById("hardLog");
+
+debugToggle.onclick = () => {
+  if (hardLogPanel.style.display === "none") {
+    hardLogPanel.style.display = "block";
+  } else {
+    hardLogPanel.style.display = "none";
+  }
+};
+
+/* ===================== AUTHENTICATED FETCH WRAPPER ===================== */
+async function adminFetch(url, options = {}, retry = true) {
+  options.headers = options.headers || {};
+  options.headers["x-admin-session"] = ADMIN_SESSION;
+
+  let res;
+  try {
+    res = await fetch(url, options);
+  } catch (err) {
+    hardLog("FETCH FAILED " + (err?.message || err));
+    throw err;
+  }
+
+  if (res.status === 401 && retry) {
+  hardLog("SESSION EXPIRED — RELOGIN REQUIRED");
+
+  clearAdminSession();
+  showLoginOverlay();
+
+  // Wait for login UI to finish
+  await requireLoginUI();
+
+  // If login somehow failed or was cancelled, stop here
+  if (!isLoggedIn()) {
+    hardLog("RELOGIN FAILED — ABORTING REQUEST");
+    throw new Error("Admin re-login required");
+  }
+
+  options.headers["x-admin-session"] = ADMIN_SESSION;
+
+  try {
+    return await adminFetch(url, options, false);
+  } catch (err) {
+    hardLog("RETRY FETCH FAILED " + (err?.message || err));
+    throw err;
+  }
+}
+
+  return res;
+}
+
+/* ===================== SUPABASE ===================== */
+const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
+const SUPABASE_ANON_KEY =
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbWh1Z3p0cnBpcHJucW1jeWFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MDk1NjMsImV4cCI6MjA4NjA4NTU2M30.Mo0uRGWCjU1fOa1br2P8j1ogEZf7mDm2JseV8DFnPwI";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+/* ===================== REALTIME BOOKINGS ===================== */
+let realtimeChannel = null;
+
+     function showToast(message) {
+  const container = document.getElementById("toastContainer");
+
+  const toast = document.createElement("div");
+  toast.className = "toast";
+  toast.textContent = message;
+
+  container.appendChild(toast);
+
+  setTimeout(() => toast.remove(), 5500);
+}
+
+function startRealtimeBookings() {
+  if (realtimeChannel) return; // prevent duplicate subscriptions
+
+  hardLog("STARTING REALTIME BOOKINGS SUBSCRIPTION");
+
+  realtimeChannel = supabase
+    .channel("admin-bookings-live")
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "bookings" },
+      async (payload) => {
+        try {
+          hardLog("REALTIME BOOKING CHANGE DETECTED");
+
+          // Detect NEW booking inserts only
+          if (payload.eventType === "INSERT") {
+            const booking = payload.new;
+
+            if (booking && !knownBookingIds.has(booking.id)) {
+              knownBookingIds.add(booking.id);
+
+              bookingSound.play().catch(() => {});
+              showToast("New booking received!");
+
+              document.title = "• New Booking!";
+              setTimeout(() => {
+                document.title = "Moon Auto Detailing — Admin";
+              }, 5000);
+            }
+          }
+
+          const ok = await loadAdminData({ silentUnauthorized: true });
+          if (ok && currentView) renderView(currentView);
+        } catch (err) {
+          console.error(err);
+          hardLog("REALTIME ERROR " + (err?.message || err));
+        }
+      }
+    )
+    .subscribe();
+}
+
+     
+function stopRealtimeBookings() {
+  try {
+    if (realtimeChannel) {
+      hardLog("STOPPING REALTIME BOOKINGS SUBSCRIPTION");
+      supabase.removeChannel(realtimeChannel);
+      realtimeChannel = null;
+    }
+  } catch (e) {
+    hardLog("STOP REALTIME ERROR " + (e?.message || e));
+  }
+}
+
+     // ===================== VIEW STATE =====================
+let currentView = null;
+     let knownBookingIds = new Set();
+     let refreshInFlight = false;
+
+let cachedViews = {
+  pending: [],
+  today: [],
+  upcoming: [],
+};
+     let reloadHistoryPage = null;
+     let historyPage = 1;
+const historyPageSize = 20;
+let filteredHistory = [];
+
+
+const viewButtons = document.getElementById("viewButtons");
+const viewContainer = document.getElementById("viewContainer");
+     document.getElementById("refreshNow").onclick = async () => {
+  if (!ADMIN_SESSION) return;
+  if (refreshInFlight) return;
+
+  refreshInFlight = true;
+  hardLog("MANUAL REFRESH CLICKED");
+
+  try {
+
+    // HISTORY VIEW — do NOT wipe the DOM
+    if (currentView === "history") {
+  if (reloadHistoryPage) {
+    const ok = await reloadHistoryPage(1);
+    if (!ok) {
+      viewContainer.innerHTML =
+        "<div style='margin-top:40px;font-weight:600;'>Failed to refresh history.</div>";
+    }
+  }
+  return;
+}
+
+    // NORMAL VIEWS — show loading message
+    viewContainer.innerHTML =
+      "<div style='margin-top:40px;font-weight:600;'>Refreshing bookings...</div>";
+
+    const ok = await loadAdminData({ silentUnauthorized: true });
+    if (ok && currentView) renderView(currentView);
+
+  } finally {
+    refreshInFlight = false;
+  }
+};
+
+     /* ===================== ACTION LOCKING ===================== */
+const inFlightActions = new Map();
+// key: `${bookingId}:${action}`
+
+function lockBookingAction(bookingId, action) {
+  const key = `${bookingId}:${action}`;
+  if (inFlightActions.has(key)) return false;
+  inFlightActions.set(key, true);
+  return true;
+}
+
+function unlockBookingAction(bookingId, action) {
+  const key = `${bookingId}:${action}`;
+  inFlightActions.delete(key);
+}
+
+function setBookingButtonsDisabled(card, disabled) {
+  const buttons = card.querySelectorAll("button");
+  buttons.forEach(btn => {
+    btn.disabled = disabled;
+    if (disabled) {
+      btn.dataset.originalText = btn.textContent;
+      btn.textContent = "Working...";
+    } else {
+      if (btn.dataset.originalText) {
+        btn.textContent = btn.dataset.originalText;
+      }
+    }
+  });
+}
+
+
+/* ===================== FORMAT HELPERS ===================== */
+function isValidDate(d) {
+  return d instanceof Date && !isNaN(d.getTime());
+}
+
+function formatDay(d) {
+  if (!isValidDate(d)) return "Invalid date";
+  return d.toLocaleDateString(undefined, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric"
+  });
+}
+
+function formatTime(d) {
+  if (!isValidDate(d)) return "—";
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+     
+/* ===================== LOAD BOOKINGS ===================== */
+async function loadAdminData(opts = {}) {
+  hardLog("LOADING ADMIN DATA");
+
+  try {
+    const res = await adminFetch("/api/admin-bookings");
+
+    if (!res.ok) {
+      hardLog("UNAUTHORIZED");
+      if (!opts.silentUnauthorized) {
+        viewContainer.innerHTML =
+          "<div style='margin-top:40px;font-weight:600;'>Unauthorized.</div>";
+      }
+      return false;
+    }
+
+    const data = await res.json();
+
+    // Normalize payload shape safely
+    const bookings = Array.isArray(data)
+      ? data
+      : (data.bookings || data.rows || data.data || []);
+
+    splitAndRender(bookings);
+    renderButtons();
+
+    if (currentView) {
+      renderView(currentView);
+      highlightActiveButton(currentView);
+    } else {
+      renderDashboard();
+    }
+
+    return true;
+  } catch (err) {
+    console.error(err);
+    hardLog("ADMIN DATA LOAD FAILED " + (err?.message || err));
+
+    if (!opts.silentUnauthorized) {
+      viewContainer.innerHTML =
+        "<div style='margin-top:40px;font-weight:600;'>Failed to load bookings. Try Refresh.</div>";
+    }
+
+    return false;
+  }
+}
+
+
+function splitAndRender(bookings) {
+
+cachedViews.pending = [];
+cachedViews.today = [];
+cachedViews.upcoming = [];
+cachedViews.history = [];
+
+const now = new Date();
+const startOfToday = new Date();
+startOfToday.setHours(0,0,0,0);
+
+const endOfToday = new Date(startOfToday);
+endOfToday.setDate(endOfToday.getDate() + 1);
+
+bookings.forEach(b => {
+const start = new Date(b.scheduled_start);
+
+if (b.status === "pending") {
+  cachedViews.pending.push(b);
+}
+
+else if (b.status === "confirmed") {
+if (start >= startOfToday && start < endOfToday) {
+cachedViews.today.push(b);
+} else if (start >= endOfToday) {
+cachedViews.upcoming.push(b);
+}
+}
+
+});
+     bookings.forEach(b => knownBookingIds.add(b.id));
+}
+
+function renderSection(title, bookings, collapsed = false) {
+const section = document.createElement("div");
+section.className = "day";
+
+const header = document.createElement("h2");
+header.textContent = `${title} (${bookings.length})`;
+section.appendChild(header);
+
+const body = document.createElement("div");
+
+if (collapsed) {
+body.style.display = "none";
+header.style.cursor = "pointer";
+header.onclick = () => {
+body.style.display =
+body.style.display === "none" ? "block" : "none";
+};
+}
+
+// 🔹 Group bookings by calendar day
+const groups = {};
+
+bookings.forEach(b => {
+const dayKey = new Date(b.scheduled_start).toDateString();
+if (!groups[dayKey]) groups[dayKey] = [];
+groups[dayKey].push(b);
+});
+
+Object.entries(groups).forEach(([day, items]) => {
+const dayHeader = document.createElement("h3");
+dayHeader.textContent = formatDay(new Date(day));
+body.appendChild(dayHeader);
+
+items.forEach(b => {
+body.appendChild(buildCard(b));
+});
+});
+
+section.appendChild(body);
+viewContainer.appendChild(section);
+}
+
+function buildCard(b) {
+  const start = new Date(b.scheduled_start);
+  const end = new Date(b.scheduled_end);
+
+  const service = b.service_variants?.services || {};
+const vehicle = b.vehicles || {};
+const customer = b.customers || {};
+
+
+  const card = document.createElement("div");
+  card.className = "card";
+     // Add accent border for today's confirmed bookings
+if (b.status === "confirmed") {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+
+  const start = new Date(b.scheduled_start);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+
+  if (start >= today && start < tomorrow) {
+   card.dataset.todayAccent = "true";
+card.style.borderLeft = "4px solid var(--moon-primary)";
+  }
+}
+
+  card.innerHTML = `
+  <div class="booking-header">
+    ${customer.full_name || "Unknown Client"}
+  </div>
+
+  <div class="booking-content">
+    <div class="row"><span class="label">Phone:</span> ${customer.phone || "—"}</div>
+    <div class="row"><span class="label">Address:</span> ${b.service_address}</div>
+    <div class="row"><span class="label">Vehicle:</span> ${vehicle.vehicle_year || ""} ${vehicle.vehicle_make || ""} ${vehicle.vehicle_model || ""}</div>
+    <div class="row"><span class="label">Service:</span> ${service.category || "Service"} (Level ${service.level || "?"})</div>
+    <div class="row"><span class="label">Time:</span> ${formatTime(start)} → ${formatTime(end)}</div>
+    <div class="row">
+  <span class="label">Status:</span>
+  <span class="status-badge status-${b.status}">
+    ${b.status.replace("_"," ")}
+  </span>
+</div>
+
+  </div>
+`;
+     
+// ===== Google Calendar quick link =====
+// Prefer a stored htmlLink if you have it. Otherwise use a Calendar search link.
+if (b.google_event_html_link) {
+  const calendarRow = document.createElement("div");
+  calendarRow.className = "row";
+  calendarRow.innerHTML = `
+    <a
+      href="${b.google_event_html_link}"
+      target="_blank"
+      rel="noopener noreferrer"
+      style="color:#9fb7d3;font-weight:600;text-decoration:none;"
+    >
+      Open in Google Calendar →
+    </a>
+  `;
+  card.querySelector(".booking-content").appendChild(calendarRow);
+} else if (b.google_event_id) {
+  const calendarRow = document.createElement("div");
+  calendarRow.className = "row";
+  const q = encodeURIComponent(b.google_event_id);
+  calendarRow.innerHTML = `
+    <a
+      href="https://calendar.google.com/calendar/u/1/r/search?q=${q}"
+      target="_blank"
+      rel="noopener noreferrer"
+      style="color:#9fb7d3;font-weight:600;text-decoration:none;"
+    >
+      Find in Google Calendar →
+    </a>
+  `;
+  card.querySelector(".booking-content").appendChild(calendarRow);
+}
+
+
+
+const header = card.querySelector(".booking-header");
+
+header.onclick = () => {
+  card.classList.toggle("expanded");
+};
+
+  const actions = document.createElement("div");
+  actions.className = "actions";
+
+  // Pending
+  if (b.status === "pending") {
+
+    const confirmBtn = document.createElement("button");
+    confirmBtn.textContent = "Confirm";
+    confirmBtn.className = "confirm";
+    confirmBtn.onclick = async () => {
+
+  if (!lockBookingAction(b.id, "confirm")) return;
+
+  setBookingButtonsDisabled(card, true);
+
+  hardLog(`CONFIRM CLICKED booking ${b.id}`);
+
+  try {
+    const res = await adminFetch("/api/confirm-booking", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ bookingId: b.id })
+});
+
+    const data = await res.json();
+    hardLog(`CONFIRM API RESPONSE ${res.status}`);
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data.message || "Confirmation failed");
+    }
+
+    await loadAdminData();
+
+  } catch (err) {
+    alert("Confirmation failed.");
+    hardLog(`CONFIRM ERROR ${err.message}`);
+  } finally {
+    unlockBookingAction(b.id, "confirm");
+    setBookingButtonsDisabled(card, false);
+  }
+};
+
+       const denyBtn = document.createElement("button");
+denyBtn.textContent = "Deny";
+denyBtn.className = "cancel";
+    denyBtn.onclick = async () => {
+  if (!lockBookingAction(b.id, "deny")) return;
+  setBookingButtonsDisabled(card, true);
+
+  try {
+    if (!confirm("Are you sure you want to deny this booking?")) return;
+
+    const res = await adminFetch("/api/admin-deny-booking", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bookingId: b.id })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error || "Deny failed");
+    }
+
+    await loadAdminData();
+  } catch (err) {
+    alert("Deny failed.");
+    hardLog(`DENY ERROR ${err.message}`);
+  } finally {
+    unlockBookingAction(b.id, "deny");
+    setBookingButtonsDisabled(card, false);
+  }
+};
+
+
+
+    actions.appendChild(confirmBtn);
+    actions.appendChild(denyBtn);
+  }
+
+  // Confirmed
+  else if (b.status === "confirmed") {
+
+  const rescheduleBtn = document.createElement("button");
+  rescheduleBtn.textContent = "Reschedule";
+  rescheduleBtn.className = "delay";
+  rescheduleBtn.onclick = async () => {
+
+    if (!lockBookingAction(b.id, "reschedule")) return;
+    setBookingButtonsDisabled(card, true);
+
+    try {
+      if (!confirm("Mark this booking as reschedule requested?")) return;
+
+      // Delete Google Calendar event ONLY if one exists
+if (b.google_event_id) {
+  const delRes = await adminFetch("/api/delete-calendar-event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bookingId: b.id })
+  });
+
+  const delData = await delRes.json();
+  if (!delRes.ok || !delData.ok) {
+    throw new Error(delData.message || "Calendar deletion failed");
+  }
+} else {
+  hardLog("RESCHEDULE: no calendar event to delete");
+}
+
+
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: "reschedule_requested" })
+        .eq("id", b.id);
+
+         await adminFetch("/api/send-reschedule-link-email", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ bookingId: b.id })
+});
+
+
+      if (error) throw error;
+
+      await loadAdminData();
+
+    } catch (err) {
+      alert("Reschedule failed.");
+      hardLog(`RESCHEDULE ERROR ${err.message}`);
+    } finally {
+      unlockBookingAction(b.id, "reschedule");
+      setBookingButtonsDisabled(card, false);
+    }
+  };
+
+  const completeBtn = document.createElement("button");
+  completeBtn.textContent = "Job Completed";
+  completeBtn.className = "confirm";
+  completeBtn.onclick = async () => {
+
+    if (!lockBookingAction(b.id, "complete")) return;
+    setBookingButtonsDisabled(card, true);
+
+    try {
+      await adminFetch("/api/admin-complete-booking", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ bookingId: b.id })
+});
+
+      await loadAdminData();
+    } finally {
+      unlockBookingAction(b.id, "complete");
+      setBookingButtonsDisabled(card, false);
+    }
+  };
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.textContent = "Cancel";
+  cancelBtn.className = "cancel";
+  cancelBtn.onclick = async () => {
+
+    if (!lockBookingAction(b.id, "cancel")) return;
+    setBookingButtonsDisabled(card, true);
+
+    try {
+      if (!confirm("Cancel this booking?")) return;
+
+      // Delete Google Calendar event ONLY if one exists
+if (b.google_event_id) {
+  const delRes = await adminFetch("/api/delete-calendar-event", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ bookingId: b.id })
+  });
+
+  const delData = await delRes.json();
+  if (!delRes.ok || !delData.ok) {
+    throw new Error(delData.message || "Calendar deletion failed");
+  }
+} else {
+  hardLog("CANCEL: no calendar event to delete");
+}
+
+
+      const { error } = await supabase
+        .from("bookings")
+        .update({ status: "cancelled" })
+        .eq("id", b.id);
+
+      if (error) throw error;
+
+      await loadAdminData();
+
+    } catch (err) {
+      alert("Cancellation failed.");
+      hardLog(`CANCEL ERROR ${err.message}`);
+    } finally {
+      unlockBookingAction(b.id, "cancel");
+      setBookingButtonsDisabled(card, false);
+    }
+  };
+       // Send cancellation email (non-blocking)
+fetch("/api/send-booking-cancelled-email", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ bookingId })
+}).catch((e) => console.error("Cancel email failed", e));
+
+  actions.appendChild(rescheduleBtn);
+  actions.appendChild(completeBtn);
+  actions.appendChild(cancelBtn);
+}
+     card.querySelector(".booking-content").appendChild(actions);
+      
+  return card;
+}
+
+/* ===================== STATUS UPDATE ===================== */
+async function updateStatus(id, status, card) {
+const { error } = await supabase
+.from("bookings")
+.update({ status })
+.eq("id", id);
+
+if (error) {
+alert("Failed to update booking status");
+console.error(error);
+return;
+}
+
+card.remove();
+}
+// ===================== DASHBOARD RENDERING =====================
+
+function renderDashboard() {
+  viewContainer.innerHTML = `
+  <div style="
+    text-align: center;
+    margin-top: 60px;
+    color: #4f8de6;
+  ">
+    <h1 style="margin: 0; font-weight: 800;">
+      Moon Auto Detailing Dashboard
+    </h1>
+  </div>
+`;
+
+}
+
+function renderButtons() {
+  viewButtons.innerHTML = "";
+
+  const buttons = [
+    { key: "pending", label: "Pending Bookings" },
+    { key: "today", label: "Today's Schedule" },
+    { key: "upcoming", label: "Upcoming Bookings" },
+    { key: "history", label: "History" }
+  ];
+
+  buttons.forEach(btn => {
+    const button = document.createElement("button");
+    button.textContent = btn.label;
+    button.className = "moon-tab";
+    button.dataset.view = btn.key;
+
+    button.onclick = () => {
+      handleViewSwitch(btn.key);
+    };
+
+    viewButtons.appendChild(button);
+  });
+}
+
+function handleViewSwitch(viewName) {
+  if (currentView === viewName) {
+    currentView = null;
+    renderDashboard();
+    highlightActiveButton(null);
+    return;
+  }
+
+  currentView = viewName;
+renderView(viewName);
+highlightActiveButton(viewName);
+}
+
+function highlightActiveButton(activeKey) {
+  const all = viewButtons.querySelectorAll("button");
+
+  all.forEach(btn => {
+    if (btn.dataset.view === activeKey) {
+      btn.classList.add("active");
+    } else {
+      btn.classList.remove("active");
+    }
+  });
+}
+
+function renderView(viewName) {
+  viewContainer.innerHTML = "";
+
+  // =========================
+  // HISTORY (SERVER-SIDE)
+  // =========================
+  if (viewName === "history") {
+    const wrapper = document.createElement("div");
+
+    const filterRow = document.createElement("div");
+    filterRow.style.display = "flex";
+    filterRow.style.justifyContent = "center";
+    filterRow.style.gap = "10px";
+    filterRow.style.marginBottom = "20px";
+
+    const searchInput = document.createElement("input");
+    searchInput.type = "text";
+    searchInput.placeholder = "Search by client name";
+    searchInput.style.padding = "6px 10px";
+    searchInput.style.borderRadius = "6px";
+    searchInput.style.border = "1px solid #ffffff40";
+    searchInput.style.background = "rgba(255,255,255,0.08)";
+    searchInput.style.color = "white";
+
+    const dateInput = document.createElement("input");
+    dateInput.type = "date";
+    dateInput.style.padding = "6px 10px";
+    dateInput.style.borderRadius = "6px";
+    dateInput.style.border = "1px solid #ffffff40";
+    dateInput.style.background = "rgba(255,255,255,0.08)";
+    dateInput.style.color = "white";
+
+    filterRow.appendChild(searchInput);
+    filterRow.appendChild(dateInput);
+    wrapper.appendChild(filterRow);
+
+    const resultsContainer = document.createElement("div");
+    wrapper.appendChild(resultsContainer);
+
+    const paginationContainer = document.createElement("div");
+    paginationContainer.style.display = "flex";
+    paginationContainer.style.justifyContent = "center";
+    paginationContainer.style.gap = "8px";
+    paginationContainer.style.marginTop = "20px";
+    wrapper.appendChild(paginationContainer);
+
+    viewContainer.appendChild(wrapper);
+
+    let currentPage = 1;
+    const PAGE_SIZE = 10;
+
+    async function loadHistoryPage(page = 1) {
+      currentPage = page;
+      resultsContainer.innerHTML = "Loading...";
+      paginationContainer.innerHTML = "";
+
+      const params = new URLSearchParams({
+        page: page.toString(),
+        pageSize: PAGE_SIZE.toString()
+      });
+
+      if (searchInput.value.trim()) params.append("q", searchInput.value.trim());
+      if (dateInput.value) params.append("date", dateInput.value);
+
+      try {
+        const res = await adminFetch(`/api/admin-history?${params.toString()}`);
+
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload.error || "Failed to load history");
+
+        resultsContainer.innerHTML = "";
+
+        if (!payload.rows.length) {
+          resultsContainer.innerHTML = "<div style='margin-top:40px;font-weight:600;'>No records found.</div>";
+          return;
+        }
+
+        payload.rows.forEach(b => resultsContainer.appendChild(buildCard(b)));
+
+        const totalPages = Math.ceil(payload.totalCount / PAGE_SIZE);
+        for (let i = 1; i <= totalPages; i++) {
+          const btn = document.createElement("button");
+          btn.textContent = i;
+          btn.className = "moon-tab";
+          if (i === currentPage) btn.classList.add("active");
+          btn.onclick = () => loadHistoryPage(i);
+          paginationContainer.appendChild(btn);
+        }
+
+            } catch (err) {
+        resultsContainer.innerHTML = "Failed to load history.";
+        hardLog("HISTORY LOAD ERROR " + err.message);
+        return false;
+      }
+
+      return true;
+    }
+
+
+    let searchTimeout;
+    searchInput.addEventListener("input", () => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => loadHistoryPage(1), 300);
+    });
+
+    dateInput.addEventListener("change", () => loadHistoryPage(1));
+       reloadHistoryPage = loadHistoryPage;
+    loadHistoryPage(1);
+    return;
+  }
+
+  // =========================
+// NORMAL VIEWS
+// =========================
+const data = cachedViews[viewName];
+
+if (!data || data.length === 0) {
+  let message = "No records found.";
+
+  if (viewName === "pending") {
+    message = "No pending bookings yet.";
+  } else if (viewName === "today") {
+    message = "No jobs scheduled for today.";
+  } else if (viewName === "upcoming") {
+    message = "No upcoming confirmed bookings.";
+  }
+
+  viewContainer.innerHTML =
+  `<div style="margin-top:40px;font-weight:600;color:white;text-align:center;">${message}</div>`;
+  return;
+}
+
+renderSection(viewName.toUpperCase(), data);
+}
+
+ bootAdminApp();
+
+     
+</script>
+</body>
+</html>
