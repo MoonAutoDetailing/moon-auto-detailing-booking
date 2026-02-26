@@ -253,38 +253,53 @@ const googleEventHtmlLink = calendarResponse.data.htmlLink;
       }
     }
         // =========================
-    // 🔔 Send booking confirmed email (fire-and-forget)
-try {
-  const { data: variantRow, error: variantErr } = await supabase
-  .from("service_variants")
-  .select(`price, service:services(category,level)`)
-  .eq("id", booking.service_variant_id)
-  .single();
+    // 🔔 Send booking confirmed email (must succeed or roll back)
+    const { data: variantRow, error: variantErr } = await supabase
+      .from("service_variants")
+      .select(`price, service:services(category,level)`)
+      .eq("id", booking.service_variant_id)
+      .single();
 
-if (variantErr) {
-  console.error("Service variant lookup failed:", variantErr);
-}
+    if (variantErr) {
+      console.error("Service variant lookup failed:", variantErr);
+    }
 
-const serviceLabel = variantRow?.service
-  ? `${variantRow.service.category} Detail ${variantRow.service.level}`
-  : "Service";
+    const serviceLabel = variantRow?.service
+      ? `${variantRow.service.category} Detail ${variantRow.service.level}`
+      : "Service";
 
-const price = variantRow?.price ?? null;
-  
-  await sendBookingConfirmedEmailCore({
-  email: customer.email,
-  fullName: customer.full_name,
-  start: booking.scheduled_start,
-  end: booking.scheduled_end,
-  address: booking.service_address,
-  serviceLabel,
-  price
-});
-  
-} catch (err) {
-  console.error("Confirmation email failed:", err);
-}
+    const price = variantRow?.price ?? null;
 
+    const emailResult = await sendBookingConfirmedEmailCore({
+      email: customer.email,
+      fullName: customer.full_name,
+      start: booking.scheduled_start,
+      end: booking.scheduled_end,
+      address: booking.service_address,
+      manageToken: booking.manage_token || null,
+      serviceLabel,
+      price
+    });
+
+    if (!emailResult?.success) {
+      console.error("Confirmation email failed:", emailResult?.error);
+      try {
+        await calendar.events.delete({ calendarId, eventId: googleEventId });
+      } catch (e) {
+        console.error("CLEANUP DELETE EVENT FAILED:", e);
+      }
+      await supabase
+        .from("bookings")
+        .update({
+          status: "pending",
+          google_event_id: null,
+          google_event_html_link: null
+        })
+        .eq("id", bookingId);
+      return res.status(500).json({ ok: false, message: "Confirmation email failed; booking rolled back" });
+    }
+
+    console.log("[EMAIL] status=success id=", emailResult.id);
     return res.status(200).json({ ok: true });
 
   } catch (err) {
