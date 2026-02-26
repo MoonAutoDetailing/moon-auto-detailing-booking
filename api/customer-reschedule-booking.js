@@ -38,9 +38,43 @@ export default async function handler(req, res) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    if (booking.status === "reschedule_requested") {
+   if (booking.status === "reschedule_requested") {
+  // Re-send reschedule link email (don’t dead-end the customer)
+  try {
+    const { data: bookingWithCustomer } = await supabase
+      .from("bookings")
+      .select(`
+        manage_token,
+        reschedule_token,
+        customers(full_name,email),
+        service_variants:service_variant_id(
+          price,
+          services(category,level)
+        )
+      `)
+      .eq("id", booking.id)
+      .single();
+
+    if (bookingWithCustomer?.customers?.email) {
+      const svc = bookingWithCustomer.service_variants?.services;
+      const serviceLabel = svc ? `${svc.category} Detail ${svc.level}` : "Service";
+      const price = bookingWithCustomer.service_variants?.price ?? null;
+
+      await sendRescheduleLinkEmailCore({
+        email: bookingWithCustomer.customers.email,
+        fullName: bookingWithCustomer.customers.full_name,
+        manageToken: bookingWithCustomer.manage_token,
+        rescheduleToken: bookingWithCustomer.reschedule_token,
+        serviceLabel,
+        price
+      });
+    }
+  } catch (err) {
+    console.error("Reschedule re-send failed:", err);
+  }
+
   return res.status(200).json({
-    message: "Reschedule already requested. Please check your email for the reschedule link."
+    message: "Reschedule link sent. Please check your email to pick a new time."
   });
 }
 
