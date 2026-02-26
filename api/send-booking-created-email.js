@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { sendBookingEmail } from "./_sendEmail.js";
 import { formatBookingTimeRange } from "../lib/time/formatBookingTime.js";
+import { buildManageUrl, pricingBlockHtml } from "../lib/email/_shared.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -48,7 +49,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    import { buildManageUrl } from "../lib/email/_shared.js";
+    
     const manageUrl = buildManageUrl(booking.manage_token);
     const timeRange = formatBookingTimeRange(
   booking.scheduled_start,
@@ -59,10 +60,10 @@ export default async function handler(req, res) {
     ? `${booking.service_variant.service.category} Level ${booking.service_variant.service.level}`
     : "Service";
 
-const price =
-  booking.service_variant?.price != null
-    ? `$${Number(booking.service_variant.price).toFixed(2)}`
-    : "—";
+const pricingHtml = pricingBlockHtml({
+  serviceLabel,
+  price: booking.service_variant?.price ?? null
+});
 
     await sendBookingEmail({
   to: booking.customers.email,
@@ -77,7 +78,7 @@ const price =
 
     <div style="margin-top:16px;padding:16px;border-radius:8px;background:#f3f4f6">
       <p><b>Service:</b> ${serviceLabel}</p>
-      <p><b>Total (cash only):</b> ${price}</p>
+      <p><b>${pricingHtml}</p>
       <p>We are a cash-only business. Travel fees may be added later if applicable.</p>
     </div>
 
