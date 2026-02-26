@@ -71,8 +71,8 @@ const serviceLabel = svc
 const price = booking.service_variants?.price ?? null;
 
 await sendRescheduleSubmittedEmailCore({
-  to: booking.customers.email,
-  customerName: booking.customers.full_name,
+  email: booking.customers.email,
+  fullName: booking.customers.full_name,
   newStart: start,
   newEnd: end,
   serviceLabel,
