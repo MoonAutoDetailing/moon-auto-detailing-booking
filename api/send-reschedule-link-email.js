@@ -30,19 +30,18 @@ export default async function handler(req, res) {
 
     // Fetch booking + customer
     const { data: booking, error } = await supabase
-      .from("bookings")
-      .select(`
-  id,
-  manage_token,
-  reschedule_token,
-  customers(email, full_name),
-  service_variant:service_variants(
-    price,
-    service:services(category,level)
-  )
-`)
-      .eq("id", bookingId)
-      .single();
+  .from("bookings")
+  .select(`
+    id,
+    manage_token,
+    customers(full_name,email),
+    service_variant:service_variants(
+      price,
+      service:services(category,level)
+    )
+  `)
+  .eq("id", booking_id)
+  .single();
 
     if (error || !booking) {
       return res.status(404).json({ error: "Booking not found" });
@@ -53,15 +52,20 @@ export default async function handler(req, res) {
 const serviceLabel = service ? `${service.category} Detail Level ${service.level}` : "Service";
 const price = booking.service_variant?.price;
 
+    const serviceLabel = booking.service_variant?.service
+  ? `${booking.service_variant.service.category} Detail ${booking.service_variant.service.level}`
+  : "Service";
+
+const price = booking.service_variant?.price ?? null;
+
     await sendRescheduleLinkEmailCore({
   email: booking.customers.email,
   fullName: booking.customers.full_name,
-  manageToken: booking.manage_token,
-  rescheduleToken: booking.reschedule_token,
+  rescheduleUrl,
+  manageUrl,
   serviceLabel,
   price
 });
-
 
     return res.status(200).json({ success: true });
 
