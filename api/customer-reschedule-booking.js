@@ -93,9 +93,9 @@ try {
       manage_token,
       reschedule_token,
       customers(full_name,email),
-      service_variants:service_variant_id(
+            service_variants:service_variant_id(
         price,
-        services:service_id(category,level)
+        services(category,level)
       )
     `)
     .eq("id", booking.id)
@@ -115,14 +115,14 @@ try {
 const rescheduleUrl =
   `https://moon-auto-detailing-booking.vercel.app/index.html?reschedule_token=${bookingWithCustomer.reschedule_token}`;
 
-await sendRescheduleLinkEmailCore({
-  email: bookingWithCustomer.customers.email,
-  fullName: bookingWithCustomer.customers.full_name,
-  manageUrl,
-  rescheduleUrl,
-  serviceLabel,
-  price
-});
+    await sendRescheduleLinkEmailCore({
+      email: bookingWithCustomer.customers.email,
+      fullName: bookingWithCustomer.customers.full_name,
+      manageToken: bookingWithCustomer.manage_token,
+      rescheduleToken: bookingWithCustomer.reschedule_token,
+      serviceLabel,
+      price
+    });
   }
 } catch (err) {
   console.error("Reschedule email failed:", err);
