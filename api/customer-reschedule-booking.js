@@ -109,14 +109,20 @@ try {
 
     const price = bookingWithCustomer.service_variants?.price ?? null;
 
-    await sendRescheduleLinkEmailCore({
-      to: bookingWithCustomer.customers.email,
-      customerName: bookingWithCustomer.customers.full_name,
-      manageToken: bookingWithCustomer.manage_token,
-      rescheduleToken: bookingWithCustomer.reschedule_token,
-      serviceLabel,
-      price
-    });
+    const manageUrl =
+  `https://moon-auto-detailing-booking.vercel.app/manage-booking.html?token=${bookingWithCustomer.manage_token}`;
+
+const rescheduleUrl =
+  `https://moon-auto-detailing-booking.vercel.app/index.html?reschedule_token=${bookingWithCustomer.reschedule_token}`;
+
+await sendRescheduleLinkEmailCore({
+  email: bookingWithCustomer.customers.email,
+  fullName: bookingWithCustomer.customers.full_name,
+  manageUrl,
+  rescheduleUrl,
+  serviceLabel,
+  price
+});
   }
 } catch (err) {
   console.error("Reschedule email failed:", err);
