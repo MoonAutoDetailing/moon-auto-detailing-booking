@@ -27,6 +27,7 @@ export default async function handler(req, res) {
     id: customerId,
     full_name: "Test Customer",
     email: "test@example.com",
+    address: "123 Test Street",
   });
   if (custErr) {
     return res.status(500).json({ ok: false, message: "Customer insert: " + custErr.message });
