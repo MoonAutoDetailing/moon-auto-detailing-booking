@@ -16,12 +16,15 @@ async function callApi(path, body) {
       body: JSON.stringify(body)
     });
     const status = res.status;
+    const text = await res.text();
+
     let json;
     try {
-      json = await res.json();
+      json = JSON.parse(text);
     } catch {
-      json = { _raw: await res.text() };
+      json = { _raw: text };
     }
+
     console.log("status:", status);
     console.log("response:", JSON.stringify(json, null, 2));
     return { status, json };
