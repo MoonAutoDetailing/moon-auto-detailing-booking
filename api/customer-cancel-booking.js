@@ -87,6 +87,7 @@ const isLateCancel = hoursUntilService < 24;
     // =========================
     // 3) Update booking status
     // =========================
+    const previousStatus = booking.status;
     await supabase
   .from("bookings")
   .update({
@@ -94,15 +95,18 @@ const isLateCancel = hoursUntilService < 24;
   })
   .eq("id", booking.id);
 
-    // Send cancellation email (only for normal cancellations)
+    // Send cancellation email (only for normal cancellations; must succeed or roll back)
 if (!isLateCancel) {
-  try {
-    await sendBookingCancelledEmailCore(booking.id);
-  } catch (err) {
-    console.error("Cancel email failed:", err);
+  const emailResult = await sendBookingCancelledEmailCore(booking.id);
+  if (!emailResult?.success) {
+    console.error("Cancel email failed:", emailResult?.error);
+    await supabase
+      .from("bookings")
+      .update({ status: previousStatus })
+      .eq("id", booking.id);
+    return res.status(500).json({ message: "Email failed; action rolled back" });
   }
 }
-
 
    return res.status(200).json({
   message: isLateCancel

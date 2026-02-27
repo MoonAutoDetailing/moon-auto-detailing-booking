@@ -61,16 +61,15 @@ if (bookingErr || !booking) {
   return res.status(500).json({ error: "Failed to load booking" });
 }
 
-// Send "reschedule submitted" email (fire-and-forget)
-try {
-  const svc = booking.service_variants?.services;
+// Send "reschedule submitted" email (must succeed or roll back)
+const svc = booking.service_variants?.services;
 const serviceLabel = svc
   ? `${svc.category} Detail ${svc.level}`
   : "Service";
 
 const price = booking.service_variants?.price ?? null;
 
-await sendRescheduleSubmittedEmailCore({
+const emailResult = await sendRescheduleSubmittedEmailCore({
   email: booking.customers.email,
   fullName: booking.customers.full_name,
   newStart: start,
@@ -80,8 +79,13 @@ await sendRescheduleSubmittedEmailCore({
   manageToken: booking.manage_token
 });
 
-} catch (err) {
-  console.error("Reschedule submitted email failed:", err);
+if (!emailResult?.success) {
+  console.error("Reschedule submitted email failed:", emailResult?.error);
+  await supabase
+    .from("bookings")
+    .update({ status: "reschedule_requested" })
+    .eq("id", bookingId);
+  return res.status(500).json({ error: "Email failed; action rolled back" });
 }
 
    return res.status(200).json({

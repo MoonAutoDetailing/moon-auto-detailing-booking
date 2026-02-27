@@ -26,13 +26,16 @@ export default async function handler(req, res) {
       .update({ status: "completed" })
       .eq("id", bookingId);
 
-    // Send completion email (direct call)
-try {
-  await sendBookingCompletedEmailCore(bookingId);
-} catch (err) {
-  console.error("Completion email failed", err);
-}
-
+    // Send completion email (must succeed or roll back)
+    const emailResult = await sendBookingCompletedEmailCore(bookingId);
+    if (!emailResult?.success) {
+      console.error("Completion email failed", emailResult?.error);
+      await supabase
+        .from("bookings")
+        .update({ status: "confirmed" })
+        .eq("id", bookingId);
+      return res.status(500).json({ error: "Email failed; action rolled back" });
+    }
 
     return res.status(200).json({ ok: true });
 

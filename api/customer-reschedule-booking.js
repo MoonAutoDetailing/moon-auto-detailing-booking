@@ -60,7 +60,7 @@ export default async function handler(req, res) {
       const serviceLabel = svc ? `${svc.category} Detail ${svc.level}` : "Service";
       const price = bookingWithCustomer.service_variants?.price ?? null;
 
-      await sendRescheduleLinkEmailCore({
+      const emailResult = await sendRescheduleLinkEmailCore({
         email: bookingWithCustomer.customers.email,
         fullName: bookingWithCustomer.customers.full_name,
         manageToken: bookingWithCustomer.manage_token,
@@ -68,9 +68,13 @@ export default async function handler(req, res) {
         serviceLabel,
         price
       });
+      if (!emailResult?.success) {
+        return res.status(500).json({ message: "Email failed; action rolled back" });
+      }
     }
   } catch (err) {
     console.error("Reschedule re-send failed:", err);
+    return res.status(500).json({ message: "Email failed; action rolled back" });
   }
 
   return res.status(200).json({
@@ -119,7 +123,7 @@ export default async function handler(req, res) {
   })
   .eq("id", booking.id);
 
-    // 4) Send reschedule email (direct call)
+    // 4) Send reschedule email (must succeed or roll back)
 try {
   const { data: bookingWithCustomer } = await supabase
     .from("bookings")
@@ -149,7 +153,7 @@ try {
 const rescheduleUrl =
   `https://moon-auto-detailing-booking.vercel.app/index.html?reschedule_token=${bookingWithCustomer.reschedule_token}`;
 
-    await sendRescheduleLinkEmailCore({
+    const emailResult = await sendRescheduleLinkEmailCore({
       email: bookingWithCustomer.customers.email,
       fullName: bookingWithCustomer.customers.full_name,
       manageToken: bookingWithCustomer.manage_token,
@@ -157,12 +161,23 @@ const rescheduleUrl =
       serviceLabel,
       price
     });
+    if (!emailResult?.success) {
+      console.error("Reschedule email failed:", emailResult?.error);
+      await supabase
+        .from("bookings")
+        .update({ status: booking.status })
+        .eq("id", booking.id);
+      return res.status(500).json({ message: "Email failed; action rolled back" });
+    }
   }
 } catch (err) {
   console.error("Reschedule email failed:", err);
+  await supabase
+    .from("bookings")
+    .update({ status: booking.status })
+    .eq("id", booking.id);
+  return res.status(500).json({ message: "Email failed; action rolled back" });
 }
-
-
 
     return res.status(200).json({
   message: "Reschedule started. Please check your email to pick a new time."

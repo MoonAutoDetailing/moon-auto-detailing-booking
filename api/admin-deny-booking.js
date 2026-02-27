@@ -32,13 +32,15 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Failed to update booking" });
     }
 
-    // 2️⃣ Send denied email (non-blocking)
-    try {
-      await sendBookingDeniedEmailCore(bookingId);
-      console.log("Denied email sent");
-    } catch (emailErr) {
-      console.error("Denied email failed:", emailErr);
-      // Do NOT fail endpoint if email fails
+    // 2️⃣ Send denied email (must succeed or roll back)
+    const emailResult = await sendBookingDeniedEmailCore(bookingId);
+    if (!emailResult?.success) {
+      console.error("Denied email failed:", emailResult?.error);
+      await supabase
+        .from("bookings")
+        .update({ status: "pending" })
+        .eq("id", bookingId);
+      return res.status(500).json({ error: "Email failed; action rolled back" });
     }
 
     return res.status(200).json({ ok: true });
