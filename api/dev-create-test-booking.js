@@ -1,9 +1,14 @@
+import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 
 export default async function handler(req, res) {
   if (process.env.VERCEL_ENV === "production") {
     return res.status(404).json({ error: "Not found" });
   }
+
+  // Generate unique email so the endpoint can be run repeatedly
+  const uuid = crypto.randomUUID();
+  const testEmail = `test-${uuid}@example.com`;
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -26,7 +31,7 @@ export default async function handler(req, res) {
   const { error: custErr } = await supabase.from("customers").insert({
     id: customerId,
     full_name: "Test Customer",
-    email: "test@example.com",
+    email: testEmail,
     address: "123 Test Street",
   });
   if (custErr) {
