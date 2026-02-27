@@ -10,6 +10,9 @@ export default async function handler(req, res) {
   const uuid = crypto.randomUUID();
   const testEmail = `test-${uuid}@example.com`;
 
+  // Offset start time slightly so multiple test runs don't overlap
+  const minuteOffset = Math.floor(Math.random() * 180); // up to 3 hours
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -20,7 +23,9 @@ export default async function handler(req, res) {
   const vehicleId = crypto.randomUUID();
 
   const now = new Date();
-  const scheduledStart = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+  const scheduledStart = new Date(
+    Date.now() + 24 * 60 * 60 * 1000 + minuteOffset * 60 * 1000
+  );
   const scheduledEnd = new Date(scheduledStart.getTime() + 2 * 60 * 60 * 1000);
 
   const supabase = createClient(
