@@ -1215,7 +1215,7 @@ if (b.google_event_id) {
 fetch("/api/send-booking-cancelled-email", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ bookingId })
+  body: JSON.stringify({ bookingId: b.id })
 }).catch((e) => console.error("Cancel email failed", e));
 
   actions.appendChild(rescheduleBtn);
