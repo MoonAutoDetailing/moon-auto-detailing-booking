@@ -4,9 +4,14 @@
  */
 
 const BASE_URL = process.env.BASE_URL;
+const BYPASS_TOKEN = process.env.BYPASS_TOKEN || "";
 
 async function callApi(path, body) {
-  const url = `${BASE_URL.replace(/\/$/, "")}${path}`;
+  let url = `${BASE_URL.replace(/\/$/, "")}${path}`;
+  if (BYPASS_TOKEN) {
+    const separator = url.includes("?") ? "&" : "?";
+    url = `${url}${separator}x-vercel-protection-bypass=${BYPASS_TOKEN}`;
+  }
   console.log("\n---");
   console.log("endpoint:", url);
   try {
