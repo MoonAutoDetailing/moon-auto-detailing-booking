@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     // =========================
     const { data: booking, error } = await supabase
       .from("bookings")
-      .select("id, google_event_id, status")
+      .select("id, google_event_id, status, customer_id, service_variant_id, manage_token, reschedule_token")
       .eq("manage_token", token)
       .single();
 
@@ -57,41 +57,45 @@ export default async function handler(req, res) {
    if (booking.status === "reschedule_requested") {
   // Re-send reschedule link email (don’t dead-end the customer)
   try {
-    const { data: bookingWithCustomer } = await supabase
-      .from("bookings")
-      .select(`
-        manage_token,
-        reschedule_token,
-        customers(full_name,email),
-        service_variants:service_variant_id(
-          price,
-          services(category,level)
-        )
-      `)
-      .eq("id", booking.id)
+    const { data: customer, error: customerErr } = await supabase
+      .from("customers")
+      .select("full_name, email")
+      .eq("id", booking.customer_id)
       .single();
 
-    if (bookingWithCustomer?.customers?.email) {
-      const svc = bookingWithCustomer.service_variants?.services;
-      const serviceLabel = svc ? `${svc.category} Detail ${svc.level}` : "Service";
-    const price = bookingWithCustomer.service_variants?.price ?? null;
+    if (customerErr || !customer?.email) {
+      console.error("RESCHEDULE FLOW — missing customer email", { bookingId: booking.id, customerId: booking.customer_id, customerErr });
+      return res.status(500).json({ message: "Email failed; action rolled back" });
+    }
+
+    const { data: variantRow, error: variantErr } = await supabase
+      .from("service_variants")
+      .select("price, service:services(category,level)")
+      .eq("id", booking.service_variant_id)
+      .single();
+
+    const serviceLabel = variantRow?.service
+      ? `${variantRow.service.category} Detail ${variantRow.service.level}`
+      : "Service";
+
+    const price = variantRow?.price ?? null;
 
     console.log("RESCHEDULE FLOW — about to send reschedule email", {
       bookingId: booking.id,
-      customerEmail: bookingWithCustomer.customers.email
+      customerEmail: customer.email
     });
     const emailResult = await sendRescheduleLinkEmailCore({
-      email: bookingWithCustomer.customers.email,
-      fullName: bookingWithCustomer.customers.full_name,
-      manageToken: bookingWithCustomer.manage_token,
-      rescheduleToken: bookingWithCustomer.reschedule_token,
+      email: customer.email,
+      fullName: customer.full_name,
+      manageToken: booking.manage_token,
+      rescheduleToken: booking.reschedule_token,
       serviceLabel,
       price
     });
     console.log("RESCHEDULE FLOW — email function returned", emailResult);
+
     if (!emailResult?.success) {
-        return res.status(500).json({ message: "Email failed; action rolled back" });
-      }
+      return res.status(500).json({ message: "Email failed; action rolled back" });
     }
   } catch (err) {
     console.error("Reschedule re-send failed:", err);
@@ -146,55 +150,54 @@ export default async function handler(req, res) {
 
     // 4) Send reschedule email (must succeed or roll back)
 try {
-  const { data: bookingWithCustomer } = await supabase
-    .from("bookings")
-    .select(`
-      manage_token,
-      reschedule_token,
-      customers(full_name,email),
-            service_variants:service_variant_id(
-        price,
-        services(category,level)
-      )
-    `)
-    .eq("id", booking.id)
+  const { data: customer, error: customerErr } = await supabase
+    .from("customers")
+    .select("full_name, email")
+    .eq("id", booking.customer_id)
     .single();
 
-  if (bookingWithCustomer?.customers?.email) {
-    const svc = bookingWithCustomer.service_variants?.services;
-    const serviceLabel = svc
-      ? `${svc.category} Detail ${svc.level}`
-      : "Service";
+  if (customerErr || !customer?.email) {
+    console.error("RESCHEDULE FLOW — missing customer email", { bookingId: booking.id, customerId: booking.customer_id, customerErr });
+    await supabase
+      .from("bookings")
+      .update({ status: booking.status })
+      .eq("id", booking.id);
+    return res.status(500).json({ message: "Email failed; action rolled back" });
+  }
 
-    const price = bookingWithCustomer.service_variants?.price ?? null;
+  const { data: variantRow, error: variantErr } = await supabase
+    .from("service_variants")
+    .select("price, service:services(category,level)")
+    .eq("id", booking.service_variant_id)
+    .single();
 
-    const manageUrl =
-  `https://moon-auto-detailing-booking.vercel.app/manage-booking.html?token=${bookingWithCustomer.manage_token}`;
+  const serviceLabel = variantRow?.service
+    ? `${variantRow.service.category} Detail ${variantRow.service.level}`
+    : "Service";
 
-const rescheduleUrl =
-  `https://moon-auto-detailing-booking.vercel.app/index.html?reschedule_token=${bookingWithCustomer.reschedule_token}`;
+  const price = variantRow?.price ?? null;
 
-    console.log("RESCHEDULE FLOW — about to send reschedule email", {
-      bookingId: booking.id,
-      customerEmail: bookingWithCustomer.customers?.email
-    });
-    const emailResult = await sendRescheduleLinkEmailCore({
-      email: bookingWithCustomer.customers.email,
-      fullName: bookingWithCustomer.customers.full_name,
-      manageToken: bookingWithCustomer.manage_token,
-      rescheduleToken: bookingWithCustomer.reschedule_token,
-      serviceLabel,
-      price
-    });
-    console.log("RESCHEDULE FLOW — email function returned", emailResult);
-    if (!emailResult?.success) {
-      console.error("Reschedule email failed:", emailResult?.error);
-      await supabase
-        .from("bookings")
-        .update({ status: booking.status })
-        .eq("id", booking.id);
-      return res.status(500).json({ message: "Email failed; action rolled back" });
-    }
+  console.log("RESCHEDULE FLOW — about to send reschedule email", {
+    bookingId: booking.id,
+    customerEmail: customer.email
+  });
+  const emailResult = await sendRescheduleLinkEmailCore({
+    email: customer.email,
+    fullName: customer.full_name,
+    manageToken: booking.manage_token,
+    rescheduleToken: booking.reschedule_token,
+    serviceLabel,
+    price
+  });
+  console.log("RESCHEDULE FLOW — email function returned", emailResult);
+
+  if (!emailResult?.success) {
+    console.error("Reschedule email failed:", emailResult?.error);
+    await supabase
+      .from("bookings")
+      .update({ status: booking.status })
+      .eq("id", booking.id);
+    return res.status(500).json({ message: "Email failed; action rolled back" });
   }
 } catch (err) {
   console.error("Reschedule email failed:", err);
