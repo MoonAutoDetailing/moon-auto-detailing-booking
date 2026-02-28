@@ -10,6 +10,23 @@ function requireEnv(name) {
 }
 
 export default async function handler(req, res) {
+  let body = req.body;
+  if (!body) {
+    try {
+      body = await new Promise((resolve, reject) => {
+        let data = "";
+        req.on("data", chunk => (data += chunk));
+        req.on("end", () => resolve(JSON.parse(data || "{}")));
+        req.on("error", reject);
+      });
+    } catch (err) {
+      console.error("Failed to parse JSON body", err);
+      return res.status(400).json({ message: "Invalid JSON body" });
+    }
+  }
+
+  const token = body.token || body.manage_token;
+
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -17,7 +34,6 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const token = req.body.token || req.body.manage_token;
     if (!token) return res.status(400).json({ message: "Missing token" });
 
     const supabase = createClient(
@@ -58,17 +74,22 @@ export default async function handler(req, res) {
     if (bookingWithCustomer?.customers?.email) {
       const svc = bookingWithCustomer.service_variants?.services;
       const serviceLabel = svc ? `${svc.category} Detail ${svc.level}` : "Service";
-      const price = bookingWithCustomer.service_variants?.price ?? null;
+    const price = bookingWithCustomer.service_variants?.price ?? null;
 
-      const emailResult = await sendRescheduleLinkEmailCore({
-        email: bookingWithCustomer.customers.email,
-        fullName: bookingWithCustomer.customers.full_name,
-        manageToken: bookingWithCustomer.manage_token,
-        rescheduleToken: bookingWithCustomer.reschedule_token,
-        serviceLabel,
-        price
-      });
-      if (!emailResult?.success) {
+    console.log("RESCHEDULE FLOW — about to send reschedule email", {
+      bookingId: booking.id,
+      customerEmail: bookingWithCustomer.customers.email
+    });
+    const emailResult = await sendRescheduleLinkEmailCore({
+      email: bookingWithCustomer.customers.email,
+      fullName: bookingWithCustomer.customers.full_name,
+      manageToken: bookingWithCustomer.manage_token,
+      rescheduleToken: bookingWithCustomer.reschedule_token,
+      serviceLabel,
+      price
+    });
+    console.log("RESCHEDULE FLOW — email function returned", emailResult);
+    if (!emailResult?.success) {
         return res.status(500).json({ message: "Email failed; action rolled back" });
       }
     }
@@ -153,6 +174,10 @@ try {
 const rescheduleUrl =
   `https://moon-auto-detailing-booking.vercel.app/index.html?reschedule_token=${bookingWithCustomer.reschedule_token}`;
 
+    console.log("RESCHEDULE FLOW — about to send reschedule email", {
+      bookingId: booking.id,
+      customerEmail: bookingWithCustomer.customers?.email
+    });
     const emailResult = await sendRescheduleLinkEmailCore({
       email: bookingWithCustomer.customers.email,
       fullName: bookingWithCustomer.customers.full_name,
@@ -161,6 +186,7 @@ const rescheduleUrl =
       serviceLabel,
       price
     });
+    console.log("RESCHEDULE FLOW — email function returned", emailResult);
     if (!emailResult?.success) {
       console.error("Reschedule email failed:", emailResult?.error);
       await supabase

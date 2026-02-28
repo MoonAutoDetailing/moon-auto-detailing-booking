@@ -10,6 +10,11 @@ const resend = new Resend(requireEnv("RESEND_API_KEY"));
 
 export async function sendBookingEmail({ to, subject, html }) {
   try {
+    console.log("EMAIL PIPELINE — sendBookingEmail called with:", {
+      to,
+      subject,
+      hasHtml: !!html
+    });
     const result = await resend.emails.send({
       from: "Moon Auto Detailing <bookings@moonautodetailing.com>",
       to,
@@ -17,7 +22,7 @@ export async function sendBookingEmail({ to, subject, html }) {
       html
     });
 
-    console.log("Email sent:", result);
+    console.log("EMAIL PIPELINE — Resend raw response:", result);
     return { success: true, id: result?.data?.id ?? null };
   } catch (err) {
     console.error("Email send failed:", err);
