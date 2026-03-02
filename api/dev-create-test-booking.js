@@ -50,6 +50,9 @@ export default async function handler(req, res) {
   const { error: vehErr } = await supabase.from("vehicles").insert({
     id: vehicleId,
     customer_id: customerId,
+    vehicle_year: 2018,
+    vehicle_make: "Toyota",
+    vehicle_model: "Camry",
     vehicle_size: "midsized",
   });
   if (vehErr) {
