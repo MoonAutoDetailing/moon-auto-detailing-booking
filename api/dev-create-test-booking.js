@@ -10,9 +10,6 @@ export default async function handler(req, res) {
   const uuid = crypto.randomUUID();
   const testEmail = `test-${uuid}@example.com`;
 
-  // Offset start time slightly so multiple test runs don't overlap
-  const minuteOffset = Math.floor(Math.random() * 180); // up to 3 hours
-
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
@@ -23,9 +20,16 @@ export default async function handler(req, res) {
   const vehicleId = crypto.randomUUID();
 
   const now = new Date();
-  const scheduledStart = new Date(
-    Date.now() + 24 * 60 * 60 * 1000 + minuteOffset * 60 * 1000
-  );
+  // Deterministic start time to avoid overlap collisions in repeated tests.
+  // Tomorrow at 8:00 AM local server time, plus a rolling offset (0–599 minutes).
+  const base = new Date(now);
+  base.setDate(base.getDate() + 1);
+  base.setHours(8, 0, 0, 0);
+
+  const rollingMinutes = now.getMinutes() + now.getHours() * 60;
+  const minuteOffset = rollingMinutes % 600; // 0..599 minutes (10-hour span)
+
+  const scheduledStart = new Date(base.getTime() + minuteOffset * 60 * 1000);
   const scheduledEnd = new Date(scheduledStart.getTime() + 2 * 60 * 60 * 1000);
 
   const supabase = createClient(
