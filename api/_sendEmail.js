@@ -21,6 +21,7 @@ export async function sendBookingEmail({ to, subject, html }) {
       .replace(/<[^>]+>/g, "")
       .replace(/\n{3,}/g, "\n\n")
       .trim();
+    console.log("EMAIL HTML LENGTH:", cleanHtml.length);
     const result = await resend.emails.send({
       from: "Moon Auto Detailing <bookings@moonautodetailing.com>",
       to,
