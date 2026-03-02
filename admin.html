@@ -924,9 +924,18 @@ function buildCard(b) {
   const start = new Date(b.scheduled_start);
   const end = new Date(b.scheduled_end);
 
-  const vehicleText = b.vehicles
-    ? `${b.vehicles.year ?? b.vehicles.vehicle_year ?? ""} ${b.vehicles.make ?? b.vehicles.vehicle_make ?? ""} ${b.vehicles.model ?? b.vehicles.vehicle_model ?? ""} (${b.vehicles.vehicle_size ?? ""})`.trim() || "—"
-    : "—";
+  const v = b.vehicles || null;
+
+  const vehicleLine = v
+    ? `${v.vehicle_year ?? ""} ${v.vehicle_make ?? ""} ${v.vehicle_model ?? ""}`.replace(/\s+/g, " ").trim()
+    : "";
+
+  const vehicleSize = v?.vehicle_size ? String(v.vehicle_size).trim() : "";
+
+  const vehicleText =
+    vehicleLine
+      ? (vehicleSize ? `${vehicleLine} (${vehicleSize})` : vehicleLine)
+      : "—";
   const serviceText = b.service_variants?.services
     ? `${b.service_variants.services.category} Detail (Level ${b.service_variants.services.level})`
     : "—";

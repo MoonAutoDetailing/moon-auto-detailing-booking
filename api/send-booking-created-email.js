@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { sendBookingEmail } from "./_sendEmail.js";
 import { formatBookingTimeRange } from "../lib/time/formatBookingTime.js";
-import { formatServiceName, buildManageUrl, pricingBlockHtml } from "../lib/email/_shared.js";
+import { formatServiceName, pricingBlockHtml } from "../lib/email/_shared.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -48,7 +48,6 @@ export default async function handler(req, res) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    const manageUrl = buildManageUrl(booking.manage_token);
     const timeRange = formatBookingTimeRange(booking.scheduled_start, booking.scheduled_end);
 
     const serviceLabel = formatServiceName(booking);
@@ -80,11 +79,6 @@ export default async function handler(req, res) {
         <p><b>Total (cash only):</b> ${priceFormatted}</p>
 
         ${pricingHtml}
-
-        <p style="margin-top:16px">
-          You can manage your booking here:<br/>
-          <a href="${manageUrl}">${manageUrl}</a>
-        </p>
 
         <p>We will confirm your appointment shortly.</p>
       `
