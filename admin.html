@@ -924,10 +924,14 @@ function buildCard(b) {
   const start = new Date(b.scheduled_start);
   const end = new Date(b.scheduled_end);
 
-  const service = b.service_variants?.services || {};
-const vehicle = b.vehicles || {};
-const customer = b.customers || {};
-
+  const vehicleText = b.vehicles
+    ? `${b.vehicles.year ?? b.vehicles.vehicle_year ?? ""} ${b.vehicles.make ?? b.vehicles.vehicle_make ?? ""} ${b.vehicles.model ?? b.vehicles.vehicle_model ?? ""} (${b.vehicles.vehicle_size ?? ""})`.trim() || "—"
+    : "—";
+  const serviceText = b.service_variants?.services
+    ? `${b.service_variants.services.category} Detail (Level ${b.service_variants.services.level})`
+    : "—";
+  const customerName = b.customers?.full_name ?? "Unknown Client";
+  const customerPhone = b.customers?.phone ?? "—";
 
   const card = document.createElement("div");
   card.className = "card";
@@ -948,19 +952,19 @@ card.style.borderLeft = "4px solid var(--moon-primary)";
 
   card.innerHTML = `
   <div class="booking-header">
-    ${customer.full_name || "Unknown Client"}
+    ${customerName}
   </div>
 
   <div class="booking-content">
-    <div class="row"><span class="label">Phone:</span> ${customer.phone || "—"}</div>
-    <div class="row"><span class="label">Address:</span> ${b.service_address}</div>
-    <div class="row"><span class="label">Vehicle:</span> ${vehicle.vehicle_year || ""} ${vehicle.vehicle_make || ""} ${vehicle.vehicle_model || ""}</div>
-    <div class="row"><span class="label">Service:</span> ${service.category || "Service"} (Level ${service.level || "?"})</div>
+    <div class="row"><span class="label">Phone:</span> ${customerPhone}</div>
+    <div class="row"><span class="label">Address:</span> ${b.service_address ?? "—"}</div>
+    <div class="row"><span class="label">Vehicle:</span> ${vehicleText}</div>
+    <div class="row"><span class="label">Service:</span> ${serviceText}</div>
     <div class="row"><span class="label">Time:</span> ${formatTime(start)} → ${formatTime(end)}</div>
     <div class="row">
   <span class="label">Status:</span>
   <span class="status-badge status-${b.status}">
-    ${b.status.replace("_"," ")}
+    ${(b.status ?? "").replace("_"," ")}
   </span>
 </div>
 
@@ -1203,10 +1207,10 @@ if (b.google_event_id) {
 
       await loadAdminData();
 
-      fetch("/api/send-booking-cancelled-email", {
+      adminFetch("/api/send-booking-cancelled-email", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ booking_id: b.id })
+        body: JSON.stringify({ bookingId: b.id })
       }).catch((e) => console.error("Cancel email failed", e));
 
     } catch (err) {

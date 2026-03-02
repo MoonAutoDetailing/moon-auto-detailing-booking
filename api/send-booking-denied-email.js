@@ -6,13 +6,13 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { booking_id } = req.body;
+    const { bookingId } = req.body;
 
-    if (!booking_id) {
-      return res.status(400).json({ error: "Missing booking_id" });
+    if (!bookingId) {
+      return res.status(400).json({ error: "Missing bookingId" });
     }
 
-    await sendBookingDeniedEmailCore(booking_id);
+    await sendBookingDeniedEmailCore(bookingId);
 
     return res.status(200).json({ ok: true });
   } catch (err) {

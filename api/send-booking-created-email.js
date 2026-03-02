@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { sendBookingEmail } from "./_sendEmail.js";
 import { formatBookingTimeRange } from "../lib/time/formatBookingTime.js";
-import { buildManageUrl, pricingBlockHtml } from "../lib/email/_shared.js";
+import { formatServiceName, buildManageUrl, pricingBlockHtml } from "../lib/email/_shared.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -17,8 +17,8 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
   try {
-    const { booking_id } = req.body;
-    if (!booking_id) return res.status(400).json({ message: "Missing booking_id" });
+    const { bookingId } = req.body;
+    if (!bookingId) return res.status(400).json({ message: "Missing bookingId" });
 
     const supabase = createClient(
       requireEnv("SUPABASE_URL"),
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
           service:services(category,level)
         )
       `)
-      .eq("id", booking_id)
+      .eq("id", bookingId)
       .single();
 
     if (error || !booking) {
@@ -51,26 +51,33 @@ export default async function handler(req, res) {
     const manageUrl = buildManageUrl(booking.manage_token);
     const timeRange = formatBookingTimeRange(booking.scheduled_start, booking.scheduled_end);
 
-    const serviceLabel =
-      booking.service_variant?.service
-        ? `${booking.service_variant.service.category} Level ${booking.service_variant.service.level}`
-        : "Service";
+    const serviceLabel = formatServiceName(booking);
 
     const pricingHtml = pricingBlockHtml({
       serviceLabel,
       price: booking.service_variant?.price ?? null
     });
 
+    const vehicleText = booking.vehicles
+      ? `${booking.vehicles.vehicle_year ?? ""} ${booking.vehicles.vehicle_make ?? ""} ${booking.vehicles.vehicle_model ?? ""}`.trim() || "—"
+      : "—";
+    const priceFormatted = booking.service_variant?.price != null
+      ? `$${Number(booking.service_variant.price).toFixed(2)}`
+      : "—";
+
     const emailResult = await sendBookingEmail({
-      to: booking.customers.email,
+      to: booking.customers?.email,
       subject: "Moon Auto Detailing — Booking Request Received",
       html: `
         <h2>We received your booking request</h2>
-        <p>Hi ${(booking.customers.full_name || "").split(" ")[0] || "there"},</p>
+        <p>Hi ${(booking.customers?.full_name || "").split(" ")[0] || "there"},</p>
         <p>Your detailing request has been received and is awaiting confirmation.</p>
 
         <p><b>Appointment Time:</b> ${timeRange}</p>
-        <p><b>Address:</b> ${booking.service_address}</p>
+        <p><b>Address:</b> ${booking.service_address ?? "—"}</p>
+        <p><b>Service:</b> ${serviceLabel}</p>
+        <p><b>Vehicle:</b> ${vehicleText}</p>
+        <p><b>Total (cash only):</b> ${priceFormatted}</p>
 
         ${pricingHtml}
 

@@ -37,20 +37,18 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   scheduled_end,
   status,
   service_address,
-
+  google_event_id,
   customers (
     full_name,
     email,
     phone
   ),
-
-  vehicles:vehicles (
-    vehicle_year,
-    vehicle_make,
-    vehicle_model,
+  vehicles (
+    year,
+    make,
+    model,
     vehicle_size
   ),
-
   service_variants (
     price,
     services (
