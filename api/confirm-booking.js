@@ -264,11 +264,8 @@ const googleEventHtmlLink = calendarResponse.data.htmlLink;
       console.error("Service variant lookup failed:", variantErr);
     }
 
-    const serviceLabel = variantRow?.service
-      ? `${variantRow.service.category} Detail ${variantRow.service.level}`
-      : "Service";
-
     const price = variantRow?.price ?? null;
+    const data = { service_variant: variantRow };
 
     const emailResult = await sendBookingConfirmedEmailCore({
       email: customer.email,
@@ -277,7 +274,7 @@ const googleEventHtmlLink = calendarResponse.data.htmlLink;
       end: booking.scheduled_end,
       address: booking.service_address,
       manageToken: booking.manage_token || null,
-      serviceLabel,
+      data,
       price
     });
 
