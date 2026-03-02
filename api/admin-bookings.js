@@ -28,28 +28,28 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // 3) Fetch ACTIVE bookings (not history)
-    const today = new Date();
-    today.setHours(0,0,0,0);
-
+    // 3) Fetch confirmed bookings with joined relations (read-only, safe to join)
     const { data, error } = await supabase
       .from("bookings")
       .select(`
-  id,
-  scheduled_start,
-  scheduled_end,
-  service_address,
-  status,
-  google_event_id,
-  google_event_html_link,
-  customers:customer_id ( full_name, phone ),
-  vehicles:vehicle_id ( vehicle_year, vehicle_make, vehicle_model ),
-  service_variants:service_variant_id (
-    duration_minutes,
-    services:service_id ( category, level )
-  )
-`)
-      .gte("scheduled_start", today.toISOString())
+    id,
+    scheduled_start,
+    scheduled_end,
+    status,
+    service_address,
+    customers (
+      full_name,
+      email
+    ),
+    service_variants (
+      price,
+      services (
+        category,
+        level
+      )
+    )
+  `)
+      .eq("status", "confirmed")
       .order("scheduled_start", { ascending: true });
 
     if (error) {
