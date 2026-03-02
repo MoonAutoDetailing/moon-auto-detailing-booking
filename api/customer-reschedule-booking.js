@@ -51,6 +51,13 @@ export default async function handler(req, res) {
       .single();
 
     if (error || !booking) {
+      console.error("RESCHEDULE LOOKUP FAILED", {
+        token,
+        tokenType: typeof token,
+        tokenLength: token ? String(token).length : null,
+        error,
+        hasBooking: !!booking
+      });
       return res.status(404).json({ message: "Booking not found" });
     }
 
