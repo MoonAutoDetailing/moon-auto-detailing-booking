@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { booking_id } = req.body;
+    const booking_id = req.body?.booking_id || req.body?.bookingId;
 
     if (!booking_id) {
       return res.status(400).json({ error: "Missing booking_id" });

@@ -1203,6 +1203,12 @@ if (b.google_event_id) {
 
       await loadAdminData();
 
+      fetch("/api/send-booking-cancelled-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ booking_id: b.id })
+      }).catch((e) => console.error("Cancel email failed", e));
+
     } catch (err) {
       alert("Cancellation failed.");
       hardLog(`CANCEL ERROR ${err.message}`);
@@ -1211,12 +1217,6 @@ if (b.google_event_id) {
       setBookingButtonsDisabled(card, false);
     }
   };
-       // Send cancellation email (non-blocking)
-fetch("/api/send-booking-cancelled-email", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ bookingId: b.id })
-}).catch((e) => console.error("Cancel email failed", e));
 
   actions.appendChild(rescheduleBtn);
   actions.appendChild(completeBtn);
