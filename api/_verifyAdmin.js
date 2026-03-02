@@ -13,6 +13,14 @@ function requireEnv(name) {
 }
 
 export default function verifyAdmin(req) {
+  // DEV bypass for preview smoke testing
+  if (process.env.VERCEL_ENV !== "production") {
+    const bypass = req.query?.["x-vercel-protection-bypass"];
+    if (bypass && bypass === process.env.VERCEL_PROTECTION_BYPASS) {
+      return { ok: true, admin: { id: "dev-admin" } };
+    }
+  }
+
   const SESSION_SECRET = requireEnv("SESSION_SECRET");
 
   const token = req.headers["x-admin-session"];
