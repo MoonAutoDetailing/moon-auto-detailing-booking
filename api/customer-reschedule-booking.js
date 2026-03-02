@@ -46,7 +46,7 @@ export default async function handler(req, res) {
     // =========================
     const { data: booking, error } = await supabase
       .from("bookings")
-      .select("id, google_event_id, status, customer_id, service_variant_id, manage_token, reschedule_token")
+      .select("id, google_event_id, status, customer_id, service_variant_id, manage_token")
       .eq("manage_token", token)
       .single();
 
@@ -95,7 +95,7 @@ export default async function handler(req, res) {
       email: customer.email,
       fullName: customer.full_name,
       manageToken: booking.manage_token,
-      rescheduleToken: booking.reschedule_token,
+      rescheduleToken: booking.manage_token,
       serviceLabel,
       price
     });
@@ -192,7 +192,7 @@ try {
     email: customer.email,
     fullName: customer.full_name,
     manageToken: booking.manage_token,
-    rescheduleToken: booking.reschedule_token,
+    rescheduleToken: booking.manage_token,
     serviceLabel,
     price
   });
