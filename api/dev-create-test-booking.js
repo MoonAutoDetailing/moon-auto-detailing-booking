@@ -8,7 +8,7 @@ export default async function handler(req, res) {
 
   // Generate unique email so the endpoint can be run repeatedly
   const uuid = crypto.randomUUID();
-  const testEmail = `test-${uuid}@example.com`;
+  const testEmail = "darrenwmoon1010@gmail.com";
 
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
