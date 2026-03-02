@@ -23,10 +23,19 @@ async function post(path, body) {
 }
 
 async function createBooking() {
-  const resp = await fetch(url("/api/dev-create-test-booking"), { method: "POST" });
-  const json = await resp.json();
-  if (!json.ok) throw new Error("Failed to create test booking: " + JSON.stringify(json));
-  return json;
+  const resp = await fetch(
+    `${BASE}/api/dev-create-test-booking?x-vercel-protection-bypass=${BYPASS}`,
+    { method: "POST" }
+  );
+
+  const text = await resp.text();
+  try {
+    const json = JSON.parse(text);
+    if (!json.ok) throw new Error("Failed to create test booking: " + text);
+    return json;
+  } catch {
+    throw new Error("Failed to create test booking: " + text);
+  }
 }
 
 async function runTest(name, fn) {

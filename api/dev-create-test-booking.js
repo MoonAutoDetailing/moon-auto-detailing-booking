@@ -66,8 +66,9 @@ export default async function handler(req, res) {
   const serviceVariantId = variants[0].id;
 
   const durationMs = 2 * 60 * 60 * 1000; // 2 hours
-  const stepMs = 30 * 60 * 1000; // 30 minutes
-  const maxAttempts = 40;
+  // search up to 7 days ahead in 30-minute increments
+  const stepMs = 30 * 60 * 1000;
+  const maxAttempts = 48 * 7; // 336 attempts (~7 days)
 
   let insertErr = null;
   let bookingRow = null;
