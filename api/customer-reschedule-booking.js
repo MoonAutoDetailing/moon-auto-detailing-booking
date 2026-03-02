@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
 import { sendRescheduleLinkEmailCore } from "../lib/email/sendRescheduleLinkEmail.js";
+import { formatServiceName } from "../lib/email/_shared.js";
 
 
 function requireEnv(name) {
@@ -81,9 +82,9 @@ export default async function handler(req, res) {
       .eq("id", booking.service_variant_id)
       .single();
 
-    const serviceLabel = variantRow?.service
-      ? `${variantRow.service.category} Detail ${variantRow.service.level}`
-      : "Service";
+    const serviceLabel = formatServiceName({
+      service_variant: { service: variantRow?.service }
+    });
 
     const price = variantRow?.price ?? null;
 
@@ -178,9 +179,9 @@ try {
     .eq("id", booking.service_variant_id)
     .single();
 
-  const serviceLabel = variantRow?.service
-    ? `${variantRow.service.category} Detail ${variantRow.service.level}`
-    : "Service";
+  const serviceLabel = formatServiceName({
+    service_variant: { service: variantRow?.service }
+  });
 
   const price = variantRow?.price ?? null;
 

@@ -15,11 +15,18 @@ export async function sendBookingEmail({ to, subject, html }) {
       subject,
       hasHtml: !!html
     });
+    const cleanHtml = String(html || "").trim();
+    const text = cleanHtml
+      .replace(/<\/(p|div|br)\s*>/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim();
     const result = await resend.emails.send({
       from: "Moon Auto Detailing <bookings@moonautodetailing.com>",
       to,
       subject,
-      html
+      html: cleanHtml,
+      text
     });
 
     console.log("EMAIL PIPELINE — Resend raw response:", result);

@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { sendBookingEmail } from "./_sendEmail.js";
 import { sendRescheduleLinkEmailCore } from "../lib/email/sendRescheduleLinkEmail.js";
+import { formatServiceName } from "../lib/email/_shared.js";
 
 
 function requireEnv(name) {
@@ -48,10 +49,7 @@ if (error || !booking) {
   return res.status(404).json({ error: "Booking not found" });
 }
 
-const service = booking.service_variants?.services;
-const serviceLabel = service
-  ? `${service.category} Detail ${service.level}`
-  : "Service";
+const serviceLabel = formatServiceName(booking);
 
 const price = booking.service_variants?.price ?? null;
 

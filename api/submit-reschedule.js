@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { sendRescheduleSubmittedEmailCore } from "../lib/email/sendRescheduleSubmittedEmail.js";
+import { formatServiceName } from "../lib/email/_shared.js";
 
 
 function requireEnv(name) {
@@ -62,10 +63,7 @@ if (bookingErr || !booking) {
 }
 
 // Send "reschedule submitted" email (must succeed or roll back)
-const svc = booking.service_variants?.services;
-const serviceLabel = svc
-  ? `${svc.category} Detail ${svc.level}`
-  : "Service";
+const serviceLabel = formatServiceName(booking);
 
 const price = booking.service_variants?.price ?? null;
 
