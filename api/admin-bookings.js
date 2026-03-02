@@ -32,23 +32,33 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     const { data, error } = await supabase
       .from("bookings")
       .select(`
-    id,
-    scheduled_start,
-    scheduled_end,
-    status,
-    service_address,
-    customers (
-      full_name,
-      email
-    ),
-    service_variants (
-      price,
-      services (
-        category,
-        level
-      )
+  id,
+  scheduled_start,
+  scheduled_end,
+  status,
+  service_address,
+
+  customers (
+    full_name,
+    email,
+    phone
+  ),
+
+  vehicles (
+    year,
+    make,
+    model,
+    vehicle_size
+  ),
+
+  service_variants (
+    price,
+    services (
+      category,
+      level
     )
-  `)
+  )
+`)
       .eq("status", "confirmed")
       .order("scheduled_start", { ascending: true });
 
