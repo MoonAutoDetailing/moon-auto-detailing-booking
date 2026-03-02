@@ -44,9 +44,9 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     phone
   ),
   vehicles (
-    year,
-    make,
-    model,
+    vehicle_year,
+    vehicle_make,
+    vehicle_model,
     vehicle_size
   ),
   service_variants (
