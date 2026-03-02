@@ -65,25 +65,54 @@ export default async function handler(req, res) {
   }
   const serviceVariantId = variants[0].id;
 
-  const { error } = await supabase.from("bookings").insert({
-    id: bookingId,
-    customer_id: customerId,
-    vehicle_id: vehicleId,
-    service_variant_id: serviceVariantId,
-    status: "pending",
-    scheduled_start: scheduledStart.toISOString(),
-    scheduled_end: scheduledEnd.toISOString(),
-    service_address: "TEST ADDRESS",
-    manage_token: manageToken,
-  });
+  const durationMs = 2 * 60 * 60 * 1000; // 2 hours
+  const stepMs = 30 * 60 * 1000; // 30 minutes
+  const maxAttempts = 40;
 
-  if (error) {
-    return res.status(500).json({ ok: false, message: error.message });
+  let insertErr = null;
+  let bookingRow = null;
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const scheduled_start = new Date(scheduledStart.getTime() + attempt * stepMs);
+    const scheduled_end = new Date(scheduled_start.getTime() + durationMs);
+
+    const { data: bookingData, error: bookingError } = await supabase
+      .from("bookings")
+      .insert([{
+        customer_id: customerId,
+        vehicle_id: vehicleId,
+        service_variant_id: serviceVariantId,
+        status: "pending",
+        scheduled_start: scheduled_start.toISOString(),
+        scheduled_end: scheduled_end.toISOString(),
+        service_address: "TEST ADDRESS",
+        manage_token: manageToken,
+      }])
+      .select("id, manage_token")
+      .single();
+
+    if (!bookingError) {
+      bookingRow = bookingData;
+      insertErr = null;
+      break;
+    }
+
+    insertErr = bookingError;
+
+    const msg = (bookingError.message || "").toLowerCase();
+    if (!msg.includes("bookings_no_overlap") && !msg.includes("exclusion constraint")) {
+      break;
+    }
+  }
+
+  if (!bookingRow) {
+    console.error("dev-create-test-booking: failed to insert after retries", insertErr);
+    return res.status(500).json({ ok: false, message: insertErr?.message || "Booking insert failed" });
   }
 
   return res.status(200).json({
     ok: true,
-    bookingId,
+    bookingId: bookingRow.id,
     manageToken,
   });
 }
