@@ -17,8 +17,9 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).end();
 
   try {
-    const { bookingId } = req.body;
+    const bookingId = req.body?.bookingId ?? req.body?.booking_id;
     if (!bookingId) return res.status(400).json({ message: "Missing bookingId" });
+    console.log("[EMAIL] send-booking-created-email: handler begin", { bookingId });
 
     const supabase = createClient(
       requireEnv("SUPABASE_URL"),
@@ -29,6 +30,7 @@ export default async function handler(req, res) {
       .from("bookings")
       .select(`
         id,
+        status,
         scheduled_start,
         scheduled_end,
         service_address,
@@ -47,6 +49,7 @@ export default async function handler(req, res) {
       console.error("Booking lookup failed:", error);
       return res.status(404).json({ message: "Booking not found" });
     }
+    console.log("[EMAIL] send-booking-created-email: after booking lookup", { id: booking.id, status: booking.status });
 
     const timeRange = formatBookingTimeRange(booking.scheduled_start, booking.scheduled_end);
 
@@ -64,6 +67,7 @@ export default async function handler(req, res) {
       ? `$${Number(booking.service_variant.price).toFixed(2)}`
       : "—";
 
+    console.log("[EMAIL] send-booking-created-email: about to send booking-requested email", { to: booking.customers?.email });
     const emailResult = await sendBookingEmail({
       to: booking.customers?.email,
       subject: "Moon Auto Detailing — Booking Request Received",
@@ -83,11 +87,12 @@ export default async function handler(req, res) {
         <p>We will confirm your appointment shortly.</p>
       `
     });
+    console.log("[EMAIL] send-booking-created-email: after send", { success: !!emailResult?.success, id: emailResult?.id });
     if (!emailResult?.success) {
       console.error("[EMAIL] status=failure", emailResult?.error);
-    } else {
-      console.log("[EMAIL] status=success id=", emailResult.id);
+      return res.status(500).json({ ok: false, message: "Email send failed" });
     }
+    console.log("[EMAIL] status=success id=", emailResult.id);
     return res.status(200).json({ ok: true });
   } catch (err) {
     console.error("send-booking-created-email error:", err);

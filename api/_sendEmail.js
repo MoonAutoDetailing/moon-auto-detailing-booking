@@ -10,11 +10,7 @@ const resend = new Resend(requireEnv("RESEND_API_KEY"));
 
 export async function sendBookingEmail({ to, subject, html }) {
   try {
-    console.log("EMAIL PIPELINE — sendBookingEmail called with:", {
-      to,
-      subject,
-      hasHtml: !!html
-    });
+    console.log("_sendEmail: entered", { to, subject });
     const cleanHtml = String(html || "").trim();
     const text = cleanHtml
       .replace(/<\/(p|div|br)\s*>/gi, "\n")
@@ -33,7 +29,7 @@ export async function sendBookingEmail({ to, subject, html }) {
     console.log("EMAIL PIPELINE — Resend raw response:", result);
     return { success: true, id: result?.data?.id ?? null };
   } catch (err) {
-    console.error("Email send failed:", err);
+    console.error("_sendEmail: error", err);
     return { success: false, error: err };
   }
 }

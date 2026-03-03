@@ -28,7 +28,7 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    // 3) Fetch confirmed bookings with joined relations (read-only, safe to join)
+    // 3) Fetch pending and confirmed bookings with joined relations (read-only, safe to join)
     const { data, error } = await supabase
       .from("bookings")
       .select(`
@@ -61,7 +61,7 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     )
   )
 `)
-      .eq("status", "confirmed")
+      .in("status", ["pending", "confirmed"])
       .order("scheduled_start", { ascending: true });
 
     if (error) {
