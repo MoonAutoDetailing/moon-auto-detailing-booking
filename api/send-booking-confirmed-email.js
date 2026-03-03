@@ -1,0 +1,94 @@
+import { createClient } from "@supabase/supabase-js";
+import { sendBookingEmail } from "./_sendEmail.js";
+import { formatBookingTimeRange } from "../lib/time/formatBookingTime.js";
+import { formatServiceName, pricingBlockHtml } from "../lib/email/_shared.js";
+
+function requireEnv(name) {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing env ${name}`);
+  return v;
+}
+
+export default async function handler(req, res) {
+  // Support internal server calls (mock res has no setHeader)
+  if (res?.setHeader) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    if (req.method === "OPTIONS") return res.status(204).end();
+  }
+
+  if (req.method !== "POST") {
+    return res?.status ? res.status(405).end() : null;
+  }
+
+
+  try {
+    const { bookingId } = req.body;
+    if (!bookingId) return res.status(400).json({ message: "Missing bookingId" });
+
+    const supabase = createClient(
+      requireEnv("SUPABASE_URL"),
+      requireEnv("SUPABASE_SERVICE_ROLE_KEY")
+    );
+
+    const { data: booking, error } = await supabase
+  .from("bookings")
+  .select(`
+    id,
+    scheduled_start,
+    scheduled_end,
+    service_address,
+    manage_token,
+    customers:customer_id(full_name,email),
+    vehicles(vehicle_year,vehicle_make,vehicle_model),
+    service_variants:service_variant_id(
+      price,
+      services:service_id(category,level)
+    )
+  `)
+  .eq("id", bookingId)
+  .single();
+    
+    if (error || !booking) {
+      console.error("Booking lookup failed:", error);
+      return res.status(404).json({ message: "Booking not found" });
+    }
+    const timeRange = formatBookingTimeRange(booking.scheduled_start, booking.scheduled_end);
+
+    const serviceLabel = formatServiceName(booking);
+
+    const pricingBlock = pricingBlockHtml({
+      serviceLabel,
+      price: booking.service_variants?.price
+    });
+
+    const vehicleText = booking.vehicles
+      ? `${booking.vehicles.vehicle_year ?? ""} ${booking.vehicles.vehicle_make ?? ""} ${booking.vehicles.vehicle_model ?? ""}`.trim() || "—"
+      : "—";
+
+    const emailResult = await sendBookingEmail({
+  to: booking.customers?.email,
+  subject: "Moon Auto Detailing — Booking Confirmed",
+    html: `
+    <h2>Your detailing appointment is confirmed</h2>
+    <p>Hi ${booking.customers?.full_name ?? "there"},</p>
+    <p>Your appointment has been confirmed for:</p>
+    <p><b>${timeRange}</b></p>
+    <p><b>Address:</b> ${booking.service_address ?? "—"}</p>
+    <p><b>Service:</b> ${serviceLabel}</p>
+    <p><b>Vehicle:</b> ${vehicleText}</p>
+    ${pricingBlock}
+    <p>We look forward to servicing your vehicle.</p>
+  `
+});
+    if (!emailResult?.success) {
+      console.error("[EMAIL] status=failure", emailResult?.error);
+    }
+    return res.status(200).json({ ok: true });
+
+  } catch (err) {
+    console.error("send-booking-confirmed-email error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
