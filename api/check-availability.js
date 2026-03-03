@@ -1,10 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
-
-function requireEnv(name) {
-  const v = process.env[name];
-  if (!v) throw new Error(`Missing env ${name}`);
-  return v;
-}
+import { checkAvailability } from "./_availability.js";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -19,22 +13,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ available: false });
     }
 
-    const supabase = createClient(
-      requireEnv("SUPABASE_URL"),
-      requireEnv("SUPABASE_SERVICE_ROLE_KEY")
-    );
-
-    // Look for overlapping bookings
-    const { data } = await supabase
-  .from("bookings")
-  .select("id")
-  .in("status", ["confirmed", "pending"])
-  .lt("scheduled_start", end)
-  .gt("scheduled_end", start)
-  .limit(1);
-
-    const isAvailable = !data || data.length === 0;
-
+    const isAvailable = await checkAvailability(start, end);
     return res.status(200).json({ available: isAvailable });
 
   } catch (err) {

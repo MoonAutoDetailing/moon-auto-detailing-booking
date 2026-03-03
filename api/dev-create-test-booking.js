@@ -118,5 +118,8 @@ export default async function handler(req, res) {
     ok: true,
     bookingId: bookingRow.id,
     manageToken,
+    customer_id: customerId,
+    vehicle_id: vehicleId,
+    service_variant_id: serviceVariantId
   });
 }

@@ -1997,31 +1997,31 @@ try {
 }
 
         
-        // Step 3: create booking (status pending)
-const { data: bookingRows, error: bookingError } = await supabase
-  .from("bookings")
-  .insert({
+        // Step 3: create booking (status pending) via server endpoint
+const resp = await fetch("/api/create-booking", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    customer_id,
+    vehicle_id,
     scheduled_start,
     scheduled_end,
     service_address,
-    status: "pending",
-    customer_id,
-    vehicle_id,
-    service_variant_id: selectedVariant.id,
+    service_variant_id: selectedVariant.id
   })
-  .select();
+});
 
-// Extract inserted row safely
-const bookingRow = bookingRows?.[0];
+const json = await resp.json();
 
-if (bookingError || !bookingRow) {
-  log("Booking insert error", bookingError);
+if (!resp.ok) {
+  if (resp.status === 429) throw new Error(json?.message || "Too many booking attempts. Please try again in a few minutes.");
+  if (resp.status === 409) throw new Error("That time was just booked by another customer. Please choose a new time.");
+  throw new Error(json?.message || "Booking failed.");
+}
 
-  // Handle overlap constraint cleanly
-  if (bookingError?.code === "23P01" || bookingError?.message?.includes("bookings_no_overlap")) {
-    throw new Error("Selected time is unavailable. Please choose another slot.");
-  }
+const bookingRow = { id: json.bookingId, manage_token: json.manage_token };
 
+if (!bookingRow.id || !bookingRow.manage_token) {
   throw new Error("Booking creation failed. Please try again.");
 }
 
@@ -2061,13 +2061,7 @@ const confirmationPayload = {
 
 
         sessionStorage.setItem("moon_booking_confirmation", JSON.stringify(confirmationPayload));
-        // Fire-and-forget booking email
-fetch("/api/send-booking-created-email", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ booking_id: bookingRow.id })
-}).catch(err => console.error("Email trigger failed", err));
-
+        // Email sent by create-booking endpoint
         window.location.href = "/booking-confirmed.html";
         return; // hard stop: do not continue
 
