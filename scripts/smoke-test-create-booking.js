@@ -20,23 +20,15 @@ function assert(condition, message) {
   }
 }
 
-function getTomorrow10amAmericaNewYork() {
-  const n = new Date();
-  const f = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/New_York",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit"
-  });
-  const s = f.format(n);
-  const [y, m, d] = s.split("-").map(Number);
-  const tomorrow = new Date(Date.UTC(y, m - 1, d + 1));
-  const tomorrowStr = tomorrow.toISOString().slice(0, 10);
-  const start = new Date(`${tomorrowStr}T10:00:00-05:00`);
-  if (Number.isNaN(start.getTime())) {
-    const startAlt = new Date(`${tomorrowStr}T15:00:00.000Z`);
-    return { start: startAlt, end: new Date(startAlt.getTime() + 60 * 60 * 1000) };
+function getTestSlot() {
+  const now = new Date();
+  const testDate = new Date(now);
+  testDate.setDate(now.getDate() + 3);
+  testDate.setHours(14, 0, 0, 0);
+  while (testDate.getDay() === 0 || testDate.getDay() === 6) {
+    testDate.setDate(testDate.getDate() + 1);
   }
+  const start = new Date(testDate);
   const end = new Date(start.getTime() + 60 * 60 * 1000);
   return { start, end };
 }
@@ -87,7 +79,7 @@ async function main() {
   console.log("PASS Seed IDs (customer_id, vehicle_id, service_variant_id resolved)");
 
   // ----- Pick a slot -----
-  const { start: slotStart, end: slotEnd } = getTomorrow10amAmericaNewYork();
+  const { start: slotStart, end: slotEnd } = getTestSlot();
   const scheduled_start = slotStart.toISOString();
   const scheduled_end = slotEnd.toISOString();
   const service_address = "11 Grant Street, Cohoes, New York, 12047";
