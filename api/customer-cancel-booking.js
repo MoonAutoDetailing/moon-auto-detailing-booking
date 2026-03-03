@@ -88,12 +88,17 @@ const isLateCancel = hoursUntilService < 24;
     // 3) Update booking status
     // =========================
     const previousStatus = booking.status;
-    await supabase
+    const { error: updateError } = await supabase
   .from("bookings")
   .update({
     status: isLateCancel ? "cancel_requested_late" : "cancelled"
   })
   .eq("id", booking.id);
+
+    if (updateError) {
+      console.error("SUPABASE UPDATE FAILED", updateError);
+      return res.status(500).json({ message: "Database update failed" });
+    }
 
     // Send cancellation email (only for normal cancellations; must succeed or roll back)
 if (!isLateCancel) {

@@ -21,10 +21,14 @@ export default async function handler(req, res) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    await supabase
+    const { error: updateError } = await supabase
       .from("bookings")
       .update({ status: "completed" })
       .eq("id", bookingId);
+    if (updateError) {
+      console.error("SUPABASE UPDATE FAILED", updateError);
+      return res.status(500).json({ error: "Database update failed" });
+    }
 
     // Send completion email (must succeed or roll back)
     const emailResult = await sendBookingCompletedEmailCore(bookingId);

@@ -147,7 +147,7 @@ export default async function handler(req, res) {
     // =========================
     // 3) Update booking status
     // =========================
-    await supabase
+    const { error: updateError } = await supabase
   .from("bookings")
   .update({
     status: "reschedule_requested",
@@ -155,6 +155,11 @@ export default async function handler(req, res) {
     google_event_html_link: null
   })
   .eq("id", booking.id);
+
+    if (updateError) {
+      console.error("SUPABASE UPDATE FAILED", updateError);
+      return res.status(500).json({ message: "Database update failed" });
+    }
 
     // 4) Send reschedule email (must succeed or roll back)
 try {

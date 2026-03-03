@@ -84,8 +84,6 @@ export default async function handler(req, res) {
 });
     if (!emailResult?.success) {
       console.error("[EMAIL] status=failure", emailResult?.error);
-    } else {
-      console.log("[EMAIL] status=success id=", emailResult.id);
     }
     return res.status(200).json({ ok: true });
 

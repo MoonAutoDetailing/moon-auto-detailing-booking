@@ -45,10 +45,14 @@ export default async function handler(req, res) {
     if (booking.google_event_id) {
       // If it’s not confirmed, try to heal status to confirmed (safe, because event id exists)
       if (booking.status !== "confirmed") {
-        await supabase
+        const { error: healError } = await supabase
           .from("bookings")
           .update({ status: "confirmed" })
           .eq("id", bookingId);
+        if (healError) {
+          console.error("SUPABASE UPDATE FAILED", healError);
+          return res.status(500).json({ ok: false, message: "Database update failed" });
+        }
       }
       return res.status(200).json({ ok: true, alreadyConfirmed: true });
     }
@@ -296,7 +300,6 @@ const googleEventHtmlLink = calendarResponse.data.htmlLink;
       return res.status(500).json({ ok: false, message: "Confirmation email failed; booking rolled back" });
     }
 
-    console.log("[EMAIL] status=success id=", emailResult.id);
     return res.status(200).json({ ok: true });
 
   } catch (err) {
