@@ -103,7 +103,7 @@ async function main() {
 
   // ----- Call create-booking (success) -----
   console.log("\n--- Create-booking success ---");
-  const createRes1 = await fetch(`${BASE_URL}/api/create-booking`, {
+  const createRes1 = await fetch(`${BASE_URL}/api/create-booking?x-vercel-protection-bypass=${BYPASS_TOKEN}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
@@ -119,7 +119,7 @@ async function main() {
 
   // ----- Conflict test -----
   console.log("\n--- Conflict test ---");
-  const createRes2 = await fetch(`${BASE_URL}/api/create-booking`, {
+  const createRes2 = await fetch(`${BASE_URL}/api/create-booking?x-vercel-protection-bypass=${BYPASS_TOKEN}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body)
@@ -134,7 +134,7 @@ async function main() {
   // ----- Rate limit test (6th call = 429) -----
   console.log("\n--- Rate limit test ---");
   for (let i = 3; i <= 6; i++) {
-    const res = await fetch(`${BASE_URL}/api/create-booking`, {
+    const res = await fetch(`${BASE_URL}/api/create-booking?x-vercel-protection-bypass=${BYPASS_TOKEN}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body)
