@@ -90,7 +90,11 @@ export default async function handler(req, res) {
 
     // Trigger booking-requested email (existing route). Do not 500 after insert.
     const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : (process.env.BASE_URL || "http://localhost:3000");
-    const emailRes = await fetch(`${baseUrl}/api/send-booking-created-email`, {
+    let emailUrl = `${baseUrl}/api/send-booking-created-email`;
+    if (process.env.VERCEL_ENV === "preview") {
+      emailUrl += `?x-vercel-protection-bypass=${process.env.VERCEL_PROTECTION_BYPASS}`;
+    }
+    const emailRes = await fetch(emailUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ booking_id: booking.id })
