@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { createClient } from "@supabase/supabase-js";
 import { rateLimit } from "./_rateLimit.js";
 import { checkAvailability } from "./_availability.js";
+import { sendBookingCreatedEmailCore } from "../lib/email/sendBookingCreatedEmail.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -88,20 +89,10 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, message: "Booking creation failed. Please try again." });
     }
 
-    // Trigger booking-requested email (existing route). Do not 500 after insert.
-    const baseUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : (process.env.BASE_URL || "http://localhost:3000");
-    let emailUrl = `${baseUrl}/api/send-booking-created-email`;
-    if (process.env.VERCEL_ENV === "preview") {
-      emailUrl += `?x-vercel-protection-bypass=${process.env.VERCEL_PROTECTION_BYPASS}`;
-    }
-    const emailRes = await fetch(emailUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ booking_id: booking.id })
-    });
-    if (!emailRes.ok) {
-      const errBody = await emailRes.text();
-      console.error("[EMAIL] type=booking-created booking_id=" + booking.id + " status=failure", errBody);
+    try {
+      await sendBookingCreatedEmailCore(booking.id);
+    } catch (emailErr) {
+      console.error("[EMAIL] type=booking-created booking_id=" + booking.id + " error", emailErr);
     }
 
     return res.status(200).json({
