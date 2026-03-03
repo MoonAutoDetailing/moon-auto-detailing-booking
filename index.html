@@ -2040,7 +2040,8 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
           vehicle_year: elYear.value || null,
           vehicle_make: (elMake.value || "").trim() || null,
           vehicle_model: (elModel.value || "").trim() || null,
-          license_plate: (elPlate.value || "").trim() || null
+          license_plate: (elPlate.value || "").trim() || null,
+          base_price: selectedVariant.price
         };
 
         openReviewModal(draft);
@@ -2071,12 +2072,19 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
       const endLocal = new Date(draft.scheduled_end);
       const prettyStart = startLocal.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
       const prettyEnd = endLocal.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      const basePrice = Number(draft.base_price ?? 0);
+      const travelFee = 0;
+      const total = basePrice + travelFee;
+      const fmt = (n) => `$${n.toFixed(2)}`;
       elReviewSummary.innerHTML = `
         <p><strong>Customer:</strong> ${escapeHtml(draft.full_name)}</p>
         <p><strong>Email:</strong> ${escapeHtml(draft.email)}</p>
         ${draft.phone ? `<p><strong>Phone:</strong> ${escapeHtml(draft.phone)}</p>` : ""}
         <p><strong>Service address:</strong> ${escapeHtml(draft.service_address)}</p>
         <p><strong>Time:</strong> ${prettyStart} – ${prettyEnd}</p>
+        <p><strong>Service price:</strong> ${fmt(basePrice)}</p>
+        <p><strong>Travel fee:</strong> ${fmt(travelFee)}</p>
+        <p><strong>Total:</strong> ${fmt(total)}</p>
         <p>Click Confirm to create your booking.</p>
       `;
       elReviewOverlay.classList.add("is-open");
