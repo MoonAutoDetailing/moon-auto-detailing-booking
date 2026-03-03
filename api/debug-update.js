@@ -7,7 +7,7 @@ export default async function handler(req, res) {
   );
 
   // Use a real booking id from your database here:
-  const testId = "PUT_A_REAL_BOOKING_ID_HERE";
+  const testId = "e26cb11e-d7c9-4d08-b314-d94499ed6905";
 
   const { data, error } = await supabase
     .from("bookings")
