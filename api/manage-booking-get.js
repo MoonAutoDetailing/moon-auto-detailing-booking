@@ -38,6 +38,10 @@ export default async function handler(req, res) {
         service_address,
         status,
         google_event_html_link,
+        base_price,
+        travel_fee,
+        total_price,
+        travel_minutes,
         customers:customer_id (
           full_name,
           phone
@@ -88,7 +92,11 @@ export default async function handler(req, res) {
   phone: booking.customers?.phone ?? "",
   vehicle: vehicleLabel,
   service: serviceLabel,
-  price: booking.service_variants?.price ?? null
+  price: booking.service_variants?.price ?? null,
+  base_price: booking.base_price ?? null,
+  travel_fee: booking.travel_fee ?? null,
+  total_price: booking.total_price ?? null,
+  travel_minutes: booking.travel_minutes ?? null
 });
 
   } catch (err) {

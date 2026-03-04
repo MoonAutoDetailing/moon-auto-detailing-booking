@@ -1137,6 +1137,7 @@ let RESCHEDULE_BOOKING_ID = null;
     
     // Phase 5 state
 let selectedStartISO = null;
+    let metaByDay = {};
 
                                                                             //SWITCH CHANGES THIS DEBUG
     function log(message, obj) {
@@ -2026,6 +2027,11 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
           throw new Error(err?.message || "Unable to verify availability. Please try again.");
         }
 
+        const dayKey = new Date(scheduled_start).toDateString();
+        const slotMeta = metaByDay[dayKey]?.[scheduled_start];
+        const travel_fee = slotMeta?.travel_fee ?? 0;
+        const base_price = selectedVariant.price ?? 0;
+        const total_price = base_price + travel_fee;
         // Build draft for review step; no DB writes until Confirm
         const draft = {
           full_name,
@@ -2041,7 +2047,9 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
           vehicle_make: (elMake.value || "").trim() || null,
           vehicle_model: (elModel.value || "").trim() || null,
           license_plate: (elPlate.value || "").trim() || null,
-          base_price: selectedVariant.price
+          base_price,
+          travel_fee,
+          total_price
         };
 
         openReviewModal(draft);
@@ -2073,8 +2081,8 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
       const prettyStart = startLocal.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
       const prettyEnd = endLocal.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
       const basePrice = Number(draft.base_price ?? 0);
-      const travelFee = 0;
-      const total = basePrice + travelFee;
+      const travelFee = Number(draft.travel_fee ?? 0);
+      const total = Number(draft.total_price ?? basePrice + travelFee);
       const fmt = (n) => `$${n.toFixed(2)}`;
       elReviewSummary.innerHTML = `
         <p><strong>Customer:</strong> ${escapeHtml(draft.full_name)}</p>
@@ -2220,6 +2228,9 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
           serviceLabel,
           service_address: draft.service_address,
           price,
+          base_price: draft.base_price ?? null,
+          travel_fee: draft.travel_fee ?? null,
+          total_price: draft.total_price ?? null,
           scheduled_start_iso: draft.scheduled_start,
           scheduled_end_iso: draft.scheduled_end,
           prettyStart,
@@ -2474,6 +2485,7 @@ for (let d = 0; d < 7; d++) {
 
   if (!selectedVariant) {
     exposedByDay[dayKey] = [];
+    metaByDay[dayKey] = {};
     continue;
   }
 
@@ -2484,6 +2496,7 @@ for (let d = 0; d < 7; d++) {
 
 if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
   exposedByDay[dayKey] = [];
+  metaByDay[dayKey] = {};
   continue;
 }
 
@@ -2510,11 +2523,13 @@ if (requestVersion !== availabilityRequestVersion) {
 }
 
 exposedByDay[dayKey] = (data.slots || []).map(s => new Date(s).getTime());
+    metaByDay[dayKey] = data.meta || {};
 } 
   
   catch (err) {
     console.error("Availability fetch failed", err);
     exposedByDay[dayKey] = [];
+    metaByDay[dayKey] = {};
   }
 }
     

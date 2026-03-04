@@ -40,6 +40,9 @@ export default async function handler(req, res) {
     scheduled_end,
     service_address,
     manage_token,
+    base_price,
+    travel_fee,
+    total_price,
     customers:customer_id(full_name,email),
     vehicles(vehicle_year,vehicle_make,vehicle_model),
     service_variants:service_variant_id(
@@ -60,7 +63,10 @@ export default async function handler(req, res) {
 
     const pricingBlock = pricingBlockHtml({
       serviceLabel,
-      price: booking.service_variants?.price
+      price: booking.service_variants?.price,
+      basePrice: booking.base_price ?? null,
+      travelFee: booking.travel_fee ?? null,
+      totalPrice: booking.total_price ?? null
     });
 
     const vehicleText = booking.vehicles
