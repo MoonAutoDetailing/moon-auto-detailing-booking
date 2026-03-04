@@ -379,7 +379,19 @@ async function fetchBookings(timeMin, timeMax) {
 }
 
 function pairKey(originAddress, destAddress) {
-  return `${originAddress}||${destAddress}`;
+  const o = (originAddress ?? "").toString().trim().toLowerCase();
+  const d = (destAddress ?? "").toString().trim().toLowerCase();
+  return `${o}||${d}`;
+}
+
+function feeFromMinutes(minutes) {
+  const m = Number(minutes);
+  if (!Number.isFinite(m)) return { fee: 0, warning: false, tierLabel: "unknown", allowed: false };
+  if (m <= 20) return { fee: 0, warning: false, tierLabel: "0-20", allowed: true };
+  if (m <= 30) return { fee: 20, warning: false, tierLabel: "21-30", allowed: true };
+  if (m <= 40) return { fee: 30, warning: false, tierLabel: "31-40", allowed: true };
+  if (m <= 60) return { fee: 50, warning: true, tierLabel: "41-60", allowed: true };
+  return { fee: 50, warning: true, tierLabel: "61+", allowed: false };
 }
 
 async function precomputeTravelGraph(bookings, candidateAddress, memoryCache) {
@@ -414,11 +426,18 @@ async function precomputeTravelGraph(bookings, candidateAddress, memoryCache) {
     }
   }
 
+  const strictOpt = { strict: true };
   await Promise.all(
     Array.from(addressPairs).map(async (key) => {
       const [originAddress, destAddress] = key.split("||");
-      const minutes = await getTravelMinutes(originAddress, destAddress, memoryCache);
-      travelGraph.set(key, minutes ?? 0);
+      try {
+        const minutes = await getTravelMinutes(originAddress, destAddress, memoryCache, strictOpt);
+        travelGraph.set(key, minutes ?? 0);
+      } catch (e) {
+        const err = new Error("ROUTING_ERROR");
+        err.cause = e;
+        throw err;
+      }
     })
   );
 
@@ -578,12 +597,24 @@ const travelGateByEnd = [...travelBookings].sort(
   (a, b) => new Date(a.scheduled_end) - new Date(b.scheduled_end)
 );
     
-const travelGraph = await precomputeTravelGraph(
-  travelBookings,
-  candidateAddress,
-  memoryCache
-);
-
+    let travelGraph;
+    try {
+      travelGraph = await precomputeTravelGraph(
+        travelBookings,
+        candidateAddress,
+        memoryCache
+      );
+    } catch (graphErr) {
+      const isRouting = graphErr?.message === "ROUTING_ERROR" || graphErr?.cause?.message === "Routing failed" || graphErr?.message === "Routing failed";
+      if (isRouting) {
+        return res.status(200).json({
+          slots: [],
+          routing_error: true,
+          message: "We couldn't verify travel time for this address. Please double-check the address or try again."
+        });
+      }
+      throw graphErr;
+    }
 
     console.log("Travel graph size:", travelGraph.size);
 
@@ -618,33 +649,60 @@ const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw
       valid.push(start);
     }
 
+    const metaMap = new Map();
+    const candidateAddressTrim = candidateAddress.trim();
+    let hadRoutingGap = false;
+
     // 1) Apply TRAVEL FILTER to the full valid set (so green blocks can "shift")
-const validAfterTravel = valid.filter((start) => {
-  const end = addMinutes(start, serviceDurationMinutes);
-  const prev = getPrevBooking(travelGateByEnd, start);
-const next = getNextBooking(travelGateByStart, end);
+    const validAfterTravel = valid.filter((start) => {
+      const end = addMinutes(start, serviceDurationMinutes);
+      const prev = getPrevBooking(travelGateByEnd, start);
+      const next = getNextBooking(travelGateByStart, end);
 
-  const allowed = passesTravelGate(
-  start,
-  end,
-  prev,
-  next,
-  candidateAddress,
-  travelGraph,
-  dayDate,
-  openUtcHour
-);
+      const allowed = passesTravelGate(
+        start,
+        end,
+        prev,
+        next,
+        candidateAddress,
+        travelGraph,
+        dayDate,
+        openUtcHour
+      );
 
-  if (!allowed) {
-    console.log("VALID slot removed by travel:", start.toISOString(), {
-      prevEnd: prev?.scheduled_end,
-      nextStart: next?.scheduled_start,
-      candidateAddress
+      if (!allowed) {
+        console.log("VALID slot removed by travel:", start.toISOString(), {
+          prevEnd: prev?.scheduled_end,
+          nextStart: next?.scheduled_start,
+          candidateAddress
+        });
+        return false;
+      }
+
+      const originAddress = prev ? (prev.service_address || "").trim() : BASE_ADDRESS;
+      const minutes = travelGraph.get(pairKey(originAddress, candidateAddressTrim));
+      if (minutes === undefined || minutes === null) {
+        hadRoutingGap = true;
+        return false;
+      }
+      const tier = feeFromMinutes(minutes);
+      if (!tier.allowed) return false;
+      metaMap.set(start.toISOString(), {
+        travel_minutes: minutes,
+        travel_fee: tier.fee,
+        warning: tier.warning,
+        tier: tier.tierLabel
+      });
+      return true;
     });
-  }
 
-  return allowed;
-});
+    if (hadRoutingGap) {
+      return res.status(200).json({
+        slots: [],
+        routing_error: true,
+        message: "We couldn't verify travel time for this address. Please double-check the address or try again."
+      });
+    }
 
 // 2) Now run your shaping engine on the travel-valid set
 const shaped = runExposureLogic(
@@ -656,17 +714,20 @@ const shaped = runExposureLogic(
   closeUtcHour
 );
 
-const exposed = shaped.map((start) => start.toISOString());
+    const exposed = shaped.map((start) => start.toISOString());
+    const meta = {};
+    for (const iso of exposed) {
+      if (metaMap.has(iso)) meta[iso] = metaMap.get(iso);
+    }
 
-// IMPORTANT: log BEFORE responding (your current log is after res.json)
-console.log("DEBUG SERVER FINAL SLOTS", {
-  day,
-  service_address: candidateAddress,
-  count: exposed.length,
-  slots: exposed
-});
+    console.log("DEBUG SERVER FINAL SLOTS", {
+      day,
+      service_address: candidateAddress,
+      count: exposed.length,
+      slots: exposed
+    });
 
-return res.json({ slots: exposed });
+    return res.json({ slots: exposed, meta });
 
 
   } catch (err) {

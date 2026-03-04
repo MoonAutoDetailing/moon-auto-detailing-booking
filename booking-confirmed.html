@@ -55,6 +55,16 @@
       </div>
 
       <div class="row">
+        <div class="box">
+          <div class="label">Service price</div>
+          <div id="c_base_price" class="val">—</div>
+        </div>
+        <div class="box">
+          <div class="label">Travel fee</div>
+          <div id="c_travel_fee" class="val">—</div>
+        </div>
+      </div>
+      <div class="row">
         <div class="box" style="grid-column: 1 / -1;">
           <div class="label">Total (cash only)</div>
           <div id="c_price" class="val">—</div>
@@ -97,6 +107,8 @@ if (!raw) {
   // Direct visit or refresh
   document.getElementById("c_name").textContent = "—";
   document.getElementById("c_service").textContent = "—";
+  document.getElementById("c_base_price").textContent = "—";
+  document.getElementById("c_travel_fee").textContent = "—";
   document.getElementById("c_price").textContent = "—";
   document.getElementById("c_cash").textContent = "";
   document.getElementById("c_start").textContent = "—";
@@ -105,11 +117,16 @@ if (!raw) {
 } else {
   try {
     const p = JSON.parse(raw);
+    const total = p.total_price != null ? p.total_price : p.price;
+    const basePrice = p.base_price != null ? p.base_price : p.price;
+    const travelFee = p.travel_fee != null ? p.travel_fee : 0;
 
     document.getElementById("c_name").textContent = p.full_name || "—";
     document.getElementById("c_service").textContent = p.serviceLabel || "—";
-  document.getElementById("c_price").textContent = formatCurrency(p.price);
-    document.getElementById("c_cash").textContent = "We are a cash-only business. Travel fees may be added later if applicable.";
+    document.getElementById("c_base_price").textContent = basePrice != null ? formatCurrency(basePrice) : "—";
+    document.getElementById("c_travel_fee").textContent = formatCurrency(travelFee);
+    document.getElementById("c_price").textContent = total != null ? formatCurrency(total) : "—";
+    document.getElementById("c_cash").textContent = p.total_price != null ? "We are a cash-only business. Travel fee is based on inbound drive time." : "We are a cash-only business. Travel fees may be added later if applicable.";
     document.getElementById("c_start").textContent = p.prettyStart || "—";
     document.getElementById("c_end").textContent = p.prettyEnd || "—";
     document.getElementById("c_addr").textContent = p.service_address || "—";

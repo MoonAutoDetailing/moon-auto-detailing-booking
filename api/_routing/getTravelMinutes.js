@@ -72,7 +72,7 @@ async function fetchGoogleRoute(origin, destination) {
 }
 
 
-export default async function getTravelMinutes(originAddress, destAddress, memoryCache = {}) {
+export default async function getTravelMinutes(originAddress, destAddress, memoryCache = {}, options = {}) {
   const geocodeCache = memoryCache.geocodeCache;
   const routeCache = memoryCache.routeCache;
 
@@ -102,13 +102,18 @@ export default async function getTravelMinutes(originAddress, destAddress, memor
   }
 
   // 2️⃣ Call Google Routes
-let minutes = await fetchGoogleRoute(origin, dest);
+  const minutesRaw = await fetchGoogleRoute(origin, dest);
 
-// ⭐ FAIL-SAFE: routing must never break booking
-if (!minutes) {
-  console.warn("Travel routing fallback used");
-  minutes = 30; // safe default travel time
-}
+  if (options.strict === true && (minutesRaw == null || !Number.isFinite(minutesRaw))) {
+    throw new Error("Routing failed");
+  }
+
+  let minutes = minutesRaw;
+  // ⭐ FAIL-SAFE: routing must never break booking (when not strict)
+  if (minutes == null || !Number.isFinite(minutes)) {
+    console.warn("Travel routing fallback used");
+    minutes = 30; // safe default travel time
+  }
 
 const rounded = roundUpTo10(minutes);
 

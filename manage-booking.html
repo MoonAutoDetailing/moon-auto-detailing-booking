@@ -31,6 +31,8 @@ h1 { text-align:center; color:#7fb8e6; margin-bottom:6px; }
     <div id="content" class="hidden">
       <div class="box"><div class="label">Customer</div><div id="name"></div></div>
       <div class="box"><div class="label">Service</div><div id="service"></div></div>
+      <div class="box"><div class="label">Service price</div><div id="basePrice"></div></div>
+      <div class="box"><div class="label">Travel fee</div><div id="travelFee"></div></div>
       <div class="box"><div class="label">Total (cash only)</div><div id="price"></div><div id="cashNotice" style="margin-top:6px; color:#6b7280; font-size:13px;"></div></div>
       <div class="box"><div class="label">Vehicle</div><div id="vehicle"></div></div>
       <div class="box"><div class="label">Start</div><div id="start"></div></div>
@@ -62,8 +64,11 @@ async function loadBooking() {
 
   document.getElementById("name").textContent = b.customer_name;
   document.getElementById("service").textContent = b.service;
-  document.getElementById("price").textContent = formatCurrency(b.price);
-  document.getElementById("cashNotice").textContent = "We are a cash-only business. Travel fees may be added later if applicable.";
+  const total = b.total_price != null ? b.total_price : b.price;
+  document.getElementById("basePrice").textContent = b.base_price != null ? formatCurrency(b.base_price) : (b.price != null ? formatCurrency(b.price) : "—");
+  document.getElementById("travelFee").textContent = b.travel_fee != null ? formatCurrency(b.travel_fee) : formatCurrency(0);
+  document.getElementById("price").textContent = total != null ? formatCurrency(total) : "—";
+  document.getElementById("cashNotice").textContent = b.total_price != null ? "We are a cash-only business. Travel fee is based on inbound drive time." : "We are a cash-only business. Travel fees may be added later if applicable.";
   document.getElementById("vehicle").textContent = b.vehicle;
   document.getElementById("addr").textContent = b.service_address;
   document.getElementById("start").textContent = new Date(b.scheduled_start).toLocaleString();
