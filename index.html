@@ -190,7 +190,6 @@ h1 {
     #hourlyCal {
   position: relative;
   z-index: 6;
-  margin-top: 8px;
 }
     
     .hourly-row div:first-child,
@@ -490,6 +489,17 @@ label[for="start"] {
   z-index: 0;
 }
 
+.calendar-header-row.day-header-row {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: white;
+}
+
+.calendar-grid {
+  /* time column + slot rows live here */
+}
+
 .hourly-header,
 .hourly-row {
   display: grid;
@@ -756,27 +766,59 @@ label[for="start"] {
 }
 
     .green-slot-pill {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #e8f7ee;
+  border: 1px solid #3fbf7f;
+  border-radius: 6px;
+  padding: 2px 4px;
+  box-sizing: border-box;
   animation: pulse 1.6s ease-in-out infinite;
-}
-    .green-slot-pill {
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.green-slot-pill:hover {
-  background: rgba(34,197,94,1);
-  transform: translateY(-1px);
+@media (min-width: 769px) {
+  .green-slot-pill:hover {
+    background: #dff5ea;
+  }
 }
-    .green-slot-pill.selected {
-  animation: none; /* stop pulse */
-  background: #15803d; /* dark green */
-  box-shadow: 0 0 0 3px #065f46; /* darker outline */
+
+.green-slot-pill.selected {
+  animation: none;
+  background: #3fbf7f;
+  color: white;
 }
 
 .green-slot-fee {
   font-size: 11px;
   color: #666;
   margin-top: 2px;
+}
+
+.slot-time-mobile,
+.slot-fee-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .slot-time-desktop,
+  .slot-fee-desktop {
+    display: none;
+  }
+  .slot-time-mobile,
+  .slot-fee-mobile {
+    display: block;
+  }
+  .green-slot-pill {
+    font-size: 11px;
+    line-height: 1.1;
+  }
+  .green-slot-fee {
+    font-size: 10px;
+  }
 }
 
 
@@ -2424,7 +2466,14 @@ if (isToday) {
     header.appendChild(dayCell);
   }
 
-  hourlyCal.appendChild(header);
+  const headerRowWrap = document.createElement("div");
+  headerRowWrap.className = "calendar-header-row day-header-row";
+  headerRowWrap.appendChild(header);
+  hourlyCal.appendChild(headerRowWrap);
+
+  const gridWrap = document.createElement("div");
+  gridWrap.className = "calendar-grid";
+  hourlyCal.appendChild(gridWrap);
 
 
   // =========================
@@ -2712,26 +2761,30 @@ block.style.top = `${sliceTop}%`;
 block.style.height = `${slicePct}%`;
 block.style.width = "80%";
 block.style.left = "10%";
-        block.style.borderRadius = "999px";
-        block.style.background = "rgba(34,197,94,0.85)";
         block.style.pointerEvents = "auto";
         block.style.cursor = "pointer";
-        block.style.display = "flex";
-        block.style.flexDirection = "column";
-        block.style.justifyContent = "center";
-        block.style.alignItems = "center";
-        block.style.padding = "2px 4px";
-        block.style.boxSizing = "border-box";
         const slotISO = startTime.toISOString();
         const meta = metaByDay[dayKey]?.[slotISO];
         const fee = meta?.travel_fee ?? 0;
         const timeLine = document.createElement("div");
+        timeLine.className = "slot-time-desktop";
         timeLine.textContent = startTime.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        const timeLineMobile = document.createElement("div");
+        timeLineMobile.className = "slot-time-mobile";
+        const th = startTime.getHours();
+        const tm = startTime.getMinutes();
+        const h12 = th % 12 || 12;
+        timeLineMobile.textContent = h12 + ":" + (tm < 10 ? "0" : "") + tm;
         const feeLine = document.createElement("span");
-        feeLine.className = "green-slot-fee";
+        feeLine.className = "green-slot-fee slot-fee-desktop";
         feeLine.textContent = fee === 0 ? "No travel fee" : "+$" + Number(fee).toFixed(0) + " travel";
+        const feeLineMobile = document.createElement("span");
+        feeLineMobile.className = "green-slot-fee slot-fee-mobile";
+        feeLineMobile.textContent = fee === 0 ? "Free" : "+$" + Number(fee).toFixed(0);
         block.appendChild(timeLine);
+        block.appendChild(timeLineMobile);
         block.appendChild(feeLine);
+        block.appendChild(feeLineMobile);
 
         cell.appendChild(block);
         greenBlocksInCell.push(block);
@@ -2755,7 +2808,7 @@ block.style.left = "10%";
       row.appendChild(cell);
     }
 
-    hourlyCal.appendChild(row);
+    gridWrap.appendChild(row);
   }
   } finally {
     calendarLoading = false;
