@@ -770,8 +770,8 @@ label[for="start"] {
 }
 
     .green-slot-pill {
-  width: 92%;
-  left: 4%;
+  width: 96%;
+  left: 2%;
 
   display: flex;
   flex-direction: column;
@@ -781,10 +781,11 @@ label[for="start"] {
   padding: 6px 8px;
 
   background: #e8f7ee;
-  border: 1px solid #3fbf7f;
-  border-radius: 8px;
+  border: 2px solid #3fbf7f;
+  border-radius: 10px;
 
   box-sizing: border-box;
+  min-height: 28px;
 
   animation: pulse 1.6s ease-in-out infinite;
   cursor: pointer;
@@ -837,11 +838,12 @@ label[for="start"] {
     display: block;
   }
   .green-slot-pill {
-    font-size: 10px;
+    min-height: 32px;
+    font-size: 11px;
     line-height: 1.1;
   }
   .green-slot-fee {
-    font-size: 9px;
+    font-size: 10px;
   }
   .slot-time-mobile {
     font-weight: 600;
@@ -2788,7 +2790,8 @@ const block = document.createElement("div");
 block.className = "green-slot-pill";
 block.style.position = "absolute";
 block.style.top = `${sliceTop}%`;
-block.style.height = (slicePct * 0.95) + "%";
+const visualPct = Math.max(slicePct * 0.95, 18);
+block.style.height = visualPct + "%";
 block.style.left = "5%";
         block.style.pointerEvents = "auto";
         block.style.cursor = "pointer";
