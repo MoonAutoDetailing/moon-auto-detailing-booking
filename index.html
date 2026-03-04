@@ -527,6 +527,9 @@ label[for="start"] {
 
 .hourly-cell {
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .hourly-cell {
@@ -535,9 +538,6 @@ label[for="start"] {
   background: rgba(0, 0, 0, 0.04);
   transition: all 0.18s ease;
   box-shadow: none; /* remove pill shadow */
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
     /* Alternating row backgrounds */
@@ -771,7 +771,6 @@ label[for="start"] {
 
     .green-slot-pill {
   width: 92%;
-  height: 92%;
   left: 4%;
 
   display: flex;
@@ -779,11 +778,12 @@ label[for="start"] {
   align-items: center;
   justify-content: center;
 
+  padding: 6px 8px;
+
   background: #e8f7ee;
   border: 1px solid #3fbf7f;
-  border-radius: 6px;
+  border-radius: 8px;
 
-  padding: 4px 6px;
   box-sizing: border-box;
 
   animation: pulse 1.6s ease-in-out infinite;
@@ -2788,7 +2788,7 @@ const block = document.createElement("div");
 block.className = "green-slot-pill";
 block.style.position = "absolute";
 block.style.top = `${sliceTop}%`;
-block.style.height = `${slicePct}%`;
+block.style.height = (slicePct * 0.95) + "%";
 block.style.left = "5%";
         block.style.pointerEvents = "auto";
         block.style.cursor = "pointer";
