@@ -490,7 +490,7 @@ label[for="start"] {
 }
 
 .calendar-header-row {
-  margin-bottom: 6px;
+  margin-bottom: 12px;
 }
 
 .day-header-row {
@@ -770,20 +770,38 @@ label[for="start"] {
 }
 
     .green-slot-pill {
+  width: 92%;
+  height: 92%;
+  left: 4%;
+
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  width: 90%;
-  height: 80%;
+
   background: #e8f7ee;
   border: 1px solid #3fbf7f;
   border-radius: 6px;
-  padding: 2px 4px;
+
+  padding: 4px 6px;
   box-sizing: border-box;
+
   animation: pulse 1.6s ease-in-out infinite;
   cursor: pointer;
   transition: all 0.15s ease;
+}
+
+.green-slot-pill.best-slot {
+  border: 2px solid #2ecc71;
+  background: #f0fff5;
+  box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.15);
+}
+
+.slot-badge {
+  font-size: 9px;
+  font-weight: 600;
+  color: #2ecc71;
+  margin-top: 1px;
 }
 
 @media (min-width: 769px) {
@@ -819,11 +837,17 @@ label[for="start"] {
     display: block;
   }
   .green-slot-pill {
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1.1;
   }
   .green-slot-fee {
-    font-size: 10px;
+    font-size: 9px;
+  }
+  .slot-time-mobile {
+    font-weight: 600;
+  }
+  .slot-badge {
+    font-size: 8px;
   }
 }
 
@@ -2790,6 +2814,14 @@ block.style.left = "5%";
         block.appendChild(timeLineMobile);
         block.appendChild(feeLine);
         block.appendChild(feeLineMobile);
+
+        if (fee === 0) {
+          block.classList.add("best-slot");
+          const badge = document.createElement("div");
+          badge.className = "slot-badge";
+          badge.textContent = "Best";
+          block.appendChild(badge);
+        }
 
         cell.appendChild(block);
         greenBlocksInCell.push(block);
