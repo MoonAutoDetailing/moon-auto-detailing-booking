@@ -772,6 +772,12 @@ label[for="start"] {
   box-shadow: 0 0 0 3px #065f46; /* darker outline */
 }
 
+.green-slot-fee {
+  font-size: 11px;
+  color: #666;
+  margin-top: 2px;
+}
+
 
     /* =====================
    EXPOSED ANCHOR LAYOUT
@@ -2709,6 +2715,22 @@ block.style.left = "10%";
         block.style.background = "rgba(34,197,94,0.85)";
         block.style.pointerEvents = "auto";
         block.style.cursor = "pointer";
+        block.style.display = "flex";
+        block.style.flexDirection = "column";
+        block.style.justifyContent = "center";
+        block.style.alignItems = "center";
+        block.style.padding = "2px 4px";
+        block.style.boxSizing = "border-box";
+        const slotISO = startTime.toISOString();
+        const meta = metaByDay[dayKey]?.[slotISO];
+        const fee = meta?.travel_fee ?? 0;
+        const timeLine = document.createElement("div");
+        timeLine.textContent = startTime.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+        const feeLine = document.createElement("span");
+        feeLine.className = "green-slot-fee";
+        feeLine.textContent = fee === 0 ? "No travel fee" : "+$" + Number(fee).toFixed(0) + " travel";
+        block.appendChild(timeLine);
+        block.appendChild(feeLine);
 
         cell.appendChild(block);
         greenBlocksInCell.push(block);
