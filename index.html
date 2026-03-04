@@ -489,7 +489,11 @@ label[for="start"] {
   z-index: 0;
 }
 
-.calendar-header-row.day-header-row {
+.calendar-header-row {
+  margin-bottom: 6px;
+}
+
+.day-header-row {
   position: sticky;
   top: 0;
   z-index: 10;
@@ -770,6 +774,8 @@ label[for="start"] {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  width: 90%;
+  height: 80%;
   background: #e8f7ee;
   border: 1px solid #3fbf7f;
   border-radius: 6px;
@@ -2471,9 +2477,9 @@ if (isToday) {
   headerRowWrap.appendChild(header);
   hourlyCal.appendChild(headerRowWrap);
 
-  const gridWrap = document.createElement("div");
-  gridWrap.className = "calendar-grid";
-  hourlyCal.appendChild(gridWrap);
+  const calendarGrid = document.createElement("div");
+  calendarGrid.className = "calendar-grid";
+  hourlyCal.appendChild(calendarGrid);
 
 
   // =========================
@@ -2759,8 +2765,7 @@ block.className = "green-slot-pill";
 block.style.position = "absolute";
 block.style.top = `${sliceTop}%`;
 block.style.height = `${slicePct}%`;
-block.style.width = "80%";
-block.style.left = "10%";
+block.style.left = "5%";
         block.style.pointerEvents = "auto";
         block.style.cursor = "pointer";
         const slotISO = startTime.toISOString();
@@ -2808,7 +2813,7 @@ block.style.left = "10%";
       row.appendChild(cell);
     }
 
-    gridWrap.appendChild(row);
+    calendarGrid.appendChild(row);
   }
   } finally {
     calendarLoading = false;
