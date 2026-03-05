@@ -6,6 +6,17 @@
 const BASE_URL = process.env.BASE_URL;
 const BYPASS = process.env.VERCEL_PROTECTION_BYPASS;
 
+let bypassCookie = null;
+
+async function ensureBypassCookie() {
+  if (!BYPASS) return;
+  const base = BASE_URL.replace(/\/$/, "");
+  const url = `${base}/?x-vercel-set-bypass-cookie=true&x-vercel-protection-bypass=${BYPASS}`;
+  const res = await fetch(url, { method: "GET" });
+  const setCookies = res.headers.getSetCookie ? res.headers.getSetCookie() : [];
+  bypassCookie = setCookies.length ? setCookies.join("; ") : (res.headers.get("set-cookie") || null);
+}
+
 async function testEndpoint(name, path, body = {}) {
   const url = `${BASE_URL}${path}`;
 
@@ -13,7 +24,8 @@ async function testEndpoint(name, path, body = {}) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      ...(BYPASS ? { "x-vercel-protection-bypass": BYPASS } : {})
+      ...(BYPASS ? { "x-vercel-protection-bypass": BYPASS } : {}),
+      ...(bypassCookie ? { "cookie": bypassCookie } : {})
     },
     body: JSON.stringify(body)
   });
@@ -36,7 +48,8 @@ async function callApi(path, body) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        ...(BYPASS ? { "x-vercel-protection-bypass": BYPASS } : {})
+        ...(BYPASS ? { "x-vercel-protection-bypass": BYPASS } : {}),
+        ...(bypassCookie ? { "cookie": bypassCookie } : {})
       },
       body: JSON.stringify(body)
     });
@@ -85,6 +98,8 @@ async function main() {
     process.exit(1);
   }
   console.log("BASE_URL:", BASE_URL);
+
+  await ensureBypassCookie();
 
   const bookingId = process.env.BOOKING_ID || "test-booking-id";
   const cancelToken = process.env.CANCEL_TOKEN || "test-cancel-token";
