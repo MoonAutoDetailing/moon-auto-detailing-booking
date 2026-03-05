@@ -18,7 +18,15 @@ export default async function handler(req, res) {
   req.body = { ...body, bookingId };
 
   try {
-    await verifyAdmin(req);
+    let adminAuthorized = false;
+    try {
+      adminAuthorized = await verifyAdmin(req);
+    } catch (err) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    if (!adminAuthorized) {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
 
     const supabase = createClient(
       process.env.SUPABASE_URL,
