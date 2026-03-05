@@ -43,6 +43,10 @@
   grid-template-columns: 1fr;
 }
 
+.row.row--three-cols {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
 .row > div {
   width: 100%;
 }
@@ -1026,7 +1030,7 @@ label[for="start"] {
     </div>
 
     <h3 class="section-title">2. Vehicle Details</h3> <!--Vehicle-Details-->
-    <div class="row">
+    <div class="row row--three-cols">
     <div>
         <label for="vehicleSize">Vehicle size</label> <!--Vehicle size-->
         <select id="vehicleSize" required>
@@ -1036,7 +1040,12 @@ label[for="start"] {
           <option value="oversized">oversized</option>
         </select>
       </div>
-
+      <div>
+        <label for="serviceCategory">Service type</label>
+        <select id="serviceCategory" disabled>
+          <option value="">Select vehicle size first…</option>
+        </select>
+      </div>
       <div>
         <label for="serviceVariant">Service</label> <!--Select-service-->
         <select id="serviceVariant" required disabled>
@@ -1185,6 +1194,7 @@ const MIN_BOOKABLE_GAP_MINUTES = 120; // anti-fragment rule (2 hours)
 
     // Elements
     const elVehicleSize = document.getElementById("vehicleSize");
+    const elServiceCategory = document.getElementById("serviceCategory");
     const elServiceVariant = document.getElementById("serviceVariant");
     const elServiceMeta = document.getElementById("serviceMeta");
     const elStatus = document.getElementById("status");
@@ -1738,9 +1748,48 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       selectedVariant = null;
     }
 
-    function renderServiceDropdown(vehicleSize) {
+    function categoryToLabel(cat) {
+      if (cat === "Interior Detail") return "Interior";
+      if (cat === "Exterior Detail") return "Exterior";
+      if (cat === "Combined Package") return "Combined";
+      if (cat === "Monthly Detail") return "Monthly";
+      return cat;
+    }
+
+    const CATEGORY_SORT_ORDER = ["Interior", "Exterior", "Combined", "Monthly"];
+
+    function resetServiceCategoryDropdown(message) {
+      elServiceCategory.innerHTML = `<option value="">${message}</option>`;
+      elServiceCategory.disabled = true;
+    }
+
+    function renderServiceCategoryDropdown(vehicleSize) {
+      const categories = [...new Set(
+        variantsCache
+          .filter(v => v.vehicle_size === vehicleSize)
+          .map(v => (v.service?.category ?? "Unknown Category"))
+      )];
+      if (!categories.length) {
+        resetServiceCategoryDropdown("No types for this size");
+        return;
+      }
+      const withLabel = categories.map(cat => ({ value: cat, display: categoryToLabel(cat) }));
+      withLabel.sort((a, b) => {
+        const ia = CATEGORY_SORT_ORDER.indexOf(a.display);
+        const ib = CATEGORY_SORT_ORDER.indexOf(b.display);
+        if (ia !== -1 && ib !== -1) return ia - ib;
+        if (ia !== -1) return -1;
+        if (ib !== -1) return 1;
+        return a.display.localeCompare(b.display);
+      });
+      elServiceCategory.disabled = false;
+      elServiceCategory.innerHTML = `<option value="">Select type…</option>` +
+        withLabel.map(o => `<option value="${o.value}">${o.display}</option>`).join("");
+    }
+
+    function renderServiceDropdown(vehicleSize, category) {
       const filtered = variantsCache
-        .filter(v => v.vehicle_size === vehicleSize)
+        .filter(v => v.vehicle_size === vehicleSize && (v.service?.category ?? "Unknown Category") === category)
         .map(v => {
           const cat = v.service?.category ?? "Unknown Category";
           const lvl = (v.service?.level ?? "?");
@@ -1749,8 +1798,8 @@ function computeScheduledEnd(startLocal, durationMinutes) {
         });
 
       if (!filtered.length) {
-        resetServiceDropdown("No services available for this vehicle size");
-        log("No service variants found for vehicle size", { vehicleSize, totalVariants: variantsCache.length });
+        resetServiceDropdown("No services for this type");
+        log("No service variants for vehicle size + category", { vehicleSize, category, totalVariants: variantsCache.length });
         return;
       }
 
@@ -1796,24 +1845,43 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       setStatus("muted", "");
       log("Loaded service variants", { count: variantsCache.length });            //SERVICE VARIANTS DEBUG ENDS HERE
 
-      // If user already selected vehicle size, render
+      // If user already selected vehicle size, render category dropdown
       const vs = normalizeVehicleSize(elVehicleSize.value);
-      if (vs) renderServiceDropdown(vs);
-      else resetServiceDropdown("Select vehicle size first…");
+      if (vs) {
+        renderServiceCategoryDropdown(vs);
+        resetServiceDropdown("Select service type first…");
+      } else {
+        resetServiceCategoryDropdown("Select vehicle size first…");
+        resetServiceDropdown("Select vehicle size first…");
+      }
     }
 
     elVehicleSize.addEventListener("change", () => {
       const vs = normalizeVehicleSize(elVehicleSize.value);
       if (!vs) {
+        resetServiceCategoryDropdown("Select vehicle size first…");
         resetServiceDropdown("Select vehicle size first…");
         return;
       }
       if (!["compact","midsized","oversized"].includes(vs)) {
+        resetServiceCategoryDropdown("Select vehicle size first…");
         resetServiceDropdown("Invalid vehicle size");
         log("Invalid vehicle size selected", { vs });
         return;
       }
-      renderServiceDropdown(vs);
+      renderServiceCategoryDropdown(vs);
+      resetServiceDropdown("Select service type first…");
+    });
+
+    elServiceCategory.addEventListener("change", () => {
+      const vs = normalizeVehicleSize(elVehicleSize.value);
+      const category = elServiceCategory.value;
+      if (!category) {
+        resetServiceDropdown("Select service type first…");
+        return;
+      }
+      if (!vs) return;
+      renderServiceDropdown(vs, category);
     });
 
     elServiceVariant.addEventListener("change", async () => {
@@ -1955,6 +2023,7 @@ elVehicleSize.value = vs;
       elPhone,
       elAddress,
       elVehicleSize,
+      elServiceCategory,
       elServiceVariant,
       elYear,
       elMake,
@@ -1962,9 +2031,15 @@ elVehicleSize.value = vs;
       elPlate,
       elServiceAddress
     ].forEach(el => el.disabled = true);
-  
-renderServiceDropdown(vs);
 
+    renderServiceCategoryDropdown(vs);
+    const selectedCategory = selectedVariant?.service?.category ?? "Unknown Category";
+    if (selectedVariant?.id) {
+      elServiceCategory.value = selectedCategory;
+      renderServiceDropdown(vs, selectedCategory);
+    } else {
+      resetServiceDropdown("Select service type first…");
+    }
 // allow DOM to finish rebuilding the dropdown
 await new Promise(r => setTimeout(r, 0));
 
