@@ -1789,6 +1789,7 @@ function computeScheduledEnd(startLocal, durationMinutes) {
     };
 
     function categoryToLabel(cat) {
+      if (cat === "Exterior Detail") return "Exterior";
       const ui = uiCategoryLabel(cat);
       if (ui !== cat) return ui;
       if (cat === "Interior Detail") return "Interior";
@@ -1797,7 +1798,12 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       return cat;
     }
 
-    const CATEGORY_SORT_ORDER = ["Interior", "Exterior", "Combined", "Monthly"];
+    const ORDER = [
+      "Interior Detail",
+      "Exterior Detail",
+      "Combined Package",
+      "Monthly Detail"
+    ];
 
     function updateServiceClarity() {
       if (!selectedVariant) {
@@ -1834,8 +1840,8 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       }
       const withLabel = categories.map(cat => ({ value: cat, display: categoryToLabel(cat) }));
       withLabel.sort((a, b) => {
-        const ia = CATEGORY_SORT_ORDER.indexOf(a.display);
-        const ib = CATEGORY_SORT_ORDER.indexOf(b.display);
+        const ia = ORDER.indexOf(a.value);
+        const ib = ORDER.indexOf(b.value);
         if (ia !== -1 && ib !== -1) return ia - ib;
         if (ia !== -1) return -1;
         if (ib !== -1) return 1;
