@@ -267,6 +267,16 @@ label,
   text-align: center;
 }
 
+.service-clarity {
+  font-size: 14px;
+  color: #666;
+  margin-top: 6px;
+  text-align: center;
+}
+@media (max-width: 640px) {
+  .service-clarity { font-size: 12px; }
+}
+
 /* Center inputs visually */
 input,
 select,
@@ -1056,6 +1066,7 @@ label[for="start"] {
           <option value="">Select vehicle size first…</option>
         </select>
         <div id="serviceMeta" class="muted"></div>
+        <div id="serviceClarity" class="service-clarity" style="display:none;"></div>
       </div>
     </div>
       
@@ -1201,6 +1212,7 @@ const MIN_BOOKABLE_GAP_MINUTES = 120; // anti-fragment rule (2 hours)
     const elServiceCategory = document.getElementById("serviceCategory");
     const elServiceVariant = document.getElementById("serviceVariant");
     const elServiceMeta = document.getElementById("serviceMeta");
+    const elServiceClarity = document.getElementById("serviceClarity");
     const elStatus = document.getElementById("status");
     const elLog = document.getElementById("log");
     const elSubmit = document.getElementById("submitBtn");
@@ -1750,17 +1762,60 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       elServiceVariant.disabled = true;
       elServiceMeta.textContent = "";
       selectedVariant = null;
+      updateServiceClarity();
     }
 
+    function uiCategoryLabel(dbCategory) {
+      if (dbCategory === "Exterior Detail") return "Exterior Wash";
+      return dbCategory;
+    }
+
+    const SERVICE_CLARITY = {
+      "Interior Detail": {
+        1: "Interior refresh for light–moderate mess (vacuum, wipe-down, windows, steam touch-ups).",
+        2: "Deep interior reset with stain removal focus + shampoo/extraction."
+      },
+      "Exterior Detail": {
+        1: "Maintenance hand wash + wheels + tire shine + wax for regular upkeep.",
+        2: "Deeper wash + decon (clay/iron) with added protection details."
+      },
+      "Combined Package": {
+        1: "Full inside + outside refresh — saves $40 vs booking separately.",
+        2: "Full deep clean inside + enhanced exterior — saves $70 vs booking separately."
+      },
+      "Monthly Detail": {
+        1: "Monthly maintenance clean to keep your vehicle consistently fresh."
+      }
+    };
+
     function categoryToLabel(cat) {
+      const ui = uiCategoryLabel(cat);
+      if (ui !== cat) return ui;
       if (cat === "Interior Detail") return "Interior";
-      if (cat === "Exterior Detail") return "Exterior";
       if (cat === "Combined Package") return "Combined";
       if (cat === "Monthly Detail") return "Monthly";
       return cat;
     }
 
     const CATEGORY_SORT_ORDER = ["Interior", "Exterior", "Combined", "Monthly"];
+
+    function updateServiceClarity() {
+      if (!selectedVariant) {
+        elServiceClarity.style.display = "none";
+        elServiceClarity.textContent = "";
+        return;
+      }
+      const dbCategory = selectedVariant.service?.category;
+      const level = Number(selectedVariant.service?.level);
+      const text = dbCategory != null && level != null ? (SERVICE_CLARITY[dbCategory]?.[level] ?? null) : null;
+      if (text) {
+        elServiceClarity.textContent = text;
+        elServiceClarity.style.display = "block";
+      } else {
+        elServiceClarity.style.display = "none";
+        elServiceClarity.textContent = "";
+      }
+    }
 
     function resetServiceCategoryDropdown(message) {
       elServiceCategory.innerHTML = `<option value="">${message}</option>`;
@@ -1797,7 +1852,7 @@ function computeScheduledEnd(startLocal, durationMinutes) {
         .map(v => {
           const cat = v.service?.category ?? "Unknown Category";
           const lvl = (v.service?.level ?? "?");
-          const label = `${cat} — Level ${lvl} (${v.vehicle_size}) — ${v.duration_minutes} min — $${v.price}`;
+          const label = `${uiCategoryLabel(cat)} — Level ${lvl} (${v.vehicle_size}) — ${v.duration_minutes} min — $${v.price}`;
           return { id: v.id, label };
         });
 
@@ -1897,6 +1952,7 @@ recalcEndTimePreview();
 
   if (!selectedVariant) {
     elServiceMeta.textContent = "";
+    updateServiceClarity();
     scheduleCalendarReload(); // Clear availability if no service
     return;
   }
@@ -1905,8 +1961,9 @@ recalcEndTimePreview();
   const lvl = selectedVariant.service?.level ?? "?";
 
   elServiceMeta.textContent =
-    `Selected: ${cat} Level ${lvl} — ${selectedVariant.duration_minutes} minutes`;
+    `Selected: ${uiCategoryLabel(cat)} Level ${lvl} — ${selectedVariant.duration_minutes} minutes`;
 
+  updateServiceClarity();
   recalcEndTimePreview();
 
   // 🔥 FORCE CALENDAR REBUILD
@@ -2055,8 +2112,9 @@ if (selectedVariant?.id) {
   const cat = selectedVariant.service?.category ?? "Service";
   const lvl = selectedVariant.service?.level ?? "";
   elServiceMeta.textContent =
-    lvl ? `${cat} Level ${lvl} — ${selectedVariant.duration_minutes} minutes`
-        : `${cat} — ${selectedVariant.duration_minutes} minutes`;
+    lvl ? `${uiCategoryLabel(cat)} Level ${lvl} — ${selectedVariant.duration_minutes} minutes`
+        : `${uiCategoryLabel(cat)} — ${selectedVariant.duration_minutes} minutes`;
+  updateServiceClarity();
 }
       await loadCalendar();
     
