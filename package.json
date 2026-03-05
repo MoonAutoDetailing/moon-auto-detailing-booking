@@ -2,6 +2,9 @@
   "name": "moon-auto-detailing-booking",
   "private": true,
   "type": "module",
+  "scripts": {
+    "smoke": "node scripts/smoke-tests.js"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",
     "googleapis": "^144.0.0",
