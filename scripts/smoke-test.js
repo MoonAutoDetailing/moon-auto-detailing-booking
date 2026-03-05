@@ -4,20 +4,40 @@
  */
 
 const BASE_URL = process.env.BASE_URL;
-const BYPASS_TOKEN = process.env.BYPASS_TOKEN || "";
+const BYPASS = process.env.VERCEL_PROTECTION_BYPASS;
+
+async function testEndpoint(name, path, body = {}) {
+  const url = `${BASE_URL}${path}`;
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(BYPASS ? { "x-vercel-protection-bypass": BYPASS } : {})
+    },
+    body: JSON.stringify(body)
+  });
+
+  const text = await res.text();
+
+  console.log(`\n[test] ${name}`);
+  console.log("---");
+  console.log("endpoint:", url);
+  console.log("status:", res.status);
+  console.log("response:", text);
+}
 
 async function callApi(path, body) {
   let url = `${BASE_URL.replace(/\/$/, "")}${path}`;
-  if (BYPASS_TOKEN) {
-    const separator = url.includes("?") ? "&" : "?";
-    url = `${url}${separator}x-vercel-protection-bypass=${BYPASS_TOKEN}`;
-  }
   console.log("\n---");
   console.log("endpoint:", url);
   try {
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(BYPASS ? { "x-vercel-protection-bypass": BYPASS } : {})
+      },
       body: JSON.stringify(body)
     });
     const status = res.status;
