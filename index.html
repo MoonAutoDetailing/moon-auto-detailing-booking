@@ -1770,6 +1770,12 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       return dbCategory;
     }
 
+    function isMostPopularVariant(v) {
+      const cat = v?.service?.category;
+      const lvl = Number(v?.service?.level);
+      return cat === "Combined Package" && lvl === 1;
+    }
+
     const SERVICE_CLARITY = {
       "Interior Detail": {
         1: "Interior refresh for light–moderate mess (vacuum, wipe-down, windows, steam touch-ups).",
@@ -1858,7 +1864,8 @@ function computeScheduledEnd(startLocal, durationMinutes) {
         .map(v => {
           const cat = v.service?.category ?? "Unknown Category";
           const lvl = (v.service?.level ?? "?");
-          const label = `${uiCategoryLabel(cat)} — Level ${lvl} (${v.vehicle_size}) — ${v.duration_minutes} min — $${v.price}`;
+          const popularTag = isMostPopularVariant(v) ? " — Most popular" : "";
+          const label = `${uiCategoryLabel(cat)} — Level ${lvl} (${v.vehicle_size}) — ${v.duration_minutes} min — $${v.price}${popularTag}`;
           return { id: v.id, label };
         });
 
@@ -1966,8 +1973,9 @@ recalcEndTimePreview();
   const cat = selectedVariant.service?.category ?? "Unknown Category";
   const lvl = selectedVariant.service?.level ?? "?";
 
+  const popularTag = isMostPopularVariant(selectedVariant) ? " — Most popular" : "";
   elServiceMeta.textContent =
-    `Selected: ${uiCategoryLabel(cat)} Level ${lvl} — ${selectedVariant.duration_minutes} minutes`;
+    `Selected: ${uiCategoryLabel(cat)} Level ${lvl} — ${selectedVariant.duration_minutes} minutes${popularTag}`;
 
   updateServiceClarity();
   recalcEndTimePreview();
@@ -2117,9 +2125,10 @@ if (selectedVariant?.id) {
 
   const cat = selectedVariant.service?.category ?? "Service";
   const lvl = selectedVariant.service?.level ?? "";
+  const popularTag = isMostPopularVariant(selectedVariant) ? " — Most popular" : "";
   elServiceMeta.textContent =
-    lvl ? `${uiCategoryLabel(cat)} Level ${lvl} — ${selectedVariant.duration_minutes} minutes`
-        : `${uiCategoryLabel(cat)} — ${selectedVariant.duration_minutes} minutes`;
+    (lvl ? `${uiCategoryLabel(cat)} Level ${lvl} — ${selectedVariant.duration_minutes} minutes`
+        : `${uiCategoryLabel(cat)} — ${selectedVariant.duration_minutes} minutes`) + popularTag;
   updateServiceClarity();
 }
       await loadCalendar();
