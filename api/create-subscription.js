@@ -84,6 +84,8 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, message: "Subscription creation failed. Please try again." });
     }
 
+    console.log("SUBSCRIPTION_CREATED", { subscription_id: subscription.id });
+
     return res.status(200).json({
       ok: true,
       subscription_id: subscription.id

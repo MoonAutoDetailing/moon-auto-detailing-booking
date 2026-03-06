@@ -81,6 +81,38 @@ export default async function handler(req, res) {
       }
     }
 
+    // Subscription cycle completion: mark cycle completed and clear discount reset if applicable
+    const { data: cycleBooking } = await supabase
+      .from("subscription_cycle_bookings")
+      .select("cycle_id")
+      .eq("booking_id", bookingId)
+      .maybeSingle();
+    if (cycleBooking) {
+      const { data: cycle } = await supabase
+        .from("subscription_cycles")
+        .select("id, subscription_id")
+        .eq("id", cycleBooking.cycle_id)
+        .single();
+      if (cycle) {
+        await supabase
+          .from("subscription_cycles")
+          .update({ status: "completed" })
+          .eq("id", cycle.id);
+        console.log("CYCLE_COMPLETED", { cycle_id: cycle.id, booking_id: bookingId });
+        const { data: sub } = await supabase
+          .from("subscriptions")
+          .select("id, discount_reset_required")
+          .eq("id", cycle.subscription_id)
+          .single();
+        if (sub && sub.discount_reset_required) {
+          await supabase
+            .from("subscriptions")
+            .update({ discount_reset_required: false })
+            .eq("id", sub.id);
+        }
+      }
+    }
+
     return res.status(200).json({ ok: true });
 
   } catch (err) {

@@ -5,6 +5,7 @@ import { rateLimit } from "./_rateLimit.js";
 import { checkAvailability } from "./_availability.js";
 import getTravelMinutes from "./_routing/getTravelMinutes.js";
 import { sendBookingCreatedEmailCore } from "../lib/email/sendBookingCreatedEmail.js";
+import { getEffectiveWindowEnd } from "./_subscriptions/lifecycle.js";
 
 const BASE_ADDRESS = process.env.BASE_ADDRESS;
 const BUSINESS_TZ = "America/New_York";
@@ -269,6 +270,60 @@ export default async function handler(req, res) {
 
     if (!booking) {
       return res.status(500).json({ ok: false, message: "Booking creation failed. Please try again." });
+    }
+
+    const subscriptionId = body.subscription_id;
+    if (subscriptionId) {
+      const { data: subscription } = await supabase
+        .from("subscriptions")
+        .select("id, status")
+        .eq("id", subscriptionId)
+        .single();
+      if (!subscription || subscription.status !== "active") {
+        return res.status(400).json({ ok: false, message: "Invalid or inactive subscription." });
+      }
+      const { data: cycle } = await supabase
+        .from("subscription_cycles")
+        .select("id, window_start_date, window_end_date, pushback_used, pushback_end_date")
+        .eq("subscription_id", subscriptionId)
+        .in("status", ["open"])
+        .limit(1)
+        .maybeSingle();
+      if (!cycle) {
+        return res.status(400).json({ ok: false, message: "No open subscription window for this cycle." });
+      }
+      const bookingDate = scheduled_start.slice(0, 10);
+      const windowEnd = getEffectiveWindowEnd(cycle);
+      const inMainWindow = bookingDate >= cycle.window_start_date && bookingDate <= (cycle.window_end_date || "");
+      const inPushback = cycle.pushback_used && cycle.pushback_end_date
+        && bookingDate >= cycle.window_end_date && bookingDate <= cycle.pushback_end_date;
+      if (!inMainWindow && !inPushback) {
+        return res.status(400).json({ ok: false, message: "Booking date is outside this subscription window." });
+      }
+      const { data: existingLink } = await supabase
+        .from("subscription_cycle_bookings")
+        .select("id")
+        .eq("cycle_id", cycle.id)
+        .limit(1)
+        .maybeSingle();
+      if (existingLink) {
+        return res.status(409).json({ ok: false, message: "This subscription cycle already has a booking." });
+      }
+      const { error: linkErr } = await supabase
+        .from("subscription_cycle_bookings")
+        .insert({ cycle_id: cycle.id, booking_id: booking.id });
+      if (linkErr) {
+        console.error("[create-booking] subscription_cycle_bookings insert", linkErr);
+        return res.status(500).json({ ok: false, message: "Failed to attach booking to subscription cycle." });
+      }
+      const { error: cycleUpdateErr } = await supabase
+        .from("subscription_cycles")
+        .update({ status: "booked" })
+        .eq("id", cycle.id);
+      if (cycleUpdateErr) {
+        console.error("[create-booking] cycle status update", cycleUpdateErr);
+      }
+      console.log("CYCLE_BOOKED", { cycle_id: cycle.id, booking_id: booking.id });
     }
 
     try {
