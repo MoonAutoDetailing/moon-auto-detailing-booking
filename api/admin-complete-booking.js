@@ -53,6 +53,34 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Email failed; action rolled back" });
     }
 
+    // Subscription activation hook: activate subscription if this was its onboarding booking
+    const { data: subscription } = await supabase
+      .from("subscriptions")
+      .select("id, status")
+      .eq("activation_booking_id", bookingId)
+      .maybeSingle();
+    if (subscription && subscription.status === "pending_activation") {
+      const { data: booking } = await supabase
+        .from("bookings")
+        .select("scheduled_start")
+        .eq("id", bookingId)
+        .single();
+      if (booking?.scheduled_start) {
+        const anchorDate = booking.scheduled_start.split("T")[0];
+        await supabase
+          .from("subscriptions")
+          .update({
+            status: "active",
+            anchor_date: anchorDate
+          })
+          .eq("id", subscription.id);
+        console.log("SUBSCRIPTION_ACTIVATED", {
+          subscription_id: subscription.id,
+          anchor_date: anchorDate
+        });
+      }
+    }
+
     return res.status(200).json({ ok: true });
 
   } catch (err) {

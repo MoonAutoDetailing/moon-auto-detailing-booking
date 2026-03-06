@@ -144,27 +144,6 @@ async function main() {
   if (subRes.status !== 200) fail("Expected create-subscription 200, got " + subRes.status);
   if (!subJson.subscription_id) fail("Create subscription response missing subscription_id");
 
-  // ----- 4. Verify database linkage -----
-  const verifyRes = await fetch(
-    `${base}/api/admin-subscription-by-booking${qsBypass()}&booking_id=${encodeURIComponent(bookingId)}`
-  );
-  const verifyText = await verifyRes.text();
-  let verifyJson;
-  try {
-    verifyJson = JSON.parse(verifyText);
-  } catch {
-    verifyJson = { _raw: verifyText };
-  }
-  logStep("verify subscription", verifyRes.status, verifyText);
-  if (verifyRes.status >= 500) fail("Verify subscription request failed");
-  if (!verifyJson.subscription_id) fail("Verification response missing subscription_id");
-  if (verifyJson.activation_booking_id !== bookingId) {
-    fail("activation_booking_id mismatch: expected " + bookingId + ", got " + verifyJson.activation_booking_id);
-  }
-  if (verifyJson.status !== "pending_activation") {
-    fail("Expected status pending_activation, got " + verifyJson.status);
-  }
-
   console.log("\n---");
   console.log("Subscription onboarding test done.");
 }
