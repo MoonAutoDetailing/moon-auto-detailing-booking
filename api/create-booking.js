@@ -281,21 +281,20 @@ export default async function handler(req, res) {
       if (!subscription || subscription.status !== "active") {
         return res.status(400).json({ ok: false, message: "Invalid or inactive subscription." });
       }
+      const bookingDate = new Date(scheduled_start).toISOString().split("T")[0];
       const { data: cycle, error: cycleErr } = await supabase
         .from("subscription_cycles")
         .select("*")
         .eq("subscription_id", subscriptionId)
         .eq("status", "open")
+        .lte("window_start_date", bookingDate)
+        .gte("window_end_date", bookingDate)
         .maybeSingle();
       if (cycleErr || !cycle) {
-        return res.status(400).json({ ok: false, message: "No open subscription window for this cycle." });
-      }
-      const bookingDate = scheduled_start.slice(0, 10);
-      if (
-        bookingDate < cycle.window_start_date ||
-        (cycle.window_end_date && bookingDate > cycle.window_end_date)
-      ) {
-        return res.status(400).json({ ok: false, message: "Booking date is outside this subscription window." });
+        console.error("CYCLE_LOOKUP_FAILED", cycleErr);
+        return res.status(500).json({
+          error: "Failed to attach booking to subscription cycle."
+        });
       }
       const { data: existingLink } = await supabase
         .from("subscription_cycle_bookings")
@@ -317,13 +316,10 @@ export default async function handler(req, res) {
         console.error("[create-booking] subscription_cycle_bookings insert", linkErr);
         return res.status(500).json({ ok: false, message: "Failed to attach booking to subscription cycle." });
       }
-      const { error: cycleUpdateErr } = await supabase
+      await supabase
         .from("subscription_cycles")
         .update({ status: "booked" })
         .eq("id", cycle.id);
-      if (cycleUpdateErr) {
-        console.error("[create-booking] cycle status update", cycleUpdateErr);
-      }
       console.log("CYCLE_BOOKED", { cycle_id: cycle.id, booking_id: booking.id });
     }
 
