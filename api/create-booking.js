@@ -316,7 +316,7 @@ export default async function handler(req, res) {
         .insert({
           cycle_id: cycle.id,
           booking_id: bookingId,
-          price_mode: "subscription"
+          price_mode: "discount"
         });
       if (linkErr) {
         console.error("[create-booking] subscription_cycle_bookings insert", linkErr);
