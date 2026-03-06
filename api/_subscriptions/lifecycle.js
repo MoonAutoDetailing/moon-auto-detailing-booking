@@ -20,7 +20,7 @@ const PUSHBACK_BUSINESS_DAYS = 5;
 /**
  * Parse YYYY-MM-DD string to { year, month, day } (local calendar).
  */
-function parseLocalDate(dateStr) {
+export function parseLocalDate(dateStr) {
   if (!dateStr || typeof dateStr !== "string") return null;
   const m = dateStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
   if (!m) return null;
@@ -34,7 +34,7 @@ function parseLocalDate(dateStr) {
 /**
  * Format { year, month, day } or Date to YYYY-MM-DD.
  */
-function formatLocalDate(obj) {
+export function formatLocalDate(obj) {
   if (!obj) return null;
   if (typeof obj.toISOString === "function") {
     return obj.toISOString().slice(0, 10);
@@ -49,7 +49,7 @@ function formatLocalDate(obj) {
  * Add cadence to a local date string. Returns YYYY-MM-DD.
  * biweekly = +14 days, monthly = +1 calendar month, quarterly = +3 calendar months.
  */
-function addCadence(dateStr, cadence) {
+export function addCadence(dateStr, cadence) {
   const p = parseLocalDate(dateStr);
   if (!p || !cadence) return null;
   if (cadence === "biweekly") {
@@ -84,7 +84,7 @@ function isWeekend(dateStr) {
 /**
  * Add n business days to dateStr (YYYY-MM-DD). Returns YYYY-MM-DD.
  */
-function addBusinessDays(dateStr, n) {
+export function addBusinessDays(dateStr, n) {
   if (n <= 0) return dateStr;
   let current = dateStr;
   let added = 0;
@@ -102,7 +102,7 @@ function addBusinessDays(dateStr, n) {
 /**
  * Booking window length in business days for cadence.
  */
-function getCycleWindowLength(cadence) {
+export function getCycleWindowLength(cadence) {
   return WINDOW_BUSINESS_DAYS[cadence] ?? 5;
 }
 
@@ -110,7 +110,7 @@ function getCycleWindowLength(cadence) {
  * Cycle start date: anchor_date + cadence * cycle_index.
  * index 0 = anchor_date, 1 = anchor + 1 cadence, etc.
  */
-function getCycleStartDate(anchorDateStr, cadence, cycleSequence) {
+export function getCycleStartDate(anchorDateStr, cadence, cycleSequence) {
   let current = anchorDateStr;
   for (let i = 0; i < cycleSequence; i++) {
     current = addCadence(current, cadence);
@@ -121,16 +121,17 @@ function getCycleStartDate(anchorDateStr, cadence, cycleSequence) {
 
 /**
  * Cycle end date: cycle start + window business days (last day of window).
+ * Exported for ESM import (e.g. cron-generate-subscription-cycles).
  */
-function getCycleEndDate(cycleStartDateStr, cadence) {
-  const n = getCycleWindowLength(cadence);
-  return addBusinessDays(cycleStartDateStr, n);
+export function getCycleEndDate(startDate, frequency) {
+  const n = getCycleWindowLength(frequency);
+  return addBusinessDays(startDate, n);
 }
 
 /**
  * Next cycle sequence = max(cycle_index) + 1, or 1 if none.
  */
-function getNextCycleSequence(maxSequence) {
+export function getNextCycleSequence(maxSequence) {
   if (maxSequence == null || maxSequence === undefined) return 1;
   const m = parseInt(maxSequence, 10);
   return Number.isFinite(m) ? m + 1 : 1;
@@ -139,40 +140,26 @@ function getNextCycleSequence(maxSequence) {
 /**
  * Effective window end: pushback_end_date if pushback_used, else window_end_date.
  */
-function getEffectiveWindowEnd(cycle) {
+export function getEffectiveWindowEnd(cycle) {
   if (cycle.pushback_used && cycle.pushback_end_date) {
     return cycle.pushback_end_date;
   }
   return cycle.window_end_date || null;
 }
 
-function isCycleUnresolved(cycle) {
+export function isCycleUnresolved(cycle) {
   return cycle && (cycle.status === "open" || cycle.status === "booked");
 }
 
-function isCycleResolved(cycle) {
+export function isCycleResolved(cycle) {
   return cycle && (cycle.status === "completed" || cycle.status === "missed");
 }
 
 /**
  * Whether to apply discount reset: subscription has discount_reset_required and cycle is completing.
  */
-function shouldApplyDiscountReset(subscription) {
+export function shouldApplyDiscountReset(subscription) {
   return subscription && subscription.discount_reset_required === true;
 }
 
-module.exports = {
-  parseLocalDate,
-  formatLocalDate,
-  addCadence,
-  addBusinessDays,
-  getCycleWindowLength,
-  getCycleStartDate,
-  getCycleEndDate,
-  getNextCycleSequence,
-  getEffectiveWindowEnd,
-  isCycleUnresolved,
-  isCycleResolved,
-  shouldApplyDiscountReset,
-  PUSHBACK_BUSINESS_DAYS
-};
+export { PUSHBACK_BUSINESS_DAYS };
