@@ -12,8 +12,8 @@
     body {
       font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 0;
-      background-color: #000000;
-      color: #1f2937;
+      background-color: #ffffff;
+      color: #4a4a4a;
     }
 
     .page-wrap {
@@ -24,7 +24,7 @@
 
     /* ----- Typography ----- */
     h1 {
-      color: #7fb8e6;
+      color: #1c1c1c;
       font-weight: 700;
       letter-spacing: 0.5px;
       text-align: center;
@@ -33,7 +33,7 @@
     }
     .page-subtitle {
       text-align: center;
-      color: #6b7280;
+      color: #4a4a4a;
       margin: 0 0 24px;
       font-size: 1.1rem;
       line-height: 1.5;
@@ -45,6 +45,7 @@
       margin: 0 0 8px;
       border-bottom: 1px solid #e5e7eb;
       padding-bottom: 8px;
+      color: #1c1c1c;
     }
 
     /* ----- Booking card (reused from booking page) ----- */
@@ -127,7 +128,7 @@
       padding: 8px 0;
       padding-left: 24px;
       position: relative;
-      color: #374151;
+      color: #4a4a4a;
     }
     .hero li::before {
       content: "•";
@@ -150,7 +151,7 @@
     .how-step {
       text-align: center;
       padding: 20px 16px;
-      background: rgba(255, 255, 255, 0.05);
+      background: #f0f8ff;
       border-radius: 16px;
       border: 1px solid rgba(127, 184, 230, 0.3);
     }
@@ -168,7 +169,7 @@
     }
     .how-step p {
       margin: 0;
-      color: #e5e7eb;
+      color: #4a4a4a;
       font-size: 14px;
       line-height: 1.5;
     }
@@ -193,9 +194,10 @@
       box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12), 0 6px 18px rgba(0, 0, 0, 0.08);
       display: flex;
       flex-direction: column;
+      border: 2px solid #7fb8e6;
     }
     .plan-card.featured {
-      border: 2px solid #7fb8e6;
+      border: 4px solid #7fb8e6;
     }
     .plan-badge {
       display: inline-block;
@@ -211,14 +213,25 @@
     .plan-card h3 {
       margin: 0 0 10px;
       font-size: 1.25rem;
-      color: #1f2937;
+      color: #1c1c1c;
     }
     .plan-card p {
       margin: 0 0 20px;
       font-size: 14px;
-      color: #6b7280;
+      color: #4a4a4a;
       line-height: 1.5;
       flex: 1;
+    }
+    .plan-price-anchor {
+      font-weight: 600;
+      font-size: 18px;
+      margin: 10px 0;
+      color: #1c1c1c;
+    }
+    .plan-savings {
+      font-size: 14px;
+      color: #4a4a4a;
+      margin: 0 0 16px;
     }
     .plan-buttons {
       display: flex;
@@ -240,12 +253,12 @@
     .rules-card h3 {
       margin: 0 0 16px;
       text-align: center;
-      color: #1f2937;
+      color: #1c1c1c;
     }
     .rules-card ul {
       margin: 0;
       padding-left: 22px;
-      color: #374151;
+      color: #4a4a4a;
       line-height: 1.8;
       font-size: 15px;
     }
@@ -256,7 +269,7 @@
       padding: 40px 24px 24px;
     }
     .cta-section h2 {
-      color: #7fb8e6;
+      color: #1c1c1c;
       font-weight: 700;
       font-size: clamp(1.25rem, 3vw, 1.5rem);
       margin: 0 0 20px;
@@ -320,6 +333,8 @@
         <div class="plan-card featured">
           <span class="plan-badge">Most Popular</span>
           <h3>Combined Maintenance</h3>
+          <div class="plan-price-anchor">Starting at $200</div>
+          <div class="plan-savings">Save up to $80 compared to one-time services</div>
           <p>Full interior and exterior maintenance to keep your vehicle consistently clean.</p>
           <div class="plan-buttons">
             <button type="button" class="btn-plan" data-freq="biweekly" data-category="combined">Start Biweekly Plan</button>
@@ -330,21 +345,25 @@
         <!-- Card 2: Interior -->
         <div class="plan-card">
           <h3>Interior Maintenance</h3>
+          <div class="plan-price-anchor">Starting at $150</div>
+          <div class="plan-savings">Save up to $50 compared to one-time services</div>
           <p>Regular interior cleaning to keep your cabin fresh and comfortable.</p>
           <div class="plan-buttons">
-            <button type="button" class="btn-plan" data-freq="biweekly" data-category="interior">Biweekly</button>
-            <button type="button" class="btn-plan" data-freq="monthly" data-category="interior">Monthly</button>
-            <button type="button" class="btn-plan" data-freq="quarterly" data-category="interior">Quarterly</button>
+            <button type="button" class="btn-plan" data-freq="biweekly" data-category="interior">Start Biweekly Plan</button>
+            <button type="button" class="btn-plan" data-freq="monthly" data-category="interior">Start Monthly Plan</button>
+            <button type="button" class="btn-plan" data-freq="quarterly" data-category="interior">Start Quarterly Plan</button>
           </div>
         </div>
         <!-- Card 3: Exterior -->
         <div class="plan-card">
           <h3>Exterior Maintenance</h3>
+          <div class="plan-price-anchor">Starting at $90</div>
+          <div class="plan-savings">Save up to $30 compared to one-time services</div>
           <p>Routine exterior washing and protection to maintain shine and paint condition.</p>
           <div class="plan-buttons">
-            <button type="button" class="btn-plan" data-freq="biweekly" data-category="exterior">Biweekly</button>
-            <button type="button" class="btn-plan" data-freq="monthly" data-category="exterior">Monthly</button>
-            <button type="button" class="btn-plan" data-freq="quarterly" data-category="exterior">Quarterly</button>
+            <button type="button" class="btn-plan" data-freq="biweekly" data-category="exterior">Start Biweekly Plan</button>
+            <button type="button" class="btn-plan" data-freq="monthly" data-category="exterior">Start Monthly Plan</button>
+            <button type="button" class="btn-plan" data-freq="quarterly" data-category="exterior">Start Quarterly Plan</button>
           </div>
         </div>
       </div>

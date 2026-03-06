@@ -1074,7 +1074,9 @@ border:1px solid #7fb8e6;
 padding:14px;
 border-radius:12px;
 font-size:14px;
+position:relative;
 ">
+<button type="button" id="upsellClose" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:16px;cursor:pointer;">✕</button>
 
 Want to keep your vehicle consistently clean?
 
@@ -1093,6 +1095,8 @@ text-decoration:none;
 font-weight:600;
 ">
 View Maintenance Plans </a>
+
+<button type="button" id="upsellNoThanks" style="display:block;margin:10px auto 0;background:none;border:none;font-size:14px;cursor:pointer;color:#6b7280;text-decoration:underline;">No thanks</button>
 
 </div>
         <div id="serviceMeta" class="muted"></div>
@@ -1303,6 +1307,7 @@ elEnd.addEventListener("paste", (e) => e.preventDefault());
 
     // State
     let variantsCache = []; // {id, vehicle_size, price, duration_minutes, service:{category,level}}
+    let subscriptionPriceCache = [];
     let selectedVariant = null;
     let isSubmitting = false;
     let reviewDraft = null;
@@ -1907,6 +1912,7 @@ function computeScheduledEnd(startLocal, durationMinutes) {
           .filter(v => {
             const cat = v.service?.category ?? "Unknown Category";
             if (!SUBSCRIPTION_MODE && cat === "Monthly Detail") return false;
+            if (SUBSCRIPTION_MODE && cat === "Monthly Detail") return false;
             return true;
           })
           .map(v => (v.service?.category ?? "Unknown Category"))
@@ -1947,6 +1953,9 @@ function computeScheduledEnd(startLocal, durationMinutes) {
           renderServiceDropdown(vehicleSize, mapped);
         }
       }
+      if (SUBSCRIPTION_MODE) {
+        elServiceCategory.disabled = true;
+      }
     }
 
     function renderServiceDropdown(vehicleSize, category) {
@@ -1955,13 +1964,25 @@ function computeScheduledEnd(startLocal, durationMinutes) {
         .filter(v => {
           const cat = v.service?.category ?? "Unknown Category";
           if (!SUBSCRIPTION_MODE && cat === "Monthly Detail") return false;
+          if (SUBSCRIPTION_MODE && cat === "Monthly Detail") return false;
           return cat === category;
         })
         .map(v => {
           const cat = v.service?.category ?? "Unknown Category";
           const lvl = (v.service?.level ?? "?");
+          let displayPrice = v.price;
+          if (SUBSCRIPTION_MODE) {
+            const subPrice = subscriptionPriceCache.find(p =>
+              p.service_category === SUBSCRIPTION_CATEGORY &&
+              p.frequency === SUBSCRIPTION_FREQUENCY &&
+              p.vehicle_size === v.vehicle_size
+            );
+            if (subPrice) {
+              displayPrice = subPrice.price;
+            }
+          }
           const popularTag = isMostPopularVariant(v) ? " — Most popular" : "";
-          const label = `${uiCategoryLabel(cat)} — Level ${lvl} (${v.vehicle_size}) — ${v.duration_minutes} min — $${v.price}${popularTag}`;
+          const label = `${uiCategoryLabel(cat)} — Level ${lvl} (${v.vehicle_size}) — ${v.duration_minutes} min — $${displayPrice}${popularTag}`;
           return { id: v.id, label };
         });
 
@@ -1974,6 +1995,13 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       elServiceVariant.disabled = false;
       elServiceVariant.innerHTML = `<option value="">Select service…</option>` +
         filtered.map(o => `<option value="${o.id}">${o.label}</option>`).join("");
+    }
+
+    async function loadSubscriptionPrices() {
+      const { data } = await supabase
+        .from("subscription_prices")
+        .select("*");
+      subscriptionPriceCache = data || [];
     }
 
     async function loadServiceVariants() {
@@ -3211,6 +3239,7 @@ if (toggleBtn && calContainer) {
 
 async function bootApp() {
   try {
+    await loadSubscriptionPrices();
     await loadServiceVariants();
 
     if (RESCHEDULE_MODE) {
@@ -3239,7 +3268,15 @@ async function bootApp() {
 
 bootApp();
 
-                                                              
+    (function () {
+      const upsell = document.getElementById("maintenanceUpsell");
+      const hideUpsell = () => { if (upsell) upsell.style.display = "none"; };
+      const closeBtn = document.getElementById("upsellClose");
+      const noThanksBtn = document.getElementById("upsellNoThanks");
+      if (closeBtn) closeBtn.onclick = hideUpsell;
+      if (noThanksBtn) noThanksBtn.onclick = hideUpsell;
+    })();
+
   </script>
     <script
   src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAszMW1x5-TUHnlDkxpms-z4rDfHxDcTyI&libraries=places&loading=async"
