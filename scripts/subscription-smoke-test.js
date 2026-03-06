@@ -44,6 +44,17 @@ function qsBypass() {
   return BYPASS ? `?x-vercel-protection-bypass=${encodeURIComponent(BYPASS)}` : "";
 }
 
+function getCronHeaders() {
+  const headers = {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${process.env.CRON_SECRET}`
+  };
+  if (process.env.VERCEL_PROTECTION_BYPASS) {
+    headers["x-vercel-protection-bypass"] = process.env.VERCEL_PROTECTION_BYPASS;
+  }
+  return headers;
+}
+
 function getTestSlot() {
   const now = new Date();
   const testDate = new Date(now);
@@ -158,7 +169,7 @@ async function main() {
   try {
     const cronRes1 = await fetch(`${BASE_URL}/api/cron-generate-subscription-cycles`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${CRON_SECRET}` }
+      headers: getCronHeaders()
     });
     const cronJson1 = await cronRes1.json().catch(() => ({}));
     if (!cronRes1.ok) {
@@ -176,7 +187,7 @@ async function main() {
         open_cycle_id = openCycles[0].id;
         const cronRes2 = await fetch(`${BASE_URL}/api/cron-generate-subscription-cycles`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${CRON_SECRET}` }
+          headers: getCronHeaders()
         });
         await cronRes2.json();
         const { data: openCycles2 } = await supabase
@@ -253,7 +264,7 @@ async function main() {
       } else {
         const cronRes = await fetch(`${BASE_URL}/api/cron-generate-subscription-cycles`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${CRON_SECRET}` }
+          headers: getCronHeaders()
         });
         await cronRes.json();
         const { data: nextOpen } = await supabase
@@ -282,7 +293,7 @@ async function main() {
     } else {
       const missRes = await fetch(`${BASE_URL}/api/cron-check-missed-cycles`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${CRON_SECRET}` }
+        headers: getCronHeaders()
       });
       await missRes.json();
       const { data: c } = await supabase.from("subscription_cycles").select("status").eq("id", open_cycle_id).single();
@@ -301,7 +312,7 @@ async function main() {
   try {
     const cronRes = await fetch(`${BASE_URL}/api/cron-generate-subscription-cycles`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${CRON_SECRET}` }
+      headers: getCronHeaders()
     });
     await cronRes.json();
     const { data: nextCycle } = await supabase
@@ -363,7 +374,7 @@ async function main() {
   try {
     const cronRes = await fetch(`${BASE_URL}/api/cron-generate-subscription-cycles`, {
       method: "POST",
-      headers: { Authorization: `Bearer ${CRON_SECRET}` }
+      headers: getCronHeaders()
     });
     await cronRes.json();
     const { data: openCycle } = await supabase
