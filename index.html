@@ -1065,6 +1065,36 @@ label[for="start"] {
         <select id="serviceVariant" required disabled>
           <option value="">Select vehicle size first…</option>
         </select>
+        <div id="maintenanceUpsell" style="
+display:none;
+margin-top:14px;
+text-align:center;
+background:#f3f8ff;
+border:1px solid #7fb8e6;
+padding:14px;
+border-radius:12px;
+font-size:14px;
+">
+
+Want to keep your vehicle consistently clean?
+
+<div style="margin-top:6px;">
+<strong>Join a Maintenance Plan and save on recurring details.</strong>
+</div>
+
+<a href="/maintenance.html" style="
+display:inline-block;
+margin-top:10px;
+background:#7fb8e6;
+color:white;
+padding:8px 16px;
+border-radius:999px;
+text-decoration:none;
+font-weight:600;
+">
+View Maintenance Plans </a>
+
+</div>
         <div id="serviceMeta" class="muted"></div>
         <div id="serviceClarity" class="service-clarity" style="display:none;"></div>
       </div>
@@ -1155,6 +1185,36 @@ label[for="start"] {
       <h3>Review your booking</h3>
       <p style="font-size:13px; opacity:.7; margin:6px 0 12px;">Times are not reserved until you confirm.</p>
       <div id="reviewModalSummary" class="review-modal-summary"></div>
+      <div id="subscriptionTerms" style="display:none; margin-top:18px; text-align:left; font-size:13px; line-height:1.5;">
+        <strong>Maintenance Plan Terms</strong>
+
+        <p>Minimum commitment: 3 service cycles.</p>
+
+        <p>
+        Pushback policy:
+        <br>• 1 pushback allowed per cycle
+        <br>• Pushback extends the booking window by 5 business days
+        <br>• Pushback fee: 15% of service price
+        <br>• Fee waived if no valid booking slots existed
+        </p>
+
+        <p>
+        Missed cycle rule:
+        <br>• If a cycle expires without booking
+        <br>• The next service is charged full price
+        <br>• Discount resumes after the following completed cycle
+        </p>
+
+        <p>
+        Subscription activation:
+        <br>• The maintenance plan activates only after the first completed service.
+        </p>
+
+        <label style="display:flex; gap:8px; align-items:flex-start; margin-top:10px;">
+          <input type="checkbox" id="subscriptionAgreement">
+          <span>I understand and agree to the Moon Auto Detailing maintenance plan terms.</span>
+        </label>
+      </div>
       <div class="review-modal-actions">
         <button type="button" id="reviewModalBack" class="review-modal-back">Back</button>
         <button type="button" id="reviewModalConfirm" class="review-modal-confirm">Confirm</button>
@@ -1179,6 +1239,7 @@ const RESCHEDULE_MODE = Boolean(RESCHEDULE_TOKEN);
 const SUBSCRIPTION_MODE = urlParams.get("subscription") === "1";
 const SUBSCRIPTION_FREQUENCY = urlParams.get("frequency") || null;
 const SUBSCRIPTION_PLAN_VARIANT_ID = urlParams.get("plan_variant_id") || null;
+const SUBSCRIPTION_CATEGORY = urlParams.get("category") || null;
 
                                                                                                     //DEBUG SWITCH!!                                                                           
 
@@ -1843,8 +1904,21 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       const categories = [...new Set(
         variantsCache
           .filter(v => v.vehicle_size === vehicleSize)
+          .filter(v => {
+            const cat = v.service?.category ?? "Unknown Category";
+            if (!SUBSCRIPTION_MODE && cat === "Monthly Detail") return false;
+            return true;
+          })
           .map(v => (v.service?.category ?? "Unknown Category"))
       )];
+      const upsell = document.getElementById("maintenanceUpsell");
+      if (!SUBSCRIPTION_MODE && upsell) {
+        const hasMonthly = variantsCache.some(v =>
+          v.vehicle_size === vehicleSize &&
+          v.service?.category === "Monthly Detail"
+        );
+        upsell.style.display = hasMonthly ? "block" : "none";
+      }
       if (!categories.length) {
         resetServiceCategoryDropdown("No types for this size");
         return;
@@ -1861,11 +1935,28 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       elServiceCategory.disabled = false;
       elServiceCategory.innerHTML = `<option value="">Select type…</option>` +
         withLabel.map(o => `<option value="${o.value}">${o.display}</option>`).join("");
+      if (SUBSCRIPTION_MODE && SUBSCRIPTION_CATEGORY) {
+        const categoryMap = {
+          combined: "Combined Package",
+          interior: "Interior Detail",
+          exterior: "Exterior Detail"
+        };
+        const mapped = categoryMap[SUBSCRIPTION_CATEGORY];
+        if (mapped) {
+          elServiceCategory.value = mapped;
+          renderServiceDropdown(vehicleSize, mapped);
+        }
+      }
     }
 
     function renderServiceDropdown(vehicleSize, category) {
       const filtered = variantsCache
-        .filter(v => v.vehicle_size === vehicleSize && (v.service?.category ?? "Unknown Category") === category)
+        .filter(v => v.vehicle_size === vehicleSize)
+        .filter(v => {
+          const cat = v.service?.category ?? "Unknown Category";
+          if (!SUBSCRIPTION_MODE && cat === "Monthly Detail") return false;
+          return cat === category;
+        })
         .map(v => {
           const cat = v.service?.category ?? "Unknown Category";
           const lvl = (v.service?.level ?? "?");
@@ -1911,13 +2002,18 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       }
 
       // Validate minimum fields; log anomalies, don't crash
-      variantsCache = data.map(v => ({
-        id: v.id,
-        vehicle_size: normalizeVehicleSize(v.vehicle_size),
-        price: v.price,
-        duration_minutes: v.duration_minutes,
-        service: v.service || null
-      }));
+      variantsCache = data
+        .filter(v => {
+          if (SUBSCRIPTION_MODE && v.service?.level !== 1) return false;
+          return true;
+        })
+        .map(v => ({
+          id: v.id,
+          vehicle_size: normalizeVehicleSize(v.vehicle_size),
+          price: v.price,
+          duration_minutes: v.duration_minutes,
+          service: v.service || null
+        }));
 
       setStatus("muted", "");
       log("Loaded service variants", { count: variantsCache.length });            //SERVICE VARIANTS DEBUG ENDS HERE
@@ -2320,6 +2416,15 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
     const elReviewBack = document.getElementById("reviewModalBack");
     const elReviewConfirm = document.getElementById("reviewModalConfirm");
 
+    const agreementBox = document.getElementById("subscriptionAgreement");
+    if (agreementBox) {
+      agreementBox.addEventListener("change", () => {
+        if (SUBSCRIPTION_MODE) {
+          elReviewConfirm.disabled = !agreementBox.checked;
+        }
+      });
+    }
+
     function openReviewModal(draft) {
       reviewDraft = draft;
       reviewIsOpen = true;
@@ -2343,6 +2448,17 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
         <p><strong>Total:</strong> ${fmt(total)}</p>
         <p>Click Confirm to create your booking.</p>
       `;
+      const termsBlock = document.getElementById("subscriptionTerms");
+      const agreementBox = document.getElementById("subscriptionAgreement");
+
+      if (SUBSCRIPTION_MODE) {
+        termsBlock.style.display = "block";
+        agreementBox.checked = false;
+        elReviewConfirm.disabled = true;
+      } else {
+        termsBlock.style.display = "none";
+      }
+
       elReviewOverlay.classList.add("is-open");
       elReviewOverlay.setAttribute("aria-hidden", "false");
     }
@@ -2439,7 +2555,10 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
             scheduled_start: draft.scheduled_start,
             scheduled_end: draft.scheduled_end,
             service_address: draft.service_address,
-            service_variant_id: draft.service_variant_id
+            service_variant_id: draft.service_variant_id,
+            subscription_mode: SUBSCRIPTION_MODE,
+            subscription_category: SUBSCRIPTION_CATEGORY,
+            subscription_frequency: SUBSCRIPTION_FREQUENCY
           })
         });
 

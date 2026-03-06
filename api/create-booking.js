@@ -173,13 +173,25 @@ export default async function handler(req, res) {
 
     const { data: variantRow } = await supabase
       .from("service_variants")
-      .select("price")
+      .select("price, vehicle_size")
       .eq("id", service_variant_id)
       .single();
     if (!variantRow || variantRow.price == null) {
       return res.status(400).json({ ok: false, message: "Invalid service variant." });
     }
-    const base_price = Number(variantRow.price);
+    let base_price = Number(variantRow.price);
+    if (req.body.subscription_mode === true) {
+      const { data: subPrice } = await supabase
+        .from("subscription_prices")
+        .select("price")
+        .eq("service_category", req.body.subscription_category)
+        .eq("frequency", req.body.subscription_frequency)
+        .eq("vehicle_size", variantRow.vehicle_size)
+        .single();
+      if (subPrice) {
+        base_price = subPrice.price;
+      }
+    }
 
     const dayStr = scheduled_start.slice(0, 10);
     const dayDate = getDayStartUtcForBusinessTZ(dayStr);
