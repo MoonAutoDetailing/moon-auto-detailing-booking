@@ -271,6 +271,8 @@ export default async function handler(req, res) {
       return res.status(500).json({ ok: false, message: "Booking creation failed. Please try again." });
     }
 
+    const bookingId = booking.id;
+
     const subscriptionId = body.subscription_id;
     if (subscriptionId) {
       const { data: subscription } = await supabase
@@ -305,11 +307,15 @@ export default async function handler(req, res) {
       if (existingLink) {
         return res.status(409).json({ ok: false, message: "This subscription cycle already has a booking." });
       }
+      console.log("ATTACHING_BOOKING_TO_CYCLE", {
+        cycle_id: cycle.id,
+        booking_id: bookingId
+      });
       const { error: linkErr } = await supabase
         .from("subscription_cycle_bookings")
         .insert({
           cycle_id: cycle.id,
-          booking_id: booking.id,
+          booking_id: bookingId,
           price_mode: "subscription"
         });
       if (linkErr) {
@@ -320,7 +326,7 @@ export default async function handler(req, res) {
         .from("subscription_cycles")
         .update({ status: "booked" })
         .eq("id", cycle.id);
-      console.log("CYCLE_BOOKED", { cycle_id: cycle.id, booking_id: booking.id });
+      console.log("CYCLE_BOOKED", { cycle_id: cycle.id, booking_id: bookingId });
     }
 
     try {
