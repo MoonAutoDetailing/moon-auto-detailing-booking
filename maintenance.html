@@ -251,6 +251,42 @@
       gap: 8px;
     }
 
+    .plan-price-main {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 6px 0 10px;
+    }
+
+    .plan-price-compare {
+      font-size: 14px;
+      color: #555;
+      margin-bottom: 10px;
+    }
+
+    .plan-price-compare .plan-savings {
+      font-weight: 600;
+      color: #2a7bdc;
+      margin-top: 4px;
+    }
+
+    .plan-price-breakdown {
+      margin: 12px 0;
+      font-size: 15px;
+    }
+
+    .plan-price-breakdown div {
+      display: flex;
+      justify-content: space-between;
+      padding: 2px 0;
+    }
+
+    .plan-benefits {
+      margin: 12px 0 18px;
+      padding-left: 18px;
+      font-size: 14px;
+      color: #444;
+    }
+
     /* ----- Section 4: Program Rules ----- */
     .rules-section {
       padding: 24px 0 48px;
@@ -345,9 +381,22 @@
         <div class="plan-card featured">
           <span class="plan-badge">Most Popular</span>
           <h3>Combined Maintenance</h3>
-          <div class="plan-price-anchor">Starting at $200</div>
-          <div class="plan-savings">Save up to $80 compared to one-time services</div>
-          <p>Full interior and exterior maintenance to keep your vehicle consistently clean.</p>
+          <div class="plan-price-main">$200 / visit</div>
+          <div class="plan-price-compare">
+            <div>Regular Detail Price <strong>$280</strong></div>
+            <div>Maintenance Price <strong>$200</strong></div>
+            <div class="plan-savings">You save $80 every visit</div>
+          </div>
+          <div class="plan-price-breakdown">
+            <div><span>Compact</span><span>$200</span></div>
+            <div><span>Midsize</span><span>$220</span></div>
+            <div><span>Oversized</span><span>$240</span></div>
+          </div>
+          <ul class="plan-benefits">
+            <li>Full interior + exterior upkeep</li>
+            <li>Faster maintenance visits</li>
+            <li>Priority booking windows</li>
+          </ul>
           <div class="plan-buttons">
             <button type="button" class="btn-plan" data-freq="biweekly" data-category="combined">Start Biweekly Plan</button>
             <button type="button" class="btn-plan" data-freq="monthly" data-category="combined">Start Monthly Plan</button>
@@ -357,9 +406,22 @@
         <!-- Card 2: Interior -->
         <div class="plan-card">
           <h3>Interior Maintenance</h3>
-          <div class="plan-price-anchor">Starting at $150</div>
-          <div class="plan-savings">Save up to $50 compared to one-time services</div>
-          <p>Regular interior cleaning to keep your cabin fresh and comfortable.</p>
+          <div class="plan-price-main">$150 / visit</div>
+          <div class="plan-price-compare">
+            <div>Regular Detail Price <strong>$200</strong></div>
+            <div>Maintenance Price <strong>$150</strong></div>
+            <div class="plan-savings">You save $50 every visit</div>
+          </div>
+          <div class="plan-price-breakdown">
+            <div><span>Compact</span><span>$150</span></div>
+            <div><span>Midsize</span><span>$170</span></div>
+            <div><span>Oversized</span><span>$190</span></div>
+          </div>
+          <ul class="plan-benefits">
+            <li>Keeps cabin consistently clean</li>
+            <li>Faster interior refresh visits</li>
+            <li>Flexible maintenance scheduling</li>
+          </ul>
           <div class="plan-buttons">
             <button type="button" class="btn-plan" data-freq="biweekly" data-category="interior">Start Biweekly Plan</button>
             <button type="button" class="btn-plan" data-freq="monthly" data-category="interior">Start Monthly Plan</button>
@@ -369,9 +431,22 @@
         <!-- Card 3: Exterior -->
         <div class="plan-card">
           <h3>Exterior Maintenance</h3>
-          <div class="plan-price-anchor">Starting at $90</div>
-          <div class="plan-savings">Save up to $30 compared to one-time services</div>
-          <p>Routine exterior washing and protection to maintain shine and paint condition.</p>
+          <div class="plan-price-main">$90 / visit</div>
+          <div class="plan-price-compare">
+            <div>Regular Detail Price <strong>$120</strong></div>
+            <div>Maintenance Price <strong>$90</strong></div>
+            <div class="plan-savings">You save $30 every visit</div>
+          </div>
+          <div class="plan-price-breakdown">
+            <div><span>Compact</span><span>$90</span></div>
+            <div><span>Midsize</span><span>$110</span></div>
+            <div><span>Oversized</span><span>$130</span></div>
+          </div>
+          <ul class="plan-benefits">
+            <li>Protects paint and wheels</li>
+            <li>Prevents buildup and staining</li>
+            <li>Fast maintenance washes</li>
+          </ul>
           <div class="plan-buttons">
             <button type="button" class="btn-plan" data-freq="biweekly" data-category="exterior">Start Biweekly Plan</button>
             <button type="button" class="btn-plan" data-freq="monthly" data-category="exterior">Start Monthly Plan</button>
