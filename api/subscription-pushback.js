@@ -14,6 +14,11 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).end();
 
+  const auth = req.headers.authorization;
+  if (!auth || auth !== `Bearer ${process.env.CRON_SECRET}`) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
   try {
     const body = req.body || {};
     const cycleId = body.cycle_id;

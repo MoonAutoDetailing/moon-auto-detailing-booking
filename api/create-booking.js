@@ -5,7 +5,6 @@ import { rateLimit } from "./_rateLimit.js";
 import { checkAvailability } from "./_availability.js";
 import getTravelMinutes from "./_routing/getTravelMinutes.js";
 import { sendBookingCreatedEmailCore } from "../lib/email/sendBookingCreatedEmail.js";
-import { getEffectiveWindowEnd } from "./_subscriptions/lifecycle.js";
 
 const BASE_ADDRESS = process.env.BASE_ADDRESS;
 const BUSINESS_TZ = "America/New_York";
@@ -282,22 +281,20 @@ export default async function handler(req, res) {
       if (!subscription || subscription.status !== "active") {
         return res.status(400).json({ ok: false, message: "Invalid or inactive subscription." });
       }
-      const { data: cycle } = await supabase
+      const { data: cycle, error: cycleErr } = await supabase
         .from("subscription_cycles")
-        .select("id, window_start_date, window_end_date, pushback_used, pushback_end_date")
+        .select("*")
         .eq("subscription_id", subscriptionId)
-        .in("status", ["open"])
-        .limit(1)
+        .eq("status", "open")
         .maybeSingle();
-      if (!cycle) {
+      if (cycleErr || !cycle) {
         return res.status(400).json({ ok: false, message: "No open subscription window for this cycle." });
       }
       const bookingDate = scheduled_start.slice(0, 10);
-      const windowEnd = getEffectiveWindowEnd(cycle);
-      const inMainWindow = bookingDate >= cycle.window_start_date && bookingDate <= (cycle.window_end_date || "");
-      const inPushback = cycle.pushback_used && cycle.pushback_end_date
-        && bookingDate >= cycle.window_end_date && bookingDate <= cycle.pushback_end_date;
-      if (!inMainWindow && !inPushback) {
+      if (
+        bookingDate < cycle.window_start_date ||
+        (cycle.window_end_date && bookingDate > cycle.window_end_date)
+      ) {
         return res.status(400).json({ ok: false, message: "Booking date is outside this subscription window." });
       }
       const { data: existingLink } = await supabase
@@ -311,7 +308,11 @@ export default async function handler(req, res) {
       }
       const { error: linkErr } = await supabase
         .from("subscription_cycle_bookings")
-        .insert({ cycle_id: cycle.id, booking_id: booking.id });
+        .insert({
+          cycle_id: cycle.id,
+          booking_id: booking.id,
+          price_mode: "subscription"
+        });
       if (linkErr) {
         console.error("[create-booking] subscription_cycle_bookings insert", linkErr);
         return res.status(500).json({ ok: false, message: "Failed to attach booking to subscription cycle." });

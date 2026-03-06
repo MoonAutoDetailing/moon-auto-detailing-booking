@@ -88,26 +88,31 @@ export default async function handler(req, res) {
       .eq("booking_id", bookingId)
       .maybeSingle();
     if (cycleBooking) {
+      const cycleId = cycleBooking.cycle_id;
+      await supabase
+        .from("subscription_cycles")
+        .update({ status: "completed" })
+        .eq("id", cycleId);
+      console.log("CYCLE_COMPLETED", { cycle_id: cycleId, booking_id: bookingId });
       const { data: cycle } = await supabase
         .from("subscription_cycles")
-        .select("id, subscription_id")
-        .eq("id", cycleBooking.cycle_id)
+        .select("subscription_id")
+        .eq("id", cycleId)
         .single();
       if (cycle) {
-        await supabase
-          .from("subscription_cycles")
-          .update({ status: "completed" })
-          .eq("id", cycle.id);
-        console.log("CYCLE_COMPLETED", { cycle_id: cycle.id, booking_id: bookingId });
         const { data: sub } = await supabase
           .from("subscriptions")
-          .select("id, discount_reset_required")
+          .select("id, discount_reset_required, completed_cycles_count")
           .eq("id", cycle.subscription_id)
           .single();
-        if (sub && sub.discount_reset_required) {
+        if (sub) {
+          const updates = { completed_cycles_count: (sub.completed_cycles_count ?? 0) + 1 };
+          if (sub.discount_reset_required) {
+            updates.discount_reset_required = false;
+          }
           await supabase
             .from("subscriptions")
-            .update({ discount_reset_required: false })
+            .update(updates)
             .eq("id", sub.id);
         }
       }

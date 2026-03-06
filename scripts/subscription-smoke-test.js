@@ -389,7 +389,7 @@ async function main() {
     } else {
       const pushRes1 = await fetch(`${BASE_URL}/api/subscription-pushback`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: getCronHeaders(),
         body: JSON.stringify({ cycle_id: openCycle.id })
       });
       const pushJson1 = await pushRes1.json().catch(() => ({}));
@@ -404,7 +404,7 @@ async function main() {
         } else {
           const pushRes2 = await fetch(`${BASE_URL}/api/subscription-pushback`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: getCronHeaders(),
             body: JSON.stringify({ cycle_id: openCycle.id })
           });
           const pushJson2 = await pushRes2.json().catch(() => ({}));
