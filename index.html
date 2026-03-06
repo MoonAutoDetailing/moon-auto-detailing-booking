@@ -1076,7 +1076,6 @@ border-radius:12px;
 font-size:14px;
 position:relative;
 ">
-<button type="button" id="upsellClose" style="position:absolute;top:10px;right:12px;background:none;border:none;font-size:16px;cursor:pointer;">✕</button>
 
 Want to keep your vehicle consistently clean?
 
@@ -1995,6 +1994,12 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       elServiceVariant.disabled = false;
       elServiceVariant.innerHTML = `<option value="">Select service…</option>` +
         filtered.map(o => `<option value="${o.id}">${o.label}</option>`).join("");
+      if (SUBSCRIPTION_MODE) {
+        if (elServiceVariant.options.length === 2) {
+          elServiceVariant.selectedIndex = 1;
+          elServiceVariant.dispatchEvent(new Event("change"));
+        }
+      }
     }
 
     async function loadSubscriptionPrices() {
@@ -2071,7 +2076,24 @@ function computeScheduledEnd(startLocal, durationMinutes) {
         return;
       }
       renderServiceCategoryDropdown(vs);
-      resetServiceDropdown("Select service type first…");
+      if (SUBSCRIPTION_MODE && SUBSCRIPTION_CATEGORY) {
+        const categoryMap = {
+          combined: "Combined Package",
+          interior: "Interior Detail",
+          exterior: "Exterior Detail"
+        };
+        const mapped = categoryMap[SUBSCRIPTION_CATEGORY];
+        if (mapped) {
+          elServiceCategory.value = mapped;
+          renderServiceDropdown(vs, mapped);
+          if (elServiceVariant.options.length === 2) {
+            elServiceVariant.selectedIndex = 1;
+            elServiceVariant.dispatchEvent(new Event("change"));
+          }
+        }
+      } else {
+        resetServiceDropdown("Select service type first…");
+      }
     });
 
     elServiceCategory.addEventListener("change", () => {
@@ -3271,9 +3293,7 @@ bootApp();
     (function () {
       const upsell = document.getElementById("maintenanceUpsell");
       const hideUpsell = () => { if (upsell) upsell.style.display = "none"; };
-      const closeBtn = document.getElementById("upsellClose");
       const noThanksBtn = document.getElementById("upsellNoThanks");
-      if (closeBtn) closeBtn.onclick = hideUpsell;
       if (noThanksBtn) noThanksBtn.onclick = hideUpsell;
     })();
 
