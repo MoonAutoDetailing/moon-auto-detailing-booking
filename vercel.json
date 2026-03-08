@@ -9,5 +9,15 @@
         }
       ]
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron-generate-subscription-cycles",
+      "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron-check-missed-cycles",
+      "schedule": "5 2 * * *"
+    }
   ]
 }
