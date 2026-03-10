@@ -828,28 +828,30 @@
 
       function bindActions() {
         const actions = portalData.actions || {};
+        const sub = portalData.subscription;
         const canCancel = actions.can_cancel_subscription === true;
         const cycle = portalData.active_cycle;
         const cycleBody = document.getElementById('cycleBody');
-        if (canCancel && cycle) {
-          let cancelHtml = '';
+        if (canCancel && cycle && sub && sub.status !== 'cancelled') {
           const existing = document.getElementById('cancelSubRow');
           if (!existing) {
-            cancelHtml = '<div class="action-row" id="cancelSubRow"><button type="button" class="btn btn-danger btn-block" id="cancelSubBtn">Cancel subscription</button></div>';
+            const cancelHtml = '<div class="action-row" id="cancelSubRow"><button type="button" class="btn btn-danger btn-block" id="cancelSubBtn">Cancel subscription</button></div>';
             cycleBody.insertAdjacentHTML('beforeend', cancelHtml);
             document.getElementById('cancelSubBtn').onclick = openCancelModal;
           }
-        } else {
-          const sub = portalData.subscription;
-          if (sub && sub.status !== 'cancelled') {
-            let msg = 'You can cancel your plan after completing at least 3 cycles.';
-            if ((sub.completed_cycles_count ?? 0) >= 1) {
-              msg = 'Complete ' + (3 - (sub.completed_cycles_count || 0)) + ' more cycle(s) to be able to cancel your plan.';
-            }
-            const existing = document.getElementById('cancelSubRow');
-            if (!existing) {
-              cycleBody.insertAdjacentHTML('beforeend', '<div class="cancel-disabled-msg" id="cancelSubRow">' + msg + '</div>');
-            }
+        } else if (sub && sub.status === 'cancelled') {
+          const existing = document.getElementById('cancelSubRow');
+          if (!existing) {
+            cycleBody.insertAdjacentHTML('beforeend', '<div class="cancel-disabled-msg" id="cancelSubRow">This subscription has been cancelled.</div>');
+          }
+        } else if (sub && sub.status !== 'cancelled') {
+          let msg = 'You can cancel your plan after completing at least 3 cycles.';
+          if ((sub.completed_cycles_count ?? 0) >= 1) {
+            msg = 'Complete ' + (3 - (sub.completed_cycles_count || 0)) + ' more cycle(s) to be able to cancel your plan.';
+          }
+          const existing = document.getElementById('cancelSubRow');
+          if (!existing) {
+            cycleBody.insertAdjacentHTML('beforeend', '<div class="cancel-disabled-msg" id="cancelSubRow">' + msg + '</div>');
           }
         }
       }
