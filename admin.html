@@ -705,6 +705,7 @@ let cachedViews = {
   upcoming: [],
 };
      let reloadHistoryPage = null;
+     let reloadSubscriptionsPage = null;
      let historyPage = 1;
 const historyPageSize = 20;
 let filteredHistory = [];
@@ -732,6 +733,13 @@ const viewContainer = document.getElementById("viewContainer");
   }
   return;
 }
+
+    if (currentView === "subscriptions") {
+      if (reloadSubscriptionsPage) {
+        await reloadSubscriptionsPage();
+      }
+      return;
+    }
 
     // NORMAL VIEWS — show loading message
     viewContainer.innerHTML =
@@ -1279,7 +1287,8 @@ function renderButtons() {
     { key: "pending", label: "Pending Bookings" },
     { key: "today", label: "Today's Schedule" },
     { key: "upcoming", label: "Upcoming Bookings" },
-    { key: "history", label: "History" }
+    { key: "history", label: "History" },
+    { key: "subscriptions", label: "Subscriptions" }
   ];
 
   buttons.forEach(btn => {
@@ -1429,6 +1438,219 @@ function renderView(viewName) {
     dateInput.addEventListener("change", () => loadHistoryPage(1));
        reloadHistoryPage = loadHistoryPage;
     loadHistoryPage(1);
+    return;
+  }
+
+  // =========================
+  // SUBSCRIPTIONS (ADMIN)
+  // =========================
+  if (viewName === "subscriptions") {
+    const wrapper = document.createElement("div");
+    wrapper.style.display = "flex";
+    wrapper.style.flexDirection = "column";
+    wrapper.style.gap = "20px";
+
+    const filterRow = document.createElement("div");
+    filterRow.style.display = "flex";
+    filterRow.style.flexWrap = "wrap";
+    filterRow.style.justifyContent = "center";
+    filterRow.style.gap = "10px";
+    filterRow.style.marginBottom = "10px";
+
+    const statusSelect = document.createElement("select");
+    statusSelect.style.padding = "6px 10px";
+    statusSelect.style.borderRadius = "6px";
+    statusSelect.style.border = "1px solid #ffffff40";
+    statusSelect.style.background = "rgba(255,255,255,0.08)";
+    statusSelect.style.color = "white";
+    statusSelect.innerHTML = "<option value=''>All statuses</option><option value='active'>active</option><option value='paused'>paused</option><option value='cancelled'>cancelled</option><option value='pending_activation'>pending_activation</option>";
+
+    const freqSelect = document.createElement("select");
+    freqSelect.style.padding = "6px 10px";
+    freqSelect.style.borderRadius = "6px";
+    freqSelect.style.border = "1px solid #ffffff40";
+    freqSelect.style.background = "rgba(255,255,255,0.08)";
+    freqSelect.style.color = "white";
+    freqSelect.innerHTML = "<option value=''>All frequencies</option><option value='biweekly'>biweekly</option><option value='monthly'>monthly</option><option value='quarterly'>quarterly</option>";
+
+    const searchInputSub = document.createElement("input");
+    searchInputSub.type = "text";
+    searchInputSub.placeholder = "Search customer name, email, phone";
+    searchInputSub.style.padding = "6px 10px";
+    searchInputSub.style.borderRadius = "6px";
+    searchInputSub.style.border = "1px solid #ffffff40";
+    searchInputSub.style.background = "rgba(255,255,255,0.08)";
+    searchInputSub.style.color = "white";
+    searchInputSub.style.minWidth = "200px";
+
+    filterRow.appendChild(statusSelect);
+    filterRow.appendChild(freqSelect);
+    filterRow.appendChild(searchInputSub);
+    wrapper.appendChild(filterRow);
+
+    const listContainer = document.createElement("div");
+    listContainer.style.overflowX = "auto";
+    wrapper.appendChild(listContainer);
+
+    const detailPanel = document.createElement("div");
+    detailPanel.id = "subscriptionDetailPanel";
+    detailPanel.style.display = "none";
+    detailPanel.style.marginTop = "20px";
+    detailPanel.style.padding = "18px";
+    detailPanel.style.borderRadius = "14px";
+    detailPanel.style.border = "1px solid rgba(255,255,255,0.2)";
+    detailPanel.style.background = "rgba(111,147,196,0.2)";
+    wrapper.appendChild(detailPanel);
+
+    viewContainer.appendChild(wrapper);
+
+    let selectedSubscriptionId = null;
+
+    async function loadSubscriptionsList() {
+      listContainer.innerHTML = "Loading subscriptions...";
+      const params = new URLSearchParams();
+      if (statusSelect.value) params.append("status", statusSelect.value);
+      if (freqSelect.value) params.append("frequency", freqSelect.value);
+      if (searchInputSub.value.trim()) params.append("q", searchInputSub.value.trim());
+      try {
+        const res = await adminFetch(`/api/admin-subscriptions?${params.toString()}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to load");
+        const subs = data.subscriptions || [];
+        if (subs.length === 0) {
+          listContainer.innerHTML = "<div style='margin-top:20px;font-weight:600;'>No subscriptions found.</div>";
+          return;
+        }
+        const table = document.createElement("table");
+        table.style.width = "100%";
+        table.style.borderCollapse = "collapse";
+        table.style.color = "white";
+        table.innerHTML = `
+          <thead>
+            <tr style="border-bottom:1px solid rgba(255,255,255,0.3);text-align:left;">
+              <th style="padding:8px;">Customer</th>
+              <th style="padding:8px;">Vehicle / Service</th>
+              <th style="padding:8px;">Freq</th>
+              <th style="padding:8px;">Status</th>
+              <th style="padding:8px;">Anchor</th>
+              <th style="padding:8px;">Cycles</th>
+              <th style="padding:8px;">Active cycle</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        `;
+        const tbody = table.querySelector("tbody");
+        subs.forEach(s => {
+          const tr = document.createElement("tr");
+          tr.style.borderBottom = "1px solid rgba(255,255,255,0.1)";
+          tr.style.cursor = "pointer";
+          tr.dataset.subId = s.id;
+          const ac = s.active_cycle;
+          const acText = ac ? `${ac.status} ${ac.window_start_date}–${ac.effective_window_end || ac.window_end_date} ${ac.has_booking ? "(booked)" : ""}` : "—";
+          tr.innerHTML = `
+            <td style="padding:8px;">${(s.customer_name || "").trim() || "—"} ${s.email ? "(" + s.email + ")" : ""}</td>
+            <td style="padding:8px;">${s.vehicle_summary || "—"} / ${s.service_summary || "—"}</td>
+            <td style="padding:8px;">${s.frequency || "—"}</td>
+            <td style="padding:8px;"><span class="status-badge status-${s.status || ""}">${s.status || "—"}</span></td>
+            <td style="padding:8px;">${s.anchor_date || "—"}</td>
+            <td style="padding:8px;">${s.completed_cycles_count ?? 0} / ${s.missed_cycles_count ?? 0}</td>
+            <td style="padding:8px;">${acText}</td>
+          `;
+          tr.onclick = () => { selectedSubscriptionId = s.id; loadSubscriptionDetail(s.id); };
+          tbody.appendChild(tr);
+        });
+        listContainer.innerHTML = "";
+        listContainer.appendChild(table);
+      } catch (err) {
+        listContainer.innerHTML = "<div style='margin-top:20px;color:#ff6b6b;'>" + (err.message || "Failed to load subscriptions") + "</div>";
+      }
+    }
+
+    async function loadSubscriptionDetail(id) {
+      detailPanel.style.display = "block";
+      detailPanel.innerHTML = "Loading detail...";
+      try {
+        const res = await adminFetch(`/api/admin-subscription-detail?id=${encodeURIComponent(id)}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to load detail");
+        const sub = data.subscription;
+        const metrics = data.metrics || {};
+        const activeCycle = data.active_cycle;
+        const history = data.history || [];
+        const recentBookings = data.recent_booking_history || [];
+        let html = `
+          <h3 style="margin-top:0;">Subscription ${sub.id}</h3>
+          <p><strong>Customer:</strong> ${sub.customer_name || "—"} | ${sub.email || "—"} | ${sub.phone || "—"}</p>
+          <p><strong>Vehicle:</strong> ${sub.vehicle_summary || "—"} | <strong>Service:</strong> ${sub.service_summary || "—"}</p>
+          <p><strong>Status:</strong> <span class="status-badge status-${sub.status}">${sub.status}</span> | <strong>Frequency:</strong> ${sub.frequency} | <strong>Anchor:</strong> ${sub.anchor_date || "—"}</p>
+          <p><strong>Completed / Missed cycles:</strong> ${metrics.completed_cycles ?? 0} / ${metrics.missed_cycles ?? 0} | <strong>Age (days):</strong> ${metrics.subscription_age_days ?? "—"} | <strong>Lifetime value (incl. fees):</strong> $${(metrics.lifetime_value ?? 0).toFixed(2)}</p>
+          ${activeCycle ? `<p><strong>Active cycle:</strong> ${activeCycle.window_start_date} – ${activeCycle.effective_window_end || activeCycle.window_end_date} (${activeCycle.status}) ${data.active_cycle_booking ? "— has booking" : ""}</p>` : "<p>No active cycle.</p>"}
+          <div style="margin-top:12px;"><strong>Recent cycle history:</strong></div>
+          <ul style="margin:4px 0;padding-left:20px;">${history.slice(0, 6).map(c => `<li>#${c.cycle_index} ${c.status} ${c.window_start_date}–${c.effective_window_end || c.window_end_date}</li>`).join("")}</ul>
+          ${recentBookings.length ? `<div style="margin-top:8px;"><strong>Recent bookings:</strong></div><ul style="margin:4px 0;padding-left:20px;">${recentBookings.slice(0, 5).map(b => `<li>${b.scheduled_start ? new Date(b.scheduled_start).toLocaleString() : ""} ${b.status} $${(b.display_total ?? b.total_price ?? 0).toFixed(2)}</li>`).join("")}</ul>` : ""}
+          <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;">
+        `;
+        const canPause = sub.status === "active";
+        const canResume = sub.status === "paused";
+        const canCancel = sub.status !== "cancelled";
+        const canExtend = activeCycle && activeCycle.status === "open" && !data.active_cycle_booking && !activeCycle.pushback_used;
+        const canForceCreate = sub.status === "active" && !activeCycle;
+        const canChangePlan = activeCycle && activeCycle.status === "open" && !data.active_cycle_booking;
+        if (canPause) html += `<button class="moon-tab" data-action="pause">Pause</button>`;
+        if (canResume) html += `<button class="moon-tab" data-action="resume">Resume</button>`;
+        if (canCancel) html += `<button class="moon-tab" data-action="cancel">Cancel</button>`;
+        if (canExtend) html += `<button class="moon-tab" data-action="extend">Extend cycle</button>`;
+        if (canForceCreate) html += `<button class="moon-tab" data-action="forceCreate">Force create cycle</button>`;
+        if (canChangePlan) html += `<button class="moon-tab" data-action="changePlan">Change plan</button>`;
+        html += "</div>";
+        detailPanel.innerHTML = html;
+        detailPanel.querySelectorAll("[data-action]").forEach(btn => {
+          btn.onclick = async () => {
+            const action = btn.dataset.action;
+            if (action === "changePlan") {
+              const freq = prompt("New frequency (biweekly, monthly, quarterly)? Leave blank to keep.");
+              if (freq === null) return;
+              const svId = prompt("New service_variant_id (UUID)? Leave blank to keep.");
+              const body = { subscription_id: id };
+              if (freq && ["biweekly", "monthly", "quarterly"].includes(freq)) body.frequency = freq;
+              if (svId && svId.trim()) body.service_variant_id = svId.trim();
+              if (!body.frequency && !body.service_variant_id) return;
+              try {
+                const r = await adminFetch("/api/admin-change-subscription-plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+                const d = await r.json();
+                if (!r.ok) throw new Error(d.error || "Failed");
+                showToast("Plan updated.");
+                loadSubscriptionDetail(id);
+                loadSubscriptionsList();
+              } catch (e) { showToast("Error: " + (e.message || "Unknown")); }
+              return;
+            }
+            const endpoints = { pause: "/api/admin-pause-subscription", resume: "/api/admin-resume-subscription", cancel: "/api/admin-cancel-subscription", extend: "/api/admin-extend-subscription-cycle", forceCreate: "/api/admin-force-create-subscription-cycle" };
+            const url = endpoints[action];
+            if (!url) return;
+            btn.disabled = true;
+            try {
+              const r = await adminFetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription_id: id }) });
+              const d = await r.json();
+              if (!r.ok) throw new Error(d.error || "Failed");
+              showToast(d.message || "Done.");
+              loadSubscriptionDetail(id);
+              loadSubscriptionsList();
+            } catch (e) { showToast("Error: " + (e.message || "Unknown")); }
+            btn.disabled = false;
+          };
+        });
+      } catch (err) {
+        detailPanel.innerHTML = "<div style='color:#ff6b6b;'>" + (err.message || "Failed to load detail") + "</div>";
+      }
+    }
+
+    searchInputSub.addEventListener("keydown", (e) => { if (e.key === "Enter") loadSubscriptionsList(); });
+    statusSelect.addEventListener("change", loadSubscriptionsList);
+    freqSelect.addEventListener("change", loadSubscriptionsList);
+
+    reloadSubscriptionsPage = loadSubscriptionsList;
+    loadSubscriptionsList();
     return;
   }
 

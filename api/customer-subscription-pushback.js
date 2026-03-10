@@ -8,6 +8,99 @@ function requireEnv(name) {
   return v;
 }
 
+/**
+ * Returns business days (YYYY-MM-DD) from start through end inclusive. Skips Saturday/Sunday.
+ */
+function getBusinessDaysInRange(startDateStr, endDateStr) {
+  const m = startDateStr && startDateStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return [];
+  let d = new Date(parseInt(m[1], 10), parseInt(m[2], 10) - 1, parseInt(m[3], 10));
+  const endM = endDateStr && endDateStr.trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!endM) return [];
+  const endDate = new Date(parseInt(endM[1], 10), parseInt(endM[2], 10) - 1, parseInt(endM[3], 10));
+  const out = [];
+  while (d <= endDate) {
+    const day = d.getDay();
+    if (day !== 0 && day !== 6) {
+      const y = d.getFullYear();
+      const month = (d.getMonth() + 1).toString().padStart(2, "0");
+      const dayNum = d.getDate().toString().padStart(2, "0");
+      out.push(`${y}-${month}-${dayNum}`);
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+}
+
+function getBaseUrl(req) {
+  const envBase = process.env.PUBLIC_BASE_URL;
+  if (envBase && typeof envBase === "string" && envBase.trim()) {
+    return envBase.trim().replace(/\/$/, "");
+  }
+  const proto = req.headers["x-forwarded-proto"] || "https";
+  const host = req.headers["host"];
+  if (host) return `${proto}://${host}`;
+  return null;
+}
+
+/**
+ * Call real get-availability for one day. Returns { slotsCount, routing_error, failed }.
+ * failed true = non-200 or throw or routing_error; do not apply pushback.
+ */
+async function fetchSlotsForDay(baseUrl, day, durationMinutes, serviceAddress) {
+  const params = new URLSearchParams({
+    day,
+    duration_minutes: String(durationMinutes),
+    service_address: serviceAddress
+  });
+  const url = `${baseUrl}/api/get-availability?${params.toString()}`;
+  const res = await fetch(url);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    return { slotsCount: 0, routing_error: false, failed: true };
+  }
+  if (data.routing_error === true) {
+    return { slotsCount: 0, routing_error: true, failed: true };
+  }
+  const slots = Array.isArray(data.slots) ? data.slots : [];
+  return { slotsCount: slots.length, routing_error: false, failed: false };
+}
+
+/**
+ * Determine free_pushback: true only if every business day in the cycle window had zero valid slots.
+ * Uses the real get-availability endpoint. Stops early if any day has slots.
+ */
+async function computeFreePushback(req, activeCycle, subscription) {
+  const durationMinutes = subscription.service_variants?.duration_minutes;
+  const numDuration = Number(durationMinutes);
+  if (!Number.isFinite(numDuration) || numDuration <= 0) {
+    return { free_pushback: false, error: "Invalid or missing service duration for availability check." };
+  }
+  const defaultAddress = subscription.default_address;
+  if (!defaultAddress || typeof defaultAddress !== "string" || !defaultAddress.trim()) {
+    return { free_pushback: false, error: "Missing default address for availability check." };
+  }
+  const baseUrl = getBaseUrl(req);
+  if (!baseUrl) {
+    return { free_pushback: false, error: "Unable to determine request base URL." };
+  }
+  const businessDays = getBusinessDaysInRange(activeCycle.window_start_date, activeCycle.window_end_date);
+  if (businessDays.length === 0) {
+    return { free_pushback: true, evaluated_window_start: activeCycle.window_start_date, evaluated_window_end: activeCycle.window_end_date, evaluated_business_days: 0, had_zero_valid_slots: true };
+  }
+  const address = defaultAddress.trim();
+  for (const day of businessDays) {
+    const result = await fetchSlotsForDay(baseUrl, day, numDuration, address);
+    if (result.failed) {
+      return { free_pushback: false, error: "Unable to determine pushback fee eligibility right now. Please try again." };
+    }
+    if (result.slotsCount > 0) {
+      return { free_pushback: false, evaluated_window_start: activeCycle.window_start_date, evaluated_window_end: activeCycle.window_end_date, evaluated_business_days: businessDays.length, had_zero_valid_slots: false };
+    }
+  }
+  return { free_pushback: true, evaluated_window_start: activeCycle.window_start_date, evaluated_window_end: activeCycle.window_end_date, evaluated_business_days: businessDays.length, had_zero_valid_slots: true };
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -52,6 +145,23 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Cannot push back after a booking is already scheduled." });
     }
 
+    const durationMinutes = subscription.service_variants?.duration_minutes;
+    const numDuration = Number(durationMinutes);
+    if (!Number.isFinite(numDuration) || numDuration <= 0) {
+      return res.status(500).json({ error: "Invalid or missing service duration. Cannot determine pushback eligibility." });
+    }
+    const defaultAddress = subscription.default_address;
+    if (!defaultAddress || typeof defaultAddress !== "string" || !defaultAddress.trim()) {
+      return res.status(500).json({ error: "Missing default address. Cannot determine pushback eligibility." });
+    }
+
+    const waiverResult = await computeFreePushback(req, activeCycle, subscription);
+    if (waiverResult.error) {
+      return res.status(500).json({ error: waiverResult.error });
+    }
+
+    const free_pushback = waiverResult.free_pushback === true;
+
     const pushback_end_date = addBusinessDays(activeCycle.window_end_date, PUSHBACK_BUSINESS_DAYS);
     if (!pushback_end_date) {
       console.error("customer-subscription-pushback error: invalid window_end_date", activeCycle.window_end_date);
@@ -63,7 +173,7 @@ export default async function handler(req, res) {
       .update({
         pushback_used: true,
         pushback_end_date,
-        free_pushback: activeCycle.free_pushback
+        free_pushback
       })
       .eq("id", activeCycle.id)
       .select("id, cycle_index, status, window_start_date, window_end_date, pushback_used, pushback_end_date, free_pushback")
@@ -80,7 +190,11 @@ export default async function handler(req, res) {
       cycle_index: updatedCycle.cycle_index,
       pushback_used: updatedCycle.pushback_used,
       pushback_end_date: updatedCycle.pushback_end_date,
-      free_pushback: updatedCycle.free_pushback
+      free_pushback: updatedCycle.free_pushback,
+      evaluated_window_start: waiverResult.evaluated_window_start,
+      evaluated_window_end: waiverResult.evaluated_window_end,
+      evaluated_business_days: waiverResult.evaluated_business_days,
+      had_zero_valid_slots: waiverResult.had_zero_valid_slots
     });
 
     const cycle = updatedCycle;
@@ -95,6 +209,7 @@ export default async function handler(req, res) {
         window_end_date: cycle.window_end_date,
         pushback_used: cycle.pushback_used,
         pushback_end_date: cycle.pushback_end_date,
+        free_pushback: cycle.free_pushback,
         effective_window_end: getEffectiveWindowEnd(cycle)
       }
     });
