@@ -58,7 +58,7 @@ function apiUrl(path, useBypass = true) {
 async function ensureAdminAuth() {
   if (adminSession) return true;
   requireEnv("ADMIN_PASSWORD", ADMIN_PASSWORD);
-  const res = await fetch(apiUrl("admin-login", false), {
+  const res = await fetch(apiUrl("admin-login"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ password: ADMIN_PASSWORD })
