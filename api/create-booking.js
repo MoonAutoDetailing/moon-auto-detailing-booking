@@ -5,6 +5,7 @@ import { rateLimit } from "./_rateLimit.js";
 import { checkAvailability } from "./_availability.js";
 import getTravelMinutes from "./_routing/getTravelMinutes.js";
 import { sendBookingCreatedEmailCore } from "../lib/email/sendBookingCreatedEmail.js";
+import { getEffectiveWindowEnd } from "./_subscriptions/lifecycle.js";
 
 const BASE_ADDRESS = process.env.BASE_ADDRESS;
 const BUSINESS_TZ = "America/New_York";
@@ -239,6 +240,68 @@ export default async function handler(req, res) {
     const travel_fee = travelFeeFromMinutes(travel_minutes);
     const total_price = base_price + travel_fee;
 
+    const subscriptionId = body.subscription_id;
+    let validatedSubscription = null;
+    let validatedCycle = null;
+    if (subscriptionId) {
+      const { data: subscription } = await supabase
+        .from("subscriptions")
+        .select("id, status, discount_reset_required")
+        .eq("id", subscriptionId)
+        .single();
+      if (!subscription || subscription.status !== "active") {
+        return res.status(400).json({ ok: false, message: "Invalid or inactive subscription." });
+      }
+      const bookingDate = new Date(scheduled_start).toISOString().split("T")[0];
+      const { data: cycles, error: cycleErr } = await supabase
+        .from("subscription_cycles")
+        .select("*")
+        .eq("subscription_id", subscriptionId)
+        .eq("status", "open")
+        .lte("window_start_date", bookingDate)
+        .order("cycle_index", { ascending: false });
+      if (cycleErr) {
+        console.error("CYCLE_LOOKUP_FAILED", cycleErr);
+        return res.status(500).json({
+          ok: false,
+          message: "Failed to attach booking to subscription cycle."
+        });
+      }
+      const matchingCycles = (cycles || []).filter((row) => {
+        const effectiveEnd = getEffectiveWindowEnd(row);
+        return effectiveEnd && bookingDate <= effectiveEnd;
+      });
+      if (matchingCycles.length > 1) {
+        console.error("MULTIPLE_MATCHING_OPEN_CYCLES", {
+          subscriptionId,
+          bookingDate,
+          cycleIds: matchingCycles.map((c) => c.id)
+        });
+        return res.status(500).json({
+          ok: false,
+          message: "Subscription cycle state is invalid."
+        });
+      }
+      const cycle = matchingCycles[0];
+      if (!cycle) {
+        return res.status(400).json({
+          ok: false,
+          message: "No open subscription cycle matches this booking date."
+        });
+      }
+      const { data: existingLink } = await supabase
+        .from("subscription_cycle_bookings")
+        .select("id")
+        .eq("cycle_id", cycle.id)
+        .limit(1)
+        .maybeSingle();
+      if (existingLink) {
+        return res.status(409).json({ ok: false, message: "This subscription cycle already has a booking." });
+      }
+      validatedSubscription = subscription;
+      validatedCycle = cycle;
+    }
+
     const manage_token = crypto.randomUUID();
     const { data: booking, error: insertErr } = await supabase
       .from("bookings")
@@ -273,53 +336,44 @@ export default async function handler(req, res) {
 
     const bookingId = booking.id;
 
-    const subscriptionId = body.subscription_id;
-    if (subscriptionId) {
-      const { data: subscription } = await supabase
-        .from("subscriptions")
-        .select("id, status")
-        .eq("id", subscriptionId)
-        .single();
-      if (!subscription || subscription.status !== "active") {
-        return res.status(400).json({ ok: false, message: "Invalid or inactive subscription." });
-      }
-      const bookingDate = new Date(scheduled_start).toISOString().split("T")[0];
-      const { data: cycle, error: cycleErr } = await supabase
-        .from("subscription_cycles")
-        .select("*")
-        .eq("subscription_id", subscriptionId)
-        .eq("status", "open")
-        .lte("window_start_date", bookingDate)
-        .gte("window_end_date", bookingDate)
-        .maybeSingle();
-      if (cycleErr || !cycle) {
-        console.error("CYCLE_LOOKUP_FAILED", cycleErr);
-        return res.status(500).json({
-          error: "Failed to attach booking to subscription cycle."
-        });
-      }
-      const { data: existingLink } = await supabase
-        .from("subscription_cycle_bookings")
-        .select("id")
-        .eq("cycle_id", cycle.id)
-        .limit(1)
-        .maybeSingle();
-      if (existingLink) {
-        return res.status(409).json({ ok: false, message: "This subscription cycle already has a booking." });
-      }
+    if (subscriptionId && validatedSubscription && validatedCycle) {
+      const cycle = validatedCycle;
+      const subscription = validatedSubscription;
       console.log("ATTACHING_BOOKING_TO_CYCLE", {
         cycle_id: cycle.id,
         booking_id: bookingId
       });
+      const chargePushbackFee = cycle.pushback_used === true && cycle.free_pushback !== true;
+      const numericBasePrice = Number(base_price);
+
+      if (chargePushbackFee && !Number.isFinite(numericBasePrice)) {
+        console.error("INVALID_BASE_PRICE_FOR_PUSHBACK_FEE", {
+          subscriptionId,
+          cycleId: cycle.id,
+          base_price
+        });
+        return res.status(500).json({
+          ok: false,
+          message: "Unable to calculate pushback fee."
+        });
+      }
+
+      const pushback_fee_amount = chargePushbackFee
+        ? Math.round(numericBasePrice * 0.15 * 100) / 100
+        : null;
       const { error: linkErr } = await supabase
         .from("subscription_cycle_bookings")
         .insert({
           cycle_id: cycle.id,
           booking_id: bookingId,
-          price_mode: "discounted"
+          price_mode: subscription.status === "active" && !subscription.discount_reset_required ? "discounted" : "full",
+          pushback_fee_applied: chargePushbackFee,
+          pushback_fee_amount
         });
       if (linkErr) {
         console.error("[create-booking] subscription_cycle_bookings insert", linkErr);
+        const { error: delErr } = await supabase.from("bookings").delete().eq("id", booking.id);
+        if (delErr) console.error("BOOKING_CLEANUP_FAILED", { bookingId: booking.id, error: delErr });
         return res.status(500).json({ ok: false, message: "Failed to attach booking to subscription cycle." });
       }
       await supabase

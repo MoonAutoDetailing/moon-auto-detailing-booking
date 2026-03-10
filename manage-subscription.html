@@ -1,0 +1,983 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manage Subscription — Moon Auto Detailing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Poppins', system-ui, sans-serif;
+      background: #f5f5f5;
+      color: #1c1c1c;
+      min-height: 100vh;
+    }
+    body.dark {
+      background: #0f0f0f;
+      color: #e5e5e5;
+    }
+
+    .page-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 24px 20px 60px;
+    }
+
+    /* ----- Header / Hero ----- */
+    .hero {
+      text-align: center;
+      padding: 32px 16px 28px;
+    }
+    .hero h1 {
+      font-size: clamp(1.5rem, 4vw, 2rem);
+      font-weight: 700;
+      margin: 0 0 8px;
+      color: #1c1c1c;
+      letter-spacing: 0.5px;
+    }
+    body.dark .hero h1 { color: #f0f0f0; }
+    .hero .sub {
+      color: #6b7280;
+      margin: 0 0 20px;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+    body.dark .hero .sub { color: #9ca3af; }
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .badge-status {
+      background: #7fb8e6;
+      color: #fff;
+    }
+    .badge-status.cancelled {
+      background: #6b7280;
+      color: #fff;
+    }
+    .badge-frequency { background: #e0f2fe; color: #0369a1; }
+    body.dark .badge-frequency { background: #0c4a6e; color: #7dd3fc; }
+    .badge-category { background: #f3f4f6; color: #374151; }
+    body.dark .badge-category { background: #1f2937; color: #d1d5db; }
+    .badge-vehicle { background: #fef3c7; color: #92400e; }
+    body.dark .badge-vehicle { background: #78350f; color: #fde68a; }
+
+    /* ----- Cards ----- */
+    .card {
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 28px 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12), 0 6px 18px rgba(0, 0, 0, 0.08);
+    }
+    body.dark .card {
+      background: #1a1a1a;
+      box-shadow: 0 18px 40px rgba(0, 0, 0, 0.4);
+      border: 1px solid #2d2d2d;
+    }
+    .card-title {
+      font-size: 18px;
+      font-weight: 600;
+      margin: 0 0 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #e5e7eb;
+      color: #1c1c1c;
+    }
+    body.dark .card-title { border-color: #374151; color: #f0f0f0; }
+
+    /* ----- Summary grid ----- */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .summary-item {
+      padding: 12px 14px;
+      background: rgba(0, 0, 0, 0.03);
+      border-radius: 14px;
+      border: 1px solid #e5e7eb;
+    }
+    body.dark .summary-item {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: #374151;
+    }
+    .summary-item .label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    body.dark .summary-item .label { color: #9ca3af; }
+    .summary-item .value { font-size: 15px; font-weight: 500; }
+    .discount-reset-note {
+      margin-top: 14px;
+      padding: 12px 14px;
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 12px;
+      font-size: 14px;
+      color: #92400e;
+    }
+    body.dark .discount-reset-note {
+      background: rgba(245, 158, 11, 0.15);
+      border-color: #d97706;
+      color: #fde68a;
+    }
+
+    /* ----- Cycle card ----- */
+    .cycle-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .cycle-meta span { font-size: 14px; color: #4b5563; }
+    body.dark .cycle-meta span { color: #9ca3af; }
+    .pushback-msg {
+      margin-top: 12px;
+      padding: 12px;
+      background: #f0f8ff;
+      border: 1px solid rgba(127, 184, 230, 0.4);
+      border-radius: 12px;
+      font-size: 14px;
+      color: #1e40af;
+    }
+    body.dark .pushback-msg {
+      background: rgba(127, 184, 230, 0.1);
+      border-color: #7fb8e6;
+      color: #93c5fd;
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #6b7280;
+      font-size: 15px;
+    }
+    body.dark .empty-state { color: #9ca3af; }
+
+    /* ----- Booking card ----- */
+    .booking-box {
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 18px;
+      background: #f9fafb;
+      margin-bottom: 16px;
+    }
+    body.dark .booking-box {
+      border-color: #374151;
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .booking-box .label { font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 4px; }
+    body.dark .booking-box .label { color: #9ca3af; }
+    .pricing-summary {
+      margin-top: 16px;
+      padding: 16px;
+      background: rgba(0, 0, 0, 0.02);
+      border-radius: 12px;
+      border: 1px solid #e5e7eb;
+    }
+    body.dark .pricing-summary {
+      background: rgba(255, 255, 255, 0.04);
+      border-color: #374151;
+    }
+    .pricing-rows {
+      margin-top: 0;
+      padding-top: 0;
+      border-top: none;
+    }
+    body.dark .pricing-rows { border-color: #374151; }
+    .pricing-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 6px 0;
+      font-size: 14px;
+      color: #374151;
+    }
+    body.dark .pricing-row { color: #d1d5db; }
+    .pricing-row.total {
+      font-weight: 700;
+      font-size: 18px;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 2px solid #e5e7eb;
+      color: #1c1c1c;
+    }
+    body.dark .pricing-row.total { border-color: #374151; color: #f0f0f0; }
+    .pushback-fee-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      background: #fef3c7;
+      color: #92400e;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 6px;
+    }
+    body.dark .pushback-fee-badge {
+      background: #78350f;
+      color: #fde68a;
+    }
+    .cash-note {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+    body.dark .cash-note { color: #9ca3af; }
+    .display-total-note {
+      margin-top: 6px;
+      font-size: 12px;
+      color: #6b7280;
+      font-style: italic;
+    }
+    body.dark .display-total-note { color: #9ca3af; }
+
+    /* ----- History ----- */
+    .history-list { margin: 0; padding: 0; list-style: none; }
+    .history-item {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    body.dark .history-item { border-color: #374151; }
+    .history-item .cycle-num { font-weight: 700; min-width: 80px; }
+    .history-item .status-pill {
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .history-item .dates { color: #6b7280; }
+    body.dark .history-item .dates { color: #9ca3af; }
+
+    /* ----- Buttons ----- */
+    .btn {
+      display: inline-block;
+      padding: 12px 22px;
+      border: none;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .btn-primary {
+      background: #7fb8e6;
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(127, 184, 230, 0.45);
+    }
+    .btn-primary:hover:not(:disabled) { background: #6aaee2; transform: translateY(-1px); }
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #374151;
+    }
+    body.dark .btn-secondary { background: #374151; color: #e5e5e5; }
+    .btn-secondary:hover:not(:disabled) { background: #e5e7eb; }
+    body.dark .btn-secondary:hover:not(:disabled) { background: #4b5563; }
+    .btn-danger {
+      background: #b91c1c;
+      color: #fff;
+    }
+    .btn-danger:hover:not(:disabled) { background: #991b1b; transform: translateY(-1px); }
+    .btn-block { width: 100%; margin-top: 10px; }
+    .action-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; align-items: center; }
+
+    /* ----- Settings ----- */
+    .settings-trigger {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 2px solid #e5e7eb;
+      background: #fff;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      z-index: 100;
+    }
+    body.dark .settings-trigger {
+      background: #1a1a1a;
+      border-color: #374151;
+    }
+    .settings-panel {
+      position: fixed;
+      top: 0;
+      right: -340px;
+      width: 320px;
+      max-width: 90vw;
+      height: 100vh;
+      background: #fff;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.15);
+      z-index: 101;
+      padding: 28px 24px;
+      overflow-y: auto;
+      transition: right 0.25s ease;
+      border-left: 1px solid #e5e7eb;
+    }
+    body.dark .settings-panel {
+      background: #1a1a1a;
+      border-left-color: #374151;
+      box-shadow: -4px 0 24px rgba(0,0,0,0.5);
+    }
+    .settings-panel.open { right: 0; }
+    .settings-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .settings-backdrop.open { opacity: 1; pointer-events: auto; }
+    .settings-panel h3 { margin: 0 0 6px; font-size: 20px; font-weight: 700; color: #1c1c1c; }
+    body.dark .settings-panel h3 { color: #f0f0f0; }
+    .settings-panel-caption { font-size: 13px; color: #6b7280; margin-bottom: 24px; line-height: 1.4; }
+    body.dark .settings-panel-caption { color: #9ca3af; }
+    .settings-section { margin-bottom: 28px; }
+    .settings-section:last-child { margin-bottom: 0; }
+    .settings-section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      color: #6b7280;
+      margin-bottom: 12px;
+    }
+    body.dark .settings-section-title { color: #9ca3af; }
+    .settings-section .label { font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 6px; }
+    body.dark .settings-section .label { color: #9ca3af; }
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 0;
+    }
+    .toggle-switch {
+      width: 52px;
+      height: 28px;
+      background: #d1d5db;
+      border-radius: 999px;
+      position: relative;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.2s ease;
+    }
+    body.dark .toggle-switch { background: #4b5563; }
+    .toggle-switch.on { background: #7fb8e6; }
+    body.dark .toggle-switch.on { background: #7fb8e6; }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #fff;
+      top: 2px;
+      left: 2px;
+      transition: transform 0.2s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+    .toggle-switch.on::after { transform: translateX(24px); }
+    .profile-card {
+      background: rgba(0, 0, 0, 0.03);
+      border: 1px solid #e5e7eb;
+      border-radius: 14px;
+      padding: 16px;
+    }
+    body.dark .profile-card {
+      background: rgba(255, 255, 255, 0.05);
+      border-color: #374151;
+    }
+    .profile-row { margin-bottom: 14px; }
+    .profile-row:last-of-type { margin-bottom: 0; }
+    .profile-row .label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: #6b7280; margin-bottom: 4px; }
+    body.dark .profile-row .label { color: #9ca3af; }
+    .profile-row .value { font-size: 14px; color: #1c1c1c; word-break: break-word; }
+    body.dark .profile-row .value { color: #e5e5e5; }
+    .profile-block .address-note { font-size: 12px; color: #6b7280; margin-top: 14px; padding-top: 14px; border-top: 1px solid #e5e7eb; line-height: 1.5; }
+    body.dark .profile-block .address-note { color: #9ca3af; border-color: #374151; }
+
+    /* ----- Messages ----- */
+    .message-bar {
+      padding: 14px 18px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    .message-bar.success { background: #d1fae5; color: #065f46; border: 1px solid #10b981; }
+    body.dark .message-bar.success { background: #064e3b; color: #6ee7b7; border-color: #10b981; }
+    .message-bar.error { background: #fee2e2; color: #991b1b; border: 1px solid #ef4444; }
+    body.dark .message-bar.error { background: #7f1d1d; color: #fca5a5; border-color: #ef4444; }
+
+    /* ----- Modal ----- */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .modal-backdrop.open { opacity: 1; pointer-events: auto; }
+    .modal-content {
+      background: #fff;
+      border-radius: 22px;
+      padding: 28px 32px;
+      max-width: 420px;
+      width: 100%;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+    }
+    body.dark .modal-content { background: #1a1a1a; border: 1px solid #374151; }
+    .modal-content h3 { margin: 0 0 12px; font-size: 20px; }
+    .modal-content p { margin: 0 0 20px; color: #6b7280; font-size: 15px; line-height: 1.5; }
+    body.dark .modal-content p { color: #9ca3af; }
+    .modal-actions { display: flex; gap: 12px; justify-content: flex-end; flex-wrap: wrap; }
+
+    /* ----- Loading ----- */
+    .loading-card {
+      padding: 48px 32px;
+      text-align: center;
+      color: #6b7280;
+    }
+    body.dark .loading-card { color: #9ca3af; }
+    .skeleton {
+      height: 20px;
+      background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+      background-size: 200% 100%;
+      animation: skeleton 1.2s ease-in-out infinite;
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    body.dark .skeleton { background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%); background-size: 200% 100%; }
+    @keyframes skeleton { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .skeleton.wide { max-width: 80%; margin-left: auto; margin-right: auto; }
+
+    /* ----- Error state ----- */
+    .error-state {
+      text-align: center;
+      padding: 60px 24px;
+    }
+    .error-state h2 { font-size: 20px; margin: 0 0 12px; color: #1c1c1c; }
+    body.dark .error-state h2 { color: #f0f0f0; }
+    .error-state p { color: #6b7280; margin: 0 0 24px; }
+    body.dark .error-state p { color: #9ca3af; }
+
+    /* ----- Cancel CTA disabled ----- */
+    .cancel-disabled-msg {
+      padding: 12px 16px;
+      background: #f3f4f6;
+      border-radius: 12px;
+      font-size: 14px;
+      color: #6b7280;
+      margin-top: 12px;
+    }
+    body.dark .cancel-disabled-msg { background: #374151; color: #9ca3af; }
+
+    /* ----- CTA ----- */
+    .cta-book { margin-top: 16px; }
+    .cta-book .btn { margin-bottom: 10px; }
+    .cta-book-note {
+      font-size: 13px;
+      color: #6b7280;
+      line-height: 1.5;
+      margin: 0;
+      max-width: 420px;
+    }
+    body.dark .cta-book-note { color: #9ca3af; }
+
+    .hidden { display: none !important; }
+    @media (max-width: 640px) {
+      .page-wrap { padding: 16px 12px 40px; }
+      .card { padding: 20px 18px; }
+      .hero { padding: 24px 12px 20px; }
+    }
+  </style>
+</head>
+<body>
+  <button type="button" class="settings-trigger" id="settingsTrigger" aria-label="Settings">&#9881;</button>
+  <div class="settings-backdrop" id="settingsBackdrop"></div>
+  <div class="settings-panel" id="settingsPanel">
+    <h3>Settings</h3>
+    <p class="settings-panel-caption">Appearance and account details for this subscription.</p>
+    <div class="settings-section">
+      <div class="settings-section-title">Appearance</div>
+      <div class="toggle-row">
+        <span class="label">Dark mode</span>
+        <button type="button" class="toggle-switch" id="darkModeToggle" aria-pressed="false"></button>
+      </div>
+    </div>
+    <div class="settings-section">
+      <div class="settings-section-title">Profile</div>
+      <div class="profile-block profile-card" id="profileBlock">
+        <div class="profile-row"><div class="label">Name</div><div class="value" id="profileName">—</div></div>
+        <div class="profile-row"><div class="label">Email</div><div class="value" id="profileEmail">—</div></div>
+        <div class="profile-row"><div class="label">Phone</div><div class="value" id="profilePhone">—</div></div>
+        <div class="profile-row"><div class="label">Preferred address</div><div class="value" id="profileAddress">—</div></div>
+        <p class="address-note">Used for subscription bookings unless changed on the booking page.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-wrap">
+    <header class="hero">
+      <h1>Manage Subscription</h1>
+      <p class="sub">View your plan, current cycle, and booking.</p>
+      <div class="badge-row" id="heroBadges"></div>
+    </header>
+
+    <div id="messageBar" class="message-bar hidden"></div>
+
+    <div id="loadingState" class="card loading-card">
+      <div class="skeleton wide" style="height:28px; margin-bottom:16px;"></div>
+      <div class="skeleton" style="width:60%;"></div>
+      <div class="skeleton" style="width:80%;"></div>
+      <div class="skeleton" style="width:70%;"></div>
+      <p style="margin-top:20px; margin-bottom:0;">Loading subscription…</p>
+    </div>
+
+    <div id="errorState" class="card error-state hidden">
+      <h2>Invalid or missing link</h2>
+      <p>This page requires a valid subscription link. Please use the link from your email.</p>
+    </div>
+
+    <div id="content" class="hidden">
+      <div class="card" id="summaryCard">
+        <h2 class="card-title">Subscription summary</h2>
+        <div id="summaryBody"></div>
+      </div>
+
+      <div class="card" id="cycleCard">
+        <h2 class="card-title">Current cycle</h2>
+        <div id="cycleBody"></div>
+      </div>
+
+      <div class="card hidden" id="bookingCard">
+        <h2 class="card-title">Your booking</h2>
+        <div id="bookingBody"></div>
+      </div>
+
+      <div class="card" id="historyCard">
+        <h2 class="card-title">Cycle history</h2>
+        <div id="historyBody"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="cancelModal">
+    <div class="modal-content">
+      <h3>Cancel subscription</h3>
+      <p>This will cancel your maintenance plan. You will no longer receive discounted cycle pricing. This does not cancel any existing booking.</p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="cancelModalClose">Keep plan</button>
+        <button type="button" class="btn btn-danger" id="cancelModalConfirm">Cancel subscription</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const TOKEN = new URLSearchParams(location.search).get('token');
+
+      function formatCurrency(amount) {
+        const n = Number(amount);
+        if (!Number.isFinite(n)) return '—';
+        return '$' + n.toFixed(2);
+      }
+
+      function formatDate(str) {
+        if (!str) return '—';
+        const d = new Date(str + 'T12:00:00');
+        return Number.isNaN(d.getTime()) ? str : d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+      }
+
+      function formatDateTime(iso) {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        return Number.isNaN(d.getTime()) ? iso : d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
+      }
+
+      function getStoredDark() {
+        try {
+          const v = localStorage.getItem('manage-subscription-dark');
+          if (v === '1') return true;
+          if (v === '0') return false;
+        } catch (_) {}
+        return null;
+      }
+
+      function setTheme(dark) {
+        if (dark) document.documentElement.classList.add('dark'); else document.documentElement.classList.remove('dark');
+        document.body.classList.toggle('dark', !!dark);
+        try { localStorage.setItem('manage-subscription-dark', dark ? '1' : '0'); } catch (_) {}
+        const toggle = document.getElementById('darkModeToggle');
+        if (toggle) { toggle.classList.toggle('on', !!dark); toggle.setAttribute('aria-pressed', dark ? 'true' : 'false'); }
+      }
+
+      function initTheme() {
+        const stored = getStoredDark();
+        const dark = stored !== null ? stored : (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        setTheme(dark);
+      }
+
+      function showMessage(text, isError) {
+        const bar = document.getElementById('messageBar');
+        bar.textContent = text;
+        bar.className = 'message-bar ' + (isError ? 'error' : 'success');
+        bar.classList.remove('hidden');
+        setTimeout(function () { bar.classList.add('hidden'); }, 5000);
+      }
+
+      function showError(text) { showMessage(text, true); }
+
+      let portalData = null;
+
+      async function loadSubscription() {
+        if (!TOKEN) return null;
+        const res = await fetch('/api/get-subscription-by-token?token=' + encodeURIComponent(TOKEN));
+        if (!res.ok) return null;
+        return res.json();
+      }
+
+      function renderSubscription() {
+        const sub = portalData.subscription;
+        const badges = document.getElementById('heroBadges');
+        badges.innerHTML = '';
+        const statusBadge = document.createElement('span');
+        statusBadge.className = 'badge badge-status' + (sub.status === 'cancelled' ? ' cancelled' : '');
+        statusBadge.textContent = sub.status === 'active' ? 'Active' : (sub.status === 'cancelled' ? 'Cancelled' : sub.status);
+        badges.appendChild(statusBadge);
+        const freqBadge = document.createElement('span');
+        freqBadge.className = 'badge badge-frequency';
+        freqBadge.textContent = (sub.frequency || '—').charAt(0).toUpperCase() + (sub.frequency || '').slice(1);
+        badges.appendChild(freqBadge);
+        const catBadge = document.createElement('span');
+        catBadge.className = 'badge badge-category';
+        catBadge.textContent = sub.service || sub.subscription_category || 'Plan';
+        badges.appendChild(catBadge);
+        if (sub.vehicle) {
+          const vBadge = document.createElement('span');
+          vBadge.className = 'badge badge-vehicle';
+          vBadge.textContent = sub.vehicle;
+          badges.appendChild(vBadge);
+        }
+      }
+
+      function renderSummary() {
+        const sub = portalData.subscription;
+        const html = [
+          '<div class="summary-grid">',
+          '<div class="summary-item"><div class="label">Service</div><div class="value">' + (sub.service || '—') + '</div></div>',
+          '<div class="summary-item"><div class="label">Vehicle</div><div class="value">' + (sub.vehicle || '—') + '</div></div>',
+          '<div class="summary-item"><div class="label">Anchor date</div><div class="value">' + formatDate(sub.anchor_date) + '</div></div>',
+          '<div class="summary-item"><div class="label">Status</div><div class="value">' + (sub.status || '—') + '</div></div>',
+          '<div class="summary-item"><div class="label">Preferred address</div><div class="value">' + (sub.default_address || '—') + '</div></div>',
+          '<div class="summary-item"><div class="label">Completed cycles</div><div class="value">' + (sub.completed_cycles_count ?? '—') + '</div></div>',
+          '<div class="summary-item"><div class="label">Missed cycles</div><div class="value">' + (sub.missed_cycles_count ?? '—') + '</div></div>',
+          '<div class="summary-item"><div class="label">Discount reset</div><div class="value">' + (sub.discount_reset_required ? 'Yes' : 'No') + '</div></div>',
+          '</div>'
+        ];
+        if (sub.discount_reset_required) {
+          html.push('<div class="discount-reset-note">Your next service will be charged at full price. Discount resumes after that cycle.</div>');
+        }
+        document.getElementById('summaryBody').innerHTML = html.join('');
+      }
+
+      function renderCycle() {
+        const cycle = portalData.active_cycle;
+        const body = document.getElementById('cycleBody');
+        if (!cycle) {
+          body.innerHTML = '<div class="empty-state">No active cycle right now. Check back when your next window opens.</div>';
+          return;
+        }
+        const effectiveEnd = cycle.effective_window_end || cycle.window_end_date;
+        let html = '<div class="cycle-meta">';
+        html += '<span><strong>Cycle ' + (cycle.cycle_index ?? '—') + '</strong></span>';
+        html += '<span>Window: ' + formatDate(cycle.window_start_date) + ' – ' + formatDate(cycle.window_end_date) + '</span>';
+        html += '<span>Book by: ' + formatDate(effectiveEnd) + '</span>';
+        html += '</div>';
+        html += '<p><span class="badge badge-status">' + (cycle.status || '—') + '</span>';
+        if (cycle.pushback_used) html += ' <span>Pushback used</span>';
+        if (cycle.free_pushback) html += ' <span>(Free pushback)</span>';
+        html += '</p>';
+        if (cycle.can_pushback) {
+          html += '<div class="pushback-msg">You can extend your booking window by 5 business days once per cycle.</div>';
+          html += '<div class="action-row">';
+          html += '<button type="button" class="btn btn-primary" id="pushbackBtn">Push back window</button>';
+          html += '</div>';
+        } else if (cycle.status === 'open' && !cycle.pushback_used && portalData.active_cycle_booking) {
+          html += '<div class="pushback-msg">Pushback is not available after a booking is scheduled for this cycle.</div>';
+        } else if (cycle.pushback_used) {
+          html += '<div class="pushback-msg">Pushback already used for this cycle. Deadline: ' + formatDate(cycle.pushback_end_date || effectiveEnd) + '.</div>';
+        }
+        if (cycle.status === 'open' && !portalData.active_cycle_booking) {
+          const sub = portalData.subscription;
+          let bookHref = '/index.html';
+          if (sub && sub.frequency && sub.subscription_category) {
+            bookHref = '/index.html?subscription=1&frequency=' + encodeURIComponent(sub.frequency) + '&category=' + encodeURIComponent(sub.subscription_category);
+          }
+          html += '<div class="cta-book">';
+          html += '<a href="' + bookHref + '" class="btn btn-primary">Continue to booking form</a>';
+          html += '<p class="cta-book-note">You\'ll go to the main booking page. Use the same plan and vehicle details so your booking counts toward this subscription cycle.</p>';
+          html += '</div>';
+        }
+        body.innerHTML = html;
+        if (cycle.can_pushback) bindPushback();
+      }
+
+      function renderBooking() {
+        const acb = portalData.active_cycle_booking;
+        const card = document.getElementById('bookingCard');
+        const body = document.getElementById('bookingBody');
+        if (!acb || !acb.booking) {
+          card.classList.add('hidden');
+          return;
+        }
+        card.classList.remove('hidden');
+        const b = acb.booking;
+        const pricing = acb.pricing || {};
+        const base = pricing.base_price != null ? pricing.base_price : b.base_price;
+        const travel = pricing.travel_fee != null ? pricing.travel_fee : b.travel_fee;
+        const pushbackAmount = pricing.pushback_fee_amount != null ? pricing.pushback_fee_amount : (acb.pushback_fee_amount || 0);
+        const displayTotal = pricing.display_total != null ? pricing.display_total : (b.total_price || 0);
+        const pushbackApplied = pricing.pushback_fee_applied === true || acb.pushback_fee_applied === true;
+        const storedMatches = pricing.stored_total_matches_display_total !== false;
+
+        let html = '<div class="booking-box">';
+        html += '<div class="label">Status</div><div>' + (b.status || '—') + '</div>';
+        html += '<div class="label" style="margin-top:10px;">Date & time</div><div>' + formatDateTime(b.scheduled_start) + '</div>';
+        html += '<div class="label" style="margin-top:10px;">Address</div><div>' + (b.service_address || '—') + '</div>';
+        if (b.manage_token) {
+          html += '<p style="margin-top:12px;"><a href="/manage-booking.html?token=' + encodeURIComponent(b.manage_token) + '" class="btn btn-secondary" style="display:inline-block;">Manage this booking</a></p>';
+        }
+        if (b.google_event_html_link) {
+          html += '<p style="margin-top:8px;"><a href="' + (b.google_event_html_link || '#') + '" target="_blank" rel="noopener">Add to Google Calendar</a></p>';
+        }
+        html += '<div class="pricing-summary">';
+        html += '<div class="pricing-rows">';
+        html += '<div class="pricing-row"><span>Service</span><span>' + formatCurrency(base) + '</span></div>';
+        html += '<div class="pricing-row"><span>Travel fee</span><span>' + formatCurrency(travel) + '</span></div>';
+        html += '<div class="pricing-row"><span>Pushback fee' + (pushbackApplied ? ' <span class="pushback-fee-badge">Applied</span>' : '') + '</span><span>' + (pushbackApplied ? formatCurrency(pushbackAmount) : 'Not applied') + '</span></div>';
+        html += '<div class="pricing-row total"><span>Total</span><span>' + formatCurrency(displayTotal) + '</span></div>';
+        html += '</div>';
+        if (!storedMatches) {
+          html += '<p class="display-total-note">Displayed total includes all applicable cycle fees.</p>';
+        }
+        html += '<p class="cash-note">Cash due after service.</p>';
+        html += '</div></div>';
+        body.innerHTML = html;
+      }
+
+      function renderHistory() {
+        const history = portalData.history || [];
+        const body = document.getElementById('historyBody');
+        if (!history.length) {
+          body.innerHTML = '<div class="empty-state">No cycle history yet.</div>';
+          return;
+        }
+        let html = '<ul class="history-list">';
+        history.forEach(function (c) {
+          const effectiveEnd = c.effective_window_end || c.window_end_date;
+          html += '<li class="history-item">';
+          html += '<span class="cycle-num">Cycle ' + (c.cycle_index ?? '—') + '</span>';
+          html += '<span class="status-pill badge-status">' + (c.status || '—') + '</span>';
+          html += '<span class="dates">' + formatDate(c.window_start_date) + ' – ' + formatDate(effectiveEnd) + '</span>';
+          if (c.pushback_used) html += '<span>Pushback used</span>';
+          html += '</li>';
+        });
+        html += '</ul>';
+        body.innerHTML = html;
+      }
+
+      function bindActions() {
+        const actions = portalData.actions || {};
+        const canCancel = actions.can_cancel_subscription === true;
+        const cycle = portalData.active_cycle;
+        const cycleBody = document.getElementById('cycleBody');
+        if (canCancel && cycle) {
+          let cancelHtml = '';
+          const existing = document.getElementById('cancelSubRow');
+          if (!existing) {
+            cancelHtml = '<div class="action-row" id="cancelSubRow"><button type="button" class="btn btn-danger btn-block" id="cancelSubBtn">Cancel subscription</button></div>';
+            cycleBody.insertAdjacentHTML('beforeend', cancelHtml);
+            document.getElementById('cancelSubBtn').onclick = openCancelModal;
+          }
+        } else {
+          const sub = portalData.subscription;
+          if (sub && sub.status !== 'cancelled') {
+            let msg = 'You can cancel your plan after completing at least 3 cycles.';
+            if ((sub.completed_cycles_count ?? 0) >= 1) {
+              msg = 'Complete ' + (3 - (sub.completed_cycles_count || 0)) + ' more cycle(s) to be able to cancel your plan.';
+            }
+            const existing = document.getElementById('cancelSubRow');
+            if (!existing) {
+              cycleBody.insertAdjacentHTML('beforeend', '<div class="cancel-disabled-msg" id="cancelSubRow">' + msg + '</div>');
+            }
+          }
+        }
+      }
+
+      function bindPushback() {
+        const btn = document.getElementById('pushbackBtn');
+        if (!btn) return;
+        btn.onclick = async function () {
+          btn.disabled = true;
+          try {
+            const res = await fetch('/api/customer-subscription-pushback', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: TOKEN })
+            });
+            const data = await res.json().catch(function () { return {}; });
+            if (res.ok && data.ok) {
+              showMessage(data.message || 'Cycle pushback applied.');
+              await runLoad();
+            } else {
+              showError(data.error || data.message || 'Pushback failed.');
+              btn.disabled = false;
+            }
+          } catch (e) {
+            showError('Something went wrong.');
+            btn.disabled = false;
+          }
+        };
+      }
+
+      function openCancelModal() {
+        document.getElementById('cancelModal').classList.add('open');
+      }
+
+      function closeCancelModal() {
+        document.getElementById('cancelModal').classList.remove('open');
+      }
+
+      function bindCancelModal() {
+        document.getElementById('cancelModalClose').onclick = closeCancelModal;
+        document.getElementById('cancelModalConfirm').onclick = async function () {
+          const btn = document.getElementById('cancelModalConfirm');
+          btn.disabled = true;
+          try {
+            const res = await fetch('/api/customer-cancel-subscription', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token: TOKEN })
+            });
+            const data = await res.json().catch(function () { return {}; });
+            if (res.ok && data.ok) {
+              closeCancelModal();
+              showMessage(data.message || 'Subscription cancelled.');
+              await runLoad();
+            } else {
+              showError(data.error || data.message || 'Cancellation failed.');
+            }
+          } catch (e) {
+            showError('Something went wrong.');
+          }
+          btn.disabled = false;
+        };
+      }
+
+      function fillProfile() {
+        const sub = portalData && portalData.subscription;
+        if (!sub) return;
+        const nameEl = document.getElementById('profileName');
+        const emailEl = document.getElementById('profileEmail');
+        const phoneEl = document.getElementById('profilePhone');
+        const addrEl = document.getElementById('profileAddress');
+        if (nameEl) nameEl.textContent = sub.customer_name || '—';
+        if (emailEl) emailEl.textContent = sub.email || '—';
+        if (phoneEl) phoneEl.textContent = sub.phone || '—';
+        if (addrEl) addrEl.textContent = sub.default_address || '—';
+      }
+
+      function render() {
+        renderSubscription();
+        renderSummary();
+        renderCycle();
+        renderBooking();
+        renderHistory();
+        bindActions();
+        fillProfile();
+      }
+
+      async function runLoad() {
+        const loading = document.getElementById('loadingState');
+        const error = document.getElementById('errorState');
+        const content = document.getElementById('content');
+        if (!TOKEN) {
+          loading.classList.add('hidden');
+          error.classList.remove('hidden');
+          return;
+        }
+        loading.classList.remove('hidden');
+        error.classList.add('hidden');
+        content.classList.add('hidden');
+        portalData = await loadSubscription();
+        loading.classList.add('hidden');
+        if (!portalData || portalData.error) {
+          error.classList.remove('hidden');
+          if (portalData && portalData.error) error.querySelector('p').textContent = portalData.error;
+          return;
+        }
+        content.classList.remove('hidden');
+        render();
+      }
+
+      document.getElementById('darkModeToggle').onclick = function () {
+        const on = document.body.classList.contains('dark');
+        setTheme(!on);
+      };
+
+      document.getElementById('settingsTrigger').onclick = function () {
+        document.getElementById('settingsPanel').classList.add('open');
+        document.getElementById('settingsBackdrop').classList.add('open');
+      };
+      document.getElementById('settingsBackdrop').onclick = function () {
+        document.getElementById('settingsPanel').classList.remove('open');
+        document.getElementById('settingsBackdrop').classList.remove('open');
+      };
+
+      bindCancelModal();
+      initTheme();
+      runLoad();
+    })();
+  </script>
+</body>
+</html>

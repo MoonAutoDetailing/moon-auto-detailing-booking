@@ -91,7 +91,7 @@ const isLateCancel = hoursUntilService < 24;
     const { error: updateError } = await supabase
   .from("bookings")
   .update({
-    status: isLateCancel ? "cancel_requested_late" : "cancelled"
+    status: "cancelled"
   })
   .eq("id", booking.id);
 
