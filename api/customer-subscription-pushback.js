@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { getEffectiveWindowEnd, addBusinessDays, PUSHBACK_BUSINESS_DAYS } from "./_subscriptions/lifecycle.js";
 import { resolveSubscriptionByToken } from "./_subscriptions/resolveSubscriptionByToken.js";
+import { sendCyclePushbackEmailCore } from "../lib/email/sendCyclePushbackEmail.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -196,6 +197,13 @@ export default async function handler(req, res) {
       evaluated_business_days: waiverResult.evaluated_business_days,
       had_zero_valid_slots: waiverResult.had_zero_valid_slots
     });
+
+    try {
+      await sendCyclePushbackEmailCore(updatedCycle.id, token);
+      console.log("[EMAIL] type=cycle-pushback cycle_id=" + updatedCycle.id + " status=success");
+    } catch (emailErr) {
+      console.error("[EMAIL] type=cycle-pushback cycle_id=" + updatedCycle.id + " status=failure", emailErr);
+    }
 
     const cycle = updatedCycle;
     return res.status(200).json({

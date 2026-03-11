@@ -18,6 +18,10 @@
     {
       "path": "/api/cron-check-missed-cycles",
       "schedule": "5 2 * * *"
+    },
+    {
+      "path": "/api/cron-send-subscription-reminders",
+      "schedule": "10 2 * * *"
     }
   ]
 }

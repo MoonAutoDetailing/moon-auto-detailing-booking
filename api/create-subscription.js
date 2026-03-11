@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { sendSubscriptionCreatedEmailCore } from "../lib/email/sendSubscriptionCreatedEmail.js";
 
 const VALID_FREQUENCIES = ["biweekly", "monthly", "quarterly"];
 
@@ -85,6 +86,13 @@ export default async function handler(req, res) {
     }
 
     console.log("SUBSCRIPTION_CREATED", { subscription_id: subscription.id });
+
+    try {
+      await sendSubscriptionCreatedEmailCore(subscription.id);
+      console.log("[EMAIL] type=subscription-created subscription_id=" + subscription.id + " status=success");
+    } catch (emailErr) {
+      console.error("[EMAIL] type=subscription-created subscription_id=" + subscription.id + " status=failure", emailErr);
+    }
 
     return res.status(200).json({
       ok: true,

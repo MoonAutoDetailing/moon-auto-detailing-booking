@@ -52,7 +52,11 @@ function adminHeaders() {
 }
 
 function apiUrl(path, useBypass = true) {
-  return `${BASE_URL}/api/${path}${useBypass ? qsBypass() : ""}`;
+  const base = `${BASE_URL}/api/${path}`;
+  if (!useBypass || !BYPASS) return base;
+  return path.includes("?")
+    ? `${base}&x-vercel-protection-bypass=${encodeURIComponent(BYPASS)}`
+    : `${base}?x-vercel-protection-bypass=${encodeURIComponent(BYPASS)}`;
 }
 
 async function ensureAdminAuth() {
