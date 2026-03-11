@@ -550,14 +550,24 @@ async function main() {
           method: "POST",
           headers: cronHeaders()
         });
-        await remRes.json();
-        const { data: after } = await supabase
+        const remText = await remRes.text();
+        let remJson;
+        try {
+          remJson = remText ? JSON.parse(remText) : {};
+        } catch {
+          remJson = { _raw: remText?.slice(0, 200) ?? "" };
+        }
+        if (!remRes.ok) {
+          logTest("TEST 7 — Reminder cron skips booked cycles", false, `cron-send-reminders: ${remRes.status} ${(remText?.slice(0, 100) ?? "").replace(/\s+/g, " ")}`);
+        } else {
+          const { data: after } = await supabase
           .from("subscription_cycles")
           .select("reminder_1_sent_at, reminder_2_sent_at")
           .eq("id", linked.cycle_id)
           .single();
         const unchanged = (before?.reminder_1_sent_at === after?.reminder_1_sent_at) && (before?.reminder_2_sent_at === after?.reminder_2_sent_at);
         logTest("TEST 7 — Reminder cron skips booked cycles", unchanged, unchanged ? "No reminder timestamps written for booked cycle." : "Timestamps changed (unexpected).");
+        }
       }
     }
   } catch (e) {
@@ -575,14 +585,24 @@ async function main() {
         method: "POST",
         headers: cronHeaders()
       });
-      await remRes.json();
-      const { data: after } = await supabase
+      const remText = await remRes.text();
+      let remJson;
+      try {
+        remJson = remText ? JSON.parse(remText) : {};
+      } catch {
+        remJson = { _raw: remText?.slice(0, 200) ?? "" };
+      }
+      if (!remRes.ok) {
+        logTest("TEST 8 — Reminder cron does not resend", false, `cron-send-reminders: ${remRes.status} ${(remText?.slice(0, 100) ?? "").replace(/\s+/g, " ")}`);
+      } else {
+        const { data: after } = await supabase
         .from("subscription_cycles")
         .select("reminder_1_sent_at")
         .eq("id", reminder_cycle_id_for_resend_test)
         .single();
       const unchanged = after?.reminder_1_sent_at === reminder_1_sent_at_before_rerun;
       logTest("TEST 8 — Reminder cron does not resend", unchanged, unchanged ? "reminder_1_sent_at unchanged after second cron run." : "reminder_1_sent_at was overwritten.");
+      }
     }
   } catch (e) {
     logTest("TEST 8 — Reminder cron does not resend", false, String(e.message || e));
