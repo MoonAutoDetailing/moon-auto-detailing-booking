@@ -279,7 +279,13 @@ const googleEventHtmlLink = calendarResponse.data.htmlLink;
       address: booking.service_address,
       manageToken: booking.manage_token || null,
       data,
-      price
+      price,
+      basePrice: booking.base_price ?? null,
+      travelFee: booking.travel_fee ?? null,
+      totalPrice: booking.total_price ?? null,
+      discountCode: booking.discount_code ?? null,
+      discountPercent: booking.discount_percent ?? null,
+      discountAmount: booking.discount_amount ?? null
     });
 
     if (!emailResult?.success) {

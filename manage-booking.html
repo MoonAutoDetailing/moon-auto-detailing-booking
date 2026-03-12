@@ -44,6 +44,7 @@ h1 { text-align:center; color:#7fb8e6; margin-bottom:6px; }
       <div class="box"><div class="label">Service</div><div id="service"></div></div>
       <div class="box"><div class="label">Service price</div><div id="basePrice"></div></div>
       <div class="box"><div class="label">Travel fee</div><div id="travelFee"></div></div>
+      <div id="discountBox" class="box hidden"><div class="label">Discount</div><div id="discountDetail"></div></div>
       <div class="box"><div class="label">Total (cash only)</div><div id="price"></div><div id="cashNotice" style="margin-top:6px; color:#6b7280; font-size:13px;"></div></div>
       <div class="box"><div class="label">Vehicle</div><div id="vehicle"></div></div>
       <div class="box"><div class="label">Start</div><div id="start"></div></div>
@@ -87,6 +88,13 @@ if (!token) {
     const total = b.total_price != null ? b.total_price : b.price;
     document.getElementById("basePrice").textContent = b.base_price != null ? formatCurrency(b.base_price) : (b.price != null ? formatCurrency(b.price) : "—");
     document.getElementById("travelFee").textContent = b.travel_fee != null ? formatCurrency(b.travel_fee) : formatCurrency(0);
+    const discountBox = document.getElementById("discountBox");
+    if (b.discount_code != null && (b.discount_amount != null ? b.discount_amount > 0 : b.discount_percent != null)) {
+      discountBox.classList.remove("hidden");
+      document.getElementById("discountDetail").textContent = (b.discount_code || "") + " — " + (b.discount_amount != null ? "-" + formatCurrency(b.discount_amount) : (b.discount_percent != null ? b.discount_percent + "% off" : ""));
+    } else {
+      discountBox.classList.add("hidden");
+    }
     document.getElementById("price").textContent = total != null ? formatCurrency(total) : "—";
     document.getElementById("cashNotice").textContent = b.total_price != null ? "We are a cash-only business. Travel fee is based on inbound drive time." : "We are a cash-only business. Travel fees may be added later if applicable.";
     document.getElementById("vehicle").textContent = b.vehicle;

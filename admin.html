@@ -706,6 +706,7 @@ let cachedViews = {
 };
      let reloadHistoryPage = null;
      let reloadSubscriptionsPage = null;
+     let reloadDiscountCodesPage = null;
      let historyPage = 1;
 const historyPageSize = 20;
 let filteredHistory = [];
@@ -737,6 +738,13 @@ const viewContainer = document.getElementById("viewContainer");
     if (currentView === "subscriptions") {
       if (reloadSubscriptionsPage) {
         await reloadSubscriptionsPage();
+      }
+      return;
+    }
+
+    if (currentView === "discount-codes") {
+      if (reloadDiscountCodesPage) {
+        await reloadDiscountCodesPage();
       }
       return;
     }
@@ -984,6 +992,10 @@ card.style.borderLeft = "4px solid var(--moon-primary)";
     ${(b.status ?? "").replace("_"," ")}
   </span>
 </div>
+    <div class="row"><span class="label">Service / base:</span> $${(b.base_price != null ? Number(b.base_price).toFixed(2) : "—")}</div>
+    <div class="row"><span class="label">Travel fee:</span> $${(b.travel_fee != null ? Number(b.travel_fee).toFixed(2) : "0.00")}</div>
+    ${(b.discount_code != null && (b.discount_amount != null ? b.discount_amount > 0 : true)) ? `<div class="row"><span class="label">Discount (${(b.discount_code || "").replace(/</g, "&lt;")}):</span> -$${(b.discount_amount != null ? Number(b.discount_amount).toFixed(2) : "0.00")}</div>` : ""}
+    <div class="row"><span class="label">Total:</span> $${(b.total_price != null ? Number(b.total_price).toFixed(2) : "—")}</div>
 
   </div>
 `;
@@ -1288,7 +1300,8 @@ function renderButtons() {
     { key: "today", label: "Today's Schedule" },
     { key: "upcoming", label: "Upcoming Bookings" },
     { key: "history", label: "History" },
-    { key: "subscriptions", label: "Subscriptions" }
+    { key: "subscriptions", label: "Subscriptions" },
+    { key: "discount-codes", label: "Discount Codes" }
   ];
 
   buttons.forEach(btn => {
@@ -1651,6 +1664,185 @@ function renderView(viewName) {
 
     reloadSubscriptionsPage = loadSubscriptionsList;
     loadSubscriptionsList();
+    return;
+  }
+
+  // =========================
+  // DISCOUNT CODES
+  // =========================
+  if (viewName === "discount-codes") {
+    const wrapper = document.createElement("div");
+    wrapper.style.display = "flex";
+    wrapper.style.flexDirection = "column";
+    wrapper.style.gap = "24px";
+
+    const createSection = document.createElement("div");
+    createSection.style.padding = "18px";
+    createSection.style.borderRadius = "14px";
+    createSection.style.border = "1px solid rgba(255,255,255,0.2)";
+    createSection.style.background = "rgba(111,147,196,0.15)";
+    createSection.innerHTML = "<h3 style='margin-top:0;'>Create discount code</h3>";
+    const form = document.createElement("form");
+    form.style.display = "grid";
+    form.style.gridTemplateColumns = "1fr 1fr auto auto auto";
+    form.style.gap = "10px";
+    form.style.alignItems = "end";
+    form.style.flexWrap = "wrap";
+    const codeInput = document.createElement("input");
+    codeInput.placeholder = "Code";
+    codeInput.name = "code";
+    codeInput.style.padding = "8px 12px";
+    codeInput.style.borderRadius = "6px";
+    codeInput.style.border = "1px solid rgba(255,255,255,0.3)";
+    codeInput.style.background = "rgba(255,255,255,0.08)";
+    codeInput.style.color = "white";
+    const pctInput = document.createElement("input");
+    pctInput.type = "number";
+    pctInput.min = "1";
+    pctInput.max = "100";
+    pctInput.placeholder = "% off";
+    pctInput.name = "percent_off";
+    pctInput.style.padding = "8px 12px";
+    pctInput.style.borderRadius = "6px";
+    pctInput.style.border = "1px solid rgba(255,255,255,0.3)";
+    pctInput.style.background = "rgba(255,255,255,0.08)";
+    pctInput.style.color = "white";
+    const startInput = document.createElement("input");
+    startInput.type = "datetime-local";
+    startInput.name = "starts_at";
+    startInput.style.padding = "8px 12px";
+    startInput.style.borderRadius = "6px";
+    startInput.style.border = "1px solid rgba(255,255,255,0.3)";
+    startInput.style.background = "rgba(255,255,255,0.08)";
+    startInput.style.color = "white";
+    const endInput = document.createElement("input");
+    endInput.type = "datetime-local";
+    endInput.name = "ends_at";
+    endInput.style.padding = "8px 12px";
+    endInput.style.borderRadius = "6px";
+    endInput.style.border = "1px solid rgba(255,255,255,0.3)";
+    endInput.style.background = "rgba(255,255,255,0.08)";
+    endInput.style.color = "white";
+    const submitBtn = document.createElement("button");
+    submitBtn.type = "submit";
+    submitBtn.textContent = "Create";
+    submitBtn.className = "moon-tab";
+    form.appendChild(codeInput);
+    form.appendChild(pctInput);
+    form.appendChild(startInput);
+    form.appendChild(endInput);
+    form.appendChild(submitBtn);
+    createSection.appendChild(form);
+    wrapper.appendChild(createSection);
+
+    const activeList = document.createElement("div");
+    activeList.id = "discountCodesActive";
+    activeList.style.marginTop = "8px";
+    const scheduledList = document.createElement("div");
+    scheduledList.id = "discountCodesScheduled";
+    const inactiveHeader = document.createElement("h3");
+    inactiveHeader.textContent = "Inactive / expired / disabled";
+    inactiveHeader.style.cursor = "pointer";
+    inactiveHeader.style.marginBottom = "8px";
+    const inactiveBody = document.createElement("div");
+    inactiveBody.id = "discountCodesInactive";
+    inactiveBody.style.display = "none";
+    let inactiveOpen = false;
+    inactiveHeader.onclick = () => {
+      inactiveOpen = !inactiveOpen;
+      inactiveBody.style.display = inactiveOpen ? "block" : "none";
+    };
+
+    async function loadDiscountCodes() {
+      const res = await adminFetch("/api/admin-discount-codes-list");
+      const data = await res.json();
+      if (!res.ok) {
+        wrapper.innerHTML = "<div style='color:#ff6b6b;'>" + (data.error || "Failed to load") + "</div>";
+        return;
+      }
+      function fmtRow(d) {
+        const start = d.starts_at ? new Date(d.starts_at).toLocaleString() : "—";
+        const end = d.ends_at ? new Date(d.ends_at).toLocaleString() : "—";
+        return `<div style="padding:10px 14px; margin-bottom:8px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span><strong>${(d.code || "").replace(/</g, "&lt;")}</strong> ${d.percent_off}% off · ${start} → ${end}</span>
+          ${!d.is_disabled ? `<button type="button" class="moon-tab" data-disable-id="${d.id}">Disable</button>` : "<span style='color:#888;'>Disabled</span>"}
+        </div>`;
+      }
+      activeList.innerHTML = "<h3 style='margin-top:0;'>Active</h3>" + (data.active && data.active.length ? data.active.map(fmtRow).join("") : "<p style='color:#9ca3af;'>None</p>");
+      scheduledList.innerHTML = "<h3 style='margin-top:0;'>Scheduled / upcoming</h3>" + (data.scheduled && data.scheduled.length ? data.scheduled.map(fmtRow).join("") : "<p style='color:#9ca3af;'>None</p>");
+      inactiveBody.innerHTML = (data.inactive && data.inactive.length ? data.inactive.map(fmtRow).join("") : "<p style='color:#9ca3af;'>None</p>");
+      activeList.querySelectorAll("[data-disable-id]").forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.dataset.disableId;
+          try {
+            const r = await adminFetch("/api/admin-discount-codes-disable", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.error || "Failed");
+            showToast("Code disabled.");
+            loadDiscountCodes();
+          } catch (e) { showToast("Error: " + (e.message || "Unknown")); }
+        };
+      });
+      scheduledList.querySelectorAll("[data-disable-id]").forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.dataset.disableId;
+          try {
+            const r = await adminFetch("/api/admin-discount-codes-disable", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.error || "Failed");
+            showToast("Code disabled.");
+            loadDiscountCodes();
+          } catch (e) { showToast("Error: " + (e.message || "Unknown")); }
+        };
+      });
+      inactiveBody.querySelectorAll("[data-disable-id]").forEach(btn => {
+        btn.onclick = async () => {
+          const id = btn.dataset.disableId;
+          try {
+            const r = await adminFetch("/api/admin-discount-codes-disable", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+            const d = await r.json();
+            if (!r.ok) throw new Error(d.error || "Failed");
+            showToast("Code disabled.");
+            loadDiscountCodes();
+          } catch (e) { showToast("Error: " + (e.message || "Unknown")); }
+        };
+      });
+    }
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const startsAt = startInput.value ? new Date(startInput.value).toISOString() : "";
+      const endsAt = endInput.value ? new Date(endInput.value).toISOString() : "";
+      try {
+        const r = await adminFetch("/api/admin-discount-codes-create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code: codeInput.value.trim(),
+            percent_off: Number(pctInput.value) || 0,
+            starts_at: startsAt,
+            ends_at: endsAt
+          })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Failed");
+        showToast("Discount code created.");
+        codeInput.value = "";
+        pctInput.value = "";
+        startInput.value = "";
+        endInput.value = "";
+        loadDiscountCodes();
+      } catch (err) { showToast("Error: " + (err.message || "Unknown")); }
+    };
+
+    wrapper.appendChild(activeList);
+    wrapper.appendChild(scheduledList);
+    wrapper.appendChild(inactiveHeader);
+    wrapper.appendChild(inactiveBody);
+    viewContainer.appendChild(wrapper);
+
+    reloadDiscountCodesPage = loadDiscountCodes;
+    loadDiscountCodes();
     return;
   }
 

@@ -1174,6 +1174,22 @@ View Maintenance Plans </a>
   required
 />
 
+    <h3 class="section-title">Discount Code</h3>
+    <div class="row" style="align-items:flex-end;">
+      <div style="flex:1;">
+        <label for="discountCodeInput">Code</label>
+        <input id="discountCodeInput" type="text" placeholder="Enter code" autocomplete="off" style="text-transform:uppercase;" />
+      </div>
+      <div style="flex:0 0 auto;">
+        <button type="button" id="discountApplyBtn" class="primary-btn" style="margin-top:0;">Apply</button>
+      </div>
+    </div>
+    <div id="discountFeedback" class="muted" style="margin-top:6px; font-size:14px;"></div>
+    <div id="discountRemoveWrap" style="display:none; margin-top:6px;">
+      <span id="discountAppliedLabel"></span>
+      <button type="button" id="discountRemoveBtn" class="muted" style="background:none; border:none; cursor:pointer; text-decoration:underline; padding:0; margin-left:8px;">Remove</button>
+    </div>
+
     <button id="submitBtn" class="primary-btn">
   Submit Booking Request
 </button>
@@ -1315,6 +1331,8 @@ elEnd.addEventListener("paste", (e) => e.preventDefault());
     let reviewDraft = null;
     let reviewIsOpen = false;
     let confirmInProgress = false;
+    let appliedDiscountCode = null;
+    let appliedDiscountResult = null;
     let calendarLoading = false;
     let calendarReloadDebounce = null;
     // =========================
@@ -2066,6 +2084,7 @@ function computeScheduledEnd(startLocal, durationMinutes) {
     }
 
     elVehicleSize.addEventListener("change", () => {
+      clearAppliedDiscount();
       const vs = normalizeVehicleSize(elVehicleSize.value);
       if (!vs) {
         resetServiceCategoryDropdown("Select vehicle size first…");
@@ -2100,6 +2119,7 @@ function computeScheduledEnd(startLocal, durationMinutes) {
     });
 
     elServiceCategory.addEventListener("change", () => {
+      clearAppliedDiscount();
       const vs = normalizeVehicleSize(elVehicleSize.value);
       const category = elServiceCategory.value;
       if (!category) {
@@ -2114,6 +2134,7 @@ function computeScheduledEnd(startLocal, durationMinutes) {
   const id = elServiceVariant.value;
   selectedVariant = variantsCache.find(v => v.id === id) || null;
       selectedStartISO = null;
+      clearAppliedDiscount();
 elStart.value = "";
 recalcEndTimePreview();
 
@@ -2428,7 +2449,32 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
         const slotMeta = metaByDay[dayKey]?.[scheduled_start];
         const travel_fee = slotMeta?.travel_fee ?? 0;
         const base_price = selectedVariant.price ?? 0;
-        const total_price = base_price + travel_fee;
+        let total_price = base_price + travel_fee;
+        let draftDiscountCode = null;
+        let draftDiscountPercent = null;
+        let draftDiscountAmount = null;
+        if (appliedDiscountCode && !SUBSCRIPTION_MODE) {
+          const validateRes = await fetch("/api/validate-discount-code", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              code: appliedDiscountCode,
+              base_price,
+              travel_fee,
+              subscription_mode: SUBSCRIPTION_MODE
+            })
+          });
+          const validateData = await validateRes.json();
+          if (validateData.valid && validateData.total_price != null) {
+            total_price = validateData.total_price;
+            draftDiscountCode = validateData.discount_code ?? null;
+            draftDiscountPercent = validateData.discount_percent ?? null;
+            draftDiscountAmount = validateData.discount_amount ?? null;
+          } else {
+            setStatus("bad", "Discount code is no longer valid. Please remove it or select a different time.");
+            return;
+          }
+        }
         // Build draft for review step; no DB writes until Confirm
         const draft = {
           full_name,
@@ -2448,6 +2494,11 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
           travel_fee,
           total_price
         };
+        if (draftDiscountCode != null) {
+          draft.discount_code = draftDiscountCode;
+          draft.discount_percent = draftDiscountPercent;
+          draft.discount_amount = draftDiscountAmount;
+        }
 
         openReviewModal(draft);
         return;
@@ -2489,7 +2540,11 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
       const basePrice = Number(draft.base_price ?? 0);
       const travelFee = Number(draft.travel_fee ?? 0);
       const total = Number(draft.total_price ?? basePrice + travelFee);
+      const hasDiscount = draft.discount_code != null && (draft.discount_amount != null ? draft.discount_amount > 0 : draft.discount_percent != null);
       const fmt = (n) => `$${n.toFixed(2)}`;
+      const discountLine = hasDiscount
+        ? `<p><strong>Discount (${escapeHtml(draft.discount_code)}):</strong> -${fmt(draft.discount_amount ?? 0)}</p>`
+        : "";
       elReviewSummary.innerHTML = `
         <p><strong>Customer:</strong> ${escapeHtml(draft.full_name)}</p>
         <p><strong>Email:</strong> ${escapeHtml(draft.email)}</p>
@@ -2498,6 +2553,7 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
         <p><strong>Time:</strong> ${prettyStart} – ${prettyEnd}</p>
         <p><strong>Service price:</strong> ${fmt(basePrice)}</p>
         <p><strong>Travel fee:</strong> ${fmt(travelFee)}</p>
+        ${discountLine}
         <p><strong>Total:</strong> ${fmt(total)}</p>
         <p>Click Confirm to create your booking.</p>
       `;
@@ -2599,20 +2655,24 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
         }
         log("Created vehicle (no select after insert)", { vehicle_id });
 
+        const createBody = {
+          customer_id,
+          vehicle_id,
+          scheduled_start: draft.scheduled_start,
+          scheduled_end: draft.scheduled_end,
+          service_address: draft.service_address,
+          service_variant_id: draft.service_variant_id,
+          subscription_mode: SUBSCRIPTION_MODE,
+          subscription_category: SUBSCRIPTION_CATEGORY,
+          subscription_frequency: SUBSCRIPTION_FREQUENCY
+        };
+        if (draft.discount_code != null && draft.discount_code !== "") {
+          createBody.discount_code = draft.discount_code;
+        }
         const resp = await fetch("/api/create-booking", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            customer_id,
-            vehicle_id,
-            scheduled_start: draft.scheduled_start,
-            scheduled_end: draft.scheduled_end,
-            service_address: draft.service_address,
-            service_variant_id: draft.service_variant_id,
-            subscription_mode: SUBSCRIPTION_MODE,
-            subscription_category: SUBSCRIPTION_CATEGORY,
-            subscription_frequency: SUBSCRIPTION_FREQUENCY
-          })
+          body: JSON.stringify(createBody)
         });
 
         const json = await resp.json();
@@ -2621,6 +2681,10 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
           if (resp.status === 409) {
             closeReviewModal();
             setStatus("bad", "That time was just booked. Please select another time.");
+            return;
+          }
+          if (resp.status === 400 && json.discountInvalid === true) {
+            setStatus("bad", json.message || "Discount code is no longer valid. Please review the price and try again.");
             return;
           }
           if (resp.status === 429) throw new Error(json?.message || "Too many booking attempts. Please try again in a few minutes.");
@@ -2672,6 +2736,9 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
           base_price: draft.base_price ?? null,
           travel_fee: draft.travel_fee ?? null,
           total_price: draft.total_price ?? null,
+          discount_code: draft.discount_code ?? null,
+          discount_percent: draft.discount_percent ?? null,
+          discount_amount: draft.discount_amount ?? null,
           scheduled_start_iso: draft.scheduled_start,
           scheduled_end_iso: draft.scheduled_end,
           prettyStart,
@@ -2695,7 +2762,74 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
     elReviewBack.addEventListener("click", closeReviewModal);
     elReviewConfirm.addEventListener("click", confirmBooking);
 
-    elStart.addEventListener("change", recalcEndTimePreview);
+    function clearAppliedDiscount() {
+      appliedDiscountCode = null;
+      appliedDiscountResult = null;
+      document.getElementById("discountCodeInput").value = "";
+      document.getElementById("discountFeedback").textContent = "";
+      document.getElementById("discountRemoveWrap").style.display = "none";
+    }
+    function updateDiscountUI() {
+      const feedback = document.getElementById("discountFeedback");
+      const removeWrap = document.getElementById("discountRemoveWrap");
+      const appliedLabel = document.getElementById("discountAppliedLabel");
+      if (appliedDiscountResult?.valid) {
+        feedback.textContent = "";
+        feedback.style.color = "";
+        appliedLabel.textContent = "Applied: " + (appliedDiscountResult.discount_code || "") + " — " + (appliedDiscountResult.discount_percent != null ? appliedDiscountResult.discount_percent + "% off" : "") + " (Total: $" + (appliedDiscountResult.total_price != null ? Number(appliedDiscountResult.total_price).toFixed(2) : "") + ")";
+        removeWrap.style.display = "block";
+      } else {
+        removeWrap.style.display = "none";
+      }
+    }
+    document.getElementById("discountApplyBtn").addEventListener("click", async () => {
+      const input = document.getElementById("discountCodeInput");
+      const code = (input.value || "").trim();
+      if (!code) {
+        document.getElementById("discountFeedback").textContent = "Enter a code and click Apply.";
+        document.getElementById("discountFeedback").style.color = "";
+        return;
+      }
+      if (SUBSCRIPTION_MODE) {
+        document.getElementById("discountFeedback").textContent = "Discount codes do not apply to subscription bookings.";
+        document.getElementById("discountFeedback").style.color = "#b00020";
+        return;
+      }
+      const base_price = selectedVariant?.price ?? 0;
+      const dayKey = selectedStartISO ? new Date(selectedStartISO).toDateString() : "";
+      const travel_fee = (dayKey && metaByDay[dayKey]?.[selectedStartISO]?.travel_fee) ?? 0;
+      const res = await fetch("/api/validate-discount-code", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, base_price, travel_fee, subscription_mode: SUBSCRIPTION_MODE })
+      });
+      const data = await res.json();
+      const feedback = document.getElementById("discountFeedback");
+      if (data.valid) {
+        appliedDiscountCode = code;
+        appliedDiscountResult = data;
+        feedback.textContent = "Code applied. Your total will update at checkout.";
+        feedback.style.color = "#0a7a2f";
+        updateDiscountUI();
+      } else {
+        appliedDiscountCode = null;
+        appliedDiscountResult = null;
+        document.getElementById("discountRemoveWrap").style.display = "none";
+        if (data.reason === "not_applicable_subscription") feedback.textContent = "Discount codes do not apply to subscription bookings.";
+        else if (data.reason === "empty") feedback.textContent = "Enter a code.";
+        else if (data.reason === "invalid_or_expired") feedback.textContent = "This code is invalid, expired, or disabled.";
+        else feedback.textContent = "This code could not be applied.";
+        feedback.style.color = "#b00020";
+      }
+    });
+    document.getElementById("discountRemoveBtn").addEventListener("click", () => {
+      clearAppliedDiscount();
+    });
+
+    elStart.addEventListener("change", () => {
+      clearAppliedDiscount();
+      recalcEndTimePreview();
+    });
     elSubmit.addEventListener("click", submitBooking);
 
     // =========================
@@ -2750,8 +2884,9 @@ function initAddressAutocomplete() {
       inputEl.readOnly = true;
 inputEl.classList.add("locked-address");
 
-  if (inputEl.id === "serviceAddress" && selectedVariant) {
-    scheduleCalendarReload();
+  if (inputEl.id === "serviceAddress") {
+    clearAppliedDiscount();
+    if (selectedVariant) scheduleCalendarReload();
   }
 
 });
@@ -2765,6 +2900,7 @@ inputEl.classList.add("locked-address");
     // Also reload when the service address is manually edited/pasted
   if (serviceAddress) {
     serviceAddress.addEventListener("input", () => {
+      clearAppliedDiscount();
       if (selectedVariant) scheduleCalendarReload();
     });
   }
@@ -3196,6 +3332,7 @@ block.style.left = "5%";
 
           elStart.value = formatDateToDateTimeLocal(startTime);
           selectedStartISO = startTime.toISOString();
+          clearAppliedDiscount();
 
           recalcEndTimePreview();
         });

@@ -39,6 +39,12 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   service_address,
   google_event_id,
   google_event_html_link,
+  base_price,
+  travel_fee,
+  total_price,
+  discount_code,
+  discount_percent,
+  discount_amount,
 
   customers:customer_id (
     full_name,

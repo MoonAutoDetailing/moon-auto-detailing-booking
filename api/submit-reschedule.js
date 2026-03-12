@@ -43,11 +43,17 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Failed to update booking" });
     }
     
-    // Fetch booking + pricing for notification
+    // Fetch booking + snapshot pricing for notification
 const { data: booking, error: bookingErr } = await supabase
   .from("bookings")
   .select(`
     manage_token,
+    base_price,
+    travel_fee,
+    total_price,
+    discount_code,
+    discount_percent,
+    discount_amount,
     customers(full_name,email),
     service_variants:service_variant_id(
   price,
@@ -65,15 +71,19 @@ if (bookingErr || !booking) {
 // Send "reschedule submitted" email (must succeed or roll back)
 const serviceLabel = formatServiceName(booking);
 
-const price = booking.service_variants?.price ?? null;
-
 const emailResult = await sendRescheduleSubmittedEmailCore({
   email: booking.customers.email,
   fullName: booking.customers.full_name,
   newStart: start,
   newEnd: end,
   serviceLabel,
-  price,
+  price: booking.service_variants?.price ?? null,
+  basePrice: booking.base_price ?? null,
+  travelFee: booking.travel_fee ?? null,
+  totalPrice: booking.total_price ?? null,
+  discountCode: booking.discount_code ?? null,
+  discountPercent: booking.discount_percent ?? null,
+  discountAmount: booking.discount_amount ?? null,
   manageToken: booking.manage_token
 });
 

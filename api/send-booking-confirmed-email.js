@@ -43,6 +43,9 @@ export default async function handler(req, res) {
     base_price,
     travel_fee,
     total_price,
+    discount_code,
+    discount_percent,
+    discount_amount,
     customers:customer_id(full_name,email),
     vehicles(vehicle_year,vehicle_make,vehicle_model),
     service_variants:service_variant_id(
@@ -66,7 +69,10 @@ export default async function handler(req, res) {
       price: booking.service_variants?.price,
       basePrice: booking.base_price ?? null,
       travelFee: booking.travel_fee ?? null,
-      totalPrice: booking.total_price ?? null
+      totalPrice: booking.total_price ?? null,
+      discountCode: booking.discount_code ?? null,
+      discountPercent: booking.discount_percent ?? null,
+      discountAmount: booking.discount_amount ?? null
     });
 
     const vehicleText = booking.vehicles
