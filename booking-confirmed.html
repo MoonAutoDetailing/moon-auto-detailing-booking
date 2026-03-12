@@ -64,6 +64,12 @@
           <div id="c_travel_fee" class="val">—</div>
         </div>
       </div>
+      <div class="row" id="c_discount_row" style="display:none;">
+        <div class="box" style="grid-column: 1 / -1;">
+          <div class="label">Discount</div>
+          <div id="c_discount" class="val">—</div>
+        </div>
+      </div>
       <div class="row">
         <div class="box" style="grid-column: 1 / -1;">
           <div class="label">Total (cash only)</div>
@@ -125,6 +131,15 @@ if (!raw) {
     document.getElementById("c_service").textContent = p.serviceLabel || "—";
     document.getElementById("c_base_price").textContent = basePrice != null ? formatCurrency(basePrice) : "—";
     document.getElementById("c_travel_fee").textContent = formatCurrency(travelFee);
+    const discountRow = document.getElementById("c_discount_row");
+    const hasStoredTotal = p.total_price != null;
+    const showDiscount = hasStoredTotal && p.discount_code != null && (p.discount_amount != null ? p.discount_amount > 0 : p.discount_percent != null);
+    if (showDiscount) {
+      discountRow.style.display = "";
+      document.getElementById("c_discount").textContent = (p.discount_code || "") + " — " + (p.discount_amount != null ? "-" + formatCurrency(p.discount_amount) : (p.discount_percent != null ? p.discount_percent + "% off" : ""));
+    } else {
+      discountRow.style.display = "none";
+    }
     document.getElementById("c_price").textContent = total != null ? formatCurrency(total) : "—";
     document.getElementById("c_cash").textContent = p.total_price != null ? "We are a cash-only business. Travel fee is based on inbound drive time." : "We are a cash-only business. Travel fees may be added later if applicable.";
     document.getElementById("c_start").textContent = p.prettyStart || "—";

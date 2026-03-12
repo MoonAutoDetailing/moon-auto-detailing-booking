@@ -29,13 +29,19 @@ if (!bookingId) {
   return res.status(400).json({ error: "Missing bookingId" });
 }
 
-// Fetch booking + customer
+// Fetch booking + customer + snapshot pricing
 const { data: booking, error } = await supabase
   .from("bookings")
   .select(`
     id,
     reschedule_token,
     manage_token,
+    base_price,
+    travel_fee,
+    total_price,
+    discount_code,
+    discount_percent,
+    discount_amount,
     customers:customer_id(full_name,email),
         service_variants:service_variant_id(
       price,
@@ -51,15 +57,19 @@ if (error || !booking) {
 
 const serviceLabel = formatServiceName(booking);
 
-const price = booking.service_variants?.price ?? null;
-
 await sendRescheduleLinkEmailCore({
   email: booking.customers.email,
   fullName: booking.customers.full_name,
   manageToken: booking.manage_token,
   rescheduleToken: booking.reschedule_token,
   serviceLabel,
-  price
+  price: booking.service_variants?.price ?? null,
+  basePrice: booking.base_price ?? null,
+  travelFee: booking.travel_fee ?? null,
+  totalPrice: booking.total_price ?? null,
+  discountCode: booking.discount_code ?? null,
+  discountPercent: booking.discount_percent ?? null,
+  discountAmount: booking.discount_amount ?? null
 });
 
     return res.status(200).json({ success: true });

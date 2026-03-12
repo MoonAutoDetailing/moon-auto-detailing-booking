@@ -98,6 +98,12 @@ export default async function handler(req, res) {
   service_address,
   status,
   google_event_id,
+  base_price,
+  travel_fee,
+  total_price,
+  discount_code,
+  discount_percent,
+  discount_amount,
   customers:customer_id (
     full_name,
     phone

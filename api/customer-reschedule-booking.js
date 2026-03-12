@@ -47,7 +47,7 @@ export default async function handler(req, res) {
     // =========================
     const { data: booking, error } = await supabase
       .from("bookings")
-      .select("id, google_event_id, status, customer_id, service_variant_id, manage_token")
+      .select("id, google_event_id, status, customer_id, service_variant_id, manage_token, base_price, travel_fee, total_price, discount_code, discount_percent, discount_amount")
       .eq("manage_token", token)
       .single();
 
@@ -98,7 +98,13 @@ export default async function handler(req, res) {
       manageToken: booking.manage_token,
       rescheduleToken: booking.manage_token,
       serviceLabel,
-      price
+      price,
+      basePrice: booking.base_price ?? null,
+      travelFee: booking.travel_fee ?? null,
+      totalPrice: booking.total_price ?? null,
+      discountCode: booking.discount_code ?? null,
+      discountPercent: booking.discount_percent ?? null,
+      discountAmount: booking.discount_amount ?? null
     });
     console.log("RESCHEDULE FLOW — email function returned", emailResult);
 
@@ -200,7 +206,13 @@ try {
     manageToken: booking.manage_token,
     rescheduleToken: booking.manage_token,
     serviceLabel,
-    price
+    price,
+    basePrice: booking.base_price ?? null,
+    travelFee: booking.travel_fee ?? null,
+    totalPrice: booking.total_price ?? null,
+    discountCode: booking.discount_code ?? null,
+    discountPercent: booking.discount_percent ?? null,
+    discountAmount: booking.discount_amount ?? null
   });
   console.log("RESCHEDULE FLOW — email function returned", emailResult);
 

@@ -42,6 +42,9 @@ export default async function handler(req, res) {
         travel_fee,
         total_price,
         travel_minutes,
+        discount_code,
+        discount_percent,
+        discount_amount,
         customers:customer_id (
           full_name,
           phone
@@ -96,7 +99,10 @@ export default async function handler(req, res) {
   base_price: booking.base_price ?? null,
   travel_fee: booking.travel_fee ?? null,
   total_price: booking.total_price ?? null,
-  travel_minutes: booking.travel_minutes ?? null
+  travel_minutes: booking.travel_minutes ?? null,
+  discount_code: booking.discount_code ?? null,
+  discount_percent: booking.discount_percent ?? null,
+  discount_amount: booking.discount_amount ?? null
 });
 
   } catch (err) {

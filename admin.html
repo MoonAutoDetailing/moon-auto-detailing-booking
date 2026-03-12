@@ -29,15 +29,15 @@ body {
 
 h1 { margin-bottom: 10px; }
 .day { margin-top: 24px; }
-/* collapsed booking row (glass pill) */
+/* collapsed booking row (glass pill) — compact by default */
 .card {
   border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 14px;
-  padding: 14px 18px;
-  margin-top: 12px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-top: 8px;
   background: rgba(111,147,196,0.18);
   backdrop-filter: blur(10px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   transition: 0.18s ease;
 }
 
@@ -46,9 +46,10 @@ h1 { margin-bottom: 10px; }
   background: rgba(111,147,196,0.26);
   transform: translateY(-1px);
 }
-/* expanded booking card */
+/* expanded = second layer: more padding and weight */
 .card.expanded {
-  background: rgba(111,147,196,0.28);   /* darker glass, not white */
+  padding: 14px 18px;
+  background: rgba(111,147,196,0.28);
   backdrop-filter: blur(18px);
   color: white;
   border: 1px solid rgba(255,255,255,0.18);
@@ -147,6 +148,10 @@ cursor: pointer;
 .status-denied { background: #6a1b9a; color: #fff; }
 .status-no_show { background: #555; color: #fff; }
 .status-confirming { background: #4f78a8; color: #fff; }
+.status-active { background: #0a7a2f; color: #fff; }
+.status-paused { background: #666; color: #fff; }
+.status-cancelled { background: #b00020; color: #fff; }
+.status-pending_activation { background: #8fb1e0; color: #000; }
 .day h2 {
   font-size: 20px;
   margin-bottom: 8px;
@@ -160,20 +165,23 @@ cursor: pointer;
   margin-top: 60px;
   color: var(--moon-primary);
 }
-     .booking-header {
-  font-weight: 700;
-  font-size: 16px;
+.booking-header {
+  font-weight: 600;
+  font-size: inherit;
   cursor: pointer;
   color: white;
 }
 
 .booking-content {
-  margin-top: 10px;
   display: none;
+  margin-top: 0;
 }
 
 .card.expanded .booking-content {
   display: block;
+  border-top: 1px solid rgba(255,255,255,0.15);
+  padding-top: 12px;
+  margin-top: 12px;
 }
 
 
@@ -190,19 +198,153 @@ cursor: pointer;
   margin-top: 70px; /* pushes below toggle button */
   margin-bottom: 30px;
 }
-     /* ===== TOP BAR (tabs + refresh) ===== */
+/* ===== TOP BAR ===== */
 #topBar {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 18px;
-  margin-top: 60px;
-  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 56px;
+  margin-bottom: 24px;
 }
 
-/* prevent viewButtons from pushing layout down */
 #viewButtons {
   margin: 0;
+}
+
+.topBar-row1 {
+  display: flex;
+  align-items: center;
+}
+.topBar-primary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+#viewButtons .moon-tab {
+  padding: 8px 14px;
+  font-size: 14px;
+  min-height: 38px;
+}
+
+/* Menu button: hamburger icon, small utility trigger */
+.admin-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  color: white;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.admin-menu-btn:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.35);
+}
+.admin-menu-icon {
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+  position: relative;
+  display: block;
+}
+.admin-menu-icon::before,
+.admin-menu-icon::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+}
+.admin-menu-icon::before { top: -5px; }
+.admin-menu-icon::after { top: 5px; }
+
+/* Fixed top-right utility stack: Logout on top, Refresh below */
+.admin-top-utility {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 100;
+}
+.admin-top-utility #logoutBtn,
+.admin-top-utility #refreshNow {
+  padding: 6px 12px;
+  font-size: 13px;
+  min-height: 36px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-top-utility #logoutBtn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.25);
+  color: white;
+}
+.admin-top-utility #logoutBtn:hover {
+  background: rgba(255,255,255,0.08);
+}
+.admin-top-utility #refreshNow {
+  background: var(--moon-primary);
+  color: white;
+  border: none;
+}
+.admin-top-utility #refreshNow:hover {
+  background: var(--moon-primary-dark);
+}
+
+/* Dropdown (menu content): hidden by default, shown when .open */
+#topBarMenuWrap {
+  position: relative;
+}
+#adminMenuDropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  min-width: 180px;
+  padding: 8px 0;
+  border-radius: 10px;
+  background: rgba(30,30,30,0.98);
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  z-index: 100;
+}
+#adminMenuDropdown.open {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+#adminMenuDropdown .moon-tab {
+  margin: 4px 8px;
+  width: calc(100% - 16px);
+  text-align: left;
+  border-radius: 6px;
+  min-height: 38px;
+  box-sizing: border-box;
+}
+
+/* One nav model: History / Subscriptions / Discount Codes only in menu */
+#viewButtons button.admin-nav-secondary {
+  display: none;
+}
+
+/* Toggle Debug only in menu, not as floating button */
+.admin-debug-toggle {
+  display: none !important;
 }
 
 /* ================= LOGIN OVERLAY ================= */
@@ -278,37 +420,27 @@ cursor: pointer;
   display: none;
   font-size: 14px;
 }
-#refreshNow {
-  padding: 8px 16px;
-  height: 38px;
-  align-self: center;
-  flex: 0 0 auto;
-}
-     #logoutBtn {
-  padding: 8px 14px;
-  height: 38px;
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.25);
-  color: white;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-#logoutBtn:hover {
-  background: rgba(255,255,255,0.08);
-}
 
 
 /* ===================== TOAST NOTIFICATIONS ===================== */
 #toastContainer {
   position: fixed;
-  top: 20px;
-  left: 20px;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   z-index: 999999;
+  width: 100%;
+  max-width: min(360px, calc(100vw - 24px));
+  pointer-events: none;
+}
+#toastContainer .toast {
+  pointer-events: auto;
+}
+@media (max-width: 640px) {
+  #toastContainer { top: 12px; max-width: calc(100vw - 20px); }
 }
 
 .toast {
@@ -322,6 +454,10 @@ cursor: pointer;
   box-shadow: 0 10px 30px rgba(0,0,0,0.4);
   animation: slideIn 0.25s ease, fadeOut 0.5s ease 5s forwards;
 }
+.toast.toast-error {
+  background: rgba(176,0,32,0.25);
+  border-color: rgba(255,255,255,0.25);
+}
 
 @keyframes slideIn {
   from { transform: translateX(-30px); opacity: 0; }
@@ -330,6 +466,272 @@ cursor: pointer;
 
 @keyframes fadeOut {
   to { opacity: 0; transform: translateX(-20px); }
+}
+
+/* ===================== COLLAPSIBLE SECTIONS ===================== */
+.admin-section {
+  margin-top: 20px;
+  margin-bottom: 4px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(111,147,196,0.08);
+  overflow: hidden;
+}
+.admin-section-header {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1rem;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.admin-section-header:hover {
+  background: rgba(255,255,255,0.06);
+}
+.admin-section-header .chevron {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  opacity: 0.8;
+}
+.admin-section.collapsed .admin-section-header .chevron {
+  transform: rotate(-90deg);
+}
+.admin-section-body {
+  padding: 12px 14px 16px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.admin-section.collapsed .admin-section-body {
+  display: none;
+}
+
+/* Booking card: collapsed = single compact summary row only */
+.booking-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.booking-summary-line {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.95);
+}
+.booking-header .booking-summary-meta {
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+  font-weight: 400;
+}
+.booking-content .row {
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+.booking-content .label {
+  font-weight: 600;
+}
+.card .booking-header .chevron {
+  transition: transform 0.2s ease;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+.card.expanded .booking-header .chevron {
+  transform: rotate(180deg);
+}
+
+/* Discount code card */
+.discount-code-card {
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.discount-code-header {
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.discount-code-header:hover {
+  background: rgba(255,255,255,0.05);
+}
+.discount-code-detail {
+  padding: 12px 14px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 13px;
+  display: none;
+}
+.discount-code-card.expanded .discount-code-detail {
+  display: block;
+}
+.discount-code-card .chevron {
+  transition: transform 0.2s ease;
+  opacity: 0.7;
+}
+.discount-code-card.expanded .chevron {
+  transform: rotate(180deg);
+}
+
+/* Subscription card — compact collapsed, detail in expanded only */
+.subscription-card {
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(111,147,196,0.18);
+  margin-bottom: 8px;
+  overflow: hidden;
+  transition: 0.18s ease;
+}
+.subscription-card:hover {
+  background: rgba(111,147,196,0.26);
+}
+.subscription-card-header {
+  padding: 10px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.subscription-card-header .subscription-card-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.95);
+}
+.subscription-card-header .subscription-card-meta {
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+  font-weight: 400;
+}
+.subscription-card-detail {
+  display: none;
+  padding: 12px 14px;
+  border-top: 1px solid rgba(255,255,255,0.15);
+  font-size: 13px;
+  line-height: 1.45;
+  background: rgba(0,0,0,0.12);
+}
+.subscription-card.expanded .subscription-card-detail {
+  display: block;
+}
+.subscription-card-detail p {
+  margin: 0 0 8px;
+}
+.subscription-card-detail .moon-tab {
+  margin-top: 10px;
+}
+.subscription-card .chevron {
+  transition: transform 0.2s ease;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+.subscription-card.expanded .chevron {
+  transform: rotate(180deg);
+}
+
+/* Compact filters (stack on mobile) */
+.admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.admin-filters input,
+.admin-filters select {
+  min-width: 0;
+  flex: 1 1 140px;
+}
+
+/* Day group inside section — clear hierarchy */
+.day-group {
+  margin-top: 20px;
+}
+.day-group:first-child { margin-top: 0; }
+.day-group h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.85);
+}
+
+@media (max-width: 640px) {
+  body { padding: 12px; }
+  #topBar {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    margin-top: 20px;
+    margin-bottom: 16px;
+  }
+  #topBarRow1 {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+  }
+  .admin-menu-btn {
+    min-width: 44px;
+    min-height: 44px;
+  }
+  #adminMenuDropdown { margin-top: 8px; min-width: 200px; }
+  #adminMenuDropdown .moon-tab { min-height: 44px; }
+  #topBarPrimary {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  #topBarPrimary #viewButtons {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  #topBarPrimary #viewButtons .moon-tab { min-height: 44px; padding: 8px 12px; font-size: 13px; }
+  .admin-top-utility { top: 12px; right: 12px; gap: 6px; }
+  .admin-top-utility #logoutBtn,
+  .admin-top-utility #refreshNow { min-height: 44px; }
+  .moon-tab { margin-bottom: 0; }
+  .card { padding: 10px 12px; margin-top: 8px; }
+  .card.expanded { padding: 12px 14px; }
+  .booking-header { min-height: 44px; align-items: center; gap: 6px 10px; }
+  .subscription-card-header { min-height: 44px; align-items: center; padding: 10px 12px; }
+  .subscription-card-detail { padding: 10px 12px; }
+  .discount-code-header { min-height: 44px; align-items: center; }
+  .admin-section-header { padding: 12px 14px; font-size: 15px; min-height: 44px; align-items: center; }
+  .admin-section-body { padding: 10px 12px 12px; }
+  .booking-summary-line { font-size: 13px; }
+  .booking-header .booking-summary-meta { font-size: 11px; }
+  .actions button { margin-bottom: 6px; min-height: 44px; }
+  .admin-filters { flex-direction: column; align-items: stretch; }
+  .admin-filters input,
+  .admin-filters select { flex: 1 1 auto; }
+  .discount-create-section .discount-create-form {
+    flex-direction: column;
+    align-items: center;
+  }
+  .discount-create-section .discount-create-form input,
+  .discount-create-section .discount-create-form button[type="submit"] {
+    width: 100%;
+    max-width: 280px;
+    box-sizing: border-box;
+  }
+  #viewButtons button.admin-nav-secondary { display: none; }
 }
 
 </style>
@@ -395,18 +797,28 @@ style="
 
 <div id="pageOverlay">
   <div id="topBar">
-  <div id="viewButtons"></div>
+    <div id="topBarRow1" class="topBar-row1">
+      <div id="topBarMenuWrap" class="topBar-menu-wrap">
+        <button id="adminMenuBtn" type="button" class="admin-menu-btn" aria-label="Menu">
+          <span class="admin-menu-icon" aria-hidden="true"></span>
+        </button>
+        <div id="adminMenuDropdown" role="menu"></div>
+      </div>
+    </div>
+    <div id="topBarPrimary" class="topBar-primary">
+      <div id="viewButtons"></div>
+    </div>
+  </div>
 
-  <button id="refreshNow" class="moon-tab">Refresh</button>
-
-  <button id="logoutBtn">Logout</button>
-</div>
-
+  <div id="topBarUtility" class="admin-top-utility">
+    <button id="logoutBtn" type="button">Logout</button>
+    <button id="refreshNow" type="button" class="moon-tab">Refresh</button>
+  </div>
 
   <div id="viewContainer"></div>
 </div>
 
-     <button id="debugToggle" style="
+<button id="debugToggle" class="admin-debug-toggle" style="
   position: fixed;
   top: 20px;
   right: 20px;
@@ -627,16 +1039,19 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 /* ===================== REALTIME BOOKINGS ===================== */
 let realtimeChannel = null;
 
-     function showToast(message) {
+function showAdminBanner(message, type) {
+  type = type || "success";
   const container = document.getElementById("toastContainer");
-
+  if (!container) return;
   const toast = document.createElement("div");
-  toast.className = "toast";
+  toast.className = "toast" + (type === "error" ? " toast-error" : "");
   toast.textContent = message;
-
   container.appendChild(toast);
-
   setTimeout(() => toast.remove(), 5500);
+}
+
+function showToast(message) {
+  showAdminBanner(message, "success");
 }
 
 function startRealtimeBookings() {
@@ -706,6 +1121,7 @@ let cachedViews = {
 };
      let reloadHistoryPage = null;
      let reloadSubscriptionsPage = null;
+     let reloadDiscountCodesPage = null;
      let historyPage = 1;
 const historyPageSize = 20;
 let filteredHistory = [];
@@ -737,6 +1153,13 @@ const viewContainer = document.getElementById("viewContainer");
     if (currentView === "subscriptions") {
       if (reloadSubscriptionsPage) {
         await reloadSubscriptionsPage();
+      }
+      return;
+    }
+
+    if (currentView === "discount-codes") {
+      if (reloadDiscountCodesPage) {
+        await reloadDiscountCodesPage();
       }
       return;
     }
@@ -886,46 +1309,43 @@ cachedViews.upcoming.push(b);
      bookings.forEach(b => knownBookingIds.add(b.id));
 }
 
-function renderSection(title, bookings, collapsed = false) {
-const section = document.createElement("div");
-section.className = "day";
+function renderSection(title, bookings, startCollapsed = false) {
+  const section = document.createElement("div");
+  section.className = "admin-section" + (startCollapsed ? " collapsed" : "");
 
-const header = document.createElement("h2");
-header.textContent = `${title} (${bookings.length})`;
-section.appendChild(header);
+  const header = document.createElement("div");
+  header.className = "admin-section-header";
+  header.setAttribute("role", "button");
+  header.setAttribute("aria-expanded", startCollapsed ? "false" : "true");
+  header.innerHTML = `<span>${title} (${bookings.length})</span><span class="chevron" aria-hidden="true">▼</span>`;
+  header.onclick = () => {
+    section.classList.toggle("collapsed");
+    header.setAttribute("aria-expanded", section.classList.contains("collapsed") ? "false" : "true");
+  };
+  section.appendChild(header);
 
-const body = document.createElement("div");
+  const body = document.createElement("div");
+  body.className = "admin-section-body";
 
-if (collapsed) {
-body.style.display = "none";
-header.style.cursor = "pointer";
-header.onclick = () => {
-body.style.display =
-body.style.display === "none" ? "block" : "none";
-};
-}
+  const groups = {};
+  bookings.forEach(b => {
+    const dayKey = new Date(b.scheduled_start).toDateString();
+    if (!groups[dayKey]) groups[dayKey] = [];
+    groups[dayKey].push(b);
+  });
 
-// 🔹 Group bookings by calendar day
-const groups = {};
+  Object.entries(groups).forEach(([day, items]) => {
+    const dayGroup = document.createElement("div");
+    dayGroup.className = "day-group";
+    const dayHeader = document.createElement("h3");
+    dayHeader.textContent = formatDay(new Date(day));
+    dayGroup.appendChild(dayHeader);
+    items.forEach(b => dayGroup.appendChild(buildCard(b)));
+    body.appendChild(dayGroup);
+  });
 
-bookings.forEach(b => {
-const dayKey = new Date(b.scheduled_start).toDateString();
-if (!groups[dayKey]) groups[dayKey] = [];
-groups[dayKey].push(b);
-});
-
-Object.entries(groups).forEach(([day, items]) => {
-const dayHeader = document.createElement("h3");
-dayHeader.textContent = formatDay(new Date(day));
-body.appendChild(dayHeader);
-
-items.forEach(b => {
-body.appendChild(buildCard(b));
-});
-});
-
-section.appendChild(body);
-viewContainer.appendChild(section);
+  section.appendChild(body);
+  viewContainer.appendChild(section);
 }
 
 function buildCard(b) {
@@ -950,6 +1370,8 @@ function buildCard(b) {
   const customerName = b.customers?.full_name ?? "Unknown Client";
   const customerPhone = b.customers?.phone ?? "—";
 
+  const totalStr = b.total_price != null ? "$" + Number(b.total_price).toFixed(2) : "—";
+  const dateStr = formatTime(start);
   const card = document.createElement("div");
   card.className = "card";
      // Add accent border for today's confirmed bookings
@@ -957,11 +1379,11 @@ if (b.status === "confirmed") {
   const today = new Date();
   today.setHours(0,0,0,0);
 
-  const start = new Date(b.scheduled_start);
+  const startDate = new Date(b.scheduled_start);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  if (start >= today && start < tomorrow) {
+  if (startDate >= today && startDate < tomorrow) {
    card.dataset.todayAccent = "true";
 card.style.borderLeft = "4px solid var(--moon-primary)";
   }
@@ -969,7 +1391,12 @@ card.style.borderLeft = "4px solid var(--moon-primary)";
 
   card.innerHTML = `
   <div class="booking-header">
-    ${customerName}
+    <span class="booking-summary-line">${customerName}</span>
+    <span class="booking-summary-meta">${dateStr}</span>
+    <span class="booking-summary-meta">${serviceText}</span>
+    <span class="status-badge status-${b.status}">${(b.status ?? "").replace("_"," ")}</span>
+    <span class="booking-summary-meta">${totalStr}</span>
+    <span class="chevron" aria-hidden="true">▼</span>
   </div>
 
   <div class="booking-content">
@@ -984,6 +1411,10 @@ card.style.borderLeft = "4px solid var(--moon-primary)";
     ${(b.status ?? "").replace("_"," ")}
   </span>
 </div>
+    <div class="row"><span class="label">Service / base:</span> $${(b.base_price != null ? Number(b.base_price).toFixed(2) : "—")}</div>
+    <div class="row"><span class="label">Travel fee:</span> $${(b.travel_fee != null ? Number(b.travel_fee).toFixed(2) : "0.00")}</div>
+    ${(b.discount_code != null && (b.discount_amount != null ? b.discount_amount > 0 : true)) ? `<div class="row"><span class="label">Discount (${(b.discount_code || "").replace(/</g, "&lt;")}):</span> -$${(b.discount_amount != null ? Number(b.discount_amount).toFixed(2) : "0.00")}</div>` : ""}
+    <div class="row"><span class="label">Total:</span> $${(b.total_price != null ? Number(b.total_price).toFixed(2) : "—")}</div>
 
   </div>
 `;
@@ -1060,10 +1491,11 @@ header.onclick = () => {
       throw new Error(data.message || "Confirmation failed");
     }
 
+    showAdminBanner("Booking confirmed.", "success");
     await loadAdminData();
 
   } catch (err) {
-    alert("Confirmation failed.");
+    showAdminBanner("Confirmation failed.", "error");
     hardLog(`CONFIRM ERROR ${err.message}`);
   } finally {
     unlockBookingAction(b.id, "confirm");
@@ -1093,9 +1525,10 @@ denyBtn.className = "cancel";
       throw new Error(data.error || "Deny failed");
     }
 
+    showAdminBanner("Booking denied.", "success");
     await loadAdminData();
   } catch (err) {
-    alert("Deny failed.");
+    showAdminBanner("Deny failed.", "error");
     hardLog(`DENY ERROR ${err.message}`);
   } finally {
     unlockBookingAction(b.id, "deny");
@@ -1154,10 +1587,11 @@ if (b.google_event_id) {
 
       if (error) throw error;
 
+      showAdminBanner("Reschedule requested.", "success");
       await loadAdminData();
 
     } catch (err) {
-      alert("Reschedule failed.");
+      showAdminBanner("Reschedule failed.", "error");
       hardLog(`RESCHEDULE ERROR ${err.message}`);
     } finally {
       unlockBookingAction(b.id, "reschedule");
@@ -1180,7 +1614,11 @@ if (b.google_event_id) {
   body: JSON.stringify({ bookingId: b.id })
 });
 
+      showAdminBanner("Job marked completed.", "success");
       await loadAdminData();
+    } catch (err) {
+      showAdminBanner("Complete failed.", "error");
+      hardLog(`COMPLETE ERROR ${err.message}`);
     } finally {
       unlockBookingAction(b.id, "complete");
       setBookingButtonsDisabled(card, false);
@@ -1222,6 +1660,7 @@ if (b.google_event_id) {
 
       if (error) throw error;
 
+      showAdminBanner("Booking cancelled.", "success");
       await loadAdminData();
 
       adminFetch("/api/send-booking-cancelled-email", {
@@ -1231,7 +1670,7 @@ if (b.google_event_id) {
       }).catch((e) => console.error("Cancel email failed", e));
 
     } catch (err) {
-      alert("Cancellation failed.");
+      showAdminBanner("Cancellation failed.", "error");
       hardLog(`CANCEL ERROR ${err.message}`);
     } finally {
       unlockBookingAction(b.id, "cancel");
@@ -1256,7 +1695,7 @@ const { error } = await supabase
 .eq("id", id);
 
 if (error) {
-alert("Failed to update booking status");
+showAdminBanner("Failed to update booking status.", "error");
 console.error(error);
 return;
 }
@@ -1283,26 +1722,78 @@ function renderDashboard() {
 function renderButtons() {
   viewButtons.innerHTML = "";
 
-  const buttons = [
+  const primaryKeys = ["pending", "today", "upcoming"];
+  const menuKeys = ["history", "subscriptions", "discount-codes"];
+  const allButtons = [
     { key: "pending", label: "Pending Bookings" },
     { key: "today", label: "Today's Schedule" },
     { key: "upcoming", label: "Upcoming Bookings" },
     { key: "history", label: "History" },
-    { key: "subscriptions", label: "Subscriptions" }
+    { key: "subscriptions", label: "Subscriptions" },
+    { key: "discount-codes", label: "Discount Codes" }
   ];
 
-  buttons.forEach(btn => {
+  allButtons.forEach(btn => {
     const button = document.createElement("button");
     button.textContent = btn.label;
     button.className = "moon-tab";
     button.dataset.view = btn.key;
-
-    button.onclick = () => {
-      handleViewSwitch(btn.key);
-    };
-
+    if (menuKeys.indexOf(btn.key) !== -1) button.classList.add("admin-nav-secondary");
+    button.onclick = () => { handleViewSwitch(btn.key); };
     viewButtons.appendChild(button);
   });
+
+  const dropdown = document.getElementById("adminMenuDropdown");
+  if (dropdown) {
+    dropdown.innerHTML = "";
+    menuKeys.forEach(key => {
+      const item = allButtons.find(b => b.key === key);
+      if (!item) return;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "moon-tab";
+      btn.textContent = item.label;
+      btn.dataset.view = key;
+      btn.onclick = () => {
+        handleViewSwitch(key);
+        dropdown.classList.remove("open");
+      };
+      dropdown.appendChild(btn);
+    });
+    const debugBtn = document.createElement("button");
+    debugBtn.type = "button";
+    debugBtn.className = "moon-tab";
+    debugBtn.textContent = "Toggle Debug";
+    debugBtn.onclick = () => {
+      dropdown.classList.remove("open");
+      const dt = document.getElementById("debugToggle");
+      if (dt) dt.click();
+    };
+    dropdown.appendChild(debugBtn);
+  }
+
+  const menuBtn = document.getElementById("adminMenuBtn");
+  if (menuBtn) {
+    menuBtn.onclick = (e) => {
+      e.stopPropagation();
+      const d = document.getElementById("adminMenuDropdown");
+      if (!d) return;
+      d.classList.toggle("open");
+      if (d.classList.contains("open")) {
+        const closeOnce = (ev) => {
+          if (d.contains(ev.target) || ev.target === menuBtn) return;
+          closeAdminMenu();
+          document.body.removeEventListener("click", closeOnce);
+        };
+        setTimeout(() => document.body.addEventListener("click", closeOnce), 0);
+      }
+    };
+  }
+}
+
+function closeAdminMenu() {
+  const d = document.getElementById("adminMenuDropdown");
+  if (d) d.classList.remove("open");
 }
 
 function handleViewSwitch(viewName) {
@@ -1320,7 +1811,6 @@ highlightActiveButton(viewName);
 
 function highlightActiveButton(activeKey) {
   const all = viewButtons.querySelectorAll("button");
-
   all.forEach(btn => {
     if (btn.dataset.view === activeKey) {
       btn.classList.add("active");
@@ -1328,6 +1818,16 @@ function highlightActiveButton(activeKey) {
       btn.classList.remove("active");
     }
   });
+  const dropdown = document.getElementById("adminMenuDropdown");
+  if (dropdown) {
+    dropdown.querySelectorAll("button").forEach(btn => {
+      if (btn.dataset.view === activeKey) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+  }
 }
 
 function renderView(viewName) {
@@ -1340,25 +1840,21 @@ function renderView(viewName) {
     const wrapper = document.createElement("div");
 
     const filterRow = document.createElement("div");
-    filterRow.style.display = "flex";
-    filterRow.style.justifyContent = "center";
-    filterRow.style.gap = "10px";
-    filterRow.style.marginBottom = "20px";
-
+    filterRow.className = "admin-filters";
     const searchInput = document.createElement("input");
     searchInput.type = "text";
     searchInput.placeholder = "Search by client name";
-    searchInput.style.padding = "6px 10px";
-    searchInput.style.borderRadius = "6px";
-    searchInput.style.border = "1px solid #ffffff40";
+    searchInput.style.padding = "8px 12px";
+    searchInput.style.borderRadius = "8px";
+    searchInput.style.border = "1px solid rgba(255,255,255,0.25)";
     searchInput.style.background = "rgba(255,255,255,0.08)";
     searchInput.style.color = "white";
 
     const dateInput = document.createElement("input");
     dateInput.type = "date";
-    dateInput.style.padding = "6px 10px";
-    dateInput.style.borderRadius = "6px";
-    dateInput.style.border = "1px solid #ffffff40";
+    dateInput.style.padding = "8px 12px";
+    dateInput.style.borderRadius = "8px";
+    dateInput.style.border = "1px solid rgba(255,255,255,0.25)";
     dateInput.style.background = "rgba(255,255,255,0.08)";
     dateInput.style.color = "white";
 
@@ -1366,16 +1862,31 @@ function renderView(viewName) {
     filterRow.appendChild(dateInput);
     wrapper.appendChild(filterRow);
 
+    const section = document.createElement("div");
+    section.className = "admin-section";
+    const sectionHeader = document.createElement("div");
+    sectionHeader.className = "admin-section-header";
+    sectionHeader.setAttribute("role", "button");
+    sectionHeader.setAttribute("aria-expanded", "true");
+    sectionHeader.innerHTML = '<span>History</span><span class="chevron" aria-hidden="true">▼</span>';
+    sectionHeader.onclick = () => {
+      section.classList.toggle("collapsed");
+      sectionHeader.setAttribute("aria-expanded", section.classList.contains("collapsed") ? "false" : "true");
+    };
+    section.appendChild(sectionHeader);
+    const sectionBody = document.createElement("div");
+    sectionBody.className = "admin-section-body";
     const resultsContainer = document.createElement("div");
-    wrapper.appendChild(resultsContainer);
-
+    sectionBody.appendChild(resultsContainer);
     const paginationContainer = document.createElement("div");
     paginationContainer.style.display = "flex";
+    paginationContainer.style.flexWrap = "wrap";
     paginationContainer.style.justifyContent = "center";
     paginationContainer.style.gap = "8px";
-    paginationContainer.style.marginTop = "20px";
-    wrapper.appendChild(paginationContainer);
-
+    paginationContainer.style.marginTop = "16px";
+    sectionBody.appendChild(paginationContainer);
+    section.appendChild(sectionBody);
+    wrapper.appendChild(section);
     viewContainer.appendChild(wrapper);
 
     let currentPage = 1;
@@ -1403,11 +1914,28 @@ function renderView(viewName) {
         resultsContainer.innerHTML = "";
 
         if (!payload.rows.length) {
-          resultsContainer.innerHTML = "<div style='margin-top:40px;font-weight:600;'>No records found.</div>";
+          resultsContainer.innerHTML = "<div style='margin-top:20px;font-weight:600;color:rgba(255,255,255,0.7);'>No records found.</div>";
+          sectionHeader.querySelector("span").textContent = "History (0)";
           return;
         }
 
-        payload.rows.forEach(b => resultsContainer.appendChild(buildCard(b)));
+        sectionHeader.querySelector("span").textContent = "History (" + (payload.totalCount || payload.rows.length) + ")";
+        const groups = {};
+        payload.rows.forEach(b => {
+          const dayKey = new Date(b.scheduled_start).toDateString();
+          if (!groups[dayKey]) groups[dayKey] = [];
+          groups[dayKey].push(b);
+        });
+        const sortedDays = Object.keys(groups).sort((a, b) => new Date(b) - new Date(a));
+        sortedDays.forEach(dayKey => {
+          const dayGroup = document.createElement("div");
+          dayGroup.className = "day-group";
+          const dayHeader = document.createElement("h3");
+          dayHeader.textContent = formatDay(new Date(dayKey));
+          dayGroup.appendChild(dayHeader);
+          groups[dayKey].forEach(b => dayGroup.appendChild(buildCard(b)));
+          resultsContainer.appendChild(dayGroup);
+        });
 
         const totalPages = Math.ceil(payload.totalCount / PAGE_SIZE);
         for (let i = 1; i <= totalPages; i++) {
@@ -1421,6 +1949,7 @@ function renderView(viewName) {
 
             } catch (err) {
         resultsContainer.innerHTML = "Failed to load history.";
+        showAdminBanner("Failed to load history.", "error");
         hardLog("HISTORY LOAD ERROR " + err.message);
         return false;
       }
@@ -1451,56 +1980,63 @@ function renderView(viewName) {
     wrapper.style.gap = "20px";
 
     const filterRow = document.createElement("div");
-    filterRow.style.display = "flex";
-    filterRow.style.flexWrap = "wrap";
-    filterRow.style.justifyContent = "center";
-    filterRow.style.gap = "10px";
-    filterRow.style.marginBottom = "10px";
-
+    filterRow.className = "admin-filters";
     const statusSelect = document.createElement("select");
-    statusSelect.style.padding = "6px 10px";
-    statusSelect.style.borderRadius = "6px";
-    statusSelect.style.border = "1px solid #ffffff40";
+    statusSelect.style.padding = "8px 12px";
+    statusSelect.style.borderRadius = "8px";
+    statusSelect.style.border = "1px solid rgba(255,255,255,0.25)";
     statusSelect.style.background = "rgba(255,255,255,0.08)";
     statusSelect.style.color = "white";
     statusSelect.innerHTML = "<option value=''>All statuses</option><option value='active'>active</option><option value='paused'>paused</option><option value='cancelled'>cancelled</option><option value='pending_activation'>pending_activation</option>";
 
     const freqSelect = document.createElement("select");
-    freqSelect.style.padding = "6px 10px";
-    freqSelect.style.borderRadius = "6px";
-    freqSelect.style.border = "1px solid #ffffff40";
+    freqSelect.style.padding = "8px 12px";
+    freqSelect.style.borderRadius = "8px";
+    freqSelect.style.border = "1px solid rgba(255,255,255,0.25)";
     freqSelect.style.background = "rgba(255,255,255,0.08)";
     freqSelect.style.color = "white";
     freqSelect.innerHTML = "<option value=''>All frequencies</option><option value='biweekly'>biweekly</option><option value='monthly'>monthly</option><option value='quarterly'>quarterly</option>";
 
     const searchInputSub = document.createElement("input");
     searchInputSub.type = "text";
-    searchInputSub.placeholder = "Search customer name, email, phone";
-    searchInputSub.style.padding = "6px 10px";
-    searchInputSub.style.borderRadius = "6px";
-    searchInputSub.style.border = "1px solid #ffffff40";
+    searchInputSub.placeholder = "Search customer, email, phone";
+    searchInputSub.style.padding = "8px 12px";
+    searchInputSub.style.borderRadius = "8px";
+    searchInputSub.style.border = "1px solid rgba(255,255,255,0.25)";
     searchInputSub.style.background = "rgba(255,255,255,0.08)";
     searchInputSub.style.color = "white";
-    searchInputSub.style.minWidth = "200px";
 
     filterRow.appendChild(statusSelect);
     filterRow.appendChild(freqSelect);
     filterRow.appendChild(searchInputSub);
     wrapper.appendChild(filterRow);
 
+    const listSection = document.createElement("div");
+    listSection.className = "admin-section";
+    const listSectionHeader = document.createElement("div");
+    listSectionHeader.className = "admin-section-header";
+    listSectionHeader.setAttribute("role", "button");
+    listSectionHeader.setAttribute("aria-expanded", "true");
+    listSectionHeader.innerHTML = '<span>Subscriptions</span><span class="chevron" aria-hidden="true">▼</span>';
+    listSectionHeader.onclick = () => {
+      listSection.classList.toggle("collapsed");
+      listSectionHeader.setAttribute("aria-expanded", listSection.classList.contains("collapsed") ? "false" : "true");
+    };
+    listSection.appendChild(listSectionHeader);
     const listContainer = document.createElement("div");
-    listContainer.style.overflowX = "auto";
-    wrapper.appendChild(listContainer);
+    listContainer.className = "admin-section-body";
+    listSection.appendChild(listContainer);
+    wrapper.appendChild(listSection);
 
     const detailPanel = document.createElement("div");
     detailPanel.id = "subscriptionDetailPanel";
     detailPanel.style.display = "none";
-    detailPanel.style.marginTop = "20px";
+    detailPanel.style.marginTop = "8px";
     detailPanel.style.padding = "18px";
     detailPanel.style.borderRadius = "14px";
     detailPanel.style.border = "1px solid rgba(255,255,255,0.2)";
     detailPanel.style.background = "rgba(111,147,196,0.2)";
-    wrapper.appendChild(detailPanel);
+    detailPanel.className = "subscription-detail-panel";
 
     viewContainer.appendChild(wrapper);
 
@@ -1508,6 +2044,7 @@ function renderView(viewName) {
 
     async function loadSubscriptionsList() {
       listContainer.innerHTML = "Loading subscriptions...";
+      if (detailPanel.parentNode) detailPanel.parentNode.removeChild(detailPanel);
       const params = new URLSearchParams();
       if (statusSelect.value) params.append("status", statusSelect.value);
       if (freqSelect.value) params.append("frequency", freqSelect.value);
@@ -1517,52 +2054,69 @@ function renderView(viewName) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to load");
         const subs = data.subscriptions || [];
+        listSectionHeader.querySelector("span").textContent = "Subscriptions (" + subs.length + ")";
         if (subs.length === 0) {
-          listContainer.innerHTML = "<div style='margin-top:20px;font-weight:600;'>No subscriptions found.</div>";
+          listContainer.innerHTML = "<div style='margin-top:12px;font-weight:600;color:rgba(255,255,255,0.7);'>No subscriptions found.</div>";
           return;
         }
-        const table = document.createElement("table");
-        table.style.width = "100%";
-        table.style.borderCollapse = "collapse";
-        table.style.color = "white";
-        table.innerHTML = `
-          <thead>
-            <tr style="border-bottom:1px solid rgba(255,255,255,0.3);text-align:left;">
-              <th style="padding:8px;">Customer</th>
-              <th style="padding:8px;">Vehicle / Service</th>
-              <th style="padding:8px;">Freq</th>
-              <th style="padding:8px;">Status</th>
-              <th style="padding:8px;">Anchor</th>
-              <th style="padding:8px;">Cycles</th>
-              <th style="padding:8px;">Active cycle</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        `;
-        const tbody = table.querySelector("tbody");
+        listContainer.innerHTML = "";
         subs.forEach(s => {
-          const tr = document.createElement("tr");
-          tr.style.borderBottom = "1px solid rgba(255,255,255,0.1)";
-          tr.style.cursor = "pointer";
-          tr.dataset.subId = s.id;
           const ac = s.active_cycle;
           const acText = ac ? `${ac.status} ${ac.window_start_date}–${ac.effective_window_end || ac.window_end_date} ${ac.has_booking ? "(booked)" : ""}` : "—";
-          tr.innerHTML = `
-            <td style="padding:8px;">${(s.customer_name || "").trim() || "—"} ${s.email ? "(" + s.email + ")" : ""}</td>
-            <td style="padding:8px;">${s.vehicle_summary || "—"} / ${s.service_summary || "—"}</td>
-            <td style="padding:8px;">${s.frequency || "—"}</td>
-            <td style="padding:8px;"><span class="status-badge status-${s.status || ""}">${s.status || "—"}</span></td>
-            <td style="padding:8px;">${s.anchor_date || "—"}</td>
-            <td style="padding:8px;">${s.completed_cycles_count ?? 0} / ${s.missed_cycles_count ?? 0}</td>
-            <td style="padding:8px;">${acText}</td>
+          const card = document.createElement("div");
+          card.className = "subscription-card";
+          card.dataset.subscriptionId = s.id;
+          card.innerHTML = `
+            <div class="subscription-card-header">
+              <span class="subscription-card-name">${((s.customer_name || "").trim() || "—").replace(/</g, "&lt;")}</span>
+              <span class="subscription-card-meta">${(s.vehicle_summary || "—").replace(/</g, "&lt;")} / ${(s.service_summary || "—").replace(/</g, "&lt;")}</span>
+              <span class="subscription-card-meta">${s.frequency || "—"}</span>
+              <span class="status-badge status-${s.status || ""}">${s.status || "—"}</span>
+              <span class="chevron" aria-hidden="true">▼</span>
+            </div>
+            <div class="subscription-card-detail">
+              <p><strong>Anchor:</strong> ${s.anchor_date || "—"}</p>
+              <p><strong>Cycles:</strong> ${s.completed_cycles_count ?? 0} completed / ${s.missed_cycles_count ?? 0} missed</p>
+              <p><strong>Active cycle:</strong> ${acText}</p>
+              <button type="button" class="moon-tab" data-sub-id="${s.id}">View details & actions</button>
+            </div>
           `;
-          tr.onclick = () => { selectedSubscriptionId = s.id; loadSubscriptionDetail(s.id); };
-          tbody.appendChild(tr);
+          card.querySelector(".subscription-card-header").onclick = () => {
+            if (card.classList.contains("expanded") && selectedSubscriptionId === s.id) {
+              if (detailPanel.parentNode) detailPanel.parentNode.removeChild(detailPanel);
+              detailPanel.style.display = "none";
+              selectedSubscriptionId = null;
+            }
+            card.classList.toggle("expanded");
+          };
+          card.querySelector("[data-sub-id]").onclick = (e) => {
+            e.stopPropagation();
+            const prevId = selectedSubscriptionId;
+            if (prevId && prevId !== s.id) {
+              const prevCard = listContainer.querySelector(`[data-subscription-id="${prevId}"]`);
+              if (prevCard) prevCard.classList.remove("expanded");
+              if (detailPanel.parentNode) detailPanel.parentNode.removeChild(detailPanel);
+            }
+            selectedSubscriptionId = s.id;
+            if (detailPanel.parentNode) detailPanel.parentNode.removeChild(detailPanel);
+            listContainer.insertBefore(detailPanel, card.nextSibling);
+            detailPanel.style.display = "block";
+            card.classList.add("expanded");
+            loadSubscriptionDetail(s.id);
+          };
+          listContainer.appendChild(card);
         });
-        listContainer.innerHTML = "";
-        listContainer.appendChild(table);
+        if (selectedSubscriptionId) {
+          const selCard = listContainer.querySelector(`[data-subscription-id="${selectedSubscriptionId}"]`);
+          if (selCard) {
+            listContainer.insertBefore(detailPanel, selCard.nextSibling);
+            detailPanel.style.display = "block";
+            selCard.classList.add("expanded");
+            loadSubscriptionDetail(selectedSubscriptionId);
+          }
+        }
       } catch (err) {
-        listContainer.innerHTML = "<div style='margin-top:20px;color:#ff6b6b;'>" + (err.message || "Failed to load subscriptions") + "</div>";
+        listContainer.innerHTML = "<div style='margin-top:12px;color:#ff6b6b;'>" + (err.message || "Failed to load subscriptions") + "</div>";
       }
     }
 
@@ -1619,10 +2173,10 @@ function renderView(viewName) {
                 const r = await adminFetch("/api/admin-change-subscription-plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
                 const d = await r.json();
                 if (!r.ok) throw new Error(d.error || "Failed");
-                showToast("Plan updated.");
+                showAdminBanner("Plan updated.", "success");
                 loadSubscriptionDetail(id);
                 loadSubscriptionsList();
-              } catch (e) { showToast("Error: " + (e.message || "Unknown")); }
+              } catch (e) { showAdminBanner(e.message || "Update failed.", "error"); }
               return;
             }
             const endpoints = { pause: "/api/admin-pause-subscription", resume: "/api/admin-resume-subscription", cancel: "/api/admin-cancel-subscription", extend: "/api/admin-extend-subscription-cycle", forceCreate: "/api/admin-force-create-subscription-cycle" };
@@ -1633,15 +2187,16 @@ function renderView(viewName) {
               const r = await adminFetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription_id: id }) });
               const d = await r.json();
               if (!r.ok) throw new Error(d.error || "Failed");
-              showToast(d.message || "Done.");
+              showAdminBanner(d.message || "Done.", "success");
               loadSubscriptionDetail(id);
               loadSubscriptionsList();
-            } catch (e) { showToast("Error: " + (e.message || "Unknown")); }
+            } catch (e) { showAdminBanner(e.message || "Action failed.", "error"); }
             btn.disabled = false;
           };
         });
       } catch (err) {
         detailPanel.innerHTML = "<div style='color:#ff6b6b;'>" + (err.message || "Failed to load detail") + "</div>";
+        showAdminBanner(err.message || "Failed to load detail.", "error");
       }
     }
 
@@ -1655,27 +2210,267 @@ function renderView(viewName) {
   }
 
   // =========================
-// NORMAL VIEWS
+  // DISCOUNT CODES
+  // =========================
+  if (viewName === "discount-codes") {
+    const wrapper = document.createElement("div");
+    wrapper.style.display = "flex";
+    wrapper.style.flexDirection = "column";
+    wrapper.style.gap = "24px";
+
+    const createSection = document.createElement("div");
+    createSection.className = "discount-create-section";
+    createSection.style.padding = "18px";
+    createSection.style.borderRadius = "14px";
+    createSection.style.border = "1px solid rgba(255,255,255,0.2)";
+    createSection.style.background = "rgba(111,147,196,0.15)";
+    createSection.innerHTML = "<h3 style='margin-top:0;'>Create discount code</h3>";
+    const form = document.createElement("form");
+    form.className = "admin-filters discount-create-form";
+    form.style.display = "flex";
+    form.style.flexWrap = "wrap";
+    form.style.gap = "10px";
+    form.style.alignItems = "end";
+    const codeInput = document.createElement("input");
+    codeInput.placeholder = "Code";
+    codeInput.name = "code";
+    codeInput.style.padding = "8px 12px";
+    codeInput.style.borderRadius = "6px";
+    codeInput.style.border = "1px solid rgba(255,255,255,0.3)";
+    codeInput.style.background = "rgba(255,255,255,0.08)";
+    codeInput.style.color = "white";
+    const pctInput = document.createElement("input");
+    pctInput.type = "number";
+    pctInput.min = "1";
+    pctInput.max = "100";
+    pctInput.placeholder = "% off";
+    pctInput.name = "percent_off";
+    pctInput.style.padding = "8px 12px";
+    pctInput.style.borderRadius = "6px";
+    pctInput.style.border = "1px solid rgba(255,255,255,0.3)";
+    pctInput.style.background = "rgba(255,255,255,0.08)";
+    pctInput.style.color = "white";
+    const startInput = document.createElement("input");
+    startInput.type = "datetime-local";
+    startInput.name = "starts_at";
+    startInput.style.padding = "8px 12px";
+    startInput.style.borderRadius = "6px";
+    startInput.style.border = "1px solid rgba(255,255,255,0.3)";
+    startInput.style.background = "rgba(255,255,255,0.08)";
+    startInput.style.color = "white";
+    const endInput = document.createElement("input");
+    endInput.type = "datetime-local";
+    endInput.name = "ends_at";
+    endInput.style.padding = "8px 12px";
+    endInput.style.borderRadius = "6px";
+    endInput.style.border = "1px solid rgba(255,255,255,0.3)";
+    endInput.style.background = "rgba(255,255,255,0.08)";
+    endInput.style.color = "white";
+    const submitBtn = document.createElement("button");
+    submitBtn.type = "submit";
+    submitBtn.textContent = "Create";
+    submitBtn.className = "moon-tab";
+    form.appendChild(codeInput);
+    form.appendChild(pctInput);
+    form.appendChild(startInput);
+    form.appendChild(endInput);
+    form.appendChild(submitBtn);
+    createSection.appendChild(form);
+    wrapper.appendChild(createSection);
+
+    function buildDiscountCodeSection(title, items) {
+      const section = document.createElement("div");
+      section.className = "admin-section collapsed";
+      const header = document.createElement("div");
+      header.className = "admin-section-header";
+      header.setAttribute("role", "button");
+      header.setAttribute("aria-expanded", "false");
+      header.innerHTML = `<span>${title} (${items.length})</span><span class="chevron" aria-hidden="true">▼</span>`;
+      header.onclick = () => {
+        section.classList.toggle("collapsed");
+        header.setAttribute("aria-expanded", section.classList.contains("collapsed") ? "false" : "true");
+      };
+      section.appendChild(header);
+      const body = document.createElement("div");
+      body.className = "admin-section-body";
+      if (items.length === 0) {
+        body.innerHTML = "<p style='margin:0;color:rgba(255,255,255,0.6);'>None</p>";
+      } else {
+        items.forEach(d => {
+          const startStr = d.starts_at ? new Date(d.starts_at).toLocaleString() : "—";
+          const endStr = d.ends_at ? new Date(d.ends_at).toLocaleString() : "—";
+          const statusLabel = d.is_disabled ? "Disabled" : (d.ends_at && new Date(d.ends_at) < new Date() ? "Expired" : "Active");
+          const card = document.createElement("div");
+          card.className = "discount-code-card";
+          card.innerHTML = `
+            <div class="discount-code-header">
+              <span><strong>${(d.code || "").replace(/</g, "&lt;")}</strong></span>
+              <span class="booking-summary-meta">${d.percent_off}% off</span>
+              <span class="booking-summary-meta">${statusLabel}</span>
+              <span class="booking-summary-meta">${startStr} → ${endStr}</span>
+              <span class="chevron" aria-hidden="true">▼</span>
+            </div>
+            <div class="discount-code-detail">
+              <p style="margin:0 0 6px;"><strong>Start:</strong> ${startStr}</p>
+              <p style="margin:0 0 10px;"><strong>End:</strong> ${endStr}</p>
+              ${d.is_disabled ? "<p style='margin:0 0 10px;color:#888;'>Disabled</p>" : `<button type="button" class="moon-tab" data-disable-id="${d.id}">Disable</button>`}
+            </div>
+          `;
+          card.querySelector(".discount-code-header").onclick = () => card.classList.toggle("expanded");
+          const disableBtn = card.querySelector("[data-disable-id]");
+          if (disableBtn) {
+            disableBtn.onclick = async (e) => {
+              e.stopPropagation();
+              try {
+                const r = await adminFetch("/api/admin-discount-codes-disable", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: d.id }) });
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.error || "Failed");
+                showAdminBanner("Code disabled.", "success");
+                loadDiscountCodes();
+              } catch (e) { showAdminBanner(e.message || "Disable failed.", "error"); }
+            };
+          }
+          body.appendChild(card);
+        });
+      }
+      section.appendChild(body);
+      return section;
+    }
+
+    const activeContainer = document.createElement("div");
+    activeContainer.id = "discountCodesActive";
+    activeContainer.style.marginTop = "16px";
+    const scheduledContainer = document.createElement("div");
+    scheduledContainer.id = "discountCodesScheduled";
+    scheduledContainer.style.marginTop = "8px";
+    const inactiveSection = document.createElement("div");
+    inactiveSection.className = "admin-section collapsed";
+    const inactiveHeader = document.createElement("div");
+    inactiveHeader.className = "admin-section-header";
+    inactiveHeader.setAttribute("role", "button");
+    inactiveHeader.setAttribute("aria-expanded", "false");
+    inactiveHeader.innerHTML = '<span>Inactive / expired / disabled</span><span class="chevron" aria-hidden="true">▼</span>';
+    const inactiveBody = document.createElement("div");
+    inactiveBody.id = "discountCodesInactive";
+    inactiveBody.className = "admin-section-body";
+    inactiveSection.appendChild(inactiveHeader);
+    inactiveSection.appendChild(inactiveBody);
+    inactiveHeader.onclick = () => {
+      inactiveSection.classList.toggle("collapsed");
+      inactiveHeader.setAttribute("aria-expanded", inactiveSection.classList.contains("collapsed") ? "false" : "true");
+    };
+
+    async function loadDiscountCodes() {
+      const res = await adminFetch("/api/admin-discount-codes-list");
+      const data = await res.json();
+      if (!res.ok) {
+        wrapper.innerHTML = "<div style='color:#ff6b6b;'>" + (data.error || "Failed to load") + "</div>";
+        return;
+      }
+      const active = data.active || [];
+      const scheduled = data.scheduled || [];
+      const inactive = data.inactive || [];
+      activeContainer.innerHTML = "";
+      activeContainer.appendChild(buildDiscountCodeSection("Active", active));
+      scheduledContainer.innerHTML = "";
+      scheduledContainer.appendChild(buildDiscountCodeSection("Scheduled / upcoming", scheduled));
+      inactiveHeader.querySelector("span").textContent = "Inactive / expired / disabled (" + inactive.length + ")";
+      inactiveBody.innerHTML = "";
+      if (inactive.length === 0) {
+        inactiveBody.innerHTML = "<p style='margin:0;color:rgba(255,255,255,0.6);'>None</p>";
+      } else {
+        inactive.forEach(d => {
+          const startStr = d.starts_at ? new Date(d.starts_at).toLocaleString() : "—";
+          const endStr = d.ends_at ? new Date(d.ends_at).toLocaleString() : "—";
+          const statusLabel = d.is_disabled ? "Disabled" : "Expired";
+          const card = document.createElement("div");
+          card.className = "discount-code-card";
+          card.innerHTML = `
+            <div class="discount-code-header">
+              <span><strong>${(d.code || "").replace(/</g, "&lt;")}</strong></span>
+              <span class="booking-summary-meta">${d.percent_off}% off · ${statusLabel}</span>
+              <span class="booking-summary-meta">${startStr} → ${endStr}</span>
+              <span class="chevron" aria-hidden="true">▼</span>
+            </div>
+            <div class="discount-code-detail">
+              <p style="margin:0 0 6px;"><strong>Start:</strong> ${startStr}</p>
+              <p style="margin:0 0 10px;"><strong>End:</strong> ${endStr}</p>
+              ${d.is_disabled ? "<p style='margin:0;color:#888;'>Disabled</p>" : `<button type="button" class="moon-tab" data-disable-id="${d.id}">Disable</button>`}
+            </div>
+          `;
+          card.querySelector(".discount-code-header").onclick = () => card.classList.toggle("expanded");
+          const disableBtn = card.querySelector("[data-disable-id]");
+          if (disableBtn) {
+            disableBtn.onclick = async (e) => {
+              e.stopPropagation();
+              try {
+                const r = await adminFetch("/api/admin-discount-codes-disable", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: d.id }) });
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.error || "Failed");
+                showAdminBanner("Code disabled.", "success");
+                loadDiscountCodes();
+              } catch (e) { showAdminBanner(e.message || "Disable failed.", "error"); }
+            };
+          }
+          inactiveBody.appendChild(card);
+        });
+      }
+    }
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const startsAt = startInput.value ? new Date(startInput.value).toISOString() : "";
+      const endsAt = endInput.value ? new Date(endInput.value).toISOString() : "";
+      try {
+        const r = await adminFetch("/api/admin-discount-codes-create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            code: codeInput.value.trim(),
+            percent_off: Number(pctInput.value) || 0,
+            starts_at: startsAt,
+            ends_at: endsAt
+          })
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || "Failed");
+        showAdminBanner("Discount code created.", "success");
+        codeInput.value = "";
+        pctInput.value = "";
+        startInput.value = "";
+        endInput.value = "";
+        loadDiscountCodes();
+      } catch (err) { showAdminBanner(err.message || "Create failed.", "error"); }
+    };
+
+    wrapper.appendChild(activeContainer);
+    wrapper.appendChild(scheduledContainer);
+    wrapper.appendChild(inactiveSection);
+    viewContainer.appendChild(wrapper);
+
+    reloadDiscountCodesPage = loadDiscountCodes;
+    loadDiscountCodes();
+    return;
+  }
+
+  // =========================
+// NORMAL VIEWS (Pending / Today / Upcoming)
 // =========================
 const data = cachedViews[viewName];
+const sectionTitles = { pending: "Pending Bookings", today: "Today's Schedule", upcoming: "Upcoming Bookings" };
+const sectionTitle = sectionTitles[viewName] || viewName;
 
 if (!data || data.length === 0) {
   let message = "No records found.";
-
-  if (viewName === "pending") {
-    message = "No pending bookings yet.";
-  } else if (viewName === "today") {
-    message = "No jobs scheduled for today.";
-  } else if (viewName === "upcoming") {
-    message = "No upcoming confirmed bookings.";
-  }
-
+  if (viewName === "pending") message = "No pending bookings yet.";
+  else if (viewName === "today") message = "No jobs scheduled for today.";
+  else if (viewName === "upcoming") message = "No upcoming confirmed bookings.";
   viewContainer.innerHTML =
   `<div style="margin-top:40px;font-weight:600;color:white;text-align:center;">${message}</div>`;
   return;
 }
 
-renderSection(viewName.toUpperCase(), data);
+renderSection(sectionTitle, data);
 }
 
  bootAdminApp();

@@ -6,6 +6,8 @@ import { checkAvailability } from "./_availability.js";
 import getTravelMinutes from "./_routing/getTravelMinutes.js";
 import { sendBookingCreatedEmailCore } from "../lib/email/sendBookingCreatedEmail.js";
 import { getEffectiveWindowEnd } from "./_subscriptions/lifecycle.js";
+import { getActiveDiscountCode, normalizeDiscountCode } from "./_discountCode.js";
+import { applyDiscountToPricing } from "../lib/discount.js";
 
 const BASE_ADDRESS = process.env.BASE_ADDRESS;
 const BUSINESS_TZ = "America/New_York";
@@ -238,7 +240,6 @@ export default async function handler(req, res) {
       });
     }
     const travel_fee = travelFeeFromMinutes(travel_minutes);
-    const total_price = base_price + travel_fee;
 
     const subscriptionId = body.subscription_id;
     let validatedSubscription = null;
@@ -302,23 +303,59 @@ export default async function handler(req, res) {
       validatedCycle = cycle;
     }
 
+    // Discount: apply only to non-subscription bookings. Service subtotal only; travel_fee unchanged.
+    let total_price = base_price + travel_fee;
+    let discount_code = null;
+    let discount_percent = null;
+    let discount_amount = null;
+    const discountCodeRaw = body.discount_code;
+    if (subscriptionId && (discountCodeRaw != null && String(discountCodeRaw).trim() !== "")) {
+      return res.status(400).json({
+        ok: false,
+        discountInvalid: true,
+        message: "Discount codes cannot be applied to subscription bookings."
+      });
+    }
+    if (!subscriptionId && discountCodeRaw != null && String(discountCodeRaw).trim() !== "") {
+      const codeNormalized = normalizeDiscountCode(discountCodeRaw);
+      const discount = await getActiveDiscountCode(supabase, codeNormalized);
+      if (!discount) {
+        return res.status(400).json({
+          ok: false,
+          discountInvalid: true,
+          message: "This discount code is no longer valid. Please review the price and remove the code or try again."
+        });
+      }
+      const applied = applyDiscountToPricing(base_price, travel_fee, discount.percent_off);
+      discount_code = discount.code;
+      discount_percent = discount.percent_off;
+      discount_amount = applied.discount_amount;
+      total_price = applied.total_price;
+    }
+
     const manage_token = crypto.randomUUID();
+    const insertPayload = {
+      customer_id,
+      vehicle_id,
+      service_variant_id,
+      service_address,
+      scheduled_start,
+      scheduled_end,
+      status: "pending",
+      manage_token,
+      travel_minutes,
+      travel_fee,
+      base_price,
+      total_price
+    };
+    if (discount_code != null) {
+      insertPayload.discount_code = discount_code;
+      insertPayload.discount_percent = discount_percent;
+      insertPayload.discount_amount = discount_amount;
+    }
     const { data: booking, error: insertErr } = await supabase
       .from("bookings")
-      .insert({
-        customer_id,
-        vehicle_id,
-        service_variant_id,
-        service_address,
-        scheduled_start,
-        scheduled_end,
-        status: "pending",
-        manage_token,
-        travel_minutes,
-        travel_fee,
-        base_price,
-        total_price
-      })
+      .insert(insertPayload)
       .select("id, manage_token")
       .single();
 
