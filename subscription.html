@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manage Subscription — Moon Auto Detailing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background: #000;
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+    }
+    .page-container {
+      max-width: 640px;
+      margin: 40px auto;
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 40px 32px 48px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+    }
+    .hero {
+      text-align: center;
+      padding: 24px 16px 32px;
+    }
+    h1 {
+      color: #1c1c1c;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      margin: 0 0 12px;
+      font-size: clamp(1.5rem, 4vw, 2rem);
+    }
+    .page-subtitle {
+      color: #4a4a4a;
+      margin: 0 0 24px;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+    .cta-row {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 28px;
+    }
+    .btn-primary {
+      display: inline-block;
+      padding: 14px 24px;
+      background: #7fb8e6;
+      color: #ffffff;
+      border: none;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      text-decoration: none;
+      text-align: center;
+      box-shadow: 0 6px 16px rgba(127, 184, 230, 0.45);
+      transition: background 0.2s ease, transform 0.2s ease;
+    }
+    .btn-primary:hover { background: #6aaee2; transform: translateY(-1px); }
+    .btn-secondary {
+      display: inline-block;
+      padding: 12px 20px;
+      background: #f3f4f6;
+      color: #374151;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 15px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s ease;
+    }
+    .btn-secondary:hover { background: #e5e7eb; }
+    .note-box {
+      padding: 16px;
+      background: #f0f8ff;
+      border: 1px solid rgba(127, 184, 230, 0.3);
+      border-radius: 14px;
+      font-size: 14px;
+      color: #374151;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .support-note {
+      font-size: 13px;
+      color: #6b7280;
+      text-align: center;
+      margin: 0;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <section class="hero">
+      <h1>Manage Your Subscription</h1>
+      <p class="page-subtitle">View your plan, book your next service, and manage your maintenance account.</p>
+      <div class="cta-row">
+        <a href="/subscription-login.html" class="btn-primary">Access My Subscription</a>
+        <a href="/maintenance.html" class="btn-secondary">View Maintenance Packages</a>
+      </div>
+      <p class="note-box">
+        If you already have a link from our emails, you can use it directly to open your subscription portal. Otherwise, use “Access My Subscription” above and we’ll send you a secure link.
+      </p>
+      <p class="support-note">Need help? Reply to any email from us or contact us through our usual channels.</p>
+    </section>
+  </div>
+</body>
+</html>
