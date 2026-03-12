@@ -337,6 +337,16 @@ cursor: pointer;
   box-sizing: border-box;
 }
 
+/* One nav model: History / Subscriptions / Discount Codes only in menu */
+#viewButtons button.admin-nav-secondary {
+  display: none;
+}
+
+/* Toggle Debug only in menu, not as floating button */
+.admin-debug-toggle {
+  display: none !important;
+}
+
 /* ================= LOGIN OVERLAY ================= */
 
 #loginOverlay {
@@ -696,7 +706,6 @@ cursor: pointer;
   .admin-top-utility { top: 12px; right: 12px; gap: 6px; }
   .admin-top-utility #logoutBtn,
   .admin-top-utility #refreshNow { min-height: 44px; }
-  .admin-debug-toggle { display: none !important; }
   .moon-tab { margin-bottom: 0; }
   .card { padding: 10px 12px; margin-top: 8px; }
   .card.expanded { padding: 12px 14px; }
