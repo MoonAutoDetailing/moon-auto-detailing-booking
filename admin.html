@@ -311,12 +311,22 @@ cursor: pointer;
 /* ===================== TOAST NOTIFICATIONS ===================== */
 #toastContainer {
   position: fixed;
-  top: 20px;
-  left: 20px;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   z-index: 999999;
+  width: 100%;
+  max-width: min(360px, calc(100vw - 24px));
+  pointer-events: none;
+}
+#toastContainer .toast {
+  pointer-events: auto;
+}
+@media (max-width: 640px) {
+  #toastContainer { top: 12px; max-width: calc(100vw - 20px); }
 }
 
 .toast {
@@ -329,6 +339,10 @@ cursor: pointer;
   font-weight: 600;
   box-shadow: 0 10px 30px rgba(0,0,0,0.4);
   animation: slideIn 0.25s ease, fadeOut 0.5s ease 5s forwards;
+}
+.toast.toast-error {
+  background: rgba(176,0,32,0.25);
+  border-color: rgba(255,255,255,0.25);
 }
 
 @keyframes slideIn {
@@ -569,6 +583,39 @@ cursor: pointer;
   .admin-filters { flex-direction: column; align-items: stretch; }
   .admin-filters input,
   .admin-filters select { flex: 1 1 auto; }
+  .discount-create-section .discount-create-form {
+    flex-direction: column;
+    align-items: center;
+  }
+  .discount-create-section .discount-create-form input,
+  .discount-create-section .discount-create-form button[type="submit"] {
+    width: 100%;
+    max-width: 280px;
+    box-sizing: border-box;
+  }
+  #viewButtons button.admin-nav-secondary { display: none; }
+  #adminMenuBtn { display: inline-flex; align-items: center; justify-content: center; }
+  #adminMenuDropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 6px;
+    min-width: 180px;
+    padding: 8px 0;
+    border-radius: 10px;
+    background: rgba(30,30,30,0.98);
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    z-index: 100;
+  }
+  #adminMenuDropdown.open { display: flex; flex-direction: column; gap: 4px; }
+  #adminMenuDropdown .moon-tab { margin: 0; width: 100%; text-align: left; border-radius: 6px; }
+  #topBarNavWrap { position: relative; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
+}
+@media (min-width: 641px) {
+  #adminMenuBtn { display: none; }
+  #adminMenuDropdown { display: none !important; }
 }
 
 </style>
@@ -634,10 +681,12 @@ style="
 
 <div id="pageOverlay">
   <div id="topBar">
-  <div id="viewButtons"></div>
-
+  <div id="topBarNavWrap">
+    <button id="adminMenuBtn" class="moon-tab" type="button" aria-label="More sections" style="display:none">More</button>
+    <div id="viewButtons"></div>
+    <div id="adminMenuDropdown" role="menu"></div>
+  </div>
   <button id="refreshNow" class="moon-tab">Refresh</button>
-
   <button id="logoutBtn">Logout</button>
 </div>
 
@@ -866,16 +915,19 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 /* ===================== REALTIME BOOKINGS ===================== */
 let realtimeChannel = null;
 
-     function showToast(message) {
+function showAdminBanner(message, type) {
+  type = type || "success";
   const container = document.getElementById("toastContainer");
-
+  if (!container) return;
   const toast = document.createElement("div");
-  toast.className = "toast";
+  toast.className = "toast" + (type === "error" ? " toast-error" : "");
   toast.textContent = message;
-
   container.appendChild(toast);
-
   setTimeout(() => toast.remove(), 5500);
+}
+
+function showToast(message) {
+  showAdminBanner(message, "success");
 }
 
 function startRealtimeBookings() {
@@ -1315,10 +1367,11 @@ header.onclick = () => {
       throw new Error(data.message || "Confirmation failed");
     }
 
+    showAdminBanner("Booking confirmed.", "success");
     await loadAdminData();
 
   } catch (err) {
-    alert("Confirmation failed.");
+    showAdminBanner("Confirmation failed.", "error");
     hardLog(`CONFIRM ERROR ${err.message}`);
   } finally {
     unlockBookingAction(b.id, "confirm");
@@ -1348,9 +1401,10 @@ denyBtn.className = "cancel";
       throw new Error(data.error || "Deny failed");
     }
 
+    showAdminBanner("Booking denied.", "success");
     await loadAdminData();
   } catch (err) {
-    alert("Deny failed.");
+    showAdminBanner("Deny failed.", "error");
     hardLog(`DENY ERROR ${err.message}`);
   } finally {
     unlockBookingAction(b.id, "deny");
@@ -1409,10 +1463,11 @@ if (b.google_event_id) {
 
       if (error) throw error;
 
+      showAdminBanner("Reschedule requested.", "success");
       await loadAdminData();
 
     } catch (err) {
-      alert("Reschedule failed.");
+      showAdminBanner("Reschedule failed.", "error");
       hardLog(`RESCHEDULE ERROR ${err.message}`);
     } finally {
       unlockBookingAction(b.id, "reschedule");
@@ -1435,7 +1490,11 @@ if (b.google_event_id) {
   body: JSON.stringify({ bookingId: b.id })
 });
 
+      showAdminBanner("Job marked completed.", "success");
       await loadAdminData();
+    } catch (err) {
+      showAdminBanner("Complete failed.", "error");
+      hardLog(`COMPLETE ERROR ${err.message}`);
     } finally {
       unlockBookingAction(b.id, "complete");
       setBookingButtonsDisabled(card, false);
@@ -1477,6 +1536,7 @@ if (b.google_event_id) {
 
       if (error) throw error;
 
+      showAdminBanner("Booking cancelled.", "success");
       await loadAdminData();
 
       adminFetch("/api/send-booking-cancelled-email", {
@@ -1486,7 +1546,7 @@ if (b.google_event_id) {
       }).catch((e) => console.error("Cancel email failed", e));
 
     } catch (err) {
-      alert("Cancellation failed.");
+      showAdminBanner("Cancellation failed.", "error");
       hardLog(`CANCEL ERROR ${err.message}`);
     } finally {
       unlockBookingAction(b.id, "cancel");
@@ -1511,7 +1571,7 @@ const { error } = await supabase
 .eq("id", id);
 
 if (error) {
-alert("Failed to update booking status");
+showAdminBanner("Failed to update booking status.", "error");
 console.error(error);
 return;
 }
@@ -1538,7 +1598,9 @@ function renderDashboard() {
 function renderButtons() {
   viewButtons.innerHTML = "";
 
-  const buttons = [
+  const primaryKeys = ["pending", "today", "upcoming"];
+  const menuKeys = ["history", "subscriptions", "discount-codes"];
+  const allButtons = [
     { key: "pending", label: "Pending Bookings" },
     { key: "today", label: "Today's Schedule" },
     { key: "upcoming", label: "Upcoming Bookings" },
@@ -1547,18 +1609,57 @@ function renderButtons() {
     { key: "discount-codes", label: "Discount Codes" }
   ];
 
-  buttons.forEach(btn => {
+  allButtons.forEach(btn => {
     const button = document.createElement("button");
     button.textContent = btn.label;
     button.className = "moon-tab";
     button.dataset.view = btn.key;
-
-    button.onclick = () => {
-      handleViewSwitch(btn.key);
-    };
-
+    if (menuKeys.indexOf(btn.key) !== -1) button.classList.add("admin-nav-secondary");
+    button.onclick = () => { handleViewSwitch(btn.key); };
     viewButtons.appendChild(button);
   });
+
+  const dropdown = document.getElementById("adminMenuDropdown");
+  if (dropdown) {
+    dropdown.innerHTML = "";
+    menuKeys.forEach(key => {
+      const item = allButtons.find(b => b.key === key);
+      if (!item) return;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "moon-tab";
+      btn.textContent = item.label;
+      btn.dataset.view = key;
+      btn.onclick = () => {
+        handleViewSwitch(key);
+        dropdown.classList.remove("open");
+      };
+      dropdown.appendChild(btn);
+    });
+  }
+
+  const menuBtn = document.getElementById("adminMenuBtn");
+  if (menuBtn) {
+    menuBtn.onclick = (e) => {
+      e.stopPropagation();
+      const d = document.getElementById("adminMenuDropdown");
+      if (!d) return;
+      d.classList.toggle("open");
+      if (d.classList.contains("open")) {
+        const closeOnce = (ev) => {
+          if (d.contains(ev.target) || ev.target === menuBtn) return;
+          closeAdminMenu();
+          document.body.removeEventListener("click", closeOnce);
+        };
+        setTimeout(() => document.body.addEventListener("click", closeOnce), 0);
+      }
+    };
+  }
+}
+
+function closeAdminMenu() {
+  const d = document.getElementById("adminMenuDropdown");
+  if (d) d.classList.remove("open");
 }
 
 function handleViewSwitch(viewName) {
@@ -1576,7 +1677,6 @@ highlightActiveButton(viewName);
 
 function highlightActiveButton(activeKey) {
   const all = viewButtons.querySelectorAll("button");
-
   all.forEach(btn => {
     if (btn.dataset.view === activeKey) {
       btn.classList.add("active");
@@ -1584,6 +1684,16 @@ function highlightActiveButton(activeKey) {
       btn.classList.remove("active");
     }
   });
+  const dropdown = document.getElementById("adminMenuDropdown");
+  if (dropdown) {
+    dropdown.querySelectorAll("button").forEach(btn => {
+      if (btn.dataset.view === activeKey) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    });
+  }
 }
 
 function renderView(viewName) {
@@ -1705,6 +1815,7 @@ function renderView(viewName) {
 
             } catch (err) {
         resultsContainer.innerHTML = "Failed to load history.";
+        showAdminBanner("Failed to load history.", "error");
         hardLog("HISTORY LOAD ERROR " + err.message);
         return false;
       }
@@ -1786,12 +1897,12 @@ function renderView(viewName) {
     const detailPanel = document.createElement("div");
     detailPanel.id = "subscriptionDetailPanel";
     detailPanel.style.display = "none";
-    detailPanel.style.marginTop = "20px";
+    detailPanel.style.marginTop = "8px";
     detailPanel.style.padding = "18px";
     detailPanel.style.borderRadius = "14px";
     detailPanel.style.border = "1px solid rgba(255,255,255,0.2)";
     detailPanel.style.background = "rgba(111,147,196,0.2)";
-    wrapper.appendChild(detailPanel);
+    detailPanel.className = "subscription-detail-panel";
 
     viewContainer.appendChild(wrapper);
 
@@ -1799,6 +1910,7 @@ function renderView(viewName) {
 
     async function loadSubscriptionsList() {
       listContainer.innerHTML = "Loading subscriptions...";
+      if (detailPanel.parentNode) detailPanel.parentNode.removeChild(detailPanel);
       const params = new URLSearchParams();
       if (statusSelect.value) params.append("status", statusSelect.value);
       if (freqSelect.value) params.append("frequency", freqSelect.value);
@@ -1819,6 +1931,7 @@ function renderView(viewName) {
           const acText = ac ? `${ac.status} ${ac.window_start_date}–${ac.effective_window_end || ac.window_end_date} ${ac.has_booking ? "(booked)" : ""}` : "—";
           const card = document.createElement("div");
           card.className = "subscription-card";
+          card.dataset.subscriptionId = s.id;
           card.innerHTML = `
             <div class="subscription-card-header">
               <span class="subscription-card-name">${((s.customer_name || "").trim() || "—").replace(/</g, "&lt;")}</span>
@@ -1835,9 +1948,24 @@ function renderView(viewName) {
             </div>
           `;
           card.querySelector(".subscription-card-header").onclick = () => card.classList.toggle("expanded");
-          card.querySelector("[data-sub-id]").onclick = (e) => { e.stopPropagation(); selectedSubscriptionId = s.id; loadSubscriptionDetail(s.id); };
+          card.querySelector("[data-sub-id]").onclick = (e) => {
+            e.stopPropagation();
+            selectedSubscriptionId = s.id;
+            if (detailPanel.parentNode) detailPanel.parentNode.removeChild(detailPanel);
+            listContainer.insertBefore(detailPanel, card.nextSibling);
+            detailPanel.style.display = "block";
+            loadSubscriptionDetail(s.id);
+          };
           listContainer.appendChild(card);
         });
+        if (selectedSubscriptionId) {
+          const selCard = listContainer.querySelector(`[data-subscription-id="${selectedSubscriptionId}"]`);
+          if (selCard) {
+            listContainer.insertBefore(detailPanel, selCard.nextSibling);
+            detailPanel.style.display = "block";
+            loadSubscriptionDetail(selectedSubscriptionId);
+          }
+        }
       } catch (err) {
         listContainer.innerHTML = "<div style='margin-top:12px;color:#ff6b6b;'>" + (err.message || "Failed to load subscriptions") + "</div>";
       }
@@ -1896,10 +2024,10 @@ function renderView(viewName) {
                 const r = await adminFetch("/api/admin-change-subscription-plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
                 const d = await r.json();
                 if (!r.ok) throw new Error(d.error || "Failed");
-                showToast("Plan updated.");
+                showAdminBanner("Plan updated.", "success");
                 loadSubscriptionDetail(id);
                 loadSubscriptionsList();
-              } catch (e) { showToast("Error: " + (e.message || "Unknown")); }
+              } catch (e) { showAdminBanner(e.message || "Update failed.", "error"); }
               return;
             }
             const endpoints = { pause: "/api/admin-pause-subscription", resume: "/api/admin-resume-subscription", cancel: "/api/admin-cancel-subscription", extend: "/api/admin-extend-subscription-cycle", forceCreate: "/api/admin-force-create-subscription-cycle" };
@@ -1910,15 +2038,16 @@ function renderView(viewName) {
               const r = await adminFetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription_id: id }) });
               const d = await r.json();
               if (!r.ok) throw new Error(d.error || "Failed");
-              showToast(d.message || "Done.");
+              showAdminBanner(d.message || "Done.", "success");
               loadSubscriptionDetail(id);
               loadSubscriptionsList();
-            } catch (e) { showToast("Error: " + (e.message || "Unknown")); }
+            } catch (e) { showAdminBanner(e.message || "Action failed.", "error"); }
             btn.disabled = false;
           };
         });
       } catch (err) {
         detailPanel.innerHTML = "<div style='color:#ff6b6b;'>" + (err.message || "Failed to load detail") + "</div>";
+        showAdminBanner(err.message || "Failed to load detail.", "error");
       }
     }
 
@@ -1941,13 +2070,14 @@ function renderView(viewName) {
     wrapper.style.gap = "24px";
 
     const createSection = document.createElement("div");
+    createSection.className = "discount-create-section";
     createSection.style.padding = "18px";
     createSection.style.borderRadius = "14px";
     createSection.style.border = "1px solid rgba(255,255,255,0.2)";
     createSection.style.background = "rgba(111,147,196,0.15)";
     createSection.innerHTML = "<h3 style='margin-top:0;'>Create discount code</h3>";
     const form = document.createElement("form");
-    form.className = "admin-filters";
+    form.className = "admin-filters discount-create-form";
     form.style.display = "flex";
     form.style.flexWrap = "wrap";
     form.style.gap = "10px";
@@ -2001,11 +2131,11 @@ function renderView(viewName) {
 
     function buildDiscountCodeSection(title, items) {
       const section = document.createElement("div");
-      section.className = "admin-section";
+      section.className = "admin-section collapsed";
       const header = document.createElement("div");
       header.className = "admin-section-header";
       header.setAttribute("role", "button");
-      header.setAttribute("aria-expanded", "true");
+      header.setAttribute("aria-expanded", "false");
       header.innerHTML = `<span>${title} (${items.length})</span><span class="chevron" aria-hidden="true">▼</span>`;
       header.onclick = () => {
         section.classList.toggle("collapsed");
@@ -2046,9 +2176,9 @@ function renderView(viewName) {
                 const r = await adminFetch("/api/admin-discount-codes-disable", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: d.id }) });
                 const data = await r.json();
                 if (!r.ok) throw new Error(data.error || "Failed");
-                showToast("Code disabled.");
+                showAdminBanner("Code disabled.", "success");
                 loadDiscountCodes();
-              } catch (e) { showToast("Error: " + (e.message || "Unknown")); }
+              } catch (e) { showAdminBanner(e.message || "Disable failed.", "error"); }
             };
           }
           body.appendChild(card);
@@ -2128,9 +2258,9 @@ function renderView(viewName) {
                 const r = await adminFetch("/api/admin-discount-codes-disable", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: d.id }) });
                 const data = await r.json();
                 if (!r.ok) throw new Error(data.error || "Failed");
-                showToast("Code disabled.");
+                showAdminBanner("Code disabled.", "success");
                 loadDiscountCodes();
-              } catch (e) { showToast("Error: " + (e.message || "Unknown")); }
+              } catch (e) { showAdminBanner(e.message || "Disable failed.", "error"); }
             };
           }
           inactiveBody.appendChild(card);
@@ -2155,13 +2285,13 @@ function renderView(viewName) {
         });
         const d = await r.json();
         if (!r.ok) throw new Error(d.error || "Failed");
-        showToast("Discount code created.");
+        showAdminBanner("Discount code created.", "success");
         codeInput.value = "";
         pctInput.value = "";
         startInput.value = "";
         endInput.value = "";
         loadDiscountCodes();
-      } catch (err) { showToast("Error: " + (err.message || "Unknown")); }
+      } catch (err) { showAdminBanner(err.message || "Create failed.", "error"); }
     };
 
     wrapper.appendChild(activeContainer);
