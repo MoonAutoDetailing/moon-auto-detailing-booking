@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Manage Existing Booking — Moon Auto Detailing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      background: #000;
+      margin: 0;
+      font-family: 'Poppins', sans-serif;
+    }
+    .page-container {
+      max-width: 480px;
+      margin: 40px auto;
+      background: #ffffff;
+      border-radius: 22px;
+      padding: 40px 32px 48px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+    }
+    .hero {
+      text-align: center;
+      padding: 0 0 24px;
+    }
+    h1 {
+      color: #1c1c1c;
+      font-weight: 700;
+      font-size: clamp(1.35rem, 3vw, 1.75rem);
+      margin: 0 0 8px;
+    }
+    .page-subtitle {
+      color: #4a4a4a;
+      margin: 0;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .form-group {
+      margin-bottom: 18px;
+    }
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 6px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px 14px;
+      font-family: inherit;
+      font-size: 16px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      box-sizing: border-box;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #7fb8e6;
+      box-shadow: 0 0 0 3px rgba(127, 184, 230, 0.2);
+    }
+    .btn-primary {
+      display: block;
+      width: 100%;
+      margin-top: 8px;
+      padding: 14px 24px;
+      background: #7fb8e6;
+      color: #ffffff;
+      border: none;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 6px 16px rgba(127, 184, 230, 0.45);
+      transition: background 0.2s ease;
+    }
+    .btn-primary:hover:not(:disabled) { background: #6aaee2; }
+    .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+    .message-bar {
+      padding: 14px 18px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .message-bar.success {
+      background: #d1fae5;
+      color: #065f46;
+      border: 1px solid #10b981;
+    }
+    .message-bar.error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #ef4444;
+    }
+    .support-note {
+      font-size: 13px;
+      color: #6b7280;
+      text-align: center;
+      margin: 24px 0 0;
+      line-height: 1.5;
+    }
+    .back-link {
+      display: block;
+      text-align: center;
+      margin-top: 16px;
+      font-size: 14px;
+      color: #7fb8e6;
+      text-decoration: none;
+    }
+    .back-link:hover { text-decoration: underline; }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <div class="page-container">
+    <section class="hero">
+      <h1>Manage Existing Booking</h1>
+      <p class="page-subtitle">Enter the email and phone number on your booking. If they match our records, we’ll send you a secure access link.</p>
+    </section>
+
+    <div id="successMessage" class="message-bar success hidden"></div>
+    <div id="errorMessage" class="message-bar error hidden"></div>
+
+    <form id="accessForm">
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" required autocomplete="email" />
+      </div>
+      <div class="form-group">
+        <label for="phone">Phone</label>
+        <input type="tel" id="phone" name="phone" required autocomplete="tel" />
+      </div>
+      <button type="submit" class="btn-primary" id="submitBtn">Send access link</button>
+    </form>
+
+    <p class="support-note">Need help? Reply to any email from us or contact us through our usual channels.</p>
+    <a href="/index.html" class="back-link">← Back to booking</a>
+  </div>
+
+  <script>
+    (function () {
+      var form = document.getElementById('accessForm');
+      var successEl = document.getElementById('successMessage');
+      var errorEl = document.getElementById('errorMessage');
+      var submitBtn = document.getElementById('submitBtn');
+
+      var genericSuccess = "If the information matches a booking in our system, we've sent you a secure access link to your email.";
+
+      function showSuccess() {
+        successEl.textContent = genericSuccess;
+        successEl.classList.remove('hidden');
+        errorEl.classList.add('hidden');
+        form.classList.add('hidden');
+      }
+
+      function showError(msg) {
+        errorEl.textContent = msg || 'Something went wrong. Please try again.';
+        errorEl.classList.remove('hidden');
+        successEl.classList.add('hidden');
+        submitBtn.disabled = false;
+      }
+
+      form.onsubmit = function (e) {
+        e.preventDefault();
+        var email = (document.getElementById('email').value || '').trim();
+        var phone = (document.getElementById('phone').value || '').trim();
+        if (!email || !phone) {
+          showError('Please enter both email and phone.');
+          return;
+        }
+        submitBtn.disabled = true;
+        errorEl.classList.add('hidden');
+        fetch('/api/request-booking-access', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: email, phone: phone })
+        })
+          .then(function (res) { return res.json().then(function (data) { return { status: res.status, data: data }; }); })
+          .then(function (result) {
+            if (result.status === 429) {
+              showError(result.data.message || 'Too many attempts. Please try again in a few minutes.');
+              return;
+            }
+            showSuccess();
+          })
+          .catch(function () {
+            showError('Something went wrong. Please try again.');
+          });
+      };
+    })();
+  </script>
+</body>
+</html>

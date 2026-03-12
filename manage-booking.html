@@ -17,6 +17,10 @@ h1 { text-align:center; color:#7fb8e6; margin-bottom:6px; }
 .cancel { background:#b00020; color:white; }
 .reschedule { background:#7fb8e6; color:white; }
 .hidden { display:none; }
+.error-state h2 { font-size:20px; margin:0 0 12px; color:#1c1c1c; }
+.error-state p { color:#6b7280; margin:0 0 24px; }
+.error-state .support-note { font-size:13px; color:#6b7280; text-align:center; margin-top:20px; }
+.error-state .btn-link { display:inline-block; margin-top:12px; padding:12px 24px; background:#7fb8e6; color:#fff; border-radius:999px; font-weight:600; text-decoration:none; }
 </style>
 </head>
 
@@ -27,6 +31,13 @@ h1 { text-align:center; color:#7fb8e6; margin-bottom:6px; }
     <p class="sub">Reschedule or cancel your appointment</p>
 
     <div id="loading">Loading booking…</div>
+
+    <div id="errorState" class="error-state hidden">
+      <h2>Invalid or missing link</h2>
+      <p>This page requires a valid booking link. Please use the link from your confirmation email, or request a new access link below.</p>
+      <a href="/booking-lookup.html" class="btn-link">Request access link</a>
+      <p class="support-note">Need help? Reply to any email from us or contact us through our usual channels.</p>
+    </div>
 
     <div id="content" class="hidden">
       <div class="box"><div class="label">Customer</div><div id="name"></div></div>
@@ -51,49 +62,59 @@ h1 { text-align:center; color:#7fb8e6; margin-bottom:6px; }
 <script type="module">
 import { formatCurrency } from "./lib/formatCurrency.js";
 const token = new URLSearchParams(location.search).get("token");
-if (!token) document.body.innerHTML = "Invalid link";
 
-async function loadBooking() {
-  const res = await fetch(`/api/manage-booking-get?token=${token}`);
-  if (!res.ok) {
-    document.body.innerHTML = "Booking not found";
-    return;
+function showErrorState() {
+  document.getElementById("loading").classList.add("hidden");
+  document.getElementById("content").classList.add("hidden");
+  document.getElementById("done").classList.add("hidden");
+  document.getElementById("errorState").classList.remove("hidden");
+}
+
+if (!token) {
+  showErrorState();
+} else {
+  async function loadBooking() {
+    const res = await fetch(`/api/manage-booking-get?token=${token}`);
+    if (!res.ok) {
+      showErrorState();
+      return;
+    }
+
+    const b = await res.json();
+
+    document.getElementById("name").textContent = b.customer_name;
+    document.getElementById("service").textContent = b.service;
+    const total = b.total_price != null ? b.total_price : b.price;
+    document.getElementById("basePrice").textContent = b.base_price != null ? formatCurrency(b.base_price) : (b.price != null ? formatCurrency(b.price) : "—");
+    document.getElementById("travelFee").textContent = b.travel_fee != null ? formatCurrency(b.travel_fee) : formatCurrency(0);
+    document.getElementById("price").textContent = total != null ? formatCurrency(total) : "—";
+    document.getElementById("cashNotice").textContent = b.total_price != null ? "We are a cash-only business. Travel fee is based on inbound drive time." : "We are a cash-only business. Travel fees may be added later if applicable.";
+    document.getElementById("vehicle").textContent = b.vehicle;
+    document.getElementById("addr").textContent = b.service_address;
+    document.getElementById("start").textContent = new Date(b.scheduled_start).toLocaleString();
+
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("content").classList.remove("hidden");
   }
 
-  const b = await res.json();
+  async function callApi(endpoint) {
+    const res = await fetch(endpoint, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ token })
+    });
 
-  document.getElementById("name").textContent = b.customer_name;
-  document.getElementById("service").textContent = b.service;
-  const total = b.total_price != null ? b.total_price : b.price;
-  document.getElementById("basePrice").textContent = b.base_price != null ? formatCurrency(b.base_price) : (b.price != null ? formatCurrency(b.price) : "—");
-  document.getElementById("travelFee").textContent = b.travel_fee != null ? formatCurrency(b.travel_fee) : formatCurrency(0);
-  document.getElementById("price").textContent = total != null ? formatCurrency(total) : "—";
-  document.getElementById("cashNotice").textContent = b.total_price != null ? "We are a cash-only business. Travel fee is based on inbound drive time." : "We are a cash-only business. Travel fees may be added later if applicable.";
-  document.getElementById("vehicle").textContent = b.vehicle;
-  document.getElementById("addr").textContent = b.service_address;
-  document.getElementById("start").textContent = new Date(b.scheduled_start).toLocaleString();
+    const data = await res.json();
+    document.getElementById("content").style.display="none";
+    document.getElementById("done").classList.remove("hidden");
+    document.getElementById("doneText").textContent = data.message;
+  }
 
-  document.getElementById("loading").style.display = "none";
-  document.getElementById("content").classList.remove("hidden");
+  document.getElementById("cancelBtn").onclick = () => callApi("/api/customer-cancel-booking");
+  document.getElementById("rescheduleBtn").onclick = () => callApi("/api/customer-reschedule-booking");
+
+  loadBooking();
 }
-
-async function callApi(endpoint) {
-  const res = await fetch(endpoint, {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body: JSON.stringify({ token })
-  });
-
-  const data = await res.json();
-  document.getElementById("content").style.display="none";
-  document.getElementById("done").classList.remove("hidden");
-  document.getElementById("doneText").textContent = data.message;
-}
-
-document.getElementById("cancelBtn").onclick = () => callApi("/api/customer-cancel-booking");
-document.getElementById("rescheduleBtn").onclick = () => callApi("/api/customer-reschedule-booking");
-
-loadBooking();
 </script>
 </body>
 </html>
