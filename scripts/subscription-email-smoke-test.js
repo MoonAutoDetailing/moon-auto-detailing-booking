@@ -116,6 +116,33 @@ function getTestSlot() {
   return { start, end };
 }
 
+/** Returns up to 6 future weekday slot candidates for create-booking retries. */
+function getTestSlotCandidates() {
+  const slots = [];
+  const now = new Date();
+  let d = new Date(now.getTime());
+  d.setDate(d.getDate() + 1);
+  d.setHours(14, 0, 0, 0);
+  while (slots.length < 6) {
+    if (d.getDay() !== 0 && d.getDay() !== 6) {
+      const start = new Date(d);
+      const end = new Date(start.getTime() + 60 * 60 * 1000);
+      slots.push({ start, end });
+    }
+    d.setDate(d.getDate() + 1);
+  }
+  return slots;
+}
+
+/** True only if subscription has activation_booking_id and that booking has non-null manage_token. */
+async function subscriptionHasActivationManageToken(subscriptionId) {
+  if (!subscriptionId) return false;
+  const { data: sub } = await supabase.from("subscriptions").select("activation_booking_id").eq("id", subscriptionId).single();
+  if (!sub?.activation_booking_id) return false;
+  const { data: b } = await supabase.from("bookings").select("manage_token").eq("id", sub.activation_booking_id).single();
+  return !!(b?.manage_token);
+}
+
 async function main() {
   requireEnv("PUBLIC_BASE_URL", BASE_URL);
   requireEnv("SUPABASE_URL", process.env.SUPABASE_URL);
@@ -173,24 +200,36 @@ async function main() {
         customer_id = seedJson.customer_id;
         vehicle_id = seedJson.vehicle_id;
         service_variant_id = seedJson.service_variant_id;
-        const { start, end } = getTestSlot();
-        const createBookingRes = await fetch(apiUrl("create-booking"), {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            customer_id,
-            vehicle_id,
-            service_variant_id,
-            service_address: "11 Grant St, Cohoes, NY 12047",
-            scheduled_start: start.toISOString(),
-            scheduled_end: end.toISOString()
-          })
-        });
-        const createBookingJson = await createBookingRes.json().catch(() => ({}));
-        if (!createBookingRes.ok || !createBookingJson.bookingId) {
-          logTest("TEST 1 — Subscription created flow still succeeds", false, `create-booking: ${createBookingRes.status} ${JSON.stringify(createBookingJson)}`);
+        const slotCandidates = getTestSlotCandidates();
+        let activation_booking_id_from_booking = null;
+        for (const { start, end } of slotCandidates) {
+          const createBookingRes = await fetch(apiUrl("create-booking"), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              customer_id,
+              vehicle_id,
+              service_variant_id,
+              service_address: "11 Grant St, Cohoes, NY 12047",
+              scheduled_start: start.toISOString(),
+              scheduled_end: end.toISOString()
+            })
+          });
+          const createBookingJson = await createBookingRes.json().catch(() => ({}));
+          if (createBookingRes.status === 409) {
+            continue;
+          }
+          if (!createBookingRes.ok || !createBookingJson.bookingId) {
+            logTest("TEST 1 — Subscription created flow still succeeds", false, `create-booking: ${createBookingRes.status} ${JSON.stringify(createBookingJson)}`);
+            break;
+          }
+          activation_booking_id_from_booking = createBookingJson.bookingId;
+          break;
+        }
+        if (!activation_booking_id_from_booking) {
+          logTest("TEST 1 — Subscription created flow still succeeds", false, "create-booking: all candidate slots conflicted (409) or failed.");
         } else {
-          activation_booking_id = createBookingJson.bookingId;
+          activation_booking_id = activation_booking_id_from_booking;
           const subBody = {
             customer_id,
             vehicle_id,
@@ -392,11 +431,12 @@ async function main() {
       const targetEnd = addCalendarDays(today, 3);
       const { data: openCycles } = await supabase
         .from("subscription_cycles")
-        .select("id, reminder_1_sent_at, reminder_2_sent_at, window_end_date, pushback_used, pushback_end_date")
+        .select("id, subscription_id, reminder_1_sent_at, reminder_2_sent_at, window_end_date, pushback_used, pushback_end_date")
         .eq("status", "open");
       let candidate = null;
       if (openCycles?.length) {
         for (const c of openCycles) {
+          if (!(await subscriptionHasActivationManageToken(c.subscription_id))) continue;
           const effectiveEnd = c.pushback_used && c.pushback_end_date ? c.pushback_end_date : c.window_end_date;
           if (effectiveEnd === targetEnd && !c.reminder_1_sent_at) {
             const { data: link } = await supabase.from("subscription_cycle_bookings").select("id").eq("cycle_id", c.id).limit(1).maybeSingle();
@@ -410,10 +450,11 @@ async function main() {
       if (!candidate) {
         const { data: anyOpen } = await supabase
           .from("subscription_cycles")
-          .select("id, reminder_1_sent_at, reminder_2_sent_at")
+          .select("id, subscription_id, reminder_1_sent_at, reminder_2_sent_at")
           .eq("status", "open")
-          .limit(5);
+          .limit(10);
         for (const c of anyOpen || []) {
+          if (!(await subscriptionHasActivationManageToken(c.subscription_id))) continue;
           const { data: link } = await supabase.from("subscription_cycle_bookings").select("id").eq("cycle_id", c.id).limit(1).maybeSingle();
           if (!link && !c.reminder_1_sent_at) {
             const { error: patchErr } = await supabase
@@ -428,7 +469,7 @@ async function main() {
         }
       }
       if (!candidate) {
-        logTest("TEST 5 — Reminder cron sends reminder 1", "skip", "No open cycle with effective_end=today+3 and no booking (patch attempted).");
+        logTest("TEST 5 — Reminder cron sends reminder 1", "skip", "No reminder-eligible cycle with activation booking manage_token available.");
       } else {
         const remRes = await fetch(apiUrl("cron-send-subscription-reminders"), {
           method: "POST",
@@ -466,11 +507,12 @@ async function main() {
       const targetEnd = addCalendarDays(today, 1);
       const { data: openCycles } = await supabase
         .from("subscription_cycles")
-        .select("id, reminder_2_sent_at, window_end_date, pushback_used, pushback_end_date")
+        .select("id, subscription_id, reminder_2_sent_at, window_end_date, pushback_used, pushback_end_date")
         .eq("status", "open");
       let candidate = null;
       if (openCycles?.length) {
         for (const c of openCycles) {
+          if (!(await subscriptionHasActivationManageToken(c.subscription_id))) continue;
           const effectiveEnd = c.pushback_used && c.pushback_end_date ? c.pushback_end_date : c.window_end_date;
           if (effectiveEnd === targetEnd && !c.reminder_2_sent_at) {
             const { data: link } = await supabase.from("subscription_cycle_bookings").select("id").eq("cycle_id", c.id).limit(1).maybeSingle();
@@ -484,10 +526,11 @@ async function main() {
       if (!candidate) {
         const { data: anyOpen } = await supabase
           .from("subscription_cycles")
-          .select("id, reminder_2_sent_at")
+          .select("id, subscription_id, reminder_2_sent_at")
           .eq("status", "open")
-          .limit(5);
+          .limit(10);
         for (const c of anyOpen || []) {
+          if (!(await subscriptionHasActivationManageToken(c.subscription_id))) continue;
           const { data: link } = await supabase.from("subscription_cycle_bookings").select("id").eq("cycle_id", c.id).limit(1).maybeSingle();
           if (!link && !c.reminder_2_sent_at) {
             const { error: patchErr } = await supabase
@@ -502,7 +545,7 @@ async function main() {
         }
       }
       if (!candidate) {
-        logTest("TEST 6 — Reminder cron sends reminder 2", "skip", "No open cycle with effective_end=today+1 and no booking.");
+        logTest("TEST 6 — Reminder cron sends reminder 2", "skip", "No reminder-eligible cycle with activation booking manage_token available.");
       } else {
         const remRes = await fetch(apiUrl("cron-send-subscription-reminders"), {
           method: "POST",
@@ -541,6 +584,14 @@ async function main() {
       if (!linked?.cycle_id) {
         logTest("TEST 7 — Reminder cron skips booked cycles", "skip", "No cycle with linked booking in DB.");
       } else {
+        const { data: cycleRow } = await supabase
+          .from("subscription_cycles")
+          .select("subscription_id")
+          .eq("id", linked.cycle_id)
+          .single();
+        if (!(cycleRow?.subscription_id && (await subscriptionHasActivationManageToken(cycleRow.subscription_id)))) {
+          logTest("TEST 7 — Reminder cron skips booked cycles", "skip", "No reminder-eligible cycle with activation booking manage_token available.");
+        } else {
         const { data: before } = await supabase
           .from("subscription_cycles")
           .select("reminder_1_sent_at, reminder_2_sent_at")
@@ -567,6 +618,7 @@ async function main() {
           .single();
         const unchanged = (before?.reminder_1_sent_at === after?.reminder_1_sent_at) && (before?.reminder_2_sent_at === after?.reminder_2_sent_at);
         logTest("TEST 7 — Reminder cron skips booked cycles", unchanged, unchanged ? "No reminder timestamps written for booked cycle." : "Timestamps changed (unexpected).");
+        }
         }
       }
     }
