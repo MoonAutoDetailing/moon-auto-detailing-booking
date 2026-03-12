@@ -198,30 +198,143 @@ cursor: pointer;
   margin-top: 70px; /* pushes below toggle button */
   margin-bottom: 30px;
 }
-/* ===== TOP BAR (tabs + refresh) ===== */
+/* ===== TOP BAR ===== */
 #topBar {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 18px;
-  margin-top: 60px;
-  margin-bottom: 30px;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 56px;
+  margin-bottom: 24px;
 }
 
 #viewButtons {
   margin: 0;
 }
 
-/* Desktop: single-row layout; row1 (menu) hidden */
-#topBarRow1 {
-  display: none;
+.topBar-row1 {
+  display: flex;
+  align-items: center;
 }
-#topBarPrimary,
-#topBarSecondary {
+.topBar-primary {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 18px;
+  gap: 10px;
+}
+#viewButtons .moon-tab {
+  padding: 8px 14px;
+  font-size: 14px;
+  min-height: 38px;
+}
+
+/* Menu button: hamburger icon, small utility trigger */
+.admin-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.08);
+  color: white;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+.admin-menu-btn:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.35);
+}
+.admin-menu-icon {
+  width: 18px;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+  position: relative;
+  display: block;
+}
+.admin-menu-icon::before,
+.admin-menu-icon::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+}
+.admin-menu-icon::before { top: -5px; }
+.admin-menu-icon::after { top: 5px; }
+
+/* Fixed top-right utility stack: Logout on top, Refresh below */
+.admin-top-utility {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 100;
+}
+.admin-top-utility #logoutBtn,
+.admin-top-utility #refreshNow {
+  padding: 6px 12px;
+  font-size: 13px;
+  min-height: 36px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-top-utility #logoutBtn {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.25);
+  color: white;
+}
+.admin-top-utility #logoutBtn:hover {
+  background: rgba(255,255,255,0.08);
+}
+.admin-top-utility #refreshNow {
+  background: var(--moon-primary);
+  color: white;
+  border: none;
+}
+.admin-top-utility #refreshNow:hover {
+  background: var(--moon-primary-dark);
+}
+
+/* Dropdown (menu content): hidden by default, shown when .open */
+#topBarMenuWrap {
+  position: relative;
+}
+#adminMenuDropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 6px;
+  min-width: 180px;
+  padding: 8px 0;
+  border-radius: 10px;
+  background: rgba(30,30,30,0.98);
+  border: 1px solid rgba(255,255,255,0.2);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+  z-index: 100;
+}
+#adminMenuDropdown.open {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+#adminMenuDropdown .moon-tab {
+  margin: 4px 8px;
+  width: calc(100% - 16px);
+  text-align: left;
+  border-radius: 6px;
+  min-height: 38px;
+  box-sizing: border-box;
 }
 
 /* ================= LOGIN OVERLAY ================= */
@@ -296,26 +409,6 @@ cursor: pointer;
   color: #ff6b6b;
   display: none;
   font-size: 14px;
-}
-#refreshNow {
-  padding: 8px 16px;
-  height: 38px;
-  align-self: center;
-  flex: 0 0 auto;
-}
-     #logoutBtn {
-  padding: 8px 14px;
-  height: 38px;
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.25);
-  color: white;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-}
-
-#logoutBtn:hover {
-  background: rgba(255,255,255,0.08);
 }
 
 
@@ -572,64 +665,39 @@ cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 14px;
-    margin-top: 24px;
-    margin-bottom: 20px;
+    gap: 12px;
+    margin-top: 20px;
+    margin-bottom: 16px;
   }
   #topBarRow1 {
     display: flex;
     justify-content: flex-start;
     align-items: center;
   }
-  #topBarMenuWrap {
-    position: relative;
-  }
-  #adminMenuBtn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  .admin-menu-btn {
+    min-width: 44px;
     min-height: 44px;
-    padding: 10px 18px;
-    font-weight: 700;
   }
-  #adminMenuDropdown {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 8px;
-    min-width: 200px;
-    padding: 8px 0;
-    border-radius: 10px;
-    background: rgba(30,30,30,0.98);
-    border: 1px solid rgba(255,255,255,0.2);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    z-index: 100;
-  }
-  #adminMenuDropdown.open { display: flex; flex-direction: column; gap: 4px; }
-  #adminMenuDropdown .moon-tab { margin: 4px 8px; width: calc(100% - 16px); text-align: left; border-radius: 6px; min-height: 44px; box-sizing: border-box; }
+  #adminMenuDropdown { margin-top: 8px; min-width: 200px; }
+  #adminMenuDropdown .moon-tab { min-height: 44px; }
   #topBarPrimary {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
   }
   #topBarPrimary #viewButtons {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
   }
-  #topBarSecondary {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 10px;
-  }
-  #topBarSecondary .moon-tab,
-  #topBarSecondary #logoutBtn { min-height: 44px; }
+  #topBarPrimary #viewButtons .moon-tab { min-height: 44px; padding: 8px 12px; font-size: 13px; }
+  .admin-top-utility { top: 12px; right: 12px; gap: 6px; }
+  .admin-top-utility #logoutBtn,
+  .admin-top-utility #refreshNow { min-height: 44px; }
   .admin-debug-toggle { display: none !important; }
-  .moon-tab { margin-bottom: 0; min-height: 44px; }
+  .moon-tab { margin-bottom: 0; }
   .card { padding: 10px 12px; margin-top: 8px; }
   .card.expanded { padding: 12px 14px; }
   .booking-header { min-height: 44px; align-items: center; gap: 6px 10px; }
@@ -655,10 +723,6 @@ cursor: pointer;
     box-sizing: border-box;
   }
   #viewButtons button.admin-nav-secondary { display: none; }
-}
-@media (min-width: 641px) {
-  #adminMenuBtn { display: none; }
-  #adminMenuDropdown { display: none !important; }
 }
 
 </style>
@@ -724,19 +788,22 @@ style="
 
 <div id="pageOverlay">
   <div id="topBar">
-    <div id="topBarRow1" class="topBar-mobile-row1">
+    <div id="topBarRow1" class="topBar-row1">
       <div id="topBarMenuWrap" class="topBar-menu-wrap">
-        <button id="adminMenuBtn" class="moon-tab" type="button" aria-label="More sections">More</button>
+        <button id="adminMenuBtn" type="button" class="admin-menu-btn" aria-label="Menu">
+          <span class="admin-menu-icon" aria-hidden="true"></span>
+        </button>
         <div id="adminMenuDropdown" role="menu"></div>
       </div>
     </div>
-    <div id="topBarPrimary" class="topBar-mobile-primary">
+    <div id="topBarPrimary" class="topBar-primary">
       <div id="viewButtons"></div>
     </div>
-    <div id="topBarSecondary" class="topBar-mobile-secondary">
-      <button id="refreshNow" class="moon-tab">Refresh</button>
-      <button id="logoutBtn">Logout</button>
-    </div>
+  </div>
+
+  <div id="topBarUtility" class="admin-top-utility">
+    <button id="logoutBtn" type="button">Logout</button>
+    <button id="refreshNow" type="button" class="moon-tab">Refresh</button>
   </div>
 
   <div id="viewContainer"></div>
@@ -2005,13 +2072,27 @@ function renderView(viewName) {
               <button type="button" class="moon-tab" data-sub-id="${s.id}">View details & actions</button>
             </div>
           `;
-          card.querySelector(".subscription-card-header").onclick = () => card.classList.toggle("expanded");
+          card.querySelector(".subscription-card-header").onclick = () => {
+            if (card.classList.contains("expanded") && selectedSubscriptionId === s.id) {
+              if (detailPanel.parentNode) detailPanel.parentNode.removeChild(detailPanel);
+              detailPanel.style.display = "none";
+              selectedSubscriptionId = null;
+            }
+            card.classList.toggle("expanded");
+          };
           card.querySelector("[data-sub-id]").onclick = (e) => {
             e.stopPropagation();
+            const prevId = selectedSubscriptionId;
+            if (prevId && prevId !== s.id) {
+              const prevCard = listContainer.querySelector(`[data-subscription-id="${prevId}"]`);
+              if (prevCard) prevCard.classList.remove("expanded");
+              if (detailPanel.parentNode) detailPanel.parentNode.removeChild(detailPanel);
+            }
             selectedSubscriptionId = s.id;
             if (detailPanel.parentNode) detailPanel.parentNode.removeChild(detailPanel);
             listContainer.insertBefore(detailPanel, card.nextSibling);
             detailPanel.style.display = "block";
+            card.classList.add("expanded");
             loadSubscriptionDetail(s.id);
           };
           listContainer.appendChild(card);
@@ -2021,6 +2102,7 @@ function renderView(viewName) {
           if (selCard) {
             listContainer.insertBefore(detailPanel, selCard.nextSibling);
             detailPanel.style.display = "block";
+            selCard.classList.add("expanded");
             loadSubscriptionDetail(selectedSubscriptionId);
           }
         }
