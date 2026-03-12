@@ -29,15 +29,15 @@ body {
 
 h1 { margin-bottom: 10px; }
 .day { margin-top: 24px; }
-/* collapsed booking row (glass pill) */
+/* collapsed booking row (glass pill) — compact by default */
 .card {
   border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 14px;
-  padding: 14px 18px;
-  margin-top: 12px;
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-top: 8px;
   background: rgba(111,147,196,0.18);
   backdrop-filter: blur(10px);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   transition: 0.18s ease;
 }
 
@@ -46,9 +46,10 @@ h1 { margin-bottom: 10px; }
   background: rgba(111,147,196,0.26);
   transform: translateY(-1px);
 }
-/* expanded booking card */
+/* expanded = second layer: more padding and weight */
 .card.expanded {
-  background: rgba(111,147,196,0.28);   /* darker glass, not white */
+  padding: 14px 18px;
+  background: rgba(111,147,196,0.28);
   backdrop-filter: blur(18px);
   color: white;
   border: 1px solid rgba(255,255,255,0.18);
@@ -147,6 +148,10 @@ cursor: pointer;
 .status-denied { background: #6a1b9a; color: #fff; }
 .status-no_show { background: #555; color: #fff; }
 .status-confirming { background: #4f78a8; color: #fff; }
+.status-active { background: #0a7a2f; color: #fff; }
+.status-paused { background: #666; color: #fff; }
+.status-cancelled { background: #b00020; color: #fff; }
+.status-pending_activation { background: #8fb1e0; color: #000; }
 .day h2 {
   font-size: 20px;
   margin-bottom: 8px;
@@ -160,20 +165,23 @@ cursor: pointer;
   margin-top: 60px;
   color: var(--moon-primary);
 }
-     .booking-header {
-  font-weight: 700;
-  font-size: 16px;
+.booking-header {
+  font-weight: 600;
+  font-size: inherit;
   cursor: pointer;
   color: white;
 }
 
 .booking-content {
-  margin-top: 10px;
   display: none;
+  margin-top: 0;
 }
 
 .card.expanded .booking-content {
   display: block;
+  border-top: 1px solid rgba(255,255,255,0.15);
+  padding-top: 12px;
+  margin-top: 12px;
 }
 
 
@@ -330,6 +338,237 @@ cursor: pointer;
 
 @keyframes fadeOut {
   to { opacity: 0; transform: translateX(-20px); }
+}
+
+/* ===================== COLLAPSIBLE SECTIONS ===================== */
+.admin-section {
+  margin-top: 20px;
+  margin-bottom: 4px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(111,147,196,0.08);
+  overflow: hidden;
+}
+.admin-section-header {
+  padding: 14px 18px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 1rem;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.admin-section-header:hover {
+  background: rgba(255,255,255,0.06);
+}
+.admin-section-header .chevron {
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  opacity: 0.8;
+}
+.admin-section.collapsed .admin-section-header .chevron {
+  transform: rotate(-90deg);
+}
+.admin-section-body {
+  padding: 12px 14px 16px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.admin-section.collapsed .admin-section-body {
+  display: none;
+}
+
+/* Booking card: collapsed = single compact summary row only */
+.booking-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.booking-summary-line {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.95);
+}
+.booking-header .booking-summary-meta {
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+  font-weight: 400;
+}
+.booking-content .row {
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+.booking-content .label {
+  font-weight: 600;
+}
+.card .booking-header .chevron {
+  transition: transform 0.2s ease;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+.card.expanded .booking-header .chevron {
+  transform: rotate(180deg);
+}
+
+/* Discount code card */
+.discount-code-card {
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.06);
+  margin-bottom: 10px;
+  overflow: hidden;
+}
+.discount-code-header {
+  padding: 12px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.discount-code-header:hover {
+  background: rgba(255,255,255,0.05);
+}
+.discount-code-detail {
+  padding: 12px 14px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  font-size: 13px;
+  display: none;
+}
+.discount-code-card.expanded .discount-code-detail {
+  display: block;
+}
+.discount-code-card .chevron {
+  transition: transform 0.2s ease;
+  opacity: 0.7;
+}
+.discount-code-card.expanded .chevron {
+  transform: rotate(180deg);
+}
+
+/* Subscription card — compact collapsed, detail in expanded only */
+.subscription-card {
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(111,147,196,0.18);
+  margin-bottom: 8px;
+  overflow: hidden;
+  transition: 0.18s ease;
+}
+.subscription-card:hover {
+  background: rgba(111,147,196,0.26);
+}
+.subscription-card-header {
+  padding: 10px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px 10px;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.subscription-card-header .subscription-card-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.95);
+}
+.subscription-card-header .subscription-card-meta {
+  font-size: 11px;
+  color: rgba(255,255,255,0.6);
+  font-weight: 400;
+}
+.subscription-card-detail {
+  display: none;
+  padding: 12px 14px;
+  border-top: 1px solid rgba(255,255,255,0.15);
+  font-size: 13px;
+  line-height: 1.45;
+  background: rgba(0,0,0,0.12);
+}
+.subscription-card.expanded .subscription-card-detail {
+  display: block;
+}
+.subscription-card-detail p {
+  margin: 0 0 8px;
+}
+.subscription-card-detail .moon-tab {
+  margin-top: 10px;
+}
+.subscription-card .chevron {
+  transition: transform 0.2s ease;
+  opacity: 0.8;
+  flex-shrink: 0;
+}
+.subscription-card.expanded .chevron {
+  transform: rotate(180deg);
+}
+
+/* Compact filters (stack on mobile) */
+.admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.admin-filters input,
+.admin-filters select {
+  min-width: 0;
+  flex: 1 1 140px;
+}
+
+/* Day group inside section — clear hierarchy */
+.day-group {
+  margin-top: 20px;
+}
+.day-group:first-child { margin-top: 0; }
+.day-group h3 {
+  font-size: 14px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+  color: rgba(255,255,255,0.85);
+}
+
+@media (max-width: 640px) {
+  body { padding: 12px; }
+  #topBar {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 40px;
+    margin-bottom: 20px;
+  }
+  #viewButtons {
+    width: 100%;
+    justify-content: center;
+  }
+  .moon-tab { margin-bottom: 4px; min-height: 44px; }
+  .card { padding: 10px 12px; margin-top: 8px; }
+  .card.expanded { padding: 12px 14px; }
+  .booking-header { min-height: 44px; align-items: center; gap: 6px 10px; }
+  .subscription-card-header { min-height: 44px; align-items: center; padding: 10px 12px; }
+  .subscription-card-detail { padding: 10px 12px; }
+  .discount-code-header { min-height: 44px; align-items: center; }
+  .admin-section-header { padding: 12px 14px; font-size: 15px; min-height: 44px; align-items: center; }
+  .admin-section-body { padding: 10px 12px 12px; }
+  .booking-summary-line { font-size: 13px; }
+  .booking-header .booking-summary-meta { font-size: 11px; }
+  .actions button { margin-bottom: 6px; min-height: 44px; }
+  .admin-filters { flex-direction: column; align-items: stretch; }
+  .admin-filters input,
+  .admin-filters select { flex: 1 1 auto; }
 }
 
 </style>
@@ -894,46 +1133,43 @@ cachedViews.upcoming.push(b);
      bookings.forEach(b => knownBookingIds.add(b.id));
 }
 
-function renderSection(title, bookings, collapsed = false) {
-const section = document.createElement("div");
-section.className = "day";
+function renderSection(title, bookings, startCollapsed = false) {
+  const section = document.createElement("div");
+  section.className = "admin-section" + (startCollapsed ? " collapsed" : "");
 
-const header = document.createElement("h2");
-header.textContent = `${title} (${bookings.length})`;
-section.appendChild(header);
+  const header = document.createElement("div");
+  header.className = "admin-section-header";
+  header.setAttribute("role", "button");
+  header.setAttribute("aria-expanded", startCollapsed ? "false" : "true");
+  header.innerHTML = `<span>${title} (${bookings.length})</span><span class="chevron" aria-hidden="true">▼</span>`;
+  header.onclick = () => {
+    section.classList.toggle("collapsed");
+    header.setAttribute("aria-expanded", section.classList.contains("collapsed") ? "false" : "true");
+  };
+  section.appendChild(header);
 
-const body = document.createElement("div");
+  const body = document.createElement("div");
+  body.className = "admin-section-body";
 
-if (collapsed) {
-body.style.display = "none";
-header.style.cursor = "pointer";
-header.onclick = () => {
-body.style.display =
-body.style.display === "none" ? "block" : "none";
-};
-}
+  const groups = {};
+  bookings.forEach(b => {
+    const dayKey = new Date(b.scheduled_start).toDateString();
+    if (!groups[dayKey]) groups[dayKey] = [];
+    groups[dayKey].push(b);
+  });
 
-// 🔹 Group bookings by calendar day
-const groups = {};
+  Object.entries(groups).forEach(([day, items]) => {
+    const dayGroup = document.createElement("div");
+    dayGroup.className = "day-group";
+    const dayHeader = document.createElement("h3");
+    dayHeader.textContent = formatDay(new Date(day));
+    dayGroup.appendChild(dayHeader);
+    items.forEach(b => dayGroup.appendChild(buildCard(b)));
+    body.appendChild(dayGroup);
+  });
 
-bookings.forEach(b => {
-const dayKey = new Date(b.scheduled_start).toDateString();
-if (!groups[dayKey]) groups[dayKey] = [];
-groups[dayKey].push(b);
-});
-
-Object.entries(groups).forEach(([day, items]) => {
-const dayHeader = document.createElement("h3");
-dayHeader.textContent = formatDay(new Date(day));
-body.appendChild(dayHeader);
-
-items.forEach(b => {
-body.appendChild(buildCard(b));
-});
-});
-
-section.appendChild(body);
-viewContainer.appendChild(section);
+  section.appendChild(body);
+  viewContainer.appendChild(section);
 }
 
 function buildCard(b) {
@@ -958,6 +1194,8 @@ function buildCard(b) {
   const customerName = b.customers?.full_name ?? "Unknown Client";
   const customerPhone = b.customers?.phone ?? "—";
 
+  const totalStr = b.total_price != null ? "$" + Number(b.total_price).toFixed(2) : "—";
+  const dateStr = formatTime(start);
   const card = document.createElement("div");
   card.className = "card";
      // Add accent border for today's confirmed bookings
@@ -965,11 +1203,11 @@ if (b.status === "confirmed") {
   const today = new Date();
   today.setHours(0,0,0,0);
 
-  const start = new Date(b.scheduled_start);
+  const startDate = new Date(b.scheduled_start);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
-  if (start >= today && start < tomorrow) {
+  if (startDate >= today && startDate < tomorrow) {
    card.dataset.todayAccent = "true";
 card.style.borderLeft = "4px solid var(--moon-primary)";
   }
@@ -977,7 +1215,12 @@ card.style.borderLeft = "4px solid var(--moon-primary)";
 
   card.innerHTML = `
   <div class="booking-header">
-    ${customerName}
+    <span class="booking-summary-line">${customerName}</span>
+    <span class="booking-summary-meta">${dateStr}</span>
+    <span class="booking-summary-meta">${serviceText}</span>
+    <span class="status-badge status-${b.status}">${(b.status ?? "").replace("_"," ")}</span>
+    <span class="booking-summary-meta">${totalStr}</span>
+    <span class="chevron" aria-hidden="true">▼</span>
   </div>
 
   <div class="booking-content">
@@ -1353,25 +1596,21 @@ function renderView(viewName) {
     const wrapper = document.createElement("div");
 
     const filterRow = document.createElement("div");
-    filterRow.style.display = "flex";
-    filterRow.style.justifyContent = "center";
-    filterRow.style.gap = "10px";
-    filterRow.style.marginBottom = "20px";
-
+    filterRow.className = "admin-filters";
     const searchInput = document.createElement("input");
     searchInput.type = "text";
     searchInput.placeholder = "Search by client name";
-    searchInput.style.padding = "6px 10px";
-    searchInput.style.borderRadius = "6px";
-    searchInput.style.border = "1px solid #ffffff40";
+    searchInput.style.padding = "8px 12px";
+    searchInput.style.borderRadius = "8px";
+    searchInput.style.border = "1px solid rgba(255,255,255,0.25)";
     searchInput.style.background = "rgba(255,255,255,0.08)";
     searchInput.style.color = "white";
 
     const dateInput = document.createElement("input");
     dateInput.type = "date";
-    dateInput.style.padding = "6px 10px";
-    dateInput.style.borderRadius = "6px";
-    dateInput.style.border = "1px solid #ffffff40";
+    dateInput.style.padding = "8px 12px";
+    dateInput.style.borderRadius = "8px";
+    dateInput.style.border = "1px solid rgba(255,255,255,0.25)";
     dateInput.style.background = "rgba(255,255,255,0.08)";
     dateInput.style.color = "white";
 
@@ -1379,16 +1618,31 @@ function renderView(viewName) {
     filterRow.appendChild(dateInput);
     wrapper.appendChild(filterRow);
 
+    const section = document.createElement("div");
+    section.className = "admin-section";
+    const sectionHeader = document.createElement("div");
+    sectionHeader.className = "admin-section-header";
+    sectionHeader.setAttribute("role", "button");
+    sectionHeader.setAttribute("aria-expanded", "true");
+    sectionHeader.innerHTML = '<span>History</span><span class="chevron" aria-hidden="true">▼</span>';
+    sectionHeader.onclick = () => {
+      section.classList.toggle("collapsed");
+      sectionHeader.setAttribute("aria-expanded", section.classList.contains("collapsed") ? "false" : "true");
+    };
+    section.appendChild(sectionHeader);
+    const sectionBody = document.createElement("div");
+    sectionBody.className = "admin-section-body";
     const resultsContainer = document.createElement("div");
-    wrapper.appendChild(resultsContainer);
-
+    sectionBody.appendChild(resultsContainer);
     const paginationContainer = document.createElement("div");
     paginationContainer.style.display = "flex";
+    paginationContainer.style.flexWrap = "wrap";
     paginationContainer.style.justifyContent = "center";
     paginationContainer.style.gap = "8px";
-    paginationContainer.style.marginTop = "20px";
-    wrapper.appendChild(paginationContainer);
-
+    paginationContainer.style.marginTop = "16px";
+    sectionBody.appendChild(paginationContainer);
+    section.appendChild(sectionBody);
+    wrapper.appendChild(section);
     viewContainer.appendChild(wrapper);
 
     let currentPage = 1;
@@ -1416,11 +1670,28 @@ function renderView(viewName) {
         resultsContainer.innerHTML = "";
 
         if (!payload.rows.length) {
-          resultsContainer.innerHTML = "<div style='margin-top:40px;font-weight:600;'>No records found.</div>";
+          resultsContainer.innerHTML = "<div style='margin-top:20px;font-weight:600;color:rgba(255,255,255,0.7);'>No records found.</div>";
+          sectionHeader.querySelector("span").textContent = "History (0)";
           return;
         }
 
-        payload.rows.forEach(b => resultsContainer.appendChild(buildCard(b)));
+        sectionHeader.querySelector("span").textContent = "History (" + (payload.totalCount || payload.rows.length) + ")";
+        const groups = {};
+        payload.rows.forEach(b => {
+          const dayKey = new Date(b.scheduled_start).toDateString();
+          if (!groups[dayKey]) groups[dayKey] = [];
+          groups[dayKey].push(b);
+        });
+        const sortedDays = Object.keys(groups).sort((a, b) => new Date(b) - new Date(a));
+        sortedDays.forEach(dayKey => {
+          const dayGroup = document.createElement("div");
+          dayGroup.className = "day-group";
+          const dayHeader = document.createElement("h3");
+          dayHeader.textContent = formatDay(new Date(dayKey));
+          dayGroup.appendChild(dayHeader);
+          groups[dayKey].forEach(b => dayGroup.appendChild(buildCard(b)));
+          resultsContainer.appendChild(dayGroup);
+        });
 
         const totalPages = Math.ceil(payload.totalCount / PAGE_SIZE);
         for (let i = 1; i <= totalPages; i++) {
@@ -1464,46 +1735,53 @@ function renderView(viewName) {
     wrapper.style.gap = "20px";
 
     const filterRow = document.createElement("div");
-    filterRow.style.display = "flex";
-    filterRow.style.flexWrap = "wrap";
-    filterRow.style.justifyContent = "center";
-    filterRow.style.gap = "10px";
-    filterRow.style.marginBottom = "10px";
-
+    filterRow.className = "admin-filters";
     const statusSelect = document.createElement("select");
-    statusSelect.style.padding = "6px 10px";
-    statusSelect.style.borderRadius = "6px";
-    statusSelect.style.border = "1px solid #ffffff40";
+    statusSelect.style.padding = "8px 12px";
+    statusSelect.style.borderRadius = "8px";
+    statusSelect.style.border = "1px solid rgba(255,255,255,0.25)";
     statusSelect.style.background = "rgba(255,255,255,0.08)";
     statusSelect.style.color = "white";
     statusSelect.innerHTML = "<option value=''>All statuses</option><option value='active'>active</option><option value='paused'>paused</option><option value='cancelled'>cancelled</option><option value='pending_activation'>pending_activation</option>";
 
     const freqSelect = document.createElement("select");
-    freqSelect.style.padding = "6px 10px";
-    freqSelect.style.borderRadius = "6px";
-    freqSelect.style.border = "1px solid #ffffff40";
+    freqSelect.style.padding = "8px 12px";
+    freqSelect.style.borderRadius = "8px";
+    freqSelect.style.border = "1px solid rgba(255,255,255,0.25)";
     freqSelect.style.background = "rgba(255,255,255,0.08)";
     freqSelect.style.color = "white";
     freqSelect.innerHTML = "<option value=''>All frequencies</option><option value='biweekly'>biweekly</option><option value='monthly'>monthly</option><option value='quarterly'>quarterly</option>";
 
     const searchInputSub = document.createElement("input");
     searchInputSub.type = "text";
-    searchInputSub.placeholder = "Search customer name, email, phone";
-    searchInputSub.style.padding = "6px 10px";
-    searchInputSub.style.borderRadius = "6px";
-    searchInputSub.style.border = "1px solid #ffffff40";
+    searchInputSub.placeholder = "Search customer, email, phone";
+    searchInputSub.style.padding = "8px 12px";
+    searchInputSub.style.borderRadius = "8px";
+    searchInputSub.style.border = "1px solid rgba(255,255,255,0.25)";
     searchInputSub.style.background = "rgba(255,255,255,0.08)";
     searchInputSub.style.color = "white";
-    searchInputSub.style.minWidth = "200px";
 
     filterRow.appendChild(statusSelect);
     filterRow.appendChild(freqSelect);
     filterRow.appendChild(searchInputSub);
     wrapper.appendChild(filterRow);
 
+    const listSection = document.createElement("div");
+    listSection.className = "admin-section";
+    const listSectionHeader = document.createElement("div");
+    listSectionHeader.className = "admin-section-header";
+    listSectionHeader.setAttribute("role", "button");
+    listSectionHeader.setAttribute("aria-expanded", "true");
+    listSectionHeader.innerHTML = '<span>Subscriptions</span><span class="chevron" aria-hidden="true">▼</span>';
+    listSectionHeader.onclick = () => {
+      listSection.classList.toggle("collapsed");
+      listSectionHeader.setAttribute("aria-expanded", listSection.classList.contains("collapsed") ? "false" : "true");
+    };
+    listSection.appendChild(listSectionHeader);
     const listContainer = document.createElement("div");
-    listContainer.style.overflowX = "auto";
-    wrapper.appendChild(listContainer);
+    listContainer.className = "admin-section-body";
+    listSection.appendChild(listContainer);
+    wrapper.appendChild(listSection);
 
     const detailPanel = document.createElement("div");
     detailPanel.id = "subscriptionDetailPanel";
@@ -1530,52 +1808,38 @@ function renderView(viewName) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to load");
         const subs = data.subscriptions || [];
+        listSectionHeader.querySelector("span").textContent = "Subscriptions (" + subs.length + ")";
         if (subs.length === 0) {
-          listContainer.innerHTML = "<div style='margin-top:20px;font-weight:600;'>No subscriptions found.</div>";
+          listContainer.innerHTML = "<div style='margin-top:12px;font-weight:600;color:rgba(255,255,255,0.7);'>No subscriptions found.</div>";
           return;
         }
-        const table = document.createElement("table");
-        table.style.width = "100%";
-        table.style.borderCollapse = "collapse";
-        table.style.color = "white";
-        table.innerHTML = `
-          <thead>
-            <tr style="border-bottom:1px solid rgba(255,255,255,0.3);text-align:left;">
-              <th style="padding:8px;">Customer</th>
-              <th style="padding:8px;">Vehicle / Service</th>
-              <th style="padding:8px;">Freq</th>
-              <th style="padding:8px;">Status</th>
-              <th style="padding:8px;">Anchor</th>
-              <th style="padding:8px;">Cycles</th>
-              <th style="padding:8px;">Active cycle</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        `;
-        const tbody = table.querySelector("tbody");
+        listContainer.innerHTML = "";
         subs.forEach(s => {
-          const tr = document.createElement("tr");
-          tr.style.borderBottom = "1px solid rgba(255,255,255,0.1)";
-          tr.style.cursor = "pointer";
-          tr.dataset.subId = s.id;
           const ac = s.active_cycle;
           const acText = ac ? `${ac.status} ${ac.window_start_date}–${ac.effective_window_end || ac.window_end_date} ${ac.has_booking ? "(booked)" : ""}` : "—";
-          tr.innerHTML = `
-            <td style="padding:8px;">${(s.customer_name || "").trim() || "—"} ${s.email ? "(" + s.email + ")" : ""}</td>
-            <td style="padding:8px;">${s.vehicle_summary || "—"} / ${s.service_summary || "—"}</td>
-            <td style="padding:8px;">${s.frequency || "—"}</td>
-            <td style="padding:8px;"><span class="status-badge status-${s.status || ""}">${s.status || "—"}</span></td>
-            <td style="padding:8px;">${s.anchor_date || "—"}</td>
-            <td style="padding:8px;">${s.completed_cycles_count ?? 0} / ${s.missed_cycles_count ?? 0}</td>
-            <td style="padding:8px;">${acText}</td>
+          const card = document.createElement("div");
+          card.className = "subscription-card";
+          card.innerHTML = `
+            <div class="subscription-card-header">
+              <span class="subscription-card-name">${((s.customer_name || "").trim() || "—").replace(/</g, "&lt;")}</span>
+              <span class="subscription-card-meta">${(s.vehicle_summary || "—").replace(/</g, "&lt;")} / ${(s.service_summary || "—").replace(/</g, "&lt;")}</span>
+              <span class="subscription-card-meta">${s.frequency || "—"}</span>
+              <span class="status-badge status-${s.status || ""}">${s.status || "—"}</span>
+              <span class="chevron" aria-hidden="true">▼</span>
+            </div>
+            <div class="subscription-card-detail">
+              <p><strong>Anchor:</strong> ${s.anchor_date || "—"}</p>
+              <p><strong>Cycles:</strong> ${s.completed_cycles_count ?? 0} completed / ${s.missed_cycles_count ?? 0} missed</p>
+              <p><strong>Active cycle:</strong> ${acText}</p>
+              <button type="button" class="moon-tab" data-sub-id="${s.id}">View details & actions</button>
+            </div>
           `;
-          tr.onclick = () => { selectedSubscriptionId = s.id; loadSubscriptionDetail(s.id); };
-          tbody.appendChild(tr);
+          card.querySelector(".subscription-card-header").onclick = () => card.classList.toggle("expanded");
+          card.querySelector("[data-sub-id]").onclick = (e) => { e.stopPropagation(); selectedSubscriptionId = s.id; loadSubscriptionDetail(s.id); };
+          listContainer.appendChild(card);
         });
-        listContainer.innerHTML = "";
-        listContainer.appendChild(table);
       } catch (err) {
-        listContainer.innerHTML = "<div style='margin-top:20px;color:#ff6b6b;'>" + (err.message || "Failed to load subscriptions") + "</div>";
+        listContainer.innerHTML = "<div style='margin-top:12px;color:#ff6b6b;'>" + (err.message || "Failed to load subscriptions") + "</div>";
       }
     }
 
@@ -1683,11 +1947,11 @@ function renderView(viewName) {
     createSection.style.background = "rgba(111,147,196,0.15)";
     createSection.innerHTML = "<h3 style='margin-top:0;'>Create discount code</h3>";
     const form = document.createElement("form");
-    form.style.display = "grid";
-    form.style.gridTemplateColumns = "1fr 1fr auto auto auto";
+    form.className = "admin-filters";
+    form.style.display = "flex";
+    form.style.flexWrap = "wrap";
     form.style.gap = "10px";
     form.style.alignItems = "end";
-    form.style.flexWrap = "wrap";
     const codeInput = document.createElement("input");
     codeInput.placeholder = "Code";
     codeInput.name = "code";
@@ -1735,22 +1999,86 @@ function renderView(viewName) {
     createSection.appendChild(form);
     wrapper.appendChild(createSection);
 
-    const activeList = document.createElement("div");
-    activeList.id = "discountCodesActive";
-    activeList.style.marginTop = "8px";
-    const scheduledList = document.createElement("div");
-    scheduledList.id = "discountCodesScheduled";
-    const inactiveHeader = document.createElement("h3");
-    inactiveHeader.textContent = "Inactive / expired / disabled";
-    inactiveHeader.style.cursor = "pointer";
-    inactiveHeader.style.marginBottom = "8px";
+    function buildDiscountCodeSection(title, items) {
+      const section = document.createElement("div");
+      section.className = "admin-section";
+      const header = document.createElement("div");
+      header.className = "admin-section-header";
+      header.setAttribute("role", "button");
+      header.setAttribute("aria-expanded", "true");
+      header.innerHTML = `<span>${title} (${items.length})</span><span class="chevron" aria-hidden="true">▼</span>`;
+      header.onclick = () => {
+        section.classList.toggle("collapsed");
+        header.setAttribute("aria-expanded", section.classList.contains("collapsed") ? "false" : "true");
+      };
+      section.appendChild(header);
+      const body = document.createElement("div");
+      body.className = "admin-section-body";
+      if (items.length === 0) {
+        body.innerHTML = "<p style='margin:0;color:rgba(255,255,255,0.6);'>None</p>";
+      } else {
+        items.forEach(d => {
+          const startStr = d.starts_at ? new Date(d.starts_at).toLocaleString() : "—";
+          const endStr = d.ends_at ? new Date(d.ends_at).toLocaleString() : "—";
+          const statusLabel = d.is_disabled ? "Disabled" : (d.ends_at && new Date(d.ends_at) < new Date() ? "Expired" : "Active");
+          const card = document.createElement("div");
+          card.className = "discount-code-card";
+          card.innerHTML = `
+            <div class="discount-code-header">
+              <span><strong>${(d.code || "").replace(/</g, "&lt;")}</strong></span>
+              <span class="booking-summary-meta">${d.percent_off}% off</span>
+              <span class="booking-summary-meta">${statusLabel}</span>
+              <span class="booking-summary-meta">${startStr} → ${endStr}</span>
+              <span class="chevron" aria-hidden="true">▼</span>
+            </div>
+            <div class="discount-code-detail">
+              <p style="margin:0 0 6px;"><strong>Start:</strong> ${startStr}</p>
+              <p style="margin:0 0 10px;"><strong>End:</strong> ${endStr}</p>
+              ${d.is_disabled ? "<p style='margin:0 0 10px;color:#888;'>Disabled</p>" : `<button type="button" class="moon-tab" data-disable-id="${d.id}">Disable</button>`}
+            </div>
+          `;
+          card.querySelector(".discount-code-header").onclick = () => card.classList.toggle("expanded");
+          const disableBtn = card.querySelector("[data-disable-id]");
+          if (disableBtn) {
+            disableBtn.onclick = async (e) => {
+              e.stopPropagation();
+              try {
+                const r = await adminFetch("/api/admin-discount-codes-disable", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: d.id }) });
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.error || "Failed");
+                showToast("Code disabled.");
+                loadDiscountCodes();
+              } catch (e) { showToast("Error: " + (e.message || "Unknown")); }
+            };
+          }
+          body.appendChild(card);
+        });
+      }
+      section.appendChild(body);
+      return section;
+    }
+
+    const activeContainer = document.createElement("div");
+    activeContainer.id = "discountCodesActive";
+    activeContainer.style.marginTop = "16px";
+    const scheduledContainer = document.createElement("div");
+    scheduledContainer.id = "discountCodesScheduled";
+    scheduledContainer.style.marginTop = "8px";
+    const inactiveSection = document.createElement("div");
+    inactiveSection.className = "admin-section collapsed";
+    const inactiveHeader = document.createElement("div");
+    inactiveHeader.className = "admin-section-header";
+    inactiveHeader.setAttribute("role", "button");
+    inactiveHeader.setAttribute("aria-expanded", "false");
+    inactiveHeader.innerHTML = '<span>Inactive / expired / disabled</span><span class="chevron" aria-hidden="true">▼</span>';
     const inactiveBody = document.createElement("div");
     inactiveBody.id = "discountCodesInactive";
-    inactiveBody.style.display = "none";
-    let inactiveOpen = false;
+    inactiveBody.className = "admin-section-body";
+    inactiveSection.appendChild(inactiveHeader);
+    inactiveSection.appendChild(inactiveBody);
     inactiveHeader.onclick = () => {
-      inactiveOpen = !inactiveOpen;
-      inactiveBody.style.display = inactiveOpen ? "block" : "none";
+      inactiveSection.classList.toggle("collapsed");
+      inactiveHeader.setAttribute("aria-expanded", inactiveSection.classList.contains("collapsed") ? "false" : "true");
     };
 
     async function loadDiscountCodes() {
@@ -1760,53 +2088,54 @@ function renderView(viewName) {
         wrapper.innerHTML = "<div style='color:#ff6b6b;'>" + (data.error || "Failed to load") + "</div>";
         return;
       }
-      function fmtRow(d) {
-        const start = d.starts_at ? new Date(d.starts_at).toLocaleString() : "—";
-        const end = d.ends_at ? new Date(d.ends_at).toLocaleString() : "—";
-        return `<div style="padding:10px 14px; margin-bottom:8px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.06); display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-          <span><strong>${(d.code || "").replace(/</g, "&lt;")}</strong> ${d.percent_off}% off · ${start} → ${end}</span>
-          ${!d.is_disabled ? `<button type="button" class="moon-tab" data-disable-id="${d.id}">Disable</button>` : "<span style='color:#888;'>Disabled</span>"}
-        </div>`;
+      const active = data.active || [];
+      const scheduled = data.scheduled || [];
+      const inactive = data.inactive || [];
+      activeContainer.innerHTML = "";
+      activeContainer.appendChild(buildDiscountCodeSection("Active", active));
+      scheduledContainer.innerHTML = "";
+      scheduledContainer.appendChild(buildDiscountCodeSection("Scheduled / upcoming", scheduled));
+      inactiveHeader.querySelector("span").textContent = "Inactive / expired / disabled (" + inactive.length + ")";
+      inactiveBody.innerHTML = "";
+      if (inactive.length === 0) {
+        inactiveBody.innerHTML = "<p style='margin:0;color:rgba(255,255,255,0.6);'>None</p>";
+      } else {
+        inactive.forEach(d => {
+          const startStr = d.starts_at ? new Date(d.starts_at).toLocaleString() : "—";
+          const endStr = d.ends_at ? new Date(d.ends_at).toLocaleString() : "—";
+          const statusLabel = d.is_disabled ? "Disabled" : "Expired";
+          const card = document.createElement("div");
+          card.className = "discount-code-card";
+          card.innerHTML = `
+            <div class="discount-code-header">
+              <span><strong>${(d.code || "").replace(/</g, "&lt;")}</strong></span>
+              <span class="booking-summary-meta">${d.percent_off}% off · ${statusLabel}</span>
+              <span class="booking-summary-meta">${startStr} → ${endStr}</span>
+              <span class="chevron" aria-hidden="true">▼</span>
+            </div>
+            <div class="discount-code-detail">
+              <p style="margin:0 0 6px;"><strong>Start:</strong> ${startStr}</p>
+              <p style="margin:0 0 10px;"><strong>End:</strong> ${endStr}</p>
+              ${d.is_disabled ? "<p style='margin:0;color:#888;'>Disabled</p>" : `<button type="button" class="moon-tab" data-disable-id="${d.id}">Disable</button>`}
+            </div>
+          `;
+          card.querySelector(".discount-code-header").onclick = () => card.classList.toggle("expanded");
+          const disableBtn = card.querySelector("[data-disable-id]");
+          if (disableBtn) {
+            disableBtn.onclick = async (e) => {
+              e.stopPropagation();
+              try {
+                const r = await adminFetch("/api/admin-discount-codes-disable", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: d.id }) });
+                const data = await r.json();
+                if (!r.ok) throw new Error(data.error || "Failed");
+                showToast("Code disabled.");
+                loadDiscountCodes();
+              } catch (e) { showToast("Error: " + (e.message || "Unknown")); }
+            };
+          }
+          inactiveBody.appendChild(card);
+        });
       }
-      activeList.innerHTML = "<h3 style='margin-top:0;'>Active</h3>" + (data.active && data.active.length ? data.active.map(fmtRow).join("") : "<p style='color:#9ca3af;'>None</p>");
-      scheduledList.innerHTML = "<h3 style='margin-top:0;'>Scheduled / upcoming</h3>" + (data.scheduled && data.scheduled.length ? data.scheduled.map(fmtRow).join("") : "<p style='color:#9ca3af;'>None</p>");
-      inactiveBody.innerHTML = (data.inactive && data.inactive.length ? data.inactive.map(fmtRow).join("") : "<p style='color:#9ca3af;'>None</p>");
-      activeList.querySelectorAll("[data-disable-id]").forEach(btn => {
-        btn.onclick = async () => {
-          const id = btn.dataset.disableId;
-          try {
-            const r = await adminFetch("/api/admin-discount-codes-disable", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
-            const d = await r.json();
-            if (!r.ok) throw new Error(d.error || "Failed");
-            showToast("Code disabled.");
-            loadDiscountCodes();
-          } catch (e) { showToast("Error: " + (e.message || "Unknown")); }
-        };
-      });
-      scheduledList.querySelectorAll("[data-disable-id]").forEach(btn => {
-        btn.onclick = async () => {
-          const id = btn.dataset.disableId;
-          try {
-            const r = await adminFetch("/api/admin-discount-codes-disable", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
-            const d = await r.json();
-            if (!r.ok) throw new Error(d.error || "Failed");
-            showToast("Code disabled.");
-            loadDiscountCodes();
-          } catch (e) { showToast("Error: " + (e.message || "Unknown")); }
-        };
-      });
-      inactiveBody.querySelectorAll("[data-disable-id]").forEach(btn => {
-        btn.onclick = async () => {
-          const id = btn.dataset.disableId;
-          try {
-            const r = await adminFetch("/api/admin-discount-codes-disable", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
-            const d = await r.json();
-            if (!r.ok) throw new Error(d.error || "Failed");
-            showToast("Code disabled.");
-            loadDiscountCodes();
-          } catch (e) { showToast("Error: " + (e.message || "Unknown")); }
-        };
-      });
     }
 
     form.onsubmit = async (e) => {
@@ -1835,10 +2164,9 @@ function renderView(viewName) {
       } catch (err) { showToast("Error: " + (err.message || "Unknown")); }
     };
 
-    wrapper.appendChild(activeList);
-    wrapper.appendChild(scheduledList);
-    wrapper.appendChild(inactiveHeader);
-    wrapper.appendChild(inactiveBody);
+    wrapper.appendChild(activeContainer);
+    wrapper.appendChild(scheduledContainer);
+    wrapper.appendChild(inactiveSection);
     viewContainer.appendChild(wrapper);
 
     reloadDiscountCodesPage = loadDiscountCodes;
@@ -1847,27 +2175,23 @@ function renderView(viewName) {
   }
 
   // =========================
-// NORMAL VIEWS
+// NORMAL VIEWS (Pending / Today / Upcoming)
 // =========================
 const data = cachedViews[viewName];
+const sectionTitles = { pending: "Pending Bookings", today: "Today's Schedule", upcoming: "Upcoming Bookings" };
+const sectionTitle = sectionTitles[viewName] || viewName;
 
 if (!data || data.length === 0) {
   let message = "No records found.";
-
-  if (viewName === "pending") {
-    message = "No pending bookings yet.";
-  } else if (viewName === "today") {
-    message = "No jobs scheduled for today.";
-  } else if (viewName === "upcoming") {
-    message = "No upcoming confirmed bookings.";
-  }
-
+  if (viewName === "pending") message = "No pending bookings yet.";
+  else if (viewName === "today") message = "No jobs scheduled for today.";
+  else if (viewName === "upcoming") message = "No upcoming confirmed bookings.";
   viewContainer.innerHTML =
   `<div style="margin-top:40px;font-weight:600;color:white;text-align:center;">${message}</div>`;
   return;
 }
 
-renderSection(viewName.toUpperCase(), data);
+renderSection(sectionTitle, data);
 }
 
  bootAdminApp();
