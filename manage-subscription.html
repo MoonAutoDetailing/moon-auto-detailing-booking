@@ -499,6 +499,13 @@
     body.dark .error-state h2 { color: #f0f0f0; }
     .error-state p { color: #6b7280; margin: 0 0 24px; }
     body.dark .error-state p { color: #9ca3af; }
+    .support-note-invalid {
+      margin-top: 20px;
+      font-size: 13px;
+      color: #6b7280;
+      text-align: center;
+    }
+    body.dark .support-note-invalid { color: #9ca3af; }
 
     /* ----- Cancel CTA disabled ----- */
     .cancel-disabled-msg {
@@ -575,7 +582,11 @@
 
     <div id="errorState" class="card error-state hidden">
       <h2>Invalid or missing link</h2>
-      <p>This page requires a valid subscription link. Please use the link from your email.</p>
+      <p>This page requires a valid subscription link. Please use the link from your email, or request a new access link below.</p>
+      <div class="action-row" style="justify-content: center; margin-top: 20px;">
+        <a href="/subscription-login.html" class="btn btn-primary">Request access link</a>
+      </div>
+      <p class="support-note-invalid">Need help? Reply to any email from us or contact us through our usual channels.</p>
     </div>
 
     <div id="content" class="hidden">
@@ -955,7 +966,6 @@
         loading.classList.add('hidden');
         if (!portalData || portalData.error) {
           error.classList.remove('hidden');
-          if (portalData && portalData.error) error.querySelector('p').textContent = portalData.error;
           return;
         }
         content.classList.remove('hidden');
