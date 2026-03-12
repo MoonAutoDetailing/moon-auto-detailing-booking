@@ -198,7 +198,7 @@ cursor: pointer;
   margin-top: 70px; /* pushes below toggle button */
   margin-bottom: 30px;
 }
-     /* ===== TOP BAR (tabs + refresh) ===== */
+/* ===== TOP BAR (tabs + refresh) ===== */
 #topBar {
   display: flex;
   align-items: center;
@@ -208,9 +208,20 @@ cursor: pointer;
   margin-bottom: 30px;
 }
 
-/* prevent viewButtons from pushing layout down */
 #viewButtons {
   margin: 0;
+}
+
+/* Desktop: single-row layout; row1 (menu) hidden */
+#topBarRow1 {
+  display: none;
+}
+#topBarPrimary,
+#topBarSecondary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
 }
 
 /* ================= LOGIN OVERLAY ================= */
@@ -558,17 +569,67 @@ cursor: pointer;
 @media (max-width: 640px) {
   body { padding: 12px; }
   #topBar {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 12px;
-    margin-top: 40px;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    margin-top: 24px;
     margin-bottom: 20px;
   }
-  #viewButtons {
-    width: 100%;
-    justify-content: center;
+  #topBarRow1 {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
   }
-  .moon-tab { margin-bottom: 4px; min-height: 44px; }
+  #topBarMenuWrap {
+    position: relative;
+  }
+  #adminMenuBtn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 10px 18px;
+    font-weight: 700;
+  }
+  #adminMenuDropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 8px;
+    min-width: 200px;
+    padding: 8px 0;
+    border-radius: 10px;
+    background: rgba(30,30,30,0.98);
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    z-index: 100;
+  }
+  #adminMenuDropdown.open { display: flex; flex-direction: column; gap: 4px; }
+  #adminMenuDropdown .moon-tab { margin: 4px 8px; width: calc(100% - 16px); text-align: left; border-radius: 6px; min-height: 44px; box-sizing: border-box; }
+  #topBarPrimary {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  #topBarPrimary #viewButtons {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  #topBarSecondary {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  #topBarSecondary .moon-tab,
+  #topBarSecondary #logoutBtn { min-height: 44px; }
+  .admin-debug-toggle { display: none !important; }
+  .moon-tab { margin-bottom: 0; min-height: 44px; }
   .card { padding: 10px 12px; margin-top: 8px; }
   .card.expanded { padding: 12px 14px; }
   .booking-header { min-height: 44px; align-items: center; gap: 6px 10px; }
@@ -594,24 +655,6 @@ cursor: pointer;
     box-sizing: border-box;
   }
   #viewButtons button.admin-nav-secondary { display: none; }
-  #adminMenuBtn { display: inline-flex; align-items: center; justify-content: center; }
-  #adminMenuDropdown {
-    display: none;
-    position: absolute;
-    top: 100%;
-    left: 0;
-    margin-top: 6px;
-    min-width: 180px;
-    padding: 8px 0;
-    border-radius: 10px;
-    background: rgba(30,30,30,0.98);
-    border: 1px solid rgba(255,255,255,0.2);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.5);
-    z-index: 100;
-  }
-  #adminMenuDropdown.open { display: flex; flex-direction: column; gap: 4px; }
-  #adminMenuDropdown .moon-tab { margin: 0; width: 100%; text-align: left; border-radius: 6px; }
-  #topBarNavWrap { position: relative; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; }
 }
 @media (min-width: 641px) {
   #adminMenuBtn { display: none; }
@@ -681,20 +724,25 @@ style="
 
 <div id="pageOverlay">
   <div id="topBar">
-  <div id="topBarNavWrap">
-    <button id="adminMenuBtn" class="moon-tab" type="button" aria-label="More sections" style="display:none">More</button>
-    <div id="viewButtons"></div>
-    <div id="adminMenuDropdown" role="menu"></div>
+    <div id="topBarRow1" class="topBar-mobile-row1">
+      <div id="topBarMenuWrap" class="topBar-menu-wrap">
+        <button id="adminMenuBtn" class="moon-tab" type="button" aria-label="More sections">More</button>
+        <div id="adminMenuDropdown" role="menu"></div>
+      </div>
+    </div>
+    <div id="topBarPrimary" class="topBar-mobile-primary">
+      <div id="viewButtons"></div>
+    </div>
+    <div id="topBarSecondary" class="topBar-mobile-secondary">
+      <button id="refreshNow" class="moon-tab">Refresh</button>
+      <button id="logoutBtn">Logout</button>
+    </div>
   </div>
-  <button id="refreshNow" class="moon-tab">Refresh</button>
-  <button id="logoutBtn">Logout</button>
-</div>
-
 
   <div id="viewContainer"></div>
 </div>
 
-     <button id="debugToggle" style="
+<button id="debugToggle" class="admin-debug-toggle" style="
   position: fixed;
   top: 20px;
   right: 20px;
@@ -1636,6 +1684,16 @@ function renderButtons() {
       };
       dropdown.appendChild(btn);
     });
+    const debugBtn = document.createElement("button");
+    debugBtn.type = "button";
+    debugBtn.className = "moon-tab";
+    debugBtn.textContent = "Toggle Debug";
+    debugBtn.onclick = () => {
+      dropdown.classList.remove("open");
+      const dt = document.getElementById("debugToggle");
+      if (dt) dt.click();
+    };
+    dropdown.appendChild(debugBtn);
   }
 
   const menuBtn = document.getElementById("adminMenuBtn");
