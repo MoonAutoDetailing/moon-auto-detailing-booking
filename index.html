@@ -216,13 +216,16 @@ h1 {
     padding: 16px 24px;
   }
 
-  /* ----- Appointment Time panel: ~5px from white card inner edges ----- */
+  /*
+   * Appointment Time panel: ~5px from actual white card edges.
+   * Card has padding 16px L/R; break out so panel sits 5px from card.
+   */
   .step-panel--time {
-    margin-left: 5px;
-    margin-right: 5px;
-    width: calc(100% - 10px);
-    padding-left: 4px;
-    padding-right: 4px;
+    margin-left: -11px;
+    margin-right: -11px;
+    width: calc(100% + 22px);
+    padding-left: 6px;
+    padding-right: 6px;
     box-sizing: border-box;
   }
   .step-panel--time .row {
@@ -230,7 +233,7 @@ h1 {
     padding-right: 0;
   }
 
-  /* ----- Calendar: full width inside panel, no breakout ----- */
+  /* ----- Calendar: full width inside panel; no side margin ----- */
   #calendarContainer {
     width: 100%;
     max-width: none;
@@ -245,13 +248,19 @@ h1 {
   }
   #hourlyCal {
     width: 100%;
-    padding-left: 2px;
+    padding-left: 0;
     box-sizing: border-box;
   }
 
-  /* Weekly cal + calendar UI tweaks */
+  /* Narrower time column + smaller gap = more width for day columns */
   #weeklyCal {
-    grid-template-columns: 58px repeat(7, 1fr);
+    grid-template-columns: 46px repeat(7, 1fr);
+    gap: 4px;
+  }
+  .hourly-header,
+  .hourly-row {
+    grid-template-columns: 44px repeat(7, 1fr);
+    gap: 2px;
   }
   .cal-cell {
     height: 40px;
@@ -265,7 +274,7 @@ h1 {
   .hourly-row div:first-child,
   .hourly-header div:first-child {
     font-size: 9px;
-    padding-left: 2px;
+    padding-left: 1px;
     white-space: nowrap;
     text-align: left;
   }
@@ -273,7 +282,7 @@ h1 {
     height: 36px;
   }
   .day-label {
-    padding: 10px 0;
+    padding: 8px 2px;
     font-size: 11px;
   }
   .calendar-toolbar {
@@ -304,9 +313,12 @@ h1 {
   white-space: nowrap;
 }
 
-#calWrap {
-  margin-left: 5px;
-  margin-right: 5px;
+/* calWrap side margin: desktop only (mobile uses 0 in @media (max-width: 640px)) */
+@media (min-width: 641px) {
+  #calWrap {
+    margin-left: 5px;
+    margin-right: 5px;
+  }
 }
 
 #calWrap {
