@@ -5,30 +5,40 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <link rel="icon" href="/NewLogoColor.png" type="image/png" />
 <title>Manage Your Booking — Moon Auto Detailing</title>
-
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
 <style>
-body { font-family:"Poppins",system-ui; margin:0; background:#000; }
-.wrap { max-width:860px; margin:40px auto; padding:0 20px; }
-.card { background:#fff; border-radius:22px; padding:34px; box-shadow:0 18px 40px rgba(0,0,0,.12); }
-h1 { text-align:center; color:#7fb8e6; margin-bottom:6px; }
-.sub { text-align:center; color:#6b7280; margin-bottom:24px; }
-.box { border:1px solid #e5e7eb; border-radius:14px; padding:14px; margin-top:14px; background:#f9fbff; }
-.label { font-weight:700; }
-.btn { width:100%; padding:14px; margin-top:14px; border:none; border-radius:999px; font-weight:600; cursor:pointer; }
-.cancel { background:#b00020; color:white; }
-.reschedule { background:#7fb8e6; color:white; }
-.hidden { display:none; }
-.error-state h2 { font-size:20px; margin:0 0 12px; color:#1c1c1c; }
-.error-state p { color:#6b7280; margin:0 0 24px; }
-.error-state .support-note { font-size:13px; color:#6b7280; text-align:center; margin-top:20px; }
-.error-state .btn-link { display:inline-block; margin-top:12px; padding:12px 24px; background:#7fb8e6; color:#fff; border-radius:999px; font-weight:600; text-decoration:none; }
+* { box-sizing: border-box; }
+body { font-family: "Poppins", system-ui, sans-serif; margin: 0; background: #000; }
+.page-wrap { max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+.page-header { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 0 0 12px; flex-wrap: wrap; }
+.page-header .page-logo { height: 48px; width: auto; display: block; object-fit: contain; }
+.page-header h1 { margin: 0; font-size: clamp(1.75rem, 4vw, 2.25rem); letter-spacing: 0.5px; text-align: center; color: #7fb8e6; }
+.card { background: #fff; border-radius: 22px; padding: 34px; box-shadow: 0 18px 40px rgba(0,0,0,0.12), 0 6px 18px rgba(0,0,0,0.08); }
+.sub { text-align: center; color: #4a4a4a; margin: 0 0 24px; font-size: 1.1rem; line-height: 1.5; }
+.box { border: 1px solid #e5e7eb; border-radius: 14px; padding: 14px; margin-top: 14px; background: #f9fbff; }
+.label { font-weight: 700; color: #111; }
+.btn { width: 100%; padding: 14px 24px; margin-top: 14px; border: none; border-radius: 999px; font-weight: 600; cursor: pointer; font-family: inherit; font-size: 16px; letter-spacing: 0.5px; }
+.cancel { background: #b00020; color: white; }
+.reschedule { background: #7fb8e6; color: white; box-shadow: 0 6px 16px rgba(127,184,230,0.45); }
+.reschedule:hover { background: #6aaee2; }
+.hidden { display: none; }
+.error-state h2 { font-size: 20px; margin: 0 0 12px; color: #1c1c1c; }
+.error-state p { color: #6b7280; margin: 0 0 24px; }
+.error-state .support-note { font-size: 13px; color: #6b7280; text-align: center; margin-top: 20px; }
+.error-state .btn-link { display: inline-block; margin-top: 12px; padding: 12px 24px; background: #7fb8e6; color: #fff; border-radius: 999px; font-weight: 600; text-decoration: none; box-shadow: 0 6px 16px rgba(127,184,230,0.45); }
+@media (max-width: 640px) { .page-wrap { padding: 0 16px; } .card { padding: 24px 20px; } }
 </style>
 </head>
 
 <body>
-<div class="wrap">
+<div class="page-wrap">
   <div class="card">
-    <h1>Manage Your Booking — Moon Auto Detailing</h1>
+    <div class="page-header">
+      <img src="/NewLogoColor.png" class="page-logo" alt="Moon Auto Detailing" />
+      <h1>Manage Your Booking</h1>
+    </div>
     <p class="sub">Reschedule or cancel your appointment</p>
 
     <div id="loading">Loading booking…</div>
