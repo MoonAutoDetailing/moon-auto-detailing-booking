@@ -123,18 +123,6 @@ h1 {
 }
 .step-panel .row { margin-bottom: 16px; }
 .step-panel .row:last-child { margin-bottom: 0; }
-.selected-service-summary {
-  margin: 0 0 20px;
-  padding: 14px 18px;
-  background: #f8fbff;
-  border: 1px solid #e5e7eb;
-  border-radius: 14px;
-  font-size: 14px;
-  line-height: 1.5;
-  color: #374151;
-}
-.selected-service-summary .summary-line { margin: 4px 0; }
-.selected-service-summary .summary-total { font-weight: 600; margin-top: 8px; color: #111; }
 /* Secondary link as button (Manage Existing Booking) */
 .link-secondary {
   display: inline-block;
@@ -1131,15 +1119,60 @@ label[for="end"] {
   margin-top: 0;
   color: #7fb8e6;
 }
+.review-modal-helper {
+  font-size: 13px;
+  color: #6b7280;
+  margin: 0 0 16px;
+  line-height: 1.4;
+}
 .review-modal-summary {
   text-align: left;
   font-size: 14px;
   color: #374151;
   line-height: 1.5;
-  margin: 16px 0 24px;
+  margin: 0 0 24px;
 }
 .review-modal-summary p {
   margin: 8px 0;
+}
+.review-modal-block {
+  margin-bottom: 18px;
+}
+.review-modal-block:last-child {
+  margin-bottom: 0;
+}
+.review-modal-block-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+.review-modal-block-body {
+  font-size: 14px;
+  color: #374151;
+}
+.review-modal-line {
+  margin: 4px 0;
+}
+.review-modal-pricing .review-modal-block-body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.review-modal-pricing-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.review-modal-pricing-row.review-modal-total {
+  font-weight: 600;
+  font-size: 15px;
+  color: #111;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e5e7eb;
 }
 .review-modal-actions {
   display: flex;
@@ -1309,8 +1342,6 @@ View Maintenance Plans </a>
     </div>
     </div><!-- /.step-panel -->
 
-    <div id="selectedServiceSummary" class="selected-service-summary" style="display:none;" aria-live="polite"></div>
-
     <h3 class="section-title">3. Service Address</h3>
     <p class="muted" style="margin: 0 0 8px; text-align: center;">Where the detail will be completed. Availability is based on this address.</p>
     <div class="step-panel step-panel--address">
@@ -1411,7 +1442,7 @@ View Maintenance Plans </a>
   <div id="reviewModalOverlay" class="review-modal-overlay" aria-hidden="true">
     <div class="review-modal-content">
       <h3>Review your booking</h3>
-      <p style="font-size:13px; opacity:.7; margin:6px 0 12px;">Times are not reserved until you confirm.</p>
+      <p class="review-modal-helper">This is a booking request. Your time is not confirmed until we review it.</p>
       <div id="reviewModalSummary" class="review-modal-summary"></div>
       <div id="subscriptionTerms" style="display:none; margin-top:18px; text-align:left; font-size:13px; line-height:1.5;">
         <strong>Maintenance Plan Terms</strong>
@@ -2144,39 +2175,6 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       }
     }
 
-    function updateSelectedServiceSummary() {
-      const el = document.getElementById("selectedServiceSummary");
-      if (!el) return;
-      if (!selectedVariant) {
-        el.style.display = "none";
-        el.innerHTML = "";
-        return;
-      }
-      const cat = selectedVariant.service?.category ?? "Service";
-      const lvl = selectedVariant.service?.level ?? "";
-      const serviceName = lvl ? `${uiCategoryLabel(cat)} Level ${lvl}` : uiCategoryLabel(cat);
-      const duration = Number(selectedVariant.duration_minutes);
-      const basePrice = Number(selectedVariant.price) || 0;
-      const dayKey = selectedStartISO ? new Date(selectedStartISO).toDateString() : "";
-      const travelFee = (dayKey && metaByDay[dayKey]?.[selectedStartISO]?.travel_fee) ?? null;
-      const travelFeeNum = travelFee != null ? Number(travelFee) : 0;
-      const total = appliedDiscountResult?.valid && appliedDiscountResult?.total_price != null
-        ? Number(appliedDiscountResult.total_price)
-        : (basePrice + travelFeeNum);
-      const fmt = (n) => (n != null && Number.isFinite(n)) ? `$${Number(n).toFixed(2)}` : "—";
-      const travelLine = travelFee != null
-        ? (travelFeeNum === 0 ? "Travel fee: Free" : `Travel fee: ${fmt(travelFee)}`)
-        : "Travel fee: —";
-      el.innerHTML = `
-        <div class="summary-line"><strong>${escapeHtml(serviceName)}</strong></div>
-        <div class="summary-line">Estimated duration: ${duration} min</div>
-        <div class="summary-line">Service price: ${fmt(basePrice)}</div>
-        <div class="summary-line">${travelLine}</div>
-        <div class="summary-line summary-total">Total: ${fmt(total)}</div>
-      `;
-      el.style.display = "block";
-    }
-
     function resetServiceCategoryDropdown(message) {
       elServiceCategory.innerHTML = `<option value="">${message}</option>`;
       elServiceCategory.disabled = true;
@@ -2398,7 +2396,6 @@ elStart.value = "";
   if (!selectedVariant) {
     elServiceMeta.textContent = "";
     updateServiceClarity();
-    updateSelectedServiceSummary();
     if (hasValidServiceAddress) scheduleCalendarReload();
     return;
   }
@@ -2412,7 +2409,6 @@ elStart.value = "";
 
   updateServiceClarity();
   recalcEndTimePreview();
-  updateSelectedServiceSummary();
 
   if (hasValidServiceAddress) scheduleCalendarReload();
 });
@@ -2729,6 +2725,9 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
             return;
           }
         }
+        const cat = selectedVariant.service?.category ?? "Service";
+        const lvl = selectedVariant.service?.level ?? "";
+        const service_label = lvl ? `${uiCategoryLabel(cat)} Level ${lvl}` : uiCategoryLabel(cat);
         // Build draft for review step; no DB writes until Confirm
         const draft = {
           full_name,
@@ -2738,6 +2737,7 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
           service_address,
           vehicle_size,
           service_variant_id: selectedVariant.id,
+          service_label,
           scheduled_start,
           scheduled_end,
           vehicle_year: elYear.value || null,
@@ -2796,25 +2796,42 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
       const travelFee = Number(draft.travel_fee ?? 0);
       const total = Number(draft.total_price ?? basePrice + travelFee);
       const hasDiscount = draft.discount_code != null && (draft.discount_amount != null ? draft.discount_amount > 0 : draft.discount_percent != null);
-      const fmt = (n) => `$${n.toFixed(2)}`;
-      const discountLine = hasDiscount
-        ? `<p><strong>Discount (${escapeHtml(draft.discount_code)}):</strong> -${fmt(draft.discount_amount ?? 0)}</p>`
-        : "";
+      const fmt = (n) => `$${Number(n).toFixed(2)}`;
+      const vehicleLine = [draft.vehicle_year, draft.vehicle_make, draft.vehicle_model].filter(Boolean).join(" ") || "—";
       const notesLine = draft.customer_notes
-        ? `<p><strong>Notes:</strong> ${escapeHtml(draft.customer_notes)}</p>`
+        ? `<p class="review-modal-line"><strong>Notes:</strong> ${escapeHtml(draft.customer_notes)}</p>`
+        : "";
+      const discountBlock = hasDiscount
+        ? `<div class="review-modal-pricing-row"><span>Discount (${escapeHtml(draft.discount_code)})</span><span>-${fmt(draft.discount_amount ?? 0)}</span></div>`
         : "";
       elReviewSummary.innerHTML = `
-        <p><strong>Customer:</strong> ${escapeHtml(draft.full_name)}</p>
-        <p><strong>Email:</strong> ${escapeHtml(draft.email)}</p>
-        ${draft.phone ? `<p><strong>Phone:</strong> ${escapeHtml(draft.phone)}</p>` : ""}
-        <p><strong>Service address:</strong> ${escapeHtml(draft.service_address)}</p>
-        <p><strong>Time:</strong> ${prettyStart} – ${prettyEnd}</p>
-        <p><strong>Service price:</strong> ${fmt(basePrice)}</p>
-        <p><strong>Travel fee:</strong> ${fmt(travelFee)}</p>
-        ${discountLine}
-        <p><strong>Total:</strong> ${fmt(total)}</p>
-        ${notesLine}
-        <p>Click Confirm to create your booking.</p>
+        <div class="review-modal-block">
+          <div class="review-modal-block-title">Contact</div>
+          <div class="review-modal-block-body">
+            <p class="review-modal-line">${escapeHtml(draft.full_name)}</p>
+            <p class="review-modal-line">${escapeHtml(draft.email)}</p>
+            ${draft.phone ? `<p class="review-modal-line">${escapeHtml(draft.phone)}</p>` : ""}
+          </div>
+        </div>
+        <div class="review-modal-block">
+          <div class="review-modal-block-title">Booking details</div>
+          <div class="review-modal-block-body">
+            <p class="review-modal-line"><strong>Vehicle:</strong> ${escapeHtml(vehicleLine)}</p>
+            <p class="review-modal-line"><strong>Service:</strong> ${escapeHtml(draft.service_label || "—")}</p>
+            <p class="review-modal-line"><strong>Address:</strong> ${escapeHtml(draft.service_address)}</p>
+            <p class="review-modal-line"><strong>Time:</strong> ${prettyStart} – ${prettyEnd}</p>
+            ${notesLine}
+          </div>
+        </div>
+        <div class="review-modal-block review-modal-pricing">
+          <div class="review-modal-block-title">Pricing</div>
+          <div class="review-modal-block-body">
+            <div class="review-modal-pricing-row"><span>Service</span><span>${fmt(basePrice)}</span></div>
+            <div class="review-modal-pricing-row"><span>Travel fee</span><span>${fmt(travelFee)}</span></div>
+            ${discountBlock}
+            <div class="review-modal-pricing-row review-modal-total"><span>Total</span><span>${fmt(total)}</span></div>
+          </div>
+        </div>
       `;
       const termsBlock = document.getElementById("subscriptionTerms");
       const agreementBox = document.getElementById("subscriptionAgreement");
@@ -3031,7 +3048,6 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
       document.getElementById("discountCodeInput").value = "";
       document.getElementById("discountFeedback").textContent = "";
       document.getElementById("discountRemoveWrap").style.display = "none";
-      updateSelectedServiceSummary();
     }
     function updateDiscountUI() {
       const feedback = document.getElementById("discountFeedback");
@@ -3075,7 +3091,6 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
         feedback.textContent = "Code applied. Your total will update at checkout.";
         feedback.style.color = "#0a7a2f";
         updateDiscountUI();
-        updateSelectedServiceSummary();
       } else {
         appliedDiscountCode = null;
         appliedDiscountResult = null;
@@ -3626,7 +3641,6 @@ block.style.left = "5%";
           selectedStartISO = startTime.toISOString();
           clearAppliedDiscount();
           recalcEndTimePreview();
-          updateSelectedServiceSummary();
         });
       }
 
