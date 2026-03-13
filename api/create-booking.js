@@ -116,9 +116,9 @@ function getPrevBooking(bookingsByEnd, start) {
 
 function travelFeeFromMinutes(minutes) {
   const m = Number(minutes);
-  if (!Number.isFinite(m) || m <= 20) return 0;
-  if (m <= 30) return 20;
+  if (!Number.isFinite(m) || m <= 30) return 0;
   if (m <= 40) return 30;
+  if (m <= 50) return 40;
   if (m <= 60) return 50;
   return 50;
 }

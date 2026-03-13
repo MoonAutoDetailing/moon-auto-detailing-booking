@@ -123,6 +123,18 @@ h1 {
 }
 .step-panel .row { margin-bottom: 16px; }
 .step-panel .row:last-child { margin-bottom: 0; }
+.selected-service-summary {
+  margin: 0 0 20px;
+  padding: 14px 18px;
+  background: #f8fbff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #374151;
+}
+.selected-service-summary .summary-line { margin: 4px 0; }
+.selected-service-summary .summary-total { font-weight: 600; margin-top: 8px; color: #111; }
 /* Secondary link as button (Manage Existing Booking) */
 .link-secondary {
   display: inline-block;
@@ -1276,6 +1288,8 @@ View Maintenance Plans </a>
     </div>
     </div><!-- /.step-panel -->
 
+    <div id="selectedServiceSummary" class="selected-service-summary" style="display:none;" aria-live="polite"></div>
+
     <h3 class="section-title">3. Service Address</h3>
     <p class="muted" style="margin: 0 0 8px; text-align: center;">Where the detail will be completed. Availability is based on this address.</p>
     <div class="step-panel step-panel--address">
@@ -1290,6 +1304,7 @@ View Maintenance Plans </a>
           placeholder="Start typing service address…"
           required
         />
+        <p id="serviceAddressReselectHelper" class="muted" style="display:none; margin-top:8px; font-size:13px;">Need a different location? Edit the address and select a new one from the dropdown.</p>
       </div>
     </div>
     </div><!-- /.step-panel -->
@@ -1297,6 +1312,7 @@ View Maintenance Plans </a>
     <h3 class="section-title">4. Appointment Time</h3>
                                                                  <!-- Confirmed Bookings Calendar (read-only reference) -->
     <div class="step-panel step-panel--time">
+<p class="muted" style="margin:0 0 12px; font-size:14px;">Select an available time below. Your appointment request is not confirmed until we review it.</p>
 <button
   type="button"
   id="toggleCalendarBtn"
@@ -2107,6 +2123,39 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       }
     }
 
+    function updateSelectedServiceSummary() {
+      const el = document.getElementById("selectedServiceSummary");
+      if (!el) return;
+      if (!selectedVariant) {
+        el.style.display = "none";
+        el.innerHTML = "";
+        return;
+      }
+      const cat = selectedVariant.service?.category ?? "Service";
+      const lvl = selectedVariant.service?.level ?? "";
+      const serviceName = lvl ? `${uiCategoryLabel(cat)} Level ${lvl}` : uiCategoryLabel(cat);
+      const duration = Number(selectedVariant.duration_minutes);
+      const basePrice = Number(selectedVariant.price) || 0;
+      const dayKey = selectedStartISO ? new Date(selectedStartISO).toDateString() : "";
+      const travelFee = (dayKey && metaByDay[dayKey]?.[selectedStartISO]?.travel_fee) ?? null;
+      const travelFeeNum = travelFee != null ? Number(travelFee) : 0;
+      const total = appliedDiscountResult?.valid && appliedDiscountResult?.total_price != null
+        ? Number(appliedDiscountResult.total_price)
+        : (basePrice + travelFeeNum);
+      const fmt = (n) => (n != null && Number.isFinite(n)) ? `$${Number(n).toFixed(2)}` : "—";
+      const travelLine = travelFee != null
+        ? (travelFeeNum === 0 ? "Travel fee: Free" : `Travel fee: ${fmt(travelFee)}`)
+        : "Travel fee: —";
+      el.innerHTML = `
+        <div class="summary-line"><strong>${escapeHtml(serviceName)}</strong></div>
+        <div class="summary-line">Estimated duration: ${duration} min</div>
+        <div class="summary-line">Service price: ${fmt(basePrice)}</div>
+        <div class="summary-line">${travelLine}</div>
+        <div class="summary-line summary-total">Total: ${fmt(total)}</div>
+      `;
+      el.style.display = "block";
+    }
+
     function resetServiceCategoryDropdown(message) {
       elServiceCategory.innerHTML = `<option value="">${message}</option>`;
       elServiceCategory.disabled = true;
@@ -2328,6 +2377,7 @@ elStart.value = "";
   if (!selectedVariant) {
     elServiceMeta.textContent = "";
     updateServiceClarity();
+    updateSelectedServiceSummary();
     if (hasValidServiceAddress) scheduleCalendarReload();
     return;
   }
@@ -2341,6 +2391,7 @@ elStart.value = "";
 
   updateServiceClarity();
   recalcEndTimePreview();
+  updateSelectedServiceSummary();
 
   if (hasValidServiceAddress) scheduleCalendarReload();
 });
@@ -2440,6 +2491,8 @@ try {
     elServiceAddress.value = b.service_address;
     lastValidServiceAddress = (b.service_address || "").trim();
     hasValidServiceAddress = true; // Pre-filled address counts as valid so calendar can load
+    const reselectEl = document.getElementById("serviceAddressReselectHelper");
+    if (reselectEl) reselectEl.style.display = "block";
     const vehicle = b.vehicles ?? b;
 
 elYear.value  = vehicle.vehicle_year  ?? vehicle.year  ?? "";
@@ -2957,6 +3010,7 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
       document.getElementById("discountCodeInput").value = "";
       document.getElementById("discountFeedback").textContent = "";
       document.getElementById("discountRemoveWrap").style.display = "none";
+      updateSelectedServiceSummary();
     }
     function updateDiscountUI() {
       const feedback = document.getElementById("discountFeedback");
@@ -3000,6 +3054,7 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
         feedback.textContent = "Code applied. Your total will update at checkout.";
         feedback.style.color = "#0a7a2f";
         updateDiscountUI();
+        updateSelectedServiceSummary();
       } else {
         appliedDiscountCode = null;
         appliedDiscountResult = null;
@@ -3046,10 +3101,9 @@ function initAddressAutocomplete() {
         }
         if (isServiceAddress) {
           lastValidServiceAddress = (inputEl.value || "").trim();
-          inputEl.readOnly = true;
-          inputEl.classList.add("locked-address");
           clearAppliedDiscount();
           hasValidServiceAddress = true;
+          setServiceAddressReselectHelperVisible(true);
           loadCalendar();
         }
         return;
@@ -3066,15 +3120,23 @@ function initAddressAutocomplete() {
       const zip = components.postal_code || "";
       const fullAddress = [street, city, state, zip].filter(Boolean).join(", ");
       inputEl.value = fullAddress;
-      inputEl.readOnly = true;
-      inputEl.classList.add("locked-address");
+      if (!isServiceAddress) {
+        inputEl.readOnly = true;
+        inputEl.classList.add("locked-address");
+      }
       if (isServiceAddress) {
         lastValidServiceAddress = fullAddress;
         clearAppliedDiscount();
         hasValidServiceAddress = true;
+        setServiceAddressReselectHelperVisible(true);
         loadCalendar();
       }
     });
+  }
+
+  function setServiceAddressReselectHelperVisible(visible) {
+    const el = document.getElementById("serviceAddressReselectHelper");
+    if (el) el.style.display = visible ? "block" : "none";
   }
 
   const customerAddress = document.getElementById("address");
@@ -3082,18 +3144,17 @@ function initAddressAutocomplete() {
   if (customerAddress) attachAutocomplete(customerAddress);
   if (serviceAddress) {
     attachAutocomplete(serviceAddress);
-    // Reset validity when user manually edits service address after a valid selection
+    // Invalidate when user manually edits service address after a valid selection (slot/start/end/discount cleared; availability reloads only after new Places selection)
     serviceAddress.addEventListener("input", () => {
       if (!hasValidServiceAddress) return;
       const current = (serviceAddress.value || "").trim();
       if (current === (lastValidServiceAddress || "").trim()) return;
       hasValidServiceAddress = false;
       lastValidServiceAddress = "";
+      setServiceAddressReselectHelperVisible(false);
       selectedStartISO = null;
       recalcEndTimePreview();
       clearAppliedDiscount();
-      serviceAddress.readOnly = false;
-      serviceAddress.classList.remove("locked-address");
       loadCalendar();
     });
     serviceAddress.addEventListener("change", () => {
@@ -3102,11 +3163,10 @@ function initAddressAutocomplete() {
       if (current === (lastValidServiceAddress || "").trim()) return;
       hasValidServiceAddress = false;
       lastValidServiceAddress = "";
+      setServiceAddressReselectHelperVisible(false);
       selectedStartISO = null;
       recalcEndTimePreview();
       clearAppliedDiscount();
-      serviceAddress.readOnly = false;
-      serviceAddress.classList.remove("locked-address");
       loadCalendar();
     });
   }
@@ -3545,6 +3605,7 @@ block.style.left = "5%";
           selectedStartISO = startTime.toISOString();
           clearAppliedDiscount();
           recalcEndTimePreview();
+          updateSelectedServiceSummary();
         });
       }
 

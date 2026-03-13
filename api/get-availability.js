@@ -387,10 +387,10 @@ function pairKey(originAddress, destAddress) {
 function feeFromMinutes(minutes) {
   const m = Number(minutes);
   if (!Number.isFinite(m)) return { fee: 0, warning: false, tierLabel: "unknown", allowed: false };
-  if (m <= 20) return { fee: 0, warning: false, tierLabel: "0-20", allowed: true };
-  if (m <= 30) return { fee: 20, warning: false, tierLabel: "21-30", allowed: true };
+  if (m <= 30) return { fee: 0, warning: false, tierLabel: "0-30", allowed: true };
   if (m <= 40) return { fee: 30, warning: false, tierLabel: "31-40", allowed: true };
-  if (m <= 60) return { fee: 50, warning: true, tierLabel: "41-60", allowed: true };
+  if (m <= 50) return { fee: 40, warning: false, tierLabel: "41-50", allowed: true };
+  if (m <= 60) return { fee: 50, warning: true, tierLabel: "51-60", allowed: true };
   return { fee: 50, warning: true, tierLabel: "61+", allowed: false };
 }
 
