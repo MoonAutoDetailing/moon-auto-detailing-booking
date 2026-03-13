@@ -157,10 +157,11 @@ h1 {
  body {
   margin: 0;
 }
+  /* Full-width card on mobile: remove side gutters so white card spans screen */
   .page-wrap {
   max-width: 100%;
-  margin: 20px 0;
-  padding: 0 16px;
+  margin: 0;
+  padding: 0;
 }
   #hourlyCal {
   width: 100%;
@@ -189,10 +190,10 @@ h1 {
   .page-header { gap: 10px; }
   .step-panel { padding: 18px 20px; }
 
-  /* Card: keep rounded corners and clean padding */
+  /* Card: full width on mobile, no side gutters; subtle top radius only */
   .booking-card {
-  border-radius: 22px;
-  padding: 24px 20px 36px;
+  border-radius: 14px 14px 0 0;
+  padding: 24px 16px 36px;
 }
 
   /* Tap-friendly controls (min 44px) */
@@ -602,15 +603,15 @@ max-width: 100%;
   }
 
   /*
-   * Appointment Time panel: use nearly full width of booking card on mobile.
-   * Pull panel out into card padding; minimal inner padding so calendar gets maximum width.
+   * Appointment Time panel: span full width of card on mobile (break out of card padding).
+   * Card has 16px side padding; panel extends to card edges with minimal inner padding.
    */
   .step-panel--time {
-    margin-left: -20px;
-    margin-right: -20px;
-    width: calc(100% + 40px);
-    padding-left: 6px;
-    padding-right: 6px;
+    margin-left: -16px;
+    margin-right: -16px;
+    width: calc(100% + 32px);
+    padding-left: 4px;
+    padding-right: 4px;
     box-sizing: border-box;
   }
 
