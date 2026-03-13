@@ -612,16 +612,37 @@ max-width: 100%;
   .cal-cell {
     height: 40px;
   }
-/* SOFT FULL-BLEED CALENDAR — MOBILE ONLY */
-#calendarContainer {
-  width: calc(100% + 32px);
-  margin-left: -16px;
-}
 
-/* give the time column breathing room from edge */
-#hourlyCal {
-  padding-left: 2px;
-}
+  /* Appointment Time panel: less side padding on mobile so calendar has more width */
+  .step-panel--time {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  /* Calendar area: use nearly full width of booking card on mobile (break out of panel padding) */
+  #calendarContainer {
+    width: calc(100% + 24px);
+    margin-left: -12px;
+    margin-right: -12px;
+    box-sizing: content-box;
+  }
+
+  #calWrap {
+    width: 100%;
+    max-width: none;
+  }
+
+  #hourlyCal {
+    width: 100%;
+    padding-left: 2px;
+    box-sizing: border-box;
+  }
+
+  /* Start/end row below calendar: keep readable spacing */
+  .step-panel--time .row {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
 }                     
     
 /* =====================
@@ -921,16 +942,16 @@ label[for="end"] {
 
   box-shadow: 0 4px 10px rgba(127,184,230,0.35);
 }
-    /* MOBILE: full-bleed ONLY the calendar section inside the white booking card */
-#calendarContainer {
-  margin-left: -16px;
-  margin-right: -16px;
-}
-
-/* keep your existing mobile override */
-#calWrap {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
+    /* Desktop/tablet: keep previous calendar breakout so layout unchanged */
+@media (min-width: 641px) {
+  #calendarContainer {
+    margin-left: -16px;
+    margin-right: -16px;
+  }
+  #calWrap {
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+  }
 }
 
 
