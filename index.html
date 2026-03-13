@@ -4,9 +4,12 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Moon Auto Detailing — Booking</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
   <style>
     body {font-family: "Poppins", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background-color: #000000;}
-    label { display:block; font-weight:600; margin: 10px 0 6px; }
+    label { display: block; font-weight: 600; margin: 10px 0 6px; color: #1c1c1c; }
     input, select, button, textarea { width: 100%; padding: 10px; font-size: 16px; }
     textarea { min-height: 70px; }
     button { cursor: pointer; font-weight: 700; }
@@ -53,41 +56,56 @@
 
 
 .page-wrap {
-  max-width: 860px;
+  max-width: 1000px;
   margin: 40px auto;
   padding: 0 20px;
 }
 
 h1 {
   text-align: center;
-  margin-bottom: 4px;
+  margin: 0 0 12px;
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  letter-spacing: 0.5px;
 }
 
 .page-subtitle {
   text-align: center;
-  color: #6b7280;
-  margin-bottom: 24px;
+  color: #4a4a4a;
+  margin: 0 0 24px;
+  font-size: 1.1rem;
+  line-height: 1.5;
 }
 
 .section-title {
   font-size: 18px;
+  font-weight: 600;
   margin-top: 18px;
   margin-bottom: 8px;
   border-bottom: 1px solid #e5e7eb;
-  padding-bottom: 4px;
+  padding-bottom: 8px;
+  color: #1c1c1c;
+  text-align: center;
 }
                                 /*Mobile Media Configuration*/
 /* =====================
    MOBILE ONLY
    ===================== */
+@media (max-width: 768px) {
+  .page-wrap {
+    padding: 0 16px;
+  }
+  .booking-card {
+    padding: 32px 24px 40px;
+  }
+}
 @media (max-width: 640px) {
  body {
   margin: 0;
 }
   .page-wrap {
   max-width: 100%;
-  margin: 0;
-  padding: 0 6px;
+  margin: 20px 0;
+  padding: 0 16px;
 }
   #hourlyCal {
   width: 100%;
@@ -96,23 +114,33 @@ h1 {
 #calWrap {
   width: 100%;
 }
-  /* Stack rows ONLY on mobile */
+  /* Stack rows on mobile */
   .row {
     grid-template-columns: 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
   }
   .row.row--three-cols {
     grid-template-columns: 1fr;
-    gap: 12px;
+    gap: 16px;
   }
   .booking-card .section-title {
-  margin-top: 32px;
+  margin-top: 36px;
+}
+  .booking-card .section-title:first-of-type {
+    margin-top: 20px;
+  }
+
+  /* Card: keep rounded corners and clean padding */
+  .booking-card {
+  border-radius: 22px;
+  padding: 24px 20px 36px;
 }
 
-  /* Reduce card padding */
-  .booking-card {
-  border-radius: 0;
-  padding: 20px 16px;
-}
+  /* Tap-friendly controls (min 44px) */
+  input, select, textarea, .primary-btn, .calendar-toggle-btn {
+    min-height: 48px;
+  }
 
   /* Datetime inputs stay centered */
   input[type="datetime-local"] {
@@ -120,11 +148,13 @@ h1 {
     display: block;
   }
 
-  /* Center submit button on mobile only */
+  /* Submit button full width, centered */
   #submitBtn {
     display: block;
+    width: 100%;
     margin-left: auto;
     margin-right: auto;
+    padding: 16px 24px;
   }
 
   .booking-card {
@@ -218,19 +248,39 @@ h1 {
 
 
 
-  /* Prevent overflow issues, BOX INPUT SIZES AND STYLES */
+  /* Form controls: unified (match maintenance quality) */
   input,
 select,
 textarea {
   width: 100%;
-  padding: 12px;
+  min-height: 48px;
+  padding: 14px 16px;
   font-size: 16px;
-
+  font-family: inherit;
   border-radius: 14px;
-  border: 1px solid #cfcfcf;
+  border: 1px solid #e5e7eb;
   background: #ffffff;
-
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: #7fb8e6;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.06), 0 0 0 3px rgba(127, 184, 230, 0.2);
+}
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: #f3f4f6;
+  cursor: not-allowed;
+  color: #6b7280;
+}
+textarea {
+  min-height: 70px;
+  resize: vertical;
 }
     input,
 select,
@@ -300,8 +350,7 @@ h3 {
    BOOKING BOX STYLE
    ========================= */
 
-.card {border-radius: 0px; padding: 26px; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12), 0 6px 18px rgba(0, 0, 0, 0.08);
-      }
+.card { border-radius: 22px; padding: 26px; box-shadow: 0 18px 40px rgba(0, 0, 0, 0.12), 0 6px 18px rgba(0, 0, 0, 0.08); }
     /* =========================
    PRIMARY BUTTON (SITE MATCH)
    ========================= */
@@ -315,23 +364,61 @@ h3 {
   box-shadow: 0 6px 16px rgba(127, 184, 230, 0.45);
   border: none;
   outline: none;
+  transition: background 0.2s ease, transform 0.2s ease;
 }
 
 #submitBtn:hover {
   background: #6aaee2;
+  transform: translateY(-1px);
+}
+/* Primary button (Apply, etc.) — match maintenance .btn-primary */
+.primary-btn {
+  display: inline-block;
+  min-height: 48px;
+  padding: 14px 24px;
+  background: #7fb8e6;
+  color: #ffffff;
+  border: none;
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 6px 16px rgba(127, 184, 230, 0.45);
+  transition: background 0.2s ease, transform 0.2s ease;
+  box-sizing: border-box;
+}
+.primary-btn:hover {
+  background: #6aaee2;
+  transform: translateY(-1px);
+}
+.primary-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  transform: none;
 }
 
     .booking-card {
   background: #ffffff !important;
   border-radius: 22px;
-  padding: 34px;
-  box-shadow:
-    0 18px 40px rgba(0, 0, 0, 0.12),
-    0 6px 18px rgba(0, 0, 0, 0.08);
+  padding: 40px 50px 60px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
 }
-    /* Subtle section separation */
+    /* Section hierarchy (match maintenance) */
 .booking-card .section-title {
   margin-top: 48px;
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+  color: #1c1c1c;
+}
+.booking-card .section-title:first-of-type {
+  margin-top: 24px;
 }
 
 .booking-card .section-title + .row,
@@ -339,6 +426,7 @@ h3 {
   background: rgba(0, 0, 0, 0.02);
   padding: 18px;
   border-radius: 14px;
+  margin-top: 4px;
 }
     /* Force rounded inputs everywhere (desktop + mobile) */
 input,
@@ -1127,7 +1215,23 @@ View Maintenance Plans </a>
       </div>
     </div>
 
-    <h3 class="section-title">3. Appointment Time</h3>
+    <h3 class="section-title">3. Service Address</h3>
+    <p class="muted" style="margin: 0 0 8px; text-align: center;">Where the detail will be completed. Availability is based on this address.</p>
+    <div class="row full">
+      <div>
+        <label for="serviceAddress">Address where the detail will be completed</label>
+        <input
+          id="serviceAddress"
+          type="text"
+          autocomplete="street-address"
+          inputmode="text"
+          placeholder="Start typing service address…"
+          required
+        />
+      </div>
+    </div>
+
+    <h3 class="section-title">4. Appointment Time</h3>
                                                                  <!-- Confirmed Bookings Calendar (read-only reference) -->
 <button
   type="button"
@@ -1164,15 +1268,6 @@ View Maintenance Plans </a>
        <input id="end" type="datetime-local" readonly />
       </div>
     </div>
-    <label for="serviceAddress">Address where the detail will be completed </label>
-    <input
-  id="serviceAddress"
-  type="text"
-  autocomplete="street-address"
-  inputmode="text"
-  placeholder="Start typing service address…"
-  required
-/>
 
     <h3 class="section-title">Discount Code</h3>
     <div class="row" style="align-items:flex-end;">
