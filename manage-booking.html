@@ -50,6 +50,7 @@ h1 { text-align:center; color:#7fb8e6; margin-bottom:6px; }
       <div class="box"><div class="label">Vehicle</div><div id="vehicle"></div></div>
       <div class="box"><div class="label">Start</div><div id="start"></div></div>
       <div class="box"><div class="label">Address</div><div id="addr"></div></div>
+      <div id="notesBox" class="box hidden"><div class="label">Notes</div><div id="notes"></div></div>
 
       <button id="rescheduleBtn" class="btn reschedule">Request Reschedule</button>
       <button id="cancelBtn" class="btn cancel">Cancel Booking</button>
@@ -101,6 +102,15 @@ if (!token) {
     document.getElementById("vehicle").textContent = b.vehicle;
     document.getElementById("addr").textContent = b.service_address;
     document.getElementById("start").textContent = new Date(b.scheduled_start).toLocaleString();
+    const notesBox = document.getElementById("notesBox");
+    const notesEl = document.getElementById("notes");
+    const notesVal = (b.customer_notes || "").trim();
+    if (notesVal) {
+      notesBox.classList.remove("hidden");
+      notesEl.textContent = notesVal;
+    } else {
+      notesBox.classList.add("hidden");
+    }
 
     document.getElementById("loading").style.display = "none";
     document.getElementById("content").classList.remove("hidden");

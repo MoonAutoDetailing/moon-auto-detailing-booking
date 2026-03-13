@@ -97,6 +97,13 @@
         </div>
       </div>
 
+      <div class="row" id="c_notes_row" style="display:none;">
+        <div class="box" style="grid-column: 1 / -1;">
+          <div class="label">Notes</div>
+          <div id="c_notes" class="val">—</div>
+        </div>
+      </div>
+
       <button id="manageBtn" class="btn" type="button">Manage booking</button>
 
 
@@ -121,6 +128,8 @@ if (!raw) {
   document.getElementById("c_start").textContent = "—";
   document.getElementById("c_end").textContent = "—";
   document.getElementById("c_addr").textContent = "—";
+  const notesRow = document.getElementById("c_notes_row");
+  if (notesRow) notesRow.style.display = "none";
 } else {
   try {
     const p = JSON.parse(raw);
@@ -146,6 +155,16 @@ if (!raw) {
     document.getElementById("c_start").textContent = p.prettyStart || "—";
     document.getElementById("c_end").textContent = p.prettyEnd || "—";
     document.getElementById("c_addr").textContent = p.service_address || "—";
+    const notesRow = document.getElementById("c_notes_row");
+    const notesVal = (p.customer_notes || "").trim();
+    if (notesRow) {
+      if (notesVal) {
+        notesRow.style.display = "";
+        document.getElementById("c_notes").textContent = notesVal;
+      } else {
+        notesRow.style.display = "none";
+      }
+    }
 
     // Connect Manage Booking button
     if (p.manage_token) {

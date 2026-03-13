@@ -1403,6 +1403,7 @@ card.style.borderLeft = "4px solid var(--moon-primary)";
   <div class="booking-content">
     <div class="row"><span class="label">Phone:</span> ${customerPhone}</div>
     <div class="row"><span class="label">Address:</span> ${b.service_address ?? "—"}</div>
+    ${(b.customer_notes != null && String(b.customer_notes).trim() !== "") ? `<div class="row"><span class="label">Notes:</span> <span style="color:rgba(255,255,255,0.75);">${String(b.customer_notes).trim().replace(/</g, "&lt;").replace(/>/g, "&gt;")}</span></div>` : ""}
     <div class="row"><span class="label">Vehicle:</span> ${vehicleText}</div>
     <div class="row"><span class="label">Service:</span> ${serviceText}</div>
     <div class="row"><span class="label">Time:</span> ${formatTime(start)} → ${formatTime(end)}</div>

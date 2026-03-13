@@ -151,8 +151,13 @@ export default async function handler(req, res) {
       scheduled_start,
       scheduled_end,
       service_address,
-      service_variant_id
+      service_variant_id,
+      customer_notes: customer_notesRaw
     } = body;
+
+    const customer_notes = (customer_notesRaw != null && String(customer_notesRaw).trim() !== "")
+      ? String(customer_notesRaw).trim()
+      : null;
 
     if (!customer_id || !vehicle_id || !scheduled_start || !scheduled_end || !service_address || !service_variant_id) {
       return res.status(400).json({
@@ -348,6 +353,9 @@ export default async function handler(req, res) {
       base_price,
       total_price
     };
+    if (customer_notes != null) {
+      insertPayload.customer_notes = customer_notes;
+    }
     if (discount_code != null) {
       insertPayload.discount_code = discount_code;
       insertPayload.discount_percent = discount_percent;

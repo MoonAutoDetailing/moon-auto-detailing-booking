@@ -150,12 +150,19 @@ export default async function handler(req, res) {
 
     const summary = `${formattedService} — ${customer.full_name}`;
 
+    const totalPrice = booking.total_price != null ? Number(booking.total_price) : null;
+    const totalPriceLine = Number.isFinite(totalPrice) ? `Total: $${totalPrice.toFixed(2)}` : "";
+    const notesLine = (booking.customer_notes != null && String(booking.customer_notes).trim() !== "")
+      ? `Notes: ${String(booking.customer_notes).trim()}`
+      : "";
     const description = [
       `Customer: ${customer.full_name}`,
       `Phone: ${customer.phone || "—"}`,
       `Vehicle: ${formattedVehicle}${formattedLicense}`,
-      `Service: ${formattedService}`
-    ].join("\n");
+      `Service: ${formattedService}`,
+      totalPriceLine,
+      notesLine
+    ].filter(Boolean).join("\n");
 
     let googleEventId = null;
 

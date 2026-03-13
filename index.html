@@ -201,7 +201,8 @@ h1 {
   }
 
   /* Datetime inputs stay centered */
-  input[type="datetime-local"] {
+  input[type="datetime-local"],
+  #start, #end {
     width: 100%;
     display: block;
   }
@@ -485,7 +486,8 @@ select,
 textarea {
   border-radius: 16px !important;
 }
-input[type="datetime-local"] {
+input[type="datetime-local"],
+#start, #end {
   border-radius: 16px !important;
   overflow: hidden;
 }
@@ -614,27 +616,28 @@ max-width: 100%;
    DATETIME INPUT POLISH
    ===================== */
 
+/* Start/end: same readonly display treatment (calendar-only source of truth) */
 #start,
 #end {
-  background: #ffffff;
+  background: #f8fbff;
   border-radius: 18px;
   border: 1px solid #e5e7eb;
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
   font-weight: 500;
   padding: 12px 14px;
+  color: #1a1a1a;
 }
 
-#end {
-  background: #f8fbff;
+#start[readonly],
+#end[readonly] {
+  cursor: default;
+}
+
+/* Both labels: consistent color and weight */
+label[for="start"],
+label[for="end"] {
   color: #7fb8e6;
   font-weight: 600;
-}
-/* =====================
-   DESIRED START LABEL BLUE
-   ===================== */
-
-label[for="start"] {
-  color: #7fb8e6;
 }
 
     /* =====================
@@ -1322,13 +1325,20 @@ View Maintenance Plans </a>
     <div class="row">
       <div>
         <label for="start">Desired Start Time</label>
-        <input id="start" type="datetime-local" required />
+        <input id="start" type="text" readonly placeholder="Select a time on the calendar" aria-required="true" />
       </div>
       <div>
-        <label for="end" style="color:#7fb8e6;">Estimated End Time</label>
-       <input id="end" type="datetime-local" readonly />
+        <label for="end">Estimated End Time</label>
+        <input id="end" type="text" readonly placeholder="—" />
       </div>
     </div>
+    </div><!-- /.step-panel -->
+
+    <h3 class="section-title">Anything else?</h3>
+    <div class="step-panel">
+      <label for="customerNotes">Special requests or instructions (optional)</label>
+      <textarea id="customerNotes" maxlength="500" placeholder="e.g. gate code, parking instructions, pet in yard…" rows="3" style="width:100%; border-radius:16px; padding:12px 14px; border:1px solid #e5e7eb; font-family:inherit; resize:vertical;"></textarea>
+      <p class="muted" style="margin-top:6px; font-size:13px;"><span id="customerNotesCount">0</span>/500</p>
     </div><!-- /.step-panel -->
 
     <h3 class="section-title">Discount Code</h3>
@@ -1477,10 +1487,18 @@ const MIN_BOOKABLE_GAP_MINUTES = 120; // anti-fragment rule (2 hours)
     const elStart = document.getElementById("start");
     const elEnd = document.getElementById("end");
     const elServiceAddress = document.getElementById("serviceAddress");
+    const elCustomerNotes = document.getElementById("customerNotes");
 
     // Hard-lock end time input (defensive)
 elEnd.addEventListener("keydown", (e) => e.preventDefault());
 elEnd.addEventListener("paste", (e) => e.preventDefault());
+
+    if (elCustomerNotes) {
+      elCustomerNotes.addEventListener("input", () => {
+        const countEl = document.getElementById("customerNotesCount");
+        if (countEl) countEl.textContent = (elCustomerNotes.value || "").length;
+      });
+    }
 
     // State
     let variantsCache = []; // {id, vehicle_size, price, duration_minutes, service:{category,level}}
@@ -1505,6 +1523,8 @@ let RESCHEDULE_BOOKING_ID = null;
     // Phase 5 state
 let selectedStartISO = null;
     let metaByDay = {};
+    let hasValidServiceAddress = false; // true only after user selects a Google Places result for service address
+    let lastValidServiceAddress = ""; // stored when we set address from place_changed; used to detect manual edit
 
                                                                             //SWITCH CHANGES THIS DEBUG
     function log(message, obj) {
@@ -1981,15 +2001,23 @@ function isBookingWithinBusinessRules(startLocal, endLocal) {
   return true;
 }
 
+   function formatTimeDisplay(isoOrDate) {
+  const d = typeof isoOrDate === "string" ? new Date(isoOrDate) : isoOrDate;
+  if (!d || Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+}
+
    function recalcEndTimePreview() {
-  if (!elStart.value) return;
-  if (!selectedVariant?.duration_minutes) return;
-
-  const startLocal = parseDateTimeLocalToDate(elStart.value);
+  if (!selectedStartISO || !selectedVariant?.duration_minutes) {
+    elStart.value = "";
+    elEnd.value = "";
+    return;
+  }
+  const startLocal = new Date(selectedStartISO);
   const durationMinutes = Number(selectedVariant.duration_minutes);
-
   const endLocal = new Date(startLocal.getTime() + durationMinutes * 60_000);
-  elEnd.value = formatDateToDateTimeLocal(endLocal);
+  elStart.value = formatTimeDisplay(startLocal);
+  elEnd.value = formatTimeDisplay(endLocal);
 }
 
 
@@ -2295,12 +2323,12 @@ function computeScheduledEnd(startLocal, durationMinutes) {
       selectedStartISO = null;
       clearAppliedDiscount();
 elStart.value = "";
-recalcEndTimePreview();
+      recalcEndTimePreview();
 
   if (!selectedVariant) {
     elServiceMeta.textContent = "";
     updateServiceClarity();
-    scheduleCalendarReload(); // Clear availability if no service
+    if (hasValidServiceAddress) scheduleCalendarReload();
     return;
   }
 
@@ -2314,8 +2342,7 @@ recalcEndTimePreview();
   updateServiceClarity();
   recalcEndTimePreview();
 
-  // 🔥 FORCE CALENDAR REBUILD
-  scheduleCalendarReload();
+  if (hasValidServiceAddress) scheduleCalendarReload();
 });
 
 
@@ -2411,6 +2438,8 @@ try {
     elPhone.value = b.customers.phone || "";
     elAddress.value = b.customers.address || "";
     elServiceAddress.value = b.service_address;
+    lastValidServiceAddress = (b.service_address || "").trim();
+    hasValidServiceAddress = true; // Pre-filled address counts as valid so calendar can load
     const vehicle = b.vehicles ?? b;
 
 elYear.value  = vehicle.vehicle_year  ?? vehicle.year  ?? "";
@@ -2542,35 +2571,27 @@ if (manageToken) {
 
         const service_address = requireNonEmpty("Service address", elServiceAddress.value);
 
-        // --- Step 2: derive end time from service duration (LOCAL time) ---
-const startLocal = parseDateTimeLocalToDate(
-  requireNonEmpty("Scheduled start", elStart.value)
-);
+        // --- Step 2: derive start/end from selected calendar slot only (no editable input) ---
+        if (!selectedStartISO) {
+          throw new Error("Please select a time on the calendar.");
+        }
+        const startLocal = new Date(selectedStartISO);
         const now = new Date();
-if (startLocal < now) {
-  throw new Error("You cannot book a time in the past.");
-}
-
-
-const durationMinutes = Number(selectedVariant?.duration_minutes);
-if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
-  throw new Error("Invalid service duration. Please re-select your service.");
-}
-      log("Duration minutes used", {
-  raw: selectedVariant?.duration_minutes,
-  coerced: durationMinutes
-});
-
-// Add duration in LOCAL time
-const endLocal = new Date(startLocal.getTime() + durationMinutes * 60_000);
-
-// Autofill + lock the end-time input for UI consistency
-elEnd.value = formatDateToDateTimeLocal(endLocal);
-
-// Convert to ISO ONLY for database usage
-const scheduled_start = startLocal.toISOString();
-const scheduled_end = endLocal.toISOString();
-// --- End Step 2 ---
+        if (startLocal < now) {
+          throw new Error("You cannot book a time in the past.");
+        }
+        const durationMinutes = Number(selectedVariant?.duration_minutes);
+        if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+          throw new Error("Invalid service duration. Please re-select your service.");
+        }
+        log("Duration minutes used", {
+          raw: selectedVariant?.duration_minutes,
+          coerced: durationMinutes
+        });
+        const endLocal = new Date(startLocal.getTime() + durationMinutes * 60_000);
+        const scheduled_start = startLocal.toISOString();
+        const scheduled_end = endLocal.toISOString();
+        // --- End Step 2 ---
 
         if (new Date(scheduled_end) <= new Date(scheduled_start)) throw new Error("Scheduled end must be after scheduled start");
         // --- Step 2.5: enforce business hours & weekdays ---
@@ -2649,6 +2670,7 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
           vehicle_make: (elMake.value || "").trim() || null,
           vehicle_model: (elModel.value || "").trim() || null,
           license_plate: (elPlate.value || "").trim() || null,
+          customer_notes: (elCustomerNotes.value || "").trim() || null,
           base_price,
           travel_fee,
           total_price
@@ -2704,6 +2726,9 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
       const discountLine = hasDiscount
         ? `<p><strong>Discount (${escapeHtml(draft.discount_code)}):</strong> -${fmt(draft.discount_amount ?? 0)}</p>`
         : "";
+      const notesLine = draft.customer_notes
+        ? `<p><strong>Notes:</strong> ${escapeHtml(draft.customer_notes)}</p>`
+        : "";
       elReviewSummary.innerHTML = `
         <p><strong>Customer:</strong> ${escapeHtml(draft.full_name)}</p>
         <p><strong>Email:</strong> ${escapeHtml(draft.email)}</p>
@@ -2714,6 +2739,7 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
         <p><strong>Travel fee:</strong> ${fmt(travelFee)}</p>
         ${discountLine}
         <p><strong>Total:</strong> ${fmt(total)}</p>
+        ${notesLine}
         <p>Click Confirm to create your booking.</p>
       `;
       const termsBlock = document.getElementById("subscriptionTerms");
@@ -2828,6 +2854,9 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
         if (draft.discount_code != null && draft.discount_code !== "") {
           createBody.discount_code = draft.discount_code;
         }
+        if (draft.customer_notes != null && draft.customer_notes !== "") {
+          createBody.customer_notes = draft.customer_notes;
+        }
         const resp = await fetch("/api/create-booking", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -2903,7 +2932,8 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
           prettyStart,
           prettyEnd,
           manage_token: bookingRow.manage_token,
-          service_variant_id: draft.service_variant_id
+          service_variant_id: draft.service_variant_id,
+          customer_notes: draft.customer_notes ?? null
         };
         sessionStorage.setItem("moon_booking_confirmation", JSON.stringify(confirmationPayload));
         window.location.href = "/booking-confirmed.html";
@@ -2985,10 +3015,7 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
       clearAppliedDiscount();
     });
 
-    elStart.addEventListener("change", () => {
-      clearAppliedDiscount();
-      recalcEndTimePreview();
-    });
+    // Start/end are display-only; time comes only from calendar slot selection
     elSubmit.addEventListener("click", submitBooking);
 
     // =========================
@@ -3000,67 +3027,87 @@ function initAddressAutocomplete() {
   const options = {
     types: ["address"],
     componentRestrictions: { country: "us" },
-    fields: ["address_components"]
+    fields: ["address_components", "formatted_address", "place_id"]
   };
 
   function attachAutocomplete(inputEl) {
     const autocomplete = new google.maps.places.Autocomplete(inputEl, options);
-    autocomplete.addListener("place_changed", () => {
-  console.log("Address selected — reloading calendar");
-  loadCalendar();
-});
+    const isServiceAddress = inputEl.id === "serviceAddress";
 
     autocomplete.addListener("place_changed", () => {
-  const place = autocomplete.getPlace();
-  if (!place || !place.address_components) return;
-
-  const components = {};
-  for (const c of place.address_components) {
-    for (const t of c.types) {
-      components[t] = c.long_name;
-    }
-  }
-
-  const street =
-    [components.street_number, components.route]
-      .filter(Boolean)
-      .join(" ");
-
-  const city =
-    components.locality ||
-    components.sublocality ||
-    components.postal_town ||
-    "";
-
-  const state = components.administrative_area_level_1 || "";
-  const zip = components.postal_code || "";
-
-  const fullAddress = [street, city, state, zip]
-    .filter(Boolean)
-    .join(", ");
-
-  inputEl.value = fullAddress;
+      const place = autocomplete.getPlace();
+      if (!place) return;
+      // Only treat as valid when user selected a real Google Places result (has place_id or formatted_address)
+      const isRealSelection = !!(place.place_id || (place.formatted_address && place.formatted_address.trim()));
+      if (isServiceAddress && !isRealSelection) return;
+      if (!place.address_components || place.address_components.length === 0) {
+        if (place.formatted_address) {
+          inputEl.value = place.formatted_address.trim();
+        }
+        if (isServiceAddress) {
+          lastValidServiceAddress = (inputEl.value || "").trim();
+          inputEl.readOnly = true;
+          inputEl.classList.add("locked-address");
+          clearAppliedDiscount();
+          hasValidServiceAddress = true;
+          loadCalendar();
+        }
+        return;
+      }
+      const components = {};
+      for (const c of place.address_components) {
+        for (const t of c.types) {
+          components[t] = c.long_name;
+        }
+      }
+      const street = [components.street_number, components.route].filter(Boolean).join(" ");
+      const city = components.locality || components.sublocality || components.postal_town || "";
+      const state = components.administrative_area_level_1 || "";
+      const zip = components.postal_code || "";
+      const fullAddress = [street, city, state, zip].filter(Boolean).join(", ");
+      inputEl.value = fullAddress;
       inputEl.readOnly = true;
-inputEl.classList.add("locked-address");
-
-  if (inputEl.id === "serviceAddress") {
-    clearAppliedDiscount();
-    if (selectedVariant) scheduleCalendarReload();
-  }
-
-});
+      inputEl.classList.add("locked-address");
+      if (isServiceAddress) {
+        lastValidServiceAddress = fullAddress;
+        clearAppliedDiscount();
+        hasValidServiceAddress = true;
+        loadCalendar();
+      }
+    });
   }
 
   const customerAddress = document.getElementById("address");
   const serviceAddress = document.getElementById("serviceAddress");
-
   if (customerAddress) attachAutocomplete(customerAddress);
-  if (serviceAddress) attachAutocomplete(serviceAddress);
-    // Also reload when the service address is manually edited/pasted
   if (serviceAddress) {
+    attachAutocomplete(serviceAddress);
+    // Reset validity when user manually edits service address after a valid selection
     serviceAddress.addEventListener("input", () => {
+      if (!hasValidServiceAddress) return;
+      const current = (serviceAddress.value || "").trim();
+      if (current === (lastValidServiceAddress || "").trim()) return;
+      hasValidServiceAddress = false;
+      lastValidServiceAddress = "";
+      selectedStartISO = null;
+      recalcEndTimePreview();
       clearAppliedDiscount();
-      if (selectedVariant) scheduleCalendarReload();
+      serviceAddress.readOnly = false;
+      serviceAddress.classList.remove("locked-address");
+      loadCalendar();
+    });
+    serviceAddress.addEventListener("change", () => {
+      if (!hasValidServiceAddress) return;
+      const current = (serviceAddress.value || "").trim();
+      if (current === (lastValidServiceAddress || "").trim()) return;
+      hasValidServiceAddress = false;
+      lastValidServiceAddress = "";
+      selectedStartISO = null;
+      recalcEndTimePreview();
+      clearAppliedDiscount();
+      serviceAddress.readOnly = false;
+      serviceAddress.classList.remove("locked-address");
+      loadCalendar();
     });
   }
 }
@@ -3227,6 +3274,12 @@ for (let d = 0; d < 7; d++) {
   const dayKey = day.toDateString();
 
   if (!selectedVariant) {
+    exposedByDay[dayKey] = [];
+    metaByDay[dayKey] = {};
+    continue;
+  }
+  // Load availability only after a real Google Places selection for service address (no typing-triggered calls)
+  if (elServiceAddress && !hasValidServiceAddress) {
     exposedByDay[dayKey] = [];
     metaByDay[dayKey] = {};
     continue;
@@ -3489,10 +3542,8 @@ block.style.left = "5%";
 
           block.classList.add("selected");
 
-          elStart.value = formatDateToDateTimeLocal(startTime);
           selectedStartISO = startTime.toISOString();
           clearAppliedDiscount();
-
           recalcEndTimePreview();
         });
       }
