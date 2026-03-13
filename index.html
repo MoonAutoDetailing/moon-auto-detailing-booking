@@ -153,23 +153,41 @@ h1 {
     padding: 32px 24px 40px;
   }
 }
+/* =====================
+   MOBILE ONLY (max-width: 640px) — single source of truth
+   ===================== */
 @media (max-width: 640px) {
- body {
-  margin: 0;
-}
-  /* Full-width card on mobile: remove side gutters so white card spans screen */
-  .page-wrap {
-  max-width: 100%;
-  margin: 0;
-  padding: 0;
-}
-  #hourlyCal {
-  width: 100%;
-}
+  body {
+    margin: 0;
+    overflow-x: hidden;
+  }
 
-#calWrap {
-  width: 100%;
-}
+  /* ----- Booking page shell ----- */
+  .page-wrap {
+    max-width: 100%;
+    margin: 0;
+    padding: 0;
+  }
+
+  .booking-card {
+    border-radius: 14px 14px 0 0;
+    padding: 24px 16px 36px;
+    overflow: visible;
+  }
+
+  .step-panel {
+    padding: 18px 20px;
+  }
+
+  .booking-card .section-title {
+    margin-top: 36px;
+  }
+  .booking-card .section-title:first-of-type {
+    margin-top: 20px;
+  }
+  .page-header .page-logo { height: 40px; }
+  .page-header { gap: 10px; }
+
   /* Stack rows on mobile */
   .row {
     grid-template-columns: 1fr;
@@ -180,35 +198,16 @@ h1 {
     grid-template-columns: 1fr;
     gap: 16px;
   }
-  .booking-card .section-title {
-  margin-top: 36px;
-}
-  .booking-card .section-title:first-of-type {
-    margin-top: 20px;
-  }
-  .page-header .page-logo { height: 40px; }
-  .page-header { gap: 10px; }
-  .step-panel { padding: 18px 20px; }
 
-  /* Card: full width on mobile, no side gutters; subtle top radius only */
-  .booking-card {
-  border-radius: 14px 14px 0 0;
-  padding: 24px 16px 36px;
-}
-
-  /* Tap-friendly controls (min 44px) */
+  /* Tap-friendly controls */
   input, select, textarea, .primary-btn, .calendar-toggle-btn {
     min-height: 48px;
   }
-
-  /* Datetime inputs stay centered */
   input[type="datetime-local"],
   #start, #end {
     width: 100%;
     display: block;
   }
-
-  /* Submit button full width, centered */
   #submitBtn {
     display: block;
     width: 100%;
@@ -217,72 +216,80 @@ h1 {
     padding: 16px 24px;
   }
 
-  .booking-card {
-  overflow: visible;
-}
-  body {
-  overflow-x: hidden;
-}
+  /* ----- Appointment Time panel: ~5px from white card inner edges ----- */
+  .step-panel--time {
+    margin-left: 5px;
+    margin-right: 5px;
+    width: calc(100% - 10px);
+    padding-left: 4px;
+    padding-right: 4px;
+    box-sizing: border-box;
+  }
+  .step-panel--time .row {
+    padding-left: 0;
+    padding-right: 0;
+  }
 
-#calendarContainer {
-  width: 100%;
-}
+  /* ----- Calendar: full width inside panel, no breakout ----- */
+  #calendarContainer {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  #calWrap {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+  }
+  #hourlyCal {
+    width: 100%;
+    padding-left: 2px;
+    box-sizing: border-box;
+  }
 
-#calWrap {
-  width: 100%;
-}
-
-#hourlyCal {
-  width: 100%;
-}
-
-  /* FULL-BLEED CALENDAR ON MOBILE */
-#calWrap {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}  
-  
-
-.cal-label {
-  min-width: 0 !important;
-  flex: 1 1 auto;
-  text-align: center;
-  white-space: nowrap;
-}
-
-/* shrink time label */
-.hourly-row div:first-child,
-.hourly-header div:first-child {
-  font-size: 9px;
-  padding-left: 2px;
-  white-space: nowrap;
-  text-align: left;
-}
-
-/* slightly shrink pills */
-.hourly-cell {
-  height: 36px;
-}
-
-/* slightly tighten day header */
-.day-label {
-  padding: 10px 0;
-  font-size: 11px;
-}
+  /* Weekly cal + calendar UI tweaks */
+  #weeklyCal {
+    grid-template-columns: 58px repeat(7, 1fr);
+  }
+  .cal-cell {
+    height: 40px;
+  }
+  .cal-label {
+    min-width: 0 !important;
+    flex: 1 1 auto;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .hourly-row div:first-child,
+  .hourly-header div:first-child {
+    font-size: 9px;
+    padding-left: 2px;
+    white-space: nowrap;
+    text-align: left;
+  }
+  .hourly-cell {
+    height: 36px;
+  }
+  .day-label {
+    padding: 10px 0;
+    font-size: 11px;
+  }
   .calendar-toolbar {
     flex-direction: column;
     align-items: center;
     gap: 14px;
   }
-
   .calendar-left {
     justify-content: center;
   }
-
   .today-btn {
-    width: 120px; /* fixed width */
+    width: 120px;
   }
-
+  .service-clarity {
+    font-size: 12px;
+  }
 }
                           /*MEDIA CONFIGURATION END*/
     #hourlyCal {
@@ -382,9 +389,6 @@ label,
   color: #666;
   margin-top: 6px;
   text-align: center;
-}
-@media (max-width: 640px) {
-  .service-clarity { font-size: 12px; }
 }
 
 /* Center inputs visually */
@@ -594,53 +598,6 @@ max-width: 100%;
   pointer-events: none;
 }
 
-@media (max-width: 640px) {
-  #weeklyCal {
-    grid-template-columns: 58px repeat(7, 1fr);
-  }
-  .cal-cell {
-    height: 40px;
-  }
-
-  /*
-   * Appointment Time panel: ~5px gap from white card inner edges on mobile.
-   * Panel inset 5px each side so calendar sits almost edge-to-edge with a small margin.
-   */
-  .step-panel--time {
-    margin-left: 5px;
-    margin-right: 5px;
-    width: calc(100% - 10px);
-    padding-left: 4px;
-    padding-right: 4px;
-    box-sizing: border-box;
-  }
-
-  /* Calendar fills the now-wider panel; no extra breakout needed */
-  #calendarContainer {
-    width: 100%;
-    max-width: none;
-    margin-left: 0;
-    margin-right: 0;
-  }
-
-  #calWrap {
-    width: 100%;
-    max-width: none;
-  }
-
-  #hourlyCal {
-    width: 100%;
-    padding-left: 2px;
-    box-sizing: border-box;
-  }
-
-  /* Start/end row: align with panel padding */
-  .step-panel--time .row {
-    padding-left: 0;
-    padding-right: 0;
-  }
-}                     
-    
 /* =====================
    DATETIME INPUT POLISH
    ===================== */
