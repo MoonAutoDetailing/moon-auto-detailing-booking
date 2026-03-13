@@ -601,18 +601,27 @@ max-width: 100%;
     height: 40px;
   }
 
-  /* Appointment Time panel: less side padding on mobile so calendar has more width */
+  /*
+   * Appointment Time panel: expand to full width of booking card on mobile.
+   * Bottleneck was card padding (20px) + generic step-panel padding (20px) = panel
+   * was 40px inset each side. Pull panel out into card padding so the panel itself
+   * becomes the full card width, then use modest inner padding.
+   */
   .step-panel--time {
-    padding-left: 8px;
-    padding-right: 8px;
+    margin-left: -20px;
+    margin-right: -20px;
+    width: calc(100% + 40px);
+    padding-left: 12px;
+    padding-right: 12px;
+    box-sizing: border-box;
   }
 
-  /* Calendar area: use nearly full width of booking card on mobile (break out of panel padding) */
+  /* Calendar fills the now-wider panel; no extra breakout needed */
   #calendarContainer {
-    width: calc(100% + 24px);
-    margin-left: -12px;
-    margin-right: -12px;
-    box-sizing: content-box;
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
   }
 
   #calWrap {
@@ -626,10 +635,10 @@ max-width: 100%;
     box-sizing: border-box;
   }
 
-  /* Start/end row below calendar: keep readable spacing */
+  /* Start/end row: align with panel padding */
   .step-panel--time .row {
-    padding-left: 4px;
-    padding-right: 4px;
+    padding-left: 0;
+    padding-right: 0;
   }
 }                     
     
