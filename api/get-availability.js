@@ -546,7 +546,7 @@ const candidateAddress =
     const { openUtcHour, closeUtcHour } = getBusinessUtcHours(day);
     const dayDate = getDayStartUtcForBusinessTZ(day); // NY midnight expressed as a UTC Date
 
-    const { allowed: dateAllowed } = await getDateEligibility(day, BUSINESS_RULES.allowedWeekdays);
+    const { allowed: dateAllowed, timeRangeFilter } = await getDateEligibility(day, BUSINESS_RULES.allowedWeekdays);
     if (!dateAllowed) {
       return res.json({ slots: [] });
     }
@@ -714,7 +714,35 @@ const shaped = runExposureLogic(
   closeUtcHour
 );
 
-    const exposed = shaped.map((start) => start.toISOString());
+    let exposed = shaped.map((start) => start.toISOString());
+    if (timeRangeFilter && timeRangeFilter.start_time && timeRangeFilter.end_time) {
+      const dayStartUtc = getDayStartUtcForBusinessTZ(day).getTime();
+      const minutesFromMidnight = (t) => {
+        const parts = (t || "").toString().trim().split(":");
+        const h = parseInt(parts[0], 10) || 0;
+        const m = parseInt(parts[1], 10) || 0;
+        return h * 60 + m;
+      };
+      const winStartMs = dayStartUtc + minutesFromMidnight(timeRangeFilter.start_time) * 60000;
+      const winEndMs = dayStartUtc + minutesFromMidnight(timeRangeFilter.end_time) * 60000;
+      const windowStart = new Date(winStartMs);
+      const windowEnd = new Date(winEndMs);
+      exposed = exposed.filter((iso) => {
+        const slotStart = new Date(iso);
+        const slotEnd = addMinutes(slotStart, serviceDurationMinutes);
+        const slotStartMs = slotStart.getTime();
+        const slotEndMs = slotEnd.getTime();
+        const winStartMs = windowStart.getTime();
+        const winEndMs = windowEnd.getTime();
+        if (timeRangeFilter.mode === "blocked") {
+          const overlaps = slotStartMs < winEndMs && slotEndMs > winStartMs;
+          return !overlaps;
+        }
+        const fullyContained = slotStartMs >= winStartMs && slotEndMs <= winEndMs;
+        return fullyContained;
+      });
+    }
+
     const meta = {};
     for (const iso of exposed) {
       if (metaMap.has(iso)) meta[iso] = metaMap.get(iso);

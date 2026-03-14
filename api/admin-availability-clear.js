@@ -31,7 +31,6 @@ export default async function handler(req, res) {
       .from("availability_overrides")
       .select("id, google_event_id")
       .eq("override_date", overrideDate)
-      .eq("scope", "full_day")
       .maybeSingle();
 
     if (fetchErr) throw fetchErr;

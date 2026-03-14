@@ -2548,8 +2548,8 @@ function renderView(viewName) {
         const defaultOpen = getDefaultOpen(dayStr);
         const bookingCount = bookingCountByDate[dayStr] || 0;
         let state = "default-closed";
-        if (override && override.mode === "blocked") state = "blocked";
-        else if (override && override.mode === "open") state = "opened";
+        if (override && override.mode === "blocked") state = override.scope === "time_range" ? "blocked-range" : "blocked";
+        else if (override && override.mode === "open") state = override.scope === "time_range" ? "opened-range" : "opened";
         else if (defaultOpen) state = "default-open";
 
         const cell = document.createElement("button");
@@ -2567,12 +2567,15 @@ function renderView(viewName) {
         } else if (state === "default-closed") {
           cell.style.background = "rgba(255,255,255,0.06)";
           cell.style.color = "rgba(255,255,255,0.5)";
-        } else if (state === "opened") {
+        } else if (state === "opened" || state === "opened-range") {
           cell.style.background = "rgba(76,175,80,0.4)";
           cell.style.color = "white";
         } else {
           cell.style.background = "rgba(244,67,54,0.4)";
           cell.style.color = "white";
+        }
+        if (state === "opened-range" || state === "blocked-range") {
+          cell.title = override.scope === "time_range" && (override.start_time || override.end_time) ? (override.start_time || "").slice(0, 5) + "–" + (override.end_time || "").slice(0, 5) : "";
         }
         cell.textContent = d;
         if (bookingCount > 0) {
@@ -2600,45 +2603,82 @@ function renderView(viewName) {
       }
     }
 
+    function formatTimeForInput(t) {
+      if (!t) return "";
+      const s = (t || "").toString().trim();
+      if (/^\d{1,2}:\d{2}(:\d{2})?$/.test(s)) return s.length <= 5 ? s : s.slice(0, 5);
+      return "";
+    }
+
     function renderDetailPanel() {
       if (!selectedDate) return;
       const override = overrideMap[selectedDate];
       const defaultOpen = getDefaultOpen(selectedDate);
       const bookingCount = bookingCountByDate[selectedDate] || 0;
       let effective = "closed";
-      if (override && override.mode === "blocked") effective = "blocked";
-      else if (override && override.mode === "open") effective = "open";
+      if (override && override.mode === "blocked") effective = override.scope === "time_range" ? "blocked (time range)" : "blocked";
+      else if (override && override.mode === "open") effective = override.scope === "time_range" ? "open (time range)" : "open";
       else if (defaultOpen) effective = "open";
 
       let html = "<h3 style='margin-top:0;'>" + selectedDate + "</h3>";
       html += "<p><strong>Effective:</strong> " + effective + "</p>";
       html += "<p><strong>Default (no override):</strong> " + (defaultOpen ? "open" : "closed") + "</p>";
-      if (override) html += "<p><strong>Override:</strong> " + override.mode + " (full day)</p>";
-      html += "<p><strong>Existing bookings this day:</strong> " + bookingCount + "</p>";
-      if (bookingCount > 0 && (!override || override.mode !== "blocked")) {
-        html += "<p style='color:#ffb74d;'>Blocking this date will hide new slots but will not change existing bookings.</p>";
+      if (override) {
+        html += "<p><strong>Override:</strong> " + override.mode + " / " + override.scope;
+        if (override.scope === "time_range" && (override.start_time || override.end_time)) {
+          html += " " + formatTimeForInput(override.start_time) + "–" + formatTimeForInput(override.end_time);
+        }
+        html += "</p>";
       }
+      html += "<p><strong>Existing bookings this day:</strong> " + bookingCount + "</p>";
+      if (bookingCount > 0 && (!override || override.mode !== "blocked" || override.scope !== "full_day")) {
+        html += "<p style='color:#ffb74d;'>Blocking will hide new slots in the selected range/day but will not change existing bookings.</p>";
+      }
+      html += "<div style='margin-top:12px;' id='availabilityTimeRangeRow'>";
+      html += "<label style='display:inline-block;margin-right:8px;'>Start <input type='time' id='availabilityStartTime' value='" + (override && override.scope === "time_range" ? formatTimeForInput(override.start_time) : "09:00") + "' style='padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;'/></label>";
+      html += "<label style='display:inline-block;margin-right:12px;'>End <input type='time' id='availabilityEndTime' value='" + (override && override.scope === "time_range" ? formatTimeForInput(override.end_time) : "12:00") + "' style='padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;'/></label>";
+      html += "</div>";
       html += "<div style='margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;'>";
-      html += "<button type='button' class='moon-tab' data-action='open'>Open day</button>";
-      html += "<button type='button' class='moon-tab' data-action='block'>Block day</button>";
+      html += "<button type='button' class='moon-tab' data-action='open-full'>Open full day</button>";
+      html += "<button type='button' class='moon-tab' data-action='block-full'>Block full day</button>";
+      html += "<button type='button' class='moon-tab' data-action='open-range'>Open time range</button>";
+      html += "<button type='button' class='moon-tab' data-action='block-range'>Block time range</button>";
       html += "<button type='button' class='moon-tab' data-action='clear'>Clear override</button>";
       html += "</div>";
       detailPanel.innerHTML = html;
 
-      detailPanel.querySelector("[data-action='block']").onclick = async () => {
+      detailPanel.querySelector("[data-action='block-full']").onclick = async () => {
         if (bookingCount > 0 && !confirm("This date has " + bookingCount + " existing booking(s). New slots will be hidden; existing bookings will not be changed. Continue?")) return;
-        await doUpsert("blocked");
+        await doUpsert("blocked", "full_day", null, null);
       };
-      detailPanel.querySelector("[data-action='open']").onclick = () => doUpsert("open");
+      detailPanel.querySelector("[data-action='open-full']").onclick = () => doUpsert("open", "full_day", null, null);
+      detailPanel.querySelector("[data-action='open-range']").onclick = () => {
+        const start = document.getElementById("availabilityStartTime").value;
+        const end = document.getElementById("availabilityEndTime").value;
+        if (!start || !end || start >= end) { showAdminBanner("Set start and end time (start must be before end).", "error"); return; }
+        doUpsert("open", "time_range", start, end);
+      };
+      detailPanel.querySelector("[data-action='block-range']").onclick = async () => {
+        const start = document.getElementById("availabilityStartTime").value;
+        const end = document.getElementById("availabilityEndTime").value;
+        if (!start || !end || start >= end) { showAdminBanner("Set start and end time (start must be before end).", "error"); return; }
+        if (bookingCount > 0 && !confirm("This date has " + bookingCount + " existing booking(s). New slots in this range will be hidden; existing bookings will not be changed. Continue?")) return;
+        await doUpsert("blocked", "time_range", start, end);
+      };
       detailPanel.querySelector("[data-action='clear']").onclick = doClear;
     }
 
-    async function doUpsert(mode) {
+    async function doUpsert(mode, scope, startTime, endTime) {
       try {
+        const body = { override_date: selectedDate, mode, scope: scope || "full_day" };
+        if (scope === "time_range" && startTime != null && endTime != null) {
+          body.start_time = startTime;
+          body.end_time = endTime;
+        }
         const r = await adminFetch("/api/admin-availability-upsert", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ override_date: selectedDate, mode })
+          body: JSON.stringify(body)
         });
         const data = await r.json();
         if (!r.ok) throw new Error(data.error || "Upsert failed");

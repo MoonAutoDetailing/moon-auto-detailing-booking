@@ -8,14 +8,14 @@ function getSupabase() {
 }
 
 /**
- * Determine if a date is eligible for slot generation.
- * - If there is a full-day blocked override => not eligible.
- * - If there is a full-day open override => eligible (even if normally closed, e.g. weekend).
- * - Else if weekday is in allowedWeekdays => eligible.
- * - Else => not eligible.
+ * Determine if a date is eligible for slot generation and optional time-range filter.
+ * - blocked/full_day => not eligible (no slots).
+ * - open/full_day or no override and weekday in allowed => eligible, no time filter.
+ * - open/time_range => eligible (e.g. weekend opened for a window), filter: keep only slots overlapping window.
+ * - blocked/time_range => eligible only if weekday in allowed; filter: remove slots overlapping window.
  * @param {string} dayStr - YYYY-MM-DD
  * @param {number[]} allowedWeekdays - e.g. [1,2,3,4,5] for Mon–Fri
- * @returns {{ allowed: boolean, override: object | null }}
+ * @returns {{ allowed: boolean, override: object | null, timeRangeFilter: { mode: 'open'|'blocked', start_time: string, end_time: string } | null }}
  */
 export async function getDateEligibility(dayStr, allowedWeekdays) {
   const supabase = getSupabase();
@@ -24,21 +24,39 @@ export async function getDateEligibility(dayStr, allowedWeekdays) {
 
   const { data: row } = await supabase
     .from("availability_overrides")
-    .select("id, override_date, mode, scope, google_event_id")
+    .select("id, override_date, mode, scope, start_time, end_time, google_event_id")
     .eq("override_date", dayStr)
-    .eq("scope", "full_day")
     .maybeSingle();
 
-  if (row && row.mode === "blocked") {
-    return { allowed: false, override: row };
+  if (row && row.scope === "full_day" && row.mode === "blocked") {
+    return { allowed: false, override: row, timeRangeFilter: null };
   }
-  if (row && row.mode === "open") {
-    return { allowed: true, override: row };
+  if (row && row.scope === "full_day" && row.mode === "open") {
+    return { allowed: true, override: row, timeRangeFilter: null };
+  }
+  if (row && row.scope === "time_range" && row.mode === "open") {
+    if (!row.start_time || !row.end_time) return { allowed: false, override: row, timeRangeFilter: null };
+    return {
+      allowed: true,
+      override: row,
+      timeRangeFilter: { mode: "open", start_time: row.start_time, end_time: row.end_time },
+    };
+  }
+  if (row && row.scope === "time_range" && row.mode === "blocked") {
+    if (!row.start_time || !row.end_time) return { allowed: false, override: row, timeRangeFilter: null };
+    if (!allowedWeekdays.includes(weekday)) {
+      return { allowed: false, override: row, timeRangeFilter: null };
+    }
+    return {
+      allowed: true,
+      override: row,
+      timeRangeFilter: { mode: "blocked", start_time: row.start_time, end_time: row.end_time },
+    };
   }
   if (allowedWeekdays.includes(weekday)) {
-    return { allowed: true, override: null };
+    return { allowed: true, override: null, timeRangeFilter: null };
   }
-  return { allowed: false, override: null };
+  return { allowed: false, override: null, timeRangeFilter: null };
 }
 
 /**
@@ -50,7 +68,7 @@ export async function getOverridesForRange(startDate, endDate) {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("availability_overrides")
-    .select("id, override_date, mode, scope, reason, google_event_id, created_at, updated_at")
+    .select("id, override_date, mode, scope, start_time, end_time, reason, google_event_id, created_at, updated_at")
     .gte("override_date", startDate)
     .lte("override_date", endDate)
     .order("override_date", { ascending: true });
