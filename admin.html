@@ -1725,14 +1725,15 @@ function renderButtons() {
   viewButtons.innerHTML = "";
 
   const primaryKeys = ["pending", "today", "upcoming"];
-  const menuKeys = ["history", "subscriptions", "discount-codes"];
+  const menuKeys = ["history", "subscriptions", "discount-codes", "availability"];
   const allButtons = [
     { key: "pending", label: "Pending Bookings" },
     { key: "today", label: "Today's Schedule" },
     { key: "upcoming", label: "Upcoming Bookings" },
     { key: "history", label: "History" },
     { key: "subscriptions", label: "Subscriptions" },
-    { key: "discount-codes", label: "Discount Codes" }
+    { key: "discount-codes", label: "Discount Codes" },
+    { key: "availability", label: "Availability" }
   ];
 
   allButtons.forEach(btn => {
@@ -2452,6 +2453,264 @@ function renderView(viewName) {
 
     reloadDiscountCodesPage = loadDiscountCodes;
     loadDiscountCodes();
+    return;
+  }
+
+  // =========================
+  // AVAILABILITY (admin date overrides)
+  // =========================
+  if (viewName === "availability") {
+    const ALLOWED_WEEKDAYS = [1, 2, 3, 4, 5];
+    const wrapper = document.createElement("div");
+    wrapper.className = "admin-availability-view";
+    wrapper.style.display = "flex";
+    wrapper.style.flexDirection = "column";
+    wrapper.style.gap = "20px";
+
+    let currentYear = new Date().getFullYear();
+    let currentMonth = new Date().getMonth() + 1;
+    let selectedDate = null;
+    let overrideMap = {};
+    let bookingCountByDate = {};
+    let listPayload = null;
+
+    const navRow = document.createElement("div");
+    navRow.style.display = "flex";
+    navRow.style.alignItems = "center";
+    navRow.style.gap = "12px";
+    navRow.style.flexWrap = "wrap";
+    const prevBtn = document.createElement("button");
+    prevBtn.type = "button";
+    prevBtn.className = "moon-tab";
+    prevBtn.textContent = "← Prev month";
+    const nextBtn = document.createElement("button");
+    nextBtn.type = "button";
+    nextBtn.className = "moon-tab";
+    nextBtn.textContent = "Next month →";
+    const monthLabel = document.createElement("span");
+    monthLabel.style.fontWeight = "700";
+    monthLabel.style.minWidth = "160px";
+    navRow.appendChild(prevBtn);
+    navRow.appendChild(monthLabel);
+    navRow.appendChild(nextBtn);
+    wrapper.appendChild(navRow);
+
+    const gridEl = document.createElement("div");
+    gridEl.className = "availability-month-grid";
+    gridEl.style.display = "grid";
+    gridEl.style.gridTemplateColumns = "repeat(7, 1fr)";
+    gridEl.style.gap = "4px";
+    gridEl.style.marginTop = "8px";
+    wrapper.appendChild(gridEl);
+
+    const detailPanel = document.createElement("div");
+    detailPanel.className = "availability-detail-panel";
+    detailPanel.style.marginTop = "16px";
+    detailPanel.style.padding = "18px";
+    detailPanel.style.borderRadius = "14px";
+    detailPanel.style.border = "1px solid rgba(255,255,255,0.2)";
+    detailPanel.style.background = "rgba(111,147,196,0.2)";
+    detailPanel.style.display = "none";
+    wrapper.appendChild(detailPanel);
+
+    function getDefaultOpen(dayStr) {
+      const [y, m, d] = dayStr.split("-").map(Number);
+      const w = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+      return ALLOWED_WEEKDAYS.includes(w);
+    }
+
+    function renderMonthGrid() {
+      const first = new Date(Date.UTC(currentYear, currentMonth - 1, 1));
+      const last = new Date(Date.UTC(currentYear, currentMonth, 0));
+      const startPad = first.getUTCDay();
+      const daysInMonth = last.getUTCDate();
+      monthLabel.textContent = first.toLocaleString("default", { month: "long", year: "numeric" });
+
+      gridEl.innerHTML = "";
+      ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach(day => {
+        const h = document.createElement("div");
+        h.style.fontWeight = "700";
+        h.style.fontSize = "12px";
+        h.style.color = "rgba(255,255,255,0.7)";
+        h.textContent = day;
+        gridEl.appendChild(h);
+      });
+
+      for (let i = 0; i < startPad; i++) {
+        const cell = document.createElement("div");
+        cell.style.minHeight = "36px";
+        gridEl.appendChild(cell);
+      }
+
+      for (let d = 1; d <= daysInMonth; d++) {
+        const dayStr = `${currentYear}-${String(currentMonth).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+        const override = overrideMap[dayStr];
+        const defaultOpen = getDefaultOpen(dayStr);
+        const bookingCount = bookingCountByDate[dayStr] || 0;
+        let state = "default-closed";
+        if (override && override.mode === "blocked") state = "blocked";
+        else if (override && override.mode === "open") state = "opened";
+        else if (defaultOpen) state = "default-open";
+
+        const cell = document.createElement("button");
+        cell.type = "button";
+        cell.dataset.date = dayStr;
+        cell.style.minHeight = "36px";
+        cell.style.borderRadius = "8px";
+        cell.style.border = "1px solid rgba(255,255,255,0.2)";
+        cell.style.cursor = "pointer";
+        cell.style.fontWeight = "600";
+        cell.style.fontSize = "14px";
+        if (state === "default-open") {
+          cell.style.background = "rgba(111,147,196,0.35)";
+          cell.style.color = "white";
+        } else if (state === "default-closed") {
+          cell.style.background = "rgba(255,255,255,0.06)";
+          cell.style.color = "rgba(255,255,255,0.5)";
+        } else if (state === "opened") {
+          cell.style.background = "rgba(76,175,80,0.4)";
+          cell.style.color = "white";
+        } else {
+          cell.style.background = "rgba(244,67,54,0.4)";
+          cell.style.color = "white";
+        }
+        cell.textContent = d;
+        if (bookingCount > 0) {
+          const badge = document.createElement("span");
+          badge.style.marginLeft = "4px";
+          badge.style.fontSize = "11px";
+          badge.style.opacity = "0.9";
+          badge.textContent = "(" + bookingCount + ")";
+          cell.appendChild(badge);
+        }
+        cell.onclick = () => {
+          selectedDate = dayStr;
+          detailPanel.style.display = "block";
+          renderDetailPanel();
+          gridEl.querySelectorAll("button[data-date]").forEach(b => {
+            b.style.boxShadow = b.dataset.date === dayStr ? "0 0 0 2px var(--moon-primary)" : "none";
+          });
+        };
+        gridEl.appendChild(cell);
+      }
+      if (selectedDate) {
+        gridEl.querySelectorAll("button[data-date]").forEach(b => {
+          b.style.boxShadow = b.dataset.date === selectedDate ? "0 0 0 2px var(--moon-primary)" : "none";
+        });
+      }
+    }
+
+    function renderDetailPanel() {
+      if (!selectedDate) return;
+      const override = overrideMap[selectedDate];
+      const defaultOpen = getDefaultOpen(selectedDate);
+      const bookingCount = bookingCountByDate[selectedDate] || 0;
+      let effective = "closed";
+      if (override && override.mode === "blocked") effective = "blocked";
+      else if (override && override.mode === "open") effective = "open";
+      else if (defaultOpen) effective = "open";
+
+      let html = "<h3 style='margin-top:0;'>" + selectedDate + "</h3>";
+      html += "<p><strong>Effective:</strong> " + effective + "</p>";
+      html += "<p><strong>Default (no override):</strong> " + (defaultOpen ? "open" : "closed") + "</p>";
+      if (override) html += "<p><strong>Override:</strong> " + override.mode + " (full day)</p>";
+      html += "<p><strong>Existing bookings this day:</strong> " + bookingCount + "</p>";
+      if (bookingCount > 0 && (!override || override.mode !== "blocked")) {
+        html += "<p style='color:#ffb74d;'>Blocking this date will hide new slots but will not change existing bookings.</p>";
+      }
+      html += "<div style='margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;'>";
+      html += "<button type='button' class='moon-tab' data-action='open'>Open day</button>";
+      html += "<button type='button' class='moon-tab' data-action='block'>Block day</button>";
+      html += "<button type='button' class='moon-tab' data-action='clear'>Clear override</button>";
+      html += "</div>";
+      detailPanel.innerHTML = html;
+
+      detailPanel.querySelector("[data-action='block']").onclick = async () => {
+        if (bookingCount > 0 && !confirm("This date has " + bookingCount + " existing booking(s). New slots will be hidden; existing bookings will not be changed. Continue?")) return;
+        await doUpsert("blocked");
+      };
+      detailPanel.querySelector("[data-action='open']").onclick = () => doUpsert("open");
+      detailPanel.querySelector("[data-action='clear']").onclick = doClear;
+    }
+
+    async function doUpsert(mode) {
+      try {
+        const r = await adminFetch("/api/admin-availability-upsert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ override_date: selectedDate, mode })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Upsert failed");
+        showAdminBanner("Saved.", "success");
+        await loadAvailabilityData();
+        renderMonthGrid();
+        renderDetailPanel();
+      } catch (e) {
+        showAdminBanner(e.message || "Failed.", "error");
+      }
+    }
+
+    async function doClear() {
+      try {
+        const r = await adminFetch("/api/admin-availability-clear", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ override_date: selectedDate })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Clear failed");
+        showAdminBanner("Override cleared.", "success");
+        await loadAvailabilityData();
+        renderMonthGrid();
+        renderDetailPanel();
+      } catch (e) {
+        showAdminBanner(e.message || "Failed.", "error");
+      }
+    }
+
+    async function loadAvailabilityData() {
+      try {
+        const r = await adminFetch("/api/admin-availability-list?year=" + currentYear + "&month=" + currentMonth);
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Load failed");
+        listPayload = data;
+        overrideMap = data.overrideMap || {};
+        bookingCountByDate = data.bookingCountByDate || {};
+      } catch (e) {
+        overrideMap = {};
+        bookingCountByDate = {};
+        showAdminBanner(e.message || "Load failed.", "error");
+      }
+    }
+
+    prevBtn.onclick = async () => {
+      if (currentMonth === 1) { currentYear--; currentMonth = 12; } else currentMonth--;
+      await loadAvailabilityData();
+      renderMonthGrid();
+      if (selectedDate) {
+        const [y, m] = selectedDate.split("-").map(Number);
+        if (y !== currentYear || m !== currentMonth) selectedDate = null;
+        detailPanel.style.display = selectedDate ? "block" : "none";
+        if (selectedDate) renderDetailPanel();
+      }
+    };
+    nextBtn.onclick = async () => {
+      if (currentMonth === 12) { currentYear++; currentMonth = 1; } else currentMonth++;
+      await loadAvailabilityData();
+      renderMonthGrid();
+      if (selectedDate) {
+        const [y, m] = selectedDate.split("-").map(Number);
+        if (y !== currentYear || m !== currentMonth) selectedDate = null;
+        detailPanel.style.display = selectedDate ? "block" : "none";
+        if (selectedDate) renderDetailPanel();
+      }
+    };
+
+    viewContainer.appendChild(wrapper);
+    loadAvailabilityData().then(() => {
+      renderMonthGrid();
+    });
     return;
   }
 

@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
 import getTravelMinutes from "./_routing/getTravelMinutes.js";
+import { getDateEligibility } from "./_availabilityOverrides.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -543,11 +544,10 @@ const candidateAddress =
 
 
     const { openUtcHour, closeUtcHour } = getBusinessUtcHours(day);
-const dayDate = getDayStartUtcForBusinessTZ(day); // NY midnight expressed as a UTC Date
+    const dayDate = getDayStartUtcForBusinessTZ(day); // NY midnight expressed as a UTC Date
 
-    const [yy, mm, dd] = day.split("-").map(Number);
-const weekday = new Date(Date.UTC(yy, mm - 1, dd)).getUTCDay();
-if (!BUSINESS_RULES.allowedWeekdays.includes(weekday)) {
+    const { allowed: dateAllowed } = await getDateEligibility(day, BUSINESS_RULES.allowedWeekdays);
+    if (!dateAllowed) {
       return res.json({ slots: [] });
     }
 
