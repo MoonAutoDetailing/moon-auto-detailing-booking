@@ -1190,6 +1190,24 @@ label[for="end"] {
   opacity: 0.7;
   cursor: not-allowed;
 }
+.review-modal-agreement-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: 12px;
+  max-width: 100%;
+}
+.review-modal-agreement-row input[type="checkbox"] {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.review-modal-agreement-row span {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #374151;
+}
 
   </style>                              <!--PAGE UI DESIGN END-->
 
@@ -1429,32 +1447,21 @@ View Maintenance Plans </a>
       <div id="reviewModalSummary" class="review-modal-summary"></div>
       <div id="subscriptionTerms" style="display:none; margin-top:18px; text-align:left; font-size:13px; line-height:1.5;">
         <strong>Maintenance Plan Terms</strong>
-
-        <p>Minimum commitment: 3 service cycles.</p>
-
-        <p>
-        Pushback policy:
-        <br>• 1 pushback allowed per cycle
-        <br>• Pushback extends the booking window by 5 business days
-        <br>• Pushback fee: 15% of service price
-        <br>• Fee waived if no valid booking slots existed
-        </p>
-
-        <p>
-        Missed cycle rule:
-        <br>• If a cycle expires without booking
-        <br>• The next service is charged full price
-        <br>• Discount resumes after the following completed cycle
-        </p>
-
-        <p>
-        Subscription activation:
-        <br>• The maintenance plan activates only after the first completed service.
-        </p>
-
-        <label style="display:flex; gap:8px; align-items:flex-start; margin-top:10px;">
+        <ul style="margin:8px 0 0; padding-left:20px;">
+          <li>Minimum commitment: 3 completed service cycles</li>
+          <li>Your maintenance plan activates only after your first completed service</li>
+          <li>You must book during each cycle's available booking window</li>
+          <li>One pushback per cycle is allowed</li>
+          <li>Pushback extends the booking window by 5 business days</li>
+          <li>Pushback adds a 15% upcharge to the service price</li>
+          <li>The pushback fee is waived only if no valid booking slots were available during the original cycle window</li>
+          <li>If a cycle is missed, your next maintenance booking is charged at full price</li>
+          <li>Discounted pricing resumes after that cycle is completed</li>
+          <li>Travel fees still apply</li>
+        </ul>
+        <label class="review-modal-agreement-row">
           <input type="checkbox" id="subscriptionAgreement">
-          <span>I understand and agree to the Moon Auto Detailing maintenance plan terms.</span>
+          <span>I understand that maintenance plans require a 3-cycle commitment, allow only one pushback per cycle, may include a 15% pushback upcharge, and may reset my next booking to full price if a cycle is missed.</span>
         </label>
       </div>
       <div class="review-modal-actions">
