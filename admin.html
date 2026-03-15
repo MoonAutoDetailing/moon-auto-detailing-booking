@@ -2470,8 +2470,10 @@ function renderView(viewName) {
     let currentYear = new Date().getFullYear();
     let currentMonth = new Date().getMonth() + 1;
     let selectedDate = null;
+    let selectedDates = new Set();
     let overrideMap = {};
     let bookingCountByDate = {};
+    let soloModeDates = {};
     let listPayload = null;
 
     const navRow = document.createElement("div");
@@ -2494,6 +2496,46 @@ function renderView(viewName) {
     navRow.appendChild(monthLabel);
     navRow.appendChild(nextBtn);
     wrapper.appendChild(navRow);
+
+    const bulkRow = document.createElement("div");
+    bulkRow.className = "availability-bulk-row";
+    bulkRow.style.display = "none";
+    bulkRow.style.flexWrap = "wrap";
+    bulkRow.style.alignItems = "center";
+    bulkRow.style.gap = "12px";
+    bulkRow.style.padding = "12px";
+    bulkRow.style.borderRadius = "10px";
+    bulkRow.style.background = "rgba(255,255,255,0.06)";
+    bulkRow.style.border = "1px solid rgba(255,255,255,0.15)";
+    const bulkLabel = document.createElement("span");
+    bulkLabel.style.fontWeight = "600";
+    const bulkEnableSolo = document.createElement("button");
+    bulkEnableSolo.type = "button";
+    bulkEnableSolo.className = "moon-tab";
+    bulkEnableSolo.textContent = "Enable Solo Mode for selected";
+    const bulkClearSolo = document.createElement("button");
+    bulkClearSolo.type = "button";
+    bulkClearSolo.className = "moon-tab";
+    bulkClearSolo.textContent = "Clear Solo Mode for selected";
+    const bulkClearSel = document.createElement("button");
+    bulkClearSel.type = "button";
+    bulkClearSel.className = "moon-tab";
+    bulkClearSel.textContent = "Clear selection";
+    bulkClearSel.style.background = "rgba(255,255,255,0.2)";
+    bulkRow.appendChild(bulkLabel);
+    bulkRow.appendChild(bulkEnableSolo);
+    bulkRow.appendChild(bulkClearSolo);
+    bulkRow.appendChild(bulkClearSel);
+    bulkEnableSolo.onclick = () => doSoloEnable(null);
+    bulkClearSolo.onclick = () => doSoloClear(null);
+    bulkClearSel.onclick = () => {
+      selectedDates = new Set();
+      selectedDate = null;
+      detailPanel.style.display = "none";
+      bulkRow.style.display = "none";
+      renderMonthGrid();
+    };
+    wrapper.appendChild(bulkRow);
 
     const gridEl = document.createElement("div");
     gridEl.className = "availability-month-grid";
@@ -2578,6 +2620,15 @@ function renderView(viewName) {
           cell.title = override.scope === "time_range" && (override.start_time || override.end_time) ? (override.start_time || "").slice(0, 5) + "–" + (override.end_time || "").slice(0, 5) : "";
         }
         cell.textContent = d;
+        if (soloModeDates[dayStr]) {
+          const soloBadge = document.createElement("span");
+          soloBadge.style.marginLeft = "2px";
+          soloBadge.style.fontSize = "10px";
+          soloBadge.style.opacity = "0.95";
+          soloBadge.title = "Solo Mode on";
+          soloBadge.textContent = " S";
+          cell.appendChild(soloBadge);
+        }
         if (bookingCount > 0) {
           const badge = document.createElement("span");
           badge.style.marginLeft = "4px";
@@ -2586,20 +2637,30 @@ function renderView(viewName) {
           badge.textContent = "(" + bookingCount + ")";
           cell.appendChild(badge);
         }
-        cell.onclick = () => {
-          selectedDate = dayStr;
-          detailPanel.style.display = "block";
-          renderDetailPanel();
-          gridEl.querySelectorAll("button[data-date]").forEach(b => {
-            b.style.boxShadow = b.dataset.date === dayStr ? "0 0 0 2px var(--moon-primary)" : "none";
-          });
+        if (selectedDates.has(dayStr)) {
+          cell.style.boxShadow = "0 0 0 2px var(--moon-primary)";
+          cell.style.outline = "2px solid rgba(255,255,255,0.5)";
+        }
+        cell.onclick = (e) => {
+          if (e.ctrlKey || e.metaKey) {
+            if (selectedDates.has(dayStr)) selectedDates.delete(dayStr);
+            else selectedDates.add(dayStr);
+            selectedDate = selectedDates.has(dayStr) ? dayStr : (selectedDates.size > 0 ? Array.from(selectedDates)[0] : null);
+          } else {
+            selectedDate = dayStr;
+            selectedDates = new Set([dayStr]);
+          }
+          detailPanel.style.display = selectedDate ? "block" : "none";
+          if (selectedDate) renderDetailPanel();
+          bulkRow.style.display = selectedDates.size > 0 ? "flex" : "none";
+          bulkLabel.textContent = selectedDates.size + " date(s) selected";
+          renderMonthGrid();
         };
         gridEl.appendChild(cell);
       }
-      if (selectedDate) {
-        gridEl.querySelectorAll("button[data-date]").forEach(b => {
-          b.style.boxShadow = b.dataset.date === selectedDate ? "0 0 0 2px var(--moon-primary)" : "none";
-        });
+      if (selectedDates.size > 0) {
+        bulkRow.style.display = "flex";
+        bulkLabel.textContent = selectedDates.size + " date(s) selected";
       }
     }
 
@@ -2631,14 +2692,22 @@ function renderView(viewName) {
         html += "</p>";
       }
       html += "<p><strong>Existing bookings this day:</strong> " + bookingCount + "</p>";
+      const soloOn = !!soloModeDates[selectedDate];
+      html += "<p><strong>Solo Mode:</strong> " + (soloOn ? "On" : "Off") + "</p>";
+      html += "<div style='margin-top:12px;'><strong>Solo Mode</strong></div>";
+      html += "<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:8px;'>";
+      html += "<button type='button' class='moon-tab' data-action='solo-enable'>Enable Solo Mode</button>";
+      html += "<button type='button' class='moon-tab' data-action='solo-clear'>Clear Solo Mode</button>";
+      html += "</div>";
       if (bookingCount > 0 && (!override || override.mode !== "blocked" || override.scope !== "full_day")) {
-        html += "<p style='color:#ffb74d;'>Blocking will hide new slots in the selected range/day but will not change existing bookings.</p>";
+        html += "<p style='color:#ffb74d;margin-top:12px;'>Blocking will hide new slots in the selected range/day but will not change existing bookings.</p>";
       }
-      html += "<div style='margin-top:12px;' id='availabilityTimeRangeRow'>";
+      html += "<div style='margin-top:12px;' id='availabilityTimeRangeRow'><strong>Availability override</strong></div>";
+      html += "<div style='margin-top:6px;' id='availabilityTimeRangeInputs'>";
       html += "<label style='display:inline-block;margin-right:8px;'>Start <input type='time' id='availabilityStartTime' value='" + (override && override.scope === "time_range" ? formatTimeForInput(override.start_time) : "09:00") + "' style='padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;'/></label>";
       html += "<label style='display:inline-block;margin-right:12px;'>End <input type='time' id='availabilityEndTime' value='" + (override && override.scope === "time_range" ? formatTimeForInput(override.end_time) : "12:00") + "' style='padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;'/></label>";
       html += "</div>";
-      html += "<div style='margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;'>";
+      html += "<div style='margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;'>";
       html += "<button type='button' class='moon-tab' data-action='open-full'>Open full day</button>";
       html += "<button type='button' class='moon-tab' data-action='block-full'>Block full day</button>";
       html += "<button type='button' class='moon-tab' data-action='open-range'>Open time range</button>";
@@ -2666,6 +2735,48 @@ function renderView(viewName) {
         await doUpsert("blocked", "time_range", start, end);
       };
       detailPanel.querySelector("[data-action='clear']").onclick = doClear;
+      detailPanel.querySelector("[data-action='solo-enable']").onclick = () => doSoloEnable(selectedDate);
+      detailPanel.querySelector("[data-action='solo-clear']").onclick = () => doSoloClear(selectedDate);
+    }
+
+    async function doSoloEnable(dateOrDates) {
+      try {
+        const useBulk = dateOrDates == null ? selectedDates.size > 0 : (selectedDates.has(dateOrDates) && selectedDates.size > 0);
+        const body = useBulk ? { override_dates: Array.from(selectedDates) } : { override_date: dateOrDates || selectedDate };
+        const r = await adminFetch("/api/admin-staffing-enable", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Enable failed");
+        showAdminBanner("Solo Mode enabled.", "success");
+        await loadAvailabilityData();
+        renderMonthGrid();
+        renderDetailPanel();
+      } catch (e) {
+        showAdminBanner(e.message || "Failed.", "error");
+      }
+    }
+
+    async function doSoloClear(dateOrDates) {
+      try {
+        const useBulk = dateOrDates == null ? selectedDates.size > 0 : (selectedDates.has(dateOrDates) && selectedDates.size > 0);
+        const body = useBulk ? { override_dates: Array.from(selectedDates) } : { override_date: dateOrDates || selectedDate };
+        const r = await adminFetch("/api/admin-staffing-clear", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Clear failed");
+        showAdminBanner("Solo Mode cleared.", "success");
+        await loadAvailabilityData();
+        renderMonthGrid();
+        renderDetailPanel();
+      } catch (e) {
+        showAdminBanner(e.message || "Failed.", "error");
+      }
     }
 
     async function doUpsert(mode, scope, startTime, endTime) {
@@ -2711,15 +2822,24 @@ function renderView(viewName) {
 
     async function loadAvailabilityData() {
       try {
-        const r = await adminFetch("/api/admin-availability-list?year=" + currentYear + "&month=" + currentMonth);
-        const data = await r.json();
-        if (!r.ok) throw new Error(data.error || "Load failed");
+        const [availRes, staffRes] = await Promise.all([
+          adminFetch("/api/admin-availability-list?year=" + currentYear + "&month=" + currentMonth),
+          adminFetch("/api/admin-staffing-list?year=" + currentYear + "&month=" + currentMonth)
+        ]);
+        const data = await availRes.json();
+        if (!availRes.ok) throw new Error(data.error || "Load failed");
         listPayload = data;
         overrideMap = data.overrideMap || {};
         bookingCountByDate = data.bookingCountByDate || {};
+        soloModeDates = {};
+        if (staffRes.ok) {
+          const staffData = await staffRes.json();
+          (staffData.soloDates || []).forEach(function(d) { soloModeDates[d] = true; });
+        }
       } catch (e) {
         overrideMap = {};
         bookingCountByDate = {};
+        soloModeDates = {};
         showAdminBanner(e.message || "Load failed.", "error");
       }
     }
