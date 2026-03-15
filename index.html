@@ -2636,21 +2636,25 @@ if (manageToken) {
         if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
           throw new Error("Invalid service duration. Please re-select your service.");
         }
+        const dayKeyForDuration = startLocal.toDateString();
+        const effectiveMinutes = (metaByDay[dayKeyForDuration]?._soloEffectiveDurationMinutes != null && Number.isFinite(metaByDay[dayKeyForDuration]._soloEffectiveDurationMinutes))
+          ? metaByDay[dayKeyForDuration]._soloEffectiveDurationMinutes
+          : durationMinutes;
         log("Duration minutes used", {
           raw: selectedVariant?.duration_minutes,
-          coerced: durationMinutes
+          coerced: durationMinutes,
+          effective: effectiveMinutes
         });
-        const endLocal = new Date(startLocal.getTime() + durationMinutes * 60_000);
+        const endLocal = new Date(startLocal.getTime() + effectiveMinutes * 60_000);
         const scheduled_start = startLocal.toISOString();
         const scheduled_end = endLocal.toISOString();
         // --- End Step 2 ---
 
         if (new Date(scheduled_end) <= new Date(scheduled_start)) throw new Error("Scheduled end must be after scheduled start");
-        // --- Step 2.5: enforce business hours & weekdays ---
+        // --- Step 2.5: enforce business hours (same-day, open/close); weekdays not gated (backend overrides can open weekends) ---
 if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
   throw new Error(
-    "Bookings are available Monday–Friday only, between 8:00 AM and 6:00 PM. " +
-    "The selected service must fully complete by 6:00 PM."
+    "Appointments are offered during available scheduling windows, and the selected service must fully complete by 6:00 PM."
   );
 }
 // --- End Step 2.5 ---
