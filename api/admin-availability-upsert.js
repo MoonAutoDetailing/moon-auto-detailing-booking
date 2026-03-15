@@ -25,13 +25,21 @@ export default async function handler(req, res) {
   try {
     const body = req.body || {};
     const overrideDate = (body.override_date || body.overrideDate || "").toString().trim();
+    const overrideDates = Array.isArray(body.override_dates) ? body.override_dates.map((d) => (d || "").toString().trim()).filter(Boolean) : null;
     const mode = (body.mode || "").toString().toLowerCase();
     const scope = (body.scope || "full_day").toString().toLowerCase();
     const startTime = body.start_time != null ? body.start_time.toString().trim() : null;
     const endTime = body.end_time != null ? body.end_time.toString().trim() : null;
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(overrideDate)) {
-      return res.status(400).json({ error: "Invalid override_date (use YYYY-MM-DD)" });
+    const dateList = overrideDates && overrideDates.length > 0 ? overrideDates : (overrideDate ? [overrideDate] : []);
+    if (dateList.length === 0) {
+      return res.status(400).json({ error: "Provide override_date or override_dates (array of YYYY-MM-DD)" });
+    }
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    for (const d of dateList) {
+      if (!dateRegex.test(d)) {
+        return res.status(400).json({ error: "Invalid date (use YYYY-MM-DD): " + d });
+      }
     }
     if (mode !== "open" && mode !== "blocked") {
       return res.status(400).json({ error: "mode must be 'open' or 'blocked'" });
@@ -60,60 +68,83 @@ export default async function handler(req, res) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    const { data: existing } = await supabase
-      .from("availability_overrides")
-      .select("id, mode, scope, google_event_id")
-      .eq("override_date", overrideDate)
-      .maybeSingle();
-
-    if (existing?.google_event_id) {
-      try {
-        await deleteCalendarEvent(existing.google_event_id);
-      } catch (e) {
-        console.warn("admin-availability-upsert: delete old Google event failed", e.message);
-      }
-    }
-
-    let googleEventId = null;
-    if (mode === "blocked") {
-      if (scope === "full_day") {
-        const { eventId } = await createAllDayBlock(overrideDate);
-        googleEventId = eventId;
-      } else {
-        const { eventId } = await createTimeRangeBlock(overrideDate, startTime, endTime);
-        googleEventId = eventId;
-      }
-    }
-
-    const row = {
-      override_date: overrideDate,
-      mode,
-      scope,
-      start_time: scope === "time_range" ? startTime : null,
-      end_time: scope === "time_range" ? endTime : null,
-      reason: body.reason || null,
-      google_event_id: googleEventId,
-      updated_at: new Date().toISOString(),
-    };
-
     const selectFields = "id, override_date, mode, scope, start_time, end_time, google_event_id, created_at, updated_at";
+    let updatedCount = 0;
+    const results = [];
 
-    if (existing) {
-      const { error: updateErr } = await supabase
+    for (const singleDate of dateList) {
+      const { data: existing } = await supabase
         .from("availability_overrides")
-        .update(row)
-        .eq("id", existing.id);
-      if (updateErr) throw updateErr;
-      return res.status(200).json({ override: { ...row, id: existing.id }, updated: true });
+        .select("id, mode, scope, google_event_id")
+        .eq("override_date", singleDate)
+        .maybeSingle();
+
+      if (existing?.google_event_id) {
+        try {
+          await deleteCalendarEvent(existing.google_event_id);
+        } catch (e) {
+          console.warn("admin-availability-upsert: delete old Google event failed", e.message);
+        }
+      }
+
+      let googleEventId = null;
+      if (mode === "blocked") {
+        if (scope === "full_day") {
+          const { eventId } = await createAllDayBlock(singleDate);
+          googleEventId = eventId;
+        } else {
+          const { eventId } = await createTimeRangeBlock(singleDate, startTime, endTime);
+          googleEventId = eventId;
+        }
+      }
+
+      const row = {
+        override_date: singleDate,
+        mode,
+        scope,
+        start_time: scope === "time_range" ? startTime : null,
+        end_time: scope === "time_range" ? endTime : null,
+        reason: body.reason || null,
+        google_event_id: googleEventId,
+        updated_at: new Date().toISOString(),
+      };
+
+      if (existing) {
+        const { error: updateErr } = await supabase
+          .from("availability_overrides")
+          .update(row)
+          .eq("id", existing.id);
+        if (updateErr) throw updateErr;
+        updatedCount++;
+        results.push({ override_date: singleDate, id: existing.id, updated: true });
+      } else {
+        const { data: inserted, error: insertErr } = await supabase
+          .from("availability_overrides")
+          .insert(row)
+          .select(selectFields)
+          .single();
+        if (insertErr) throw insertErr;
+        updatedCount++;
+        results.push({ override_date: singleDate, id: inserted.id, updated: false });
+      }
     }
 
-    const { data: inserted, error: insertErr } = await supabase
-      .from("availability_overrides")
-      .insert(row)
-      .select(selectFields)
-      .single();
-    if (insertErr) throw insertErr;
-    return res.status(200).json({ override: inserted, updated: false });
+    if (dateList.length === 1) {
+      const r = results[0];
+      return res.status(200).json({
+        override: {
+          override_date: r.override_date,
+          id: r.id,
+          mode,
+          scope,
+          start_time: scope === "time_range" ? startTime : null,
+          end_time: scope === "time_range" ? endTime : null,
+          updated_at: new Date().toISOString()
+        },
+        updated: r.updated
+      });
+    }
+    return res.status(200).json({ updated: updatedCount, overrides: results });
   } catch (err) {
     console.error("admin-availability-upsert", err);
     return res.status(500).json({ error: err.message || "Upsert failed" });

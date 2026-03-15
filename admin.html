@@ -735,6 +735,21 @@ cursor: pointer;
   #viewButtons button.admin-nav-secondary { display: none; }
 }
 
+/* Availability calendar: today highlight (distinct from selected/open/blocked/solo) */
+.availability-cell-today {
+  outline: 2px dashed rgba(255, 255, 255, 0.85);
+  outline-offset: 1px;
+  position: relative;
+}
+.availability-cell-today::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 8px;
+  pointer-events: none;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
+}
+
 </style>
 </head>
 
@@ -2467,8 +2482,10 @@ function renderView(viewName) {
     wrapper.style.flexDirection = "column";
     wrapper.style.gap = "20px";
 
-    let currentYear = new Date().getFullYear();
-    let currentMonth = new Date().getMonth() + 1;
+    const today = new Date();
+    let currentYear = today.getFullYear();
+    let currentMonth = today.getMonth() + 1;
+    const todayStr = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
     let selectedDate = null;
     let selectedDates = new Set();
     let overrideMap = {};
@@ -2509,6 +2526,26 @@ function renderView(viewName) {
     bulkRow.style.border = "1px solid rgba(255,255,255,0.15)";
     const bulkLabel = document.createElement("span");
     bulkLabel.style.fontWeight = "600";
+    const bulkOpenFull = document.createElement("button");
+    bulkOpenFull.type = "button";
+    bulkOpenFull.className = "moon-tab";
+    bulkOpenFull.textContent = "Open full day for selected";
+    const bulkBlockFull = document.createElement("button");
+    bulkBlockFull.type = "button";
+    bulkBlockFull.className = "moon-tab";
+    bulkBlockFull.textContent = "Block full day for selected";
+    const bulkOpenRange = document.createElement("button");
+    bulkOpenRange.type = "button";
+    bulkOpenRange.className = "moon-tab";
+    bulkOpenRange.textContent = "Open time range for selected";
+    const bulkBlockRange = document.createElement("button");
+    bulkBlockRange.type = "button";
+    bulkBlockRange.className = "moon-tab";
+    bulkBlockRange.textContent = "Block time range for selected";
+    const bulkClearOverride = document.createElement("button");
+    bulkClearOverride.type = "button";
+    bulkClearOverride.className = "moon-tab";
+    bulkClearOverride.textContent = "Clear override for selected";
     const bulkEnableSolo = document.createElement("button");
     bulkEnableSolo.type = "button";
     bulkEnableSolo.className = "moon-tab";
@@ -2523,9 +2560,37 @@ function renderView(viewName) {
     bulkClearSel.textContent = "Clear selection";
     bulkClearSel.style.background = "rgba(255,255,255,0.2)";
     bulkRow.appendChild(bulkLabel);
+    bulkRow.appendChild(bulkOpenFull);
+    bulkRow.appendChild(bulkBlockFull);
+    bulkRow.appendChild(bulkOpenRange);
+    bulkRow.appendChild(bulkBlockRange);
+    bulkRow.appendChild(bulkClearOverride);
     bulkRow.appendChild(bulkEnableSolo);
     bulkRow.appendChild(bulkClearSolo);
     bulkRow.appendChild(bulkClearSel);
+    bulkOpenFull.onclick = () => doBulkUpsert("open", "full_day", null, null);
+    bulkBlockFull.onclick = () => doBulkUpsert("blocked", "full_day", null, null);
+    bulkOpenRange.onclick = () => {
+      const start = document.getElementById("availabilityStartTime");
+      const end = document.getElementById("availabilityEndTime");
+      if (!start || !end || !start.value || !end.value || start.value >= end.value) {
+        showAdminBanner("Set start and end time (start must be before end) in the panel below.", "error");
+        return;
+      }
+      doBulkUpsert("open", "time_range", start.value, end.value);
+    };
+    bulkBlockRange.onclick = async () => {
+      const start = document.getElementById("availabilityStartTime");
+      const end = document.getElementById("availabilityEndTime");
+      if (!start || !end || !start.value || !end.value || start.value >= end.value) {
+        showAdminBanner("Set start and end time (start must be before end) in the panel below.", "error");
+        return;
+      }
+      const anyBookings = Array.from(selectedDates).some(function(d) { return (bookingCountByDate[d] || 0) > 0; });
+      if (anyBookings && !confirm("Some selected dates have existing bookings. Block time range anyway?")) return;
+      await doBulkUpsert("blocked", "time_range", start.value, end.value);
+    };
+    bulkClearOverride.onclick = () => doBulkClear();
     bulkEnableSolo.onclick = () => doSoloEnable(null);
     bulkClearSolo.onclick = () => doSoloClear(null);
     bulkClearSel.onclick = () => {
@@ -2644,6 +2709,9 @@ function renderView(viewName) {
           badge.textContent = "(" + bookingCount + ")";
           cell.appendChild(badge);
         }
+        if (dayStr === todayStr) {
+          cell.classList.add("availability-cell-today");
+        }
         if (selectedDates.has(dayStr)) {
           cell.style.boxShadow = "0 0 0 2px var(--moon-primary)";
           cell.style.outline = "2px solid rgba(255,255,255,0.5)";
@@ -2661,8 +2729,14 @@ function renderView(viewName) {
           if (selectedDate) renderDetailPanel();
           bulkRow.style.display = selectedDates.size > 0 ? "flex" : "none";
           bulkLabel.textContent = selectedDates.size + " date(s) selected";
-          bulkEnableSolo.style.display = selectedDates.size > 1 ? "" : "none";
-          bulkClearSolo.style.display = selectedDates.size > 1 ? "" : "none";
+          const showBulk = selectedDates.size > 1;
+          bulkOpenFull.style.display = showBulk ? "" : "none";
+          bulkBlockFull.style.display = showBulk ? "" : "none";
+          bulkOpenRange.style.display = showBulk ? "" : "none";
+          bulkBlockRange.style.display = showBulk ? "" : "none";
+          bulkClearOverride.style.display = showBulk ? "" : "none";
+          bulkEnableSolo.style.display = showBulk ? "" : "none";
+          bulkClearSolo.style.display = showBulk ? "" : "none";
           renderMonthGrid();
         };
         gridEl.appendChild(cell);
@@ -2670,8 +2744,14 @@ function renderView(viewName) {
       if (selectedDates.size > 0) {
         bulkRow.style.display = "flex";
         bulkLabel.textContent = selectedDates.size + " date(s) selected";
-        bulkEnableSolo.style.display = selectedDates.size > 1 ? "" : "none";
-        bulkClearSolo.style.display = selectedDates.size > 1 ? "" : "none";
+        const showBulk = selectedDates.size > 1;
+        bulkOpenFull.style.display = showBulk ? "" : "none";
+        bulkBlockFull.style.display = showBulk ? "" : "none";
+        bulkOpenRange.style.display = showBulk ? "" : "none";
+        bulkBlockRange.style.display = showBulk ? "" : "none";
+        bulkClearOverride.style.display = showBulk ? "" : "none";
+        bulkEnableSolo.style.display = showBulk ? "" : "none";
+        bulkClearSolo.style.display = showBulk ? "" : "none";
       }
     }
 
@@ -2706,50 +2786,57 @@ function renderView(viewName) {
       const soloOn = !!soloModeDates[selectedDate];
       html += "<p><strong>Solo Mode:</strong> " + (soloOn ? "On" : "Off") + "</p>";
       if (selectedDates.size > 1) {
-        html += "<p style='margin-top:8px;color:rgba(255,255,255,0.85);'>Multiple dates selected. Use the bulk actions above to change Solo Mode.</p>";
+        html += "<p style='margin-top:8px;color:rgba(255,255,255,0.85);'>Multiple dates selected. Use the bulk actions above for Solo Mode and availability.</p>";
+        html += "<div style='margin-top:12px;' id='availabilityTimeRangeRow'><strong>Time range for bulk actions</strong></div>";
+        html += "<div style='margin-top:6px;' id='availabilityTimeRangeInputs'>";
+        html += "<label style='display:inline-block;margin-right:8px;'>Start <input type='time' id='availabilityStartTime' value='09:00' style='padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;'/></label>";
+        html += "<label style='display:inline-block;margin-right:12px;'>End <input type='time' id='availabilityEndTime' value='12:00' style='padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;'/></label>";
+        html += "</div>";
       } else {
         html += "<div style='margin-top:12px;'><strong>Solo Mode</strong></div>";
         html += "<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:8px;'>";
         html += "<button type='button' class='moon-tab' data-action='solo-enable'>Enable Solo Mode</button>";
         html += "<button type='button' class='moon-tab' data-action='solo-clear'>Clear Solo Mode</button>";
         html += "</div>";
+        if (bookingCount > 0 && (!override || override.mode !== "blocked" || override.scope !== "full_day")) {
+          html += "<p style='color:#ffb74d;margin-top:12px;'>Blocking will hide new slots in the selected range/day but will not change existing bookings.</p>";
+        }
+        html += "<div style='margin-top:12px;' id='availabilityTimeRangeRow'><strong>Availability override</strong></div>";
+        html += "<div style='margin-top:6px;' id='availabilityTimeRangeInputs'>";
+        html += "<label style='display:inline-block;margin-right:8px;'>Start <input type='time' id='availabilityStartTime' value='" + (override && override.scope === "time_range" ? formatTimeForInput(override.start_time) : "09:00") + "' style='padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;'/></label>";
+        html += "<label style='display:inline-block;margin-right:12px;'>End <input type='time' id='availabilityEndTime' value='" + (override && override.scope === "time_range" ? formatTimeForInput(override.end_time) : "12:00") + "' style='padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;'/></label>";
+        html += "</div>";
+        html += "<div style='margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;'>";
+        html += "<button type='button' class='moon-tab' data-action='open-full'>Open full day</button>";
+        html += "<button type='button' class='moon-tab' data-action='block-full'>Block full day</button>";
+        html += "<button type='button' class='moon-tab' data-action='open-range'>Open time range</button>";
+        html += "<button type='button' class='moon-tab' data-action='block-range'>Block time range</button>";
+        html += "<button type='button' class='moon-tab' data-action='clear'>Clear override</button>";
+        html += "</div>";
       }
-      if (bookingCount > 0 && (!override || override.mode !== "blocked" || override.scope !== "full_day")) {
-        html += "<p style='color:#ffb74d;margin-top:12px;'>Blocking will hide new slots in the selected range/day but will not change existing bookings.</p>";
-      }
-      html += "<div style='margin-top:12px;' id='availabilityTimeRangeRow'><strong>Availability override</strong></div>";
-      html += "<div style='margin-top:6px;' id='availabilityTimeRangeInputs'>";
-      html += "<label style='display:inline-block;margin-right:8px;'>Start <input type='time' id='availabilityStartTime' value='" + (override && override.scope === "time_range" ? formatTimeForInput(override.start_time) : "09:00") + "' style='padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;'/></label>";
-      html += "<label style='display:inline-block;margin-right:12px;'>End <input type='time' id='availabilityEndTime' value='" + (override && override.scope === "time_range" ? formatTimeForInput(override.end_time) : "12:00") + "' style='padding:6px;border-radius:6px;border:1px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.08);color:white;'/></label>";
-      html += "</div>";
-      html += "<div style='margin-top:12px;display:flex;flex-wrap:wrap;gap:8px;'>";
-      html += "<button type='button' class='moon-tab' data-action='open-full'>Open full day</button>";
-      html += "<button type='button' class='moon-tab' data-action='block-full'>Block full day</button>";
-      html += "<button type='button' class='moon-tab' data-action='open-range'>Open time range</button>";
-      html += "<button type='button' class='moon-tab' data-action='block-range'>Block time range</button>";
-      html += "<button type='button' class='moon-tab' data-action='clear'>Clear override</button>";
-      html += "</div>";
       detailPanel.innerHTML = html;
 
-      detailPanel.querySelector("[data-action='block-full']").onclick = async () => {
-        if (bookingCount > 0 && !confirm("This date has " + bookingCount + " existing booking(s). New slots will be hidden; existing bookings will not be changed. Continue?")) return;
-        await doUpsert("blocked", "full_day", null, null);
-      };
-      detailPanel.querySelector("[data-action='open-full']").onclick = () => doUpsert("open", "full_day", null, null);
-      detailPanel.querySelector("[data-action='open-range']").onclick = () => {
-        const start = document.getElementById("availabilityStartTime").value;
-        const end = document.getElementById("availabilityEndTime").value;
-        if (!start || !end || start >= end) { showAdminBanner("Set start and end time (start must be before end).", "error"); return; }
-        doUpsert("open", "time_range", start, end);
-      };
-      detailPanel.querySelector("[data-action='block-range']").onclick = async () => {
-        const start = document.getElementById("availabilityStartTime").value;
-        const end = document.getElementById("availabilityEndTime").value;
-        if (!start || !end || start >= end) { showAdminBanner("Set start and end time (start must be before end).", "error"); return; }
-        if (bookingCount > 0 && !confirm("This date has " + bookingCount + " existing booking(s). New slots in this range will be hidden; existing bookings will not be changed. Continue?")) return;
-        await doUpsert("blocked", "time_range", start, end);
-      };
-      detailPanel.querySelector("[data-action='clear']").onclick = doClear;
+      if (selectedDates.size === 1) {
+        detailPanel.querySelector("[data-action='block-full']").onclick = async () => {
+          if (bookingCount > 0 && !confirm("This date has " + bookingCount + " existing booking(s). New slots will be hidden; existing bookings will not be changed. Continue?")) return;
+          await doUpsert("blocked", "full_day", null, null);
+        };
+        detailPanel.querySelector("[data-action='open-full']").onclick = () => doUpsert("open", "full_day", null, null);
+        detailPanel.querySelector("[data-action='open-range']").onclick = () => {
+          const start = document.getElementById("availabilityStartTime").value;
+          const end = document.getElementById("availabilityEndTime").value;
+          if (!start || !end || start >= end) { showAdminBanner("Set start and end time (start must be before end).", "error"); return; }
+          doUpsert("open", "time_range", start, end);
+        };
+        detailPanel.querySelector("[data-action='block-range']").onclick = async () => {
+          const start = document.getElementById("availabilityStartTime").value;
+          const end = document.getElementById("availabilityEndTime").value;
+          if (!start || !end || start >= end) { showAdminBanner("Set start and end time (start must be before end).", "error"); return; }
+          if (bookingCount > 0 && !confirm("This date has " + bookingCount + " existing booking(s). New slots in this range will be hidden; existing bookings will not be changed. Continue?")) return;
+          await doUpsert("blocked", "time_range", start, end);
+        };
+        detailPanel.querySelector("[data-action='clear']").onclick = doClear;
+      }
       const soloEnableBtn = detailPanel.querySelector("[data-action='solo-enable']");
       const soloClearBtn = detailPanel.querySelector("[data-action='solo-clear']");
       if (soloEnableBtn) soloEnableBtn.onclick = () => doSoloEnable(selectedDate);
@@ -2834,6 +2921,53 @@ function renderView(viewName) {
         renderDetailPanel();
       } catch (e) {
         showAdminBanner(e.message || "Failed.", "error");
+      }
+    }
+
+    async function doBulkUpsert(mode, scope, startTime, endTime) {
+      if (selectedDates.size === 0) return;
+      try {
+        if (mode === "blocked") {
+          const anyBookings = Array.from(selectedDates).some(function(d) { return (bookingCountByDate[d] || 0) > 0; });
+          if (anyBookings && !confirm("Some selected dates have existing bookings. Block anyway?")) return;
+        }
+        const body = { override_dates: Array.from(selectedDates), mode, scope: scope || "full_day" };
+        if (scope === "time_range" && startTime != null && endTime != null) {
+          body.start_time = startTime;
+          body.end_time = endTime;
+        }
+        const r = await adminFetch("/api/admin-availability-upsert", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Upsert failed");
+        showAdminBanner(data.updated ? (data.updated + " date(s) updated.") : "Saved.", "success");
+        await loadAvailabilityData();
+        renderMonthGrid();
+        if (selectedDate) renderDetailPanel();
+      } catch (e) {
+        showAdminBanner(e.message || "Failed.", "error");
+      }
+    }
+
+    async function doBulkClear() {
+      if (selectedDates.size === 0) return;
+      try {
+        const r = await adminFetch("/api/admin-availability-clear", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ override_dates: Array.from(selectedDates) })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || "Clear failed");
+        showAdminBanner((data.cleared != null ? data.cleared + " override(s) cleared." : "Override cleared."), "success");
+        await loadAvailabilityData();
+        renderMonthGrid();
+        if (selectedDate) renderDetailPanel();
+      } catch (e) {
+        showAdminBanner(e.message || "Clear failed.", "error");
       }
     }
 

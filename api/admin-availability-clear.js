@@ -17,9 +17,17 @@ export default async function handler(req, res) {
   try {
     const body = req.body || {};
     const overrideDate = (body.override_date || body.overrideDate || "").toString().trim();
+    const overrideDates = Array.isArray(body.override_dates) ? body.override_dates.map((d) => (d || "").toString().trim()).filter(Boolean) : null;
 
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(overrideDate)) {
-      return res.status(400).json({ error: "Invalid override_date (use YYYY-MM-DD)" });
+    const dateList = overrideDates && overrideDates.length > 0 ? overrideDates : (overrideDate ? [overrideDate] : []);
+    if (dateList.length === 0) {
+      return res.status(400).json({ error: "Provide override_date or override_dates (array of YYYY-MM-DD)" });
+    }
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    for (const d of dateList) {
+      if (!dateRegex.test(d)) {
+        return res.status(400).json({ error: "Invalid date (use YYYY-MM-DD): " + d });
+      }
     }
 
     const supabase = createClient(
@@ -27,32 +35,38 @@ export default async function handler(req, res) {
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
 
-    const { data: row, error: fetchErr } = await supabase
-      .from("availability_overrides")
-      .select("id, google_event_id")
-      .eq("override_date", overrideDate)
-      .maybeSingle();
+    let clearedCount = 0;
+    for (const singleDate of dateList) {
+      const { data: row, error: fetchErr } = await supabase
+        .from("availability_overrides")
+        .select("id, google_event_id")
+        .eq("override_date", singleDate)
+        .maybeSingle();
 
-    if (fetchErr) throw fetchErr;
-    if (!row) {
-      return res.status(200).json({ cleared: false, message: "No override for this date" });
-    }
+      if (fetchErr) throw fetchErr;
+      if (!row) continue;
 
-    if (row.google_event_id) {
-      try {
-        await deleteCalendarEvent(row.google_event_id);
-      } catch (e) {
-        console.warn("admin-availability-clear: Google event delete failed", e.message);
+      if (row.google_event_id) {
+        try {
+          await deleteCalendarEvent(row.google_event_id);
+        } catch (e) {
+          console.warn("admin-availability-clear: Google event delete failed", e.message);
+        }
       }
+
+      const { error: deleteErr } = await supabase
+        .from("availability_overrides")
+        .delete()
+        .eq("id", row.id);
+
+      if (deleteErr) throw deleteErr;
+      clearedCount++;
     }
 
-    const { error: deleteErr } = await supabase
-      .from("availability_overrides")
-      .delete()
-      .eq("id", row.id);
-
-    if (deleteErr) throw deleteErr;
-    return res.status(200).json({ cleared: true });
+    if (dateList.length === 1) {
+      return res.status(200).json({ cleared: clearedCount > 0, message: clearedCount > 0 ? undefined : "No override for this date" });
+    }
+    return res.status(200).json({ cleared: clearedCount });
   } catch (err) {
     console.error("admin-availability-clear", err);
     return res.status(500).json({ error: err.message || "Clear failed" });
