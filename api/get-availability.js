@@ -2,6 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
 import getTravelMinutes from "./_routing/getTravelMinutes.js";
 import { getDateEligibility } from "./_availabilityOverrides.js";
+import { isSoloMode } from "./_staffingOverrides.js";
+import { computeSoloEffectiveDuration } from "./_soloModeDuration.js";
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -533,7 +535,7 @@ function getNextBooking(bookingsByStart, end) {
 // --------------------
 export default async function handler(req, res) {
   try {
-    const { day, duration_minutes, service_address } = req.query;
+    const { day, duration_minutes, service_address, service_variant_id } = req.query;
     console.log("API received address:", service_address);
 
 const candidateAddress =
@@ -548,6 +550,36 @@ const candidateAddress =
 
     const { allowed: dateAllowed, timeRangeFilter } = await getDateEligibility(day, BUSINESS_RULES.allowedWeekdays);
     if (!dateAllowed) {
+      return res.json({ slots: [] });
+    }
+
+    let serviceDurationMinutes = Number(duration_minutes);
+    let soloAddedMinutes = null;
+    let soloEffectiveDurationMinutes = null;
+    const soloEnabled = await isSoloMode(supabase, day);
+    if (soloEnabled && service_variant_id) {
+      const { data: variantRow } = await supabase
+        .from("service_variants")
+        .select("duration_minutes, vehicle_size, service:services(category, level)")
+        .eq("id", service_variant_id)
+        .maybeSingle();
+      if (variantRow && variantRow.duration_minutes != null) {
+        const category = variantRow.service?.category ?? null;
+        const level = variantRow.service?.level ?? null;
+        const vehicleSize = variantRow.vehicle_size ?? null;
+        const soloResult = computeSoloEffectiveDuration(
+          variantRow.duration_minutes,
+          category,
+          level,
+          vehicleSize
+        );
+        serviceDurationMinutes = soloResult.effective_duration_minutes;
+        soloAddedMinutes = soloResult.added_minutes;
+        soloEffectiveDurationMinutes = soloResult.effective_duration_minutes;
+      }
+    }
+
+    if (!Number.isFinite(serviceDurationMinutes) || serviceDurationMinutes <= 0) {
       return res.json({ slots: [] });
     }
 
@@ -631,10 +663,6 @@ const expandedBlocks = normalizeBlocksToBusinessHours(dayDate, expandedBlocksRaw
 
     const slots = generateSlotsForDay(dayDate, openUtcHour, closeUtcHour);
     const valid = [];
-    const serviceDurationMinutes = Number(duration_minutes);
-    if (!Number.isFinite(serviceDurationMinutes) || serviceDurationMinutes <= 0) {
-  return res.json({ slots: [] });
-}
 
     for (const start of slots) {
       const end = addMinutes(start, serviceDurationMinutes);
@@ -755,7 +783,12 @@ const shaped = runExposureLogic(
       slots: exposed
     });
 
-    return res.json({ slots: exposed, meta });
+    const payload = { slots: exposed, meta };
+    if (soloAddedMinutes != null && soloEffectiveDurationMinutes != null) {
+      payload.solo_added_minutes = soloAddedMinutes;
+      payload.solo_effective_duration_minutes = soloEffectiveDurationMinutes;
+    }
+    return res.json(payload);
 
 
   } catch (err) {

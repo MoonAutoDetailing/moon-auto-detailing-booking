@@ -8,6 +8,8 @@ import { sendBookingCreatedEmailCore } from "../lib/email/sendBookingCreatedEmai
 import { getEffectiveWindowEnd } from "./_subscriptions/lifecycle.js";
 import { getActiveDiscountCode, normalizeDiscountCode } from "./_discountCode.js";
 import { applyDiscountToPricing } from "../lib/discount.js";
+import { isSoloMode } from "./_staffingOverrides.js";
+import { computeSoloEffectiveDuration } from "./_soloModeDuration.js";
 
 const BASE_ADDRESS = process.env.BASE_ADDRESS;
 const BUSINESS_TZ = "America/New_York";
@@ -171,21 +173,38 @@ export default async function handler(req, res) {
       requireEnv("SUPABASE_SERVICE_ROLE_KEY")
     );
 
-    const isAvailable = await checkAvailability(scheduled_start, scheduled_end);
+    const { data: variantRow } = await supabase
+      .from("service_variants")
+      .select("price, vehicle_size, duration_minutes, service:services(category, level)")
+      .eq("id", service_variant_id)
+      .single();
+    if (!variantRow || variantRow.price == null) {
+      return res.status(400).json({ ok: false, message: "Invalid service variant." });
+    }
+
+    let effectiveScheduledEnd = scheduled_end;
+    const dayStr = scheduled_start.slice(0, 10);
+    if (await isSoloMode(supabase, dayStr) && variantRow.duration_minutes != null) {
+      const category = variantRow.service?.category ?? null;
+      const level = variantRow.service?.level ?? null;
+      const vehicleSize = variantRow.vehicle_size ?? null;
+      const soloResult = computeSoloEffectiveDuration(
+        variantRow.duration_minutes,
+        category,
+        level,
+        vehicleSize
+      );
+      const startDate = new Date(scheduled_start);
+      const endDate = new Date(startDate.getTime() + soloResult.effective_duration_minutes * 60000);
+      effectiveScheduledEnd = endDate.toISOString();
+    }
+
+    const isAvailable = await checkAvailability(scheduled_start, effectiveScheduledEnd);
     if (!isAvailable) {
       return res.status(409).json({
         ok: false,
         message: "Time slot no longer available."
       });
-    }
-
-    const { data: variantRow } = await supabase
-      .from("service_variants")
-      .select("price, vehicle_size")
-      .eq("id", service_variant_id)
-      .single();
-    if (!variantRow || variantRow.price == null) {
-      return res.status(400).json({ ok: false, message: "Invalid service variant." });
     }
     let base_price = Number(variantRow.price);
     if (req.body.subscription_mode === true) {
@@ -201,7 +220,6 @@ export default async function handler(req, res) {
       }
     }
 
-    const dayStr = scheduled_start.slice(0, 10);
     const dayDate = getDayStartUtcForBusinessTZ(dayStr);
     const dayEnd = addMinutes(dayDate, 1440);
     const { openUtcHour, closeUtcHour } = getBusinessUtcHours(dayStr);
@@ -345,7 +363,7 @@ export default async function handler(req, res) {
       service_variant_id,
       service_address,
       scheduled_start,
-      scheduled_end,
+      scheduled_end: effectiveScheduledEnd,
       status: "pending",
       manage_token,
       travel_minutes,
