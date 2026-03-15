@@ -1382,6 +1382,7 @@ View Maintenance Plans </a>
         <input id="end" type="text" readonly placeholder="—" />
       </div>
     </div>
+    <div id="soloModeNotice" class="solo-mode-notice" style="display:none; margin-top:10px; padding:10px 14px; background:#fef3c7; border-radius:8px; font-size:14px; color:#92400e;"></div>
     </div><!-- /.step-panel -->
 
     <h3 class="section-title">Anything else?</h3>
@@ -1536,6 +1537,7 @@ const MIN_BOOKABLE_GAP_MINUTES = 120; // anti-fragment rule (2 hours)
 
     const elStart = document.getElementById("start");
     const elEnd = document.getElementById("end");
+    const elSoloModeNotice = document.getElementById("soloModeNotice");
     const elServiceAddress = document.getElementById("serviceAddress");
     const elCustomerNotes = document.getElementById("customerNotes");
 
@@ -2061,6 +2063,10 @@ function isBookingWithinBusinessRules(startLocal, endLocal) {
   if (!selectedStartISO || !selectedVariant?.duration_minutes) {
     elStart.value = "";
     elEnd.value = "";
+    if (elSoloModeNotice) {
+      elSoloModeNotice.style.display = "none";
+      elSoloModeNotice.textContent = "";
+    }
     return;
   }
   const startLocal = new Date(selectedStartISO);
@@ -2068,6 +2074,17 @@ function isBookingWithinBusinessRules(startLocal, endLocal) {
   const endLocal = new Date(startLocal.getTime() + durationMinutes * 60_000);
   elStart.value = formatTimeDisplay(startLocal);
   elEnd.value = formatTimeDisplay(endLocal);
+  const dayKey = startLocal.toDateString();
+  const added = metaByDay[dayKey]?._soloAddedMinutes;
+  if (elSoloModeNotice) {
+    if (added != null && Number(added) > 0) {
+      elSoloModeNotice.textContent = `Heads up: Service time for this date is estimated to be ${added} minutes longer than usual due to scheduling. Your estimated end time has been updated.`;
+      elSoloModeNotice.style.display = "block";
+    } else {
+      elSoloModeNotice.style.display = "none";
+      elSoloModeNotice.textContent = "";
+    }
+  }
 }
 
 
@@ -2718,6 +2735,9 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
         const cat = selectedVariant.service?.category ?? "Service";
         const lvl = selectedVariant.service?.level ?? "";
         const service_label = lvl ? `${uiCategoryLabel(cat)} Level ${lvl}` : uiCategoryLabel(cat);
+        const soloAddedMinutes = (metaByDay[dayKeyForDuration]?._soloAddedMinutes != null && Number(metaByDay[dayKeyForDuration]._soloAddedMinutes) > 0)
+          ? Number(metaByDay[dayKeyForDuration]._soloAddedMinutes)
+          : null;
         // Build draft for review step; no DB writes until Confirm
         const draft = {
           full_name,
@@ -2739,6 +2759,7 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
           travel_fee,
           total_price
         };
+        if (soloAddedMinutes != null) draft.solo_added_minutes = soloAddedMinutes;
         if (draftDiscountCode != null) {
           draft.discount_code = draftDiscountCode;
           draft.discount_percent = draftDiscountPercent;
@@ -2794,6 +2815,11 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
       const discountBlock = hasDiscount
         ? `<div class="review-modal-pricing-row"><span>Discount (${escapeHtml(draft.discount_code)})</span><span>-${fmt(draft.discount_amount ?? 0)}</span></div>`
         : "";
+      const soloNoticeBlock = (draft.solo_added_minutes != null && Number(draft.solo_added_minutes) > 0)
+        ? `<div class="review-modal-block review-modal-solo-notice" style="background:#fef3c7; color:#92400e; border-radius:8px; padding:10px 14px;">
+          <p class="review-modal-line" style="margin:0;">Heads up: Service time for this date is estimated to be ${escapeHtml(String(draft.solo_added_minutes))} minutes longer than usual due to scheduling. Your estimated end time has been updated.</p>
+        </div>`
+        : "";
       elReviewSummary.innerHTML = `
         <div class="review-modal-block">
           <div class="review-modal-block-title">Contact</div>
@@ -2803,6 +2829,7 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
             ${draft.phone ? `<p class="review-modal-line">${escapeHtml(draft.phone)}</p>` : ""}
           </div>
         </div>
+        ${soloNoticeBlock}
         <div class="review-modal-block">
           <div class="review-modal-block-title">Booking details</div>
           <div class="review-modal-block-body">
