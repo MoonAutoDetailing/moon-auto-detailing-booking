@@ -1088,9 +1088,24 @@ label[for="end"] {
   padding: 28px;
   max-width: 480px;
   width: 100%;
+  min-width: 0;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.2);
   max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.review-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
+  overflow-x: hidden;
+}
+.review-modal-terms {
+  width: 100%;
+  min-width: 0;
+  overflow-wrap: break-word;
+  box-sizing: border-box;
 }
 .review-modal-content h3 {
   margin-top: 0;
@@ -1159,8 +1174,10 @@ label[for="end"] {
 .review-modal-actions {
   display: flex;
   gap: 12px;
-  justify-content: flex-end;
+  justify-content: center;
   flex-wrap: wrap;
+  flex-shrink: 0;
+  margin-top: 16px;
 }
 .review-modal-actions button {
   width: auto;
@@ -1195,10 +1212,13 @@ label[for="end"] {
   align-items: flex-start;
   gap: 10px;
   margin-top: 12px;
-  max-width: 100%;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 .review-modal-agreement-row input[type="checkbox"] {
   flex-shrink: 0;
+  width: auto;
   margin-top: 2px;
 }
 .review-modal-agreement-row span {
@@ -1207,6 +1227,8 @@ label[for="end"] {
   font-size: 13px;
   line-height: 1.5;
   color: #374151;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
 }
 
   </style>                              <!--PAGE UI DESIGN END-->
@@ -1444,8 +1466,9 @@ View Maintenance Plans </a>
     <div class="review-modal-content">
       <h3>Review your booking</h3>
       <p class="review-modal-helper">This is a booking request. Your time is not confirmed until we review it.</p>
-      <div id="reviewModalSummary" class="review-modal-summary"></div>
-      <div id="subscriptionTerms" style="display:none; margin-top:18px; text-align:left; font-size:13px; line-height:1.5;">
+      <div class="review-modal-body">
+        <div id="reviewModalSummary" class="review-modal-summary"></div>
+        <div id="subscriptionTerms" class="review-modal-terms" style="display:none; margin-top:18px; text-align:left; font-size:13px; line-height:1.5;">
         <strong>Maintenance Plan Terms</strong>
         <ul style="margin:8px 0 0; padding-left:20px;">
           <li>Minimum commitment: 3 completed service cycles</li>
@@ -1463,6 +1486,7 @@ View Maintenance Plans </a>
           <input type="checkbox" id="subscriptionAgreement">
           <span>I understand that maintenance plans require a 3-cycle commitment, allow only one pushback per cycle, may include a 15% pushback upcharge, and may reset my next booking to full price if a cycle is missed.</span>
         </label>
+        </div>
       </div>
       <div class="review-modal-actions">
         <button type="button" id="reviewModalBack" class="review-modal-back">Back</button>

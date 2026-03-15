@@ -2537,6 +2537,13 @@ function renderView(viewName) {
     };
     wrapper.appendChild(bulkRow);
 
+    const multiSelectTip = document.createElement("p");
+    multiSelectTip.style.fontSize = "13px";
+    multiSelectTip.style.color = "rgba(255,255,255,0.75)";
+    multiSelectTip.style.margin = "0 0 8px 0";
+    multiSelectTip.textContent = "Tip: Ctrl/Cmd-click to select multiple dates.";
+    wrapper.appendChild(multiSelectTip);
+
     const gridEl = document.createElement("div");
     gridEl.className = "availability-month-grid";
     gridEl.style.display = "grid";
@@ -2654,6 +2661,8 @@ function renderView(viewName) {
           if (selectedDate) renderDetailPanel();
           bulkRow.style.display = selectedDates.size > 0 ? "flex" : "none";
           bulkLabel.textContent = selectedDates.size + " date(s) selected";
+          bulkEnableSolo.style.display = selectedDates.size > 1 ? "" : "none";
+          bulkClearSolo.style.display = selectedDates.size > 1 ? "" : "none";
           renderMonthGrid();
         };
         gridEl.appendChild(cell);
@@ -2661,6 +2670,8 @@ function renderView(viewName) {
       if (selectedDates.size > 0) {
         bulkRow.style.display = "flex";
         bulkLabel.textContent = selectedDates.size + " date(s) selected";
+        bulkEnableSolo.style.display = selectedDates.size > 1 ? "" : "none";
+        bulkClearSolo.style.display = selectedDates.size > 1 ? "" : "none";
       }
     }
 
@@ -2694,11 +2705,15 @@ function renderView(viewName) {
       html += "<p><strong>Existing bookings this day:</strong> " + bookingCount + "</p>";
       const soloOn = !!soloModeDates[selectedDate];
       html += "<p><strong>Solo Mode:</strong> " + (soloOn ? "On" : "Off") + "</p>";
-      html += "<div style='margin-top:12px;'><strong>Solo Mode</strong></div>";
-      html += "<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:8px;'>";
-      html += "<button type='button' class='moon-tab' data-action='solo-enable'>Enable Solo Mode</button>";
-      html += "<button type='button' class='moon-tab' data-action='solo-clear'>Clear Solo Mode</button>";
-      html += "</div>";
+      if (selectedDates.size > 1) {
+        html += "<p style='margin-top:8px;color:rgba(255,255,255,0.85);'>Multiple dates selected. Use the bulk actions above to change Solo Mode.</p>";
+      } else {
+        html += "<div style='margin-top:12px;'><strong>Solo Mode</strong></div>";
+        html += "<div style='margin-top:6px;display:flex;flex-wrap:wrap;gap:8px;'>";
+        html += "<button type='button' class='moon-tab' data-action='solo-enable'>Enable Solo Mode</button>";
+        html += "<button type='button' class='moon-tab' data-action='solo-clear'>Clear Solo Mode</button>";
+        html += "</div>";
+      }
       if (bookingCount > 0 && (!override || override.mode !== "blocked" || override.scope !== "full_day")) {
         html += "<p style='color:#ffb74d;margin-top:12px;'>Blocking will hide new slots in the selected range/day but will not change existing bookings.</p>";
       }
@@ -2735,8 +2750,10 @@ function renderView(viewName) {
         await doUpsert("blocked", "time_range", start, end);
       };
       detailPanel.querySelector("[data-action='clear']").onclick = doClear;
-      detailPanel.querySelector("[data-action='solo-enable']").onclick = () => doSoloEnable(selectedDate);
-      detailPanel.querySelector("[data-action='solo-clear']").onclick = () => doSoloClear(selectedDate);
+      const soloEnableBtn = detailPanel.querySelector("[data-action='solo-enable']");
+      const soloClearBtn = detailPanel.querySelector("[data-action='solo-clear']");
+      if (soloEnableBtn) soloEnableBtn.onclick = () => doSoloEnable(selectedDate);
+      if (soloClearBtn) soloClearBtn.onclick = () => doSoloClear(selectedDate);
     }
 
     async function doSoloEnable(dateOrDates) {
