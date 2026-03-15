@@ -1730,9 +1730,7 @@ function getBusinessCloseDate(dayDate) {
 function getValidStartTimesForDay(dayDate, serviceDurationMinutes, expandedBlocks) {
   if (!Number.isFinite(serviceDurationMinutes) || serviceDurationMinutes <= 0) return [];
 
-  // weekday gate
-  if (!isAllowedWeekday(dayDate)) return [];
-
+  // No weekday gate — backend availability overrides are source of truth for which days are open
   const daySlots = generateSlotsForDay(dayDate);
   const businessClose = getBusinessCloseDate(dayDate);
   const valid = [];
@@ -2035,13 +2033,7 @@ function isBookingWithinBusinessRules(startLocal, endLocal) {
     return false;
   }
 
-  // Weekday check (Mon–Fri only)
-  const day = startLocal.getDay();
-  if (!BUSINESS_RULES.allowedWeekdays.includes(day)) {
-    return false;
-  }
-
-  // Time window check
+  // Time window check (weekday not gated — backend overrides can open weekends)
   const startHour = startLocal.getHours() + startLocal.getMinutes() / 60;
   const endHour = endLocal.getHours() + endLocal.getMinutes() / 60;
 
@@ -2057,6 +2049,14 @@ function isBookingWithinBusinessRules(startLocal, endLocal) {
   return d.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
+   function getEffectiveDurationMinutesForSelectedSlot() {
+  if (!selectedStartISO || !selectedVariant?.duration_minutes) return null;
+  const dayKey = new Date(selectedStartISO).toDateString();
+  const base = Number(selectedVariant.duration_minutes);
+  const solo = metaByDay[dayKey]?._soloEffectiveDurationMinutes;
+  return Number.isFinite(solo) ? solo : base;
+}
+
    function recalcEndTimePreview() {
   if (!selectedStartISO || !selectedVariant?.duration_minutes) {
     elStart.value = "";
@@ -2064,7 +2064,7 @@ function isBookingWithinBusinessRules(startLocal, endLocal) {
     return;
   }
   const startLocal = new Date(selectedStartISO);
-  const durationMinutes = Number(selectedVariant.duration_minutes);
+  const durationMinutes = getEffectiveDurationMinutesForSelectedSlot() ?? Number(selectedVariant.duration_minutes);
   const endLocal = new Date(startLocal.getTime() + durationMinutes * 60_000);
   elStart.value = formatTimeDisplay(startLocal);
   elEnd.value = formatTimeDisplay(endLocal);
@@ -2570,9 +2570,13 @@ if (RESCHEDULE_MODE) {
       throw new Error("No time selected.");
     }
 
-    // Compute end time using service duration BEFORE the fetch call
+    // Compute end time using effective duration (Solo Mode) when available
 const startLocal = new Date(selectedStartISO);
-const endLocal = new Date(startLocal.getTime() + selectedVariant.duration_minutes * 60000);
+const rescheduleDayKey = startLocal.toDateString();
+const rescheduleEffectiveMinutes = (metaByDay[rescheduleDayKey]?._soloEffectiveDurationMinutes != null && Number.isFinite(metaByDay[rescheduleDayKey]._soloEffectiveDurationMinutes))
+  ? metaByDay[rescheduleDayKey]._soloEffectiveDurationMinutes
+  : Number(selectedVariant.duration_minutes);
+const endLocal = new Date(startLocal.getTime() + rescheduleEffectiveMinutes * 60000);
 
 const response = await fetch("/api/submit-reschedule", {
   method: "POST",
@@ -2651,7 +2655,7 @@ if (manageToken) {
         // --- End Step 2 ---
 
         if (new Date(scheduled_end) <= new Date(scheduled_start)) throw new Error("Scheduled end must be after scheduled start");
-        // --- Step 2.5: enforce business hours (same-day, open/close); weekdays not gated (backend overrides can open weekends) ---
+        // --- Step 2.5: enforce business hours (same-day, close-time); weekdays not gated ---
 if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
   throw new Error(
     "Appointments are offered during available scheduling windows, and the selected service must fully complete by 6:00 PM."
@@ -3371,6 +3375,7 @@ for (let d = 0; d < 7; d++) {
     const dayParam = day.toISOString().slice(0, 10);
     const durationMinutes = Number(selectedVariant.duration_minutes);
     const serviceAddress = (elServiceAddress.value || "").trim();
+    const variantId = selectedVariant.id;
 
 if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
   exposedByDay[dayKey] = [];
@@ -3378,15 +3383,17 @@ if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
   continue;
 }
 
+const variantParam = variantId ? `&service_variant_id=${encodeURIComponent(variantId)}` : "";
 console.log("Availability request params", {
   day: dayParam,
   duration_minutes: durationMinutes,
-  service_address: serviceAddress
+  service_address: serviceAddress,
+  service_variant_id: variantId || "(none)"
 });
 console.log("Sending service address:", serviceAddress);
 
 const resp = await fetch(
-  `/api/get-availability?day=${dayParam}&duration_minutes=${durationMinutes}&service_address=${encodeURIComponent(serviceAddress)}`
+  `/api/get-availability?day=${dayParam}&duration_minutes=${durationMinutes}&service_address=${encodeURIComponent(serviceAddress)}${variantParam}`
 );
 const data = await resp.json();
 
@@ -3402,6 +3409,8 @@ if (requestVersion !== availabilityRequestVersion) {
 
 exposedByDay[dayKey] = (data.slots || []).map(s => new Date(s).getTime());
     metaByDay[dayKey] = data.meta || {};
+    if (data.solo_effective_duration_minutes != null) metaByDay[dayKey]._soloEffectiveDurationMinutes = data.solo_effective_duration_minutes;
+    if (data.solo_added_minutes != null) metaByDay[dayKey]._soloAddedMinutes = data.solo_added_minutes;
 } 
   
   catch (err) {
