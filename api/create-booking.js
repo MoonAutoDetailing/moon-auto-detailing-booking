@@ -5,6 +5,7 @@ import { rateLimit } from "./_rateLimit.js";
 import { checkAvailability } from "./_availability.js";
 import getTravelMinutes from "./_routing/getTravelMinutes.js";
 import { sendBookingCreatedEmailCore } from "../lib/email/sendBookingCreatedEmail.js";
+import { sendAdminNewBookingAlertEmailCore } from "../lib/email/sendAdminNewBookingAlertEmail.js";
 import { getEffectiveWindowEnd } from "./_subscriptions/lifecycle.js";
 import { getActiveDiscountCode, normalizeDiscountCode } from "./_discountCode.js";
 import { applyDiscountToPricing } from "../lib/discount.js";
@@ -449,7 +450,14 @@ export default async function handler(req, res) {
     try {
       await sendBookingCreatedEmailCore(booking.id);
     } catch (emailErr) {
-      console.error("[EMAIL] type=booking-created booking_id=" + booking.id + " error", emailErr);
+      console.error("[EMAIL] type=booking-created booking_id=" + booking.id + " status=failure", emailErr);
+    }
+
+    try {
+      await sendAdminNewBookingAlertEmailCore(booking.id);
+      console.log("[EMAIL] type=admin-new-booking-alert booking_id=" + booking.id + " status=success");
+    } catch (emailErr) {
+      console.error("[EMAIL] type=admin-new-booking-alert booking_id=" + booking.id + " status=failure", emailErr);
     }
 
     return res.status(200).json({

@@ -22,6 +22,10 @@
     {
       "path": "/api/cron-send-subscription-reminders",
       "schedule": "10 2 * * *"
+    },
+    {
+      "path": "/api/cron-send-booking-reminders",
+      "schedule": "0 * * * *"
     }
   ]
 }
