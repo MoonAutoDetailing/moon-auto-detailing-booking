@@ -2492,6 +2492,7 @@ function renderView(viewName) {
     let bookingCountByDate = {};
     let soloModeDates = {};
     let listPayload = null;
+    let multiSelectMode = false;
 
     const navRow = document.createElement("div");
     navRow.style.display = "flex";
@@ -2509,9 +2510,30 @@ function renderView(viewName) {
     const monthLabel = document.createElement("span");
     monthLabel.style.fontWeight = "700";
     monthLabel.style.minWidth = "160px";
+    const multiSelectBtn = document.createElement("button");
+    multiSelectBtn.type = "button";
+    multiSelectBtn.className = "moon-tab";
+    multiSelectBtn.textContent = "Multi-select";
+    multiSelectBtn.style.marginLeft = "8px";
+    function updateMultiSelectButton() {
+      if (multiSelectMode) {
+        multiSelectBtn.textContent = "Exit multi-select";
+        multiSelectBtn.style.background = "rgba(76,175,80,0.5)";
+        multiSelectBtn.style.borderColor = "rgba(76,175,80,0.8)";
+      } else {
+        multiSelectBtn.textContent = "Multi-select";
+        multiSelectBtn.style.background = "";
+        multiSelectBtn.style.borderColor = "";
+      }
+    }
+    multiSelectBtn.onclick = () => {
+      multiSelectMode = !multiSelectMode;
+      updateMultiSelectButton();
+    };
     navRow.appendChild(prevBtn);
     navRow.appendChild(monthLabel);
     navRow.appendChild(nextBtn);
+    navRow.appendChild(multiSelectBtn);
     wrapper.appendChild(navRow);
 
     const bulkRow = document.createElement("div");
@@ -2638,7 +2660,7 @@ function renderView(viewName) {
       const last = new Date(Date.UTC(currentYear, currentMonth, 0));
       const startPad = first.getUTCDay();
       const daysInMonth = last.getUTCDate();
-      monthLabel.textContent = first.toLocaleString("default", { month: "long", year: "numeric" });
+      monthLabel.textContent = new Date(currentYear, currentMonth - 1, 1).toLocaleString("default", { month: "long", year: "numeric" });
 
       gridEl.innerHTML = "";
       ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].forEach(day => {
@@ -2717,7 +2739,8 @@ function renderView(viewName) {
           cell.style.outline = "2px solid rgba(255,255,255,0.5)";
         }
         cell.onclick = (e) => {
-          if (e.ctrlKey || e.metaKey) {
+          const isMultiSelectAction = multiSelectMode || e.ctrlKey || e.metaKey;
+          if (isMultiSelectAction) {
             if (selectedDates.has(dayStr)) selectedDates.delete(dayStr);
             else selectedDates.add(dayStr);
             selectedDate = selectedDates.has(dayStr) ? dayStr : (selectedDates.size > 0 ? Array.from(selectedDates)[0] : null);
