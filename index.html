@@ -1231,6 +1231,223 @@ label[for="end"] {
   word-wrap: break-word;
 }
 
+body.help-modal-open {
+  overflow: hidden;
+}
+.label-with-help {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.help-button {
+  width: 26px;
+  min-width: 26px;
+  height: 26px;
+  min-height: 26px;
+  padding: 0;
+  border: 1px solid rgba(127, 184, 230, 0.8);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #2f80bd;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 4px 10px rgba(127, 184, 230, 0.25);
+}
+.help-button:hover,
+.help-button:focus {
+  background: #7fb8e6;
+  color: #ffffff;
+  outline: none;
+}
+.address-callout,
+.address-selection-warning {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  text-align: left;
+}
+.address-callout {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+}
+.address-selection-warning {
+  display: none;
+  margin-top: 8px;
+  margin-bottom: 0;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #991b1b;
+}
+.help-modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.68);
+  box-sizing: border-box;
+}
+.help-modal-overlay.is-open {
+  display: flex;
+}
+.help-modal-content {
+  width: 100%;
+  max-width: 680px;
+  min-width: 0;
+  max-height: 90vh;
+  max-height: calc(100dvh - 40px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid rgba(127, 184, 230, 0.35);
+  border-radius: 22px;
+  background: rgba(12, 18, 32, 0.96);
+  color: #ffffff;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+}
+.help-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  flex-shrink: 0;
+}
+.help-modal-title {
+  margin: 0;
+  color: #7fb8e6;
+  font-size: 20px;
+  text-align: left;
+  min-width: 0;
+}
+.help-modal-close {
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-size: 22px;
+  line-height: 1;
+}
+.help-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 18px 22px 22px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+.help-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.help-card {
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+}
+.help-card h4 {
+  margin: 0 0 8px;
+  color: #ffffff;
+  font-size: 15px;
+}
+.help-card p {
+  margin: 0 0 8px;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.help-card p:last-child {
+  margin-bottom: 0;
+}
+.help-note {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(127, 184, 230, 0.14);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 13px;
+  line-height: 1.45;
+}
+@media (max-width: 640px) {
+  .label-with-help {
+    gap: 6px;
+    line-height: 1.25;
+  }
+  .help-button {
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    min-height: 38px;
+    font-size: 16px;
+  }
+  .address-callout,
+  .address-selection-warning {
+    padding: 11px 12px;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  .help-modal-overlay {
+    align-items: flex-start;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  }
+  .help-modal-content {
+    max-height: calc(100vh - 24px);
+    max-height: calc(100dvh - 24px);
+    border-radius: 18px;
+  }
+  .help-modal-title {
+    font-size: 18px;
+  }
+  .help-modal-close {
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    min-height: 42px;
+    font-size: 24px;
+  }
+  .help-card-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .help-modal-header,
+  .help-modal-body {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .help-modal-header {
+    padding-top: 14px;
+    padding-bottom: 10px;
+  }
+  .help-card {
+    padding: 12px;
+  }
+  .help-card h4 {
+    font-size: 14px;
+  }
+  .help-card p,
+  .help-note {
+    font-size: 12px;
+  }
+}
+
   </style>                              <!--PAGE UI DESIGN END-->
 
   
@@ -1285,7 +1502,10 @@ label[for="end"] {
     <div class="step-panel">
     <div class="row row--three-cols">
     <div>
-        <label for="vehicleSize">Vehicle size</label> <!--Vehicle size-->
+        <label for="vehicleSize" class="label-with-help">
+          <span>Vehicle size</span>
+          <button type="button" class="help-button" data-help-topic="vehicle-size" aria-label="Vehicle size help">?</button>
+        </label> <!--Vehicle size-->
         <select id="vehicleSize" required>
           <option value="">Select size…</option>
           <option value="compact">compact</option>
@@ -1300,7 +1520,10 @@ label[for="end"] {
         </select>
       </div>
       <div>
-        <label for="serviceVariant">Service</label> <!--Select-service-->
+        <label for="serviceVariant" class="label-with-help">
+          <span>Service</span>
+          <button type="button" class="help-button" data-help-topic="service-package" aria-label="Service and package help">?</button>
+        </label> <!--Select-service-->
         <select id="serviceVariant" required disabled>
           <option value="">Select vehicle size first…</option>
         </select>
@@ -1369,7 +1592,11 @@ View Maintenance Plans </a>
     <div class="step-panel step-panel--address">
     <div class="row full">
       <div>
-        <label for="serviceAddress">Address where the detail will be completed</label>
+        <p class="address-callout"><strong>Important:</strong> Do not use your phone or browser autofill for this field. Start typing your service address and select the matching address from the dropdown so travel time and availability can calculate correctly.</p>
+        <label for="serviceAddress" class="label-with-help">
+          <span>Address where the detail will be completed</span>
+          <button type="button" class="help-button" data-help-topic="service-address" aria-label="Service address help">?</button>
+        </label>
         <input
           id="serviceAddress"
           type="text"
@@ -1385,6 +1612,7 @@ View Maintenance Plans </a>
           required
         />
         <p class="muted" style="margin-top:6px; margin-bottom:0; font-size:13px; line-height:1.4;">Please type your address and select it from the Google dropdown. Do not use your device's autofill suggestion for this field.</p>
+        <p id="serviceAddressSelectionWarning" class="address-selection-warning">Please select your service address from the Google dropdown before viewing availability or submitting.</p>
         <p id="serviceAddressReselectHelper" class="muted" style="display:none; margin-top:8px; font-size:13px;">Need a different location? Edit the address and select a new one from the dropdown.</p>
       </div>
     </div>
@@ -1501,6 +1729,16 @@ View Maintenance Plans </a>
       </div>
     </div>
   </div>
+
+  <div id="helpModalOverlay" class="help-modal-overlay" aria-hidden="true">
+    <div class="help-modal-content" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+      <div class="help-modal-header">
+        <h3 id="helpModalTitle" class="help-modal-title">Help</h3>
+        <button type="button" id="helpModalClose" class="help-modal-close" aria-label="Close help">×</button>
+      </div>
+      <div id="helpModalBody" class="help-modal-body"></div>
+    </div>
+  </div>
     
   </div> <!-- page-wrap -->
 
@@ -1578,6 +1816,11 @@ const MIN_BOOKABLE_GAP_MINUTES = 120; // anti-fragment rule (2 hours)
     const elSoloModeNotice = document.getElementById("soloModeNotice");
     const elServiceAddress = document.getElementById("serviceAddress");
     const elCustomerNotes = document.getElementById("customerNotes");
+    const elServiceAddressSelectionWarning = document.getElementById("serviceAddressSelectionWarning");
+    const elHelpOverlay = document.getElementById("helpModalOverlay");
+    const elHelpTitle = document.getElementById("helpModalTitle");
+    const elHelpBody = document.getElementById("helpModalBody");
+    const elHelpClose = document.getElementById("helpModalClose");
 
     // Hard-lock end time input (defensive)
 elEnd.addEventListener("keydown", (e) => e.preventDefault());
@@ -1615,6 +1858,7 @@ let selectedStartISO = null;
     let metaByDay = {};
     let hasValidServiceAddress = false; // true only after user selects a Google Places result for service address
     let lastValidServiceAddress = ""; // stored when we set address from place_changed; used to detect manual edit
+    let lastFocusedHelpButton = null;
 
                                                                             //SWITCH CHANGES THIS DEBUG
     function log(message, obj) {
@@ -1651,6 +1895,166 @@ let selectedStartISO = null;
       elStatus.className = type === "ok" ? "ok" : type === "bad" ? "bad" : "muted";
       elStatus.textContent = text;
     }
+
+    function serviceHelpIncludesPaintCorrection() {
+      return variantsCache.some(v => {
+        const cat = String(v?.service?.category || "").toLowerCase();
+        return cat.includes("paint correction");
+      });
+    }
+
+    function getHelpContent(topic) {
+      if (topic === "vehicle-size") {
+        return {
+          title: "Vehicle Size Guide",
+          body: `
+            <div class="help-card-grid">
+              <div class="help-card">
+                <h4>Compact / Small</h4>
+                <p>Compact cars, smaller sedans, coupes, and smaller hatchbacks.</p>
+                <p><strong>Examples:</strong> Honda Civic, Toyota Corolla, Mazda3, Hyundai Elantra, Volkswagen Jetta.</p>
+              </div>
+              <div class="help-card">
+                <h4>Midsized</h4>
+                <p>Midsize sedans, small SUVs, and crossovers.</p>
+                <p><strong>Examples:</strong> Honda CR-V, Toyota RAV4, Nissan Rogue, Subaru Outback, Chevy Traverse.</p>
+              </div>
+              <div class="help-card">
+                <h4>Oversized / Large</h4>
+                <p>Full-size SUVs, trucks, vans, and third-row vehicles.</p>
+                <p><strong>Examples:</strong> Chevy Tahoe, Ford Expedition, GMC Sierra, Ram 1500, Honda Odyssey, Toyota Sequoia.</p>
+              </div>
+            </div>
+            <p class="help-note">If the wrong size is selected, pricing or appointment details may need to be adjusted before confirmation.</p>
+          `
+        };
+      }
+
+      if (topic === "service-package") {
+        const paintCard = serviceHelpIncludesPaintCorrection()
+          ? `
+              <div class="help-card">
+                <h4>Paint Correction</h4>
+                <p>For improving paint clarity by machine polishing swirl marks, haze, and light defects. This is more specialized than a standard wash or detail.</p>
+              </div>
+            `
+          : "";
+        return {
+          title: "Service / Package Guide",
+          body: `
+            <div class="help-card-grid">
+              <div class="help-card">
+                <h4>Interior Level 1</h4>
+                <p>Normal interior cleanup: trash removal, surface cleaning, windows, vacuuming, door jamb cleaning, spot cleaning, and steam cleaning.</p>
+              </div>
+              <div class="help-card">
+                <h4>Interior Level 2</h4>
+                <p>Heavier interior cleaning. Includes Level 1 items plus carpet shampoo, carpet extraction, seat shampoo, and seat extraction.</p>
+              </div>
+              <div class="help-card">
+                <h4>Exterior Level 1</h4>
+                <p>Regular exterior maintenance: pre-wash, hand wash, wheels, tire shine, exterior plastic shine, and wax.</p>
+              </div>
+              <div class="help-card">
+                <h4>Exterior Level 2</h4>
+                <p>Deeper exterior cleaning and protection. Includes wash items plus clay bar, iron removal, hand wax, undercarriage cleaning, and engine bay cleaning.</p>
+              </div>
+              <div class="help-card">
+                <h4>Full Detail / Combined Level 1</h4>
+                <p>Level 1 Interior + Level 1 Exterior. Best for a complete detail when the vehicle needs a solid reset.</p>
+              </div>
+              <div class="help-card">
+                <h4>Full Detail / Combined Level 2</h4>
+                <p>Level 2 Interior + Level 2 Exterior. Best for heavier jobs needing a more complete overhaul.</p>
+              </div>
+              ${paintCard}
+            </div>
+          `
+        };
+      }
+
+      if (topic === "service-address") {
+        return {
+          title: "Service Address Help",
+          body: `
+            <div class="help-card-grid">
+              <div class="help-card">
+                <h4>What address should I enter?</h4>
+                <p>This is the location where the detail will be performed.</p>
+              </div>
+              <div class="help-card">
+                <h4>Why it matters</h4>
+                <p>The booking system uses this address to calculate travel time and availability.</p>
+              </div>
+              <div class="help-card">
+                <h4>How to enter it</h4>
+                <p>Start typing your service address, then select the matching address from the dropdown.</p>
+              </div>
+              <div class="help-card">
+                <h4>Avoid autofill</h4>
+                <p>Autofill or incomplete manual addresses can prevent accurate availability.</p>
+              </div>
+            </div>
+          `
+        };
+      }
+
+      return null;
+    }
+
+    function openHelpModal(topic, triggerButton) {
+      const content = getHelpContent(topic);
+      if (!content || !elHelpOverlay || !elHelpTitle || !elHelpBody) return;
+      lastFocusedHelpButton = triggerButton || null;
+      elHelpTitle.textContent = content.title;
+      elHelpBody.innerHTML = content.body;
+      elHelpOverlay.classList.add("is-open");
+      elHelpOverlay.setAttribute("aria-hidden", "false");
+      document.body.classList.add("help-modal-open");
+      if (elHelpClose) elHelpClose.focus();
+    }
+
+    function closeHelpModal() {
+      if (!elHelpOverlay) return;
+      elHelpOverlay.classList.remove("is-open");
+      elHelpOverlay.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("help-modal-open");
+      if (elHelpBody) elHelpBody.innerHTML = "";
+      if (lastFocusedHelpButton) lastFocusedHelpButton.focus();
+      lastFocusedHelpButton = null;
+    }
+
+    function showServiceAddressSelectionWarning(message) {
+      if (elServiceAddressSelectionWarning) {
+        elServiceAddressSelectionWarning.textContent = message;
+        elServiceAddressSelectionWarning.style.display = "block";
+        elServiceAddressSelectionWarning.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+      setStatus("bad", message);
+      const isTouchDevice = window.matchMedia?.("(pointer: coarse)")?.matches;
+      if (elServiceAddress && !isTouchDevice) elServiceAddress.focus();
+    }
+
+    function hideServiceAddressSelectionWarning() {
+      if (elServiceAddressSelectionWarning) {
+        elServiceAddressSelectionWarning.style.display = "none";
+      }
+    }
+
+    document.querySelectorAll("[data-help-topic]").forEach(btn => {
+      btn.addEventListener("click", () => openHelpModal(btn.dataset.helpTopic, btn));
+    });
+    if (elHelpClose) elHelpClose.addEventListener("click", closeHelpModal);
+    if (elHelpOverlay) {
+      elHelpOverlay.addEventListener("click", (event) => {
+        if (event.target === elHelpOverlay) closeHelpModal();
+      });
+    }
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && elHelpOverlay?.classList.contains("is-open")) {
+        closeHelpModal();
+      }
+    });
 
     function normalizeVehicleSize(v) {
       return (v || "").trim().toLowerCase();
@@ -2681,6 +3085,11 @@ if (manageToken) {
         const phone = (elPhone.value || "").trim() || null;
 
         const service_address = requireNonEmpty("Service address", elServiceAddress.value);
+        if (elServiceAddress && service_address && !hasValidServiceAddress) {
+          const msg = "Please select your service address from the Google dropdown so travel time and availability can calculate correctly.";
+          showServiceAddressSelectionWarning(msg);
+          throw new Error(msg);
+        }
 
         // --- Step 2: derive start/end from selected calendar slot only (no editable input) ---
         if (!selectedStartISO) {
@@ -3194,6 +3603,7 @@ function initAddressAutocomplete() {
           lastValidServiceAddress = (inputEl.value || "").trim();
           clearAppliedDiscount();
           hasValidServiceAddress = true;
+          hideServiceAddressSelectionWarning();
           setServiceAddressReselectHelperVisible(true);
           loadCalendar();
         }
@@ -3219,6 +3629,7 @@ function initAddressAutocomplete() {
         lastValidServiceAddress = fullAddress;
         clearAppliedDiscount();
         hasValidServiceAddress = true;
+        hideServiceAddressSelectionWarning();
         setServiceAddressReselectHelperVisible(true);
         loadCalendar();
       }
@@ -3242,6 +3653,7 @@ function initAddressAutocomplete() {
       if (current === (lastValidServiceAddress || "").trim()) return;
       hasValidServiceAddress = false;
       lastValidServiceAddress = "";
+      hideServiceAddressSelectionWarning();
       setServiceAddressReselectHelperVisible(false);
       selectedStartISO = null;
       recalcEndTimePreview();
@@ -3254,6 +3666,7 @@ function initAddressAutocomplete() {
       if (current === (lastValidServiceAddress || "").trim()) return;
       hasValidServiceAddress = false;
       lastValidServiceAddress = "";
+      hideServiceAddressSelectionWarning();
       setServiceAddressReselectHelperVisible(false);
       selectedStartISO = null;
       recalcEndTimePreview();
@@ -3754,6 +4167,10 @@ const calContainer = document.getElementById("calendarContainer");
 if (toggleBtn && calContainer) {
   toggleBtn.addEventListener("click", () => {
     const isOpen = calContainer.style.display === "block";
+    if (!isOpen && elServiceAddress && (elServiceAddress.value || "").trim() && !hasValidServiceAddress) {
+      showServiceAddressSelectionWarning("Please select your service address from the Google dropdown before viewing availability.");
+      return;
+    }
     calContainer.style.display = isOpen ? "none" : "block";
     toggleBtn.textContent = isOpen
       ? "View availability calendar"
