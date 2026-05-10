@@ -1234,6 +1234,9 @@ label[for="end"] {
 body.help-modal-open {
   overflow: hidden;
 }
+[hidden] {
+  display: none !important;
+}
 .label-with-help {
   display: flex;
   align-items: center;
@@ -1278,7 +1281,6 @@ body.help-modal-open {
   color: #9a3412;
 }
 .address-selection-warning {
-  display: none;
   margin-top: 8px;
   margin-bottom: 0;
   background: #fef2f2;
@@ -1612,7 +1614,7 @@ View Maintenance Plans </a>
           required
         />
         <p class="muted" style="margin-top:6px; margin-bottom:0; font-size:13px; line-height:1.4;">Please type your address and select it from the Google dropdown. Do not use your device's autofill suggestion for this field.</p>
-        <p id="serviceAddressSelectionWarning" class="address-selection-warning">Please select your service address from the Google dropdown before viewing availability or submitting.</p>
+        <p id="serviceAddressSelectionWarning" class="address-selection-warning" hidden aria-hidden="true">Please select your service address from the Google dropdown before viewing availability or submitting.</p>
         <p id="serviceAddressReselectHelper" class="muted" style="display:none; margin-top:8px; font-size:13px;">Need a different location? Edit the address and select a new one from the dropdown.</p>
       </div>
     </div>
@@ -2027,7 +2029,8 @@ let selectedStartISO = null;
     function showServiceAddressSelectionWarning(message) {
       if (elServiceAddressSelectionWarning) {
         elServiceAddressSelectionWarning.textContent = message;
-        elServiceAddressSelectionWarning.style.display = "block";
+        elServiceAddressSelectionWarning.hidden = false;
+        elServiceAddressSelectionWarning.setAttribute("aria-hidden", "false");
         elServiceAddressSelectionWarning.scrollIntoView({ behavior: "smooth", block: "center" });
       }
       setStatus("bad", message);
@@ -2037,7 +2040,12 @@ let selectedStartISO = null;
 
     function hideServiceAddressSelectionWarning() {
       if (elServiceAddressSelectionWarning) {
-        elServiceAddressSelectionWarning.style.display = "none";
+        elServiceAddressSelectionWarning.hidden = true;
+        elServiceAddressSelectionWarning.setAttribute("aria-hidden", "true");
+      }
+      const statusText = (elStatus.textContent || "").toLowerCase();
+      if (statusText.includes("service address") || statusText.includes("google dropdown")) {
+        setStatus("muted", "");
       }
     }
 
@@ -3648,29 +3656,51 @@ function initAddressAutocomplete() {
     attachAutocomplete(serviceAddress);
     // Invalidate when user manually edits service address after a valid selection (slot/start/end/discount cleared; availability reloads only after new Places selection)
     serviceAddress.addEventListener("input", () => {
-      if (!hasValidServiceAddress) return;
       const current = (serviceAddress.value || "").trim();
+      if (!current) {
+        hasValidServiceAddress = false;
+        lastValidServiceAddress = "";
+        hideServiceAddressSelectionWarning();
+        setServiceAddressReselectHelperVisible(false);
+        selectedStartISO = null;
+        recalcEndTimePreview();
+        clearAppliedDiscount();
+        loadCalendar();
+        return;
+      }
+      if (!hasValidServiceAddress) return;
       if (current === (lastValidServiceAddress || "").trim()) return;
       hasValidServiceAddress = false;
       lastValidServiceAddress = "";
-      hideServiceAddressSelectionWarning();
       setServiceAddressReselectHelperVisible(false);
       selectedStartISO = null;
       recalcEndTimePreview();
       clearAppliedDiscount();
+      showServiceAddressSelectionWarning("Please select the updated service address from the Google dropdown before viewing availability.");
       loadCalendar();
     });
     serviceAddress.addEventListener("change", () => {
-      if (!hasValidServiceAddress) return;
       const current = (serviceAddress.value || "").trim();
+      if (!current) {
+        hasValidServiceAddress = false;
+        lastValidServiceAddress = "";
+        hideServiceAddressSelectionWarning();
+        setServiceAddressReselectHelperVisible(false);
+        selectedStartISO = null;
+        recalcEndTimePreview();
+        clearAppliedDiscount();
+        loadCalendar();
+        return;
+      }
+      if (!hasValidServiceAddress) return;
       if (current === (lastValidServiceAddress || "").trim()) return;
       hasValidServiceAddress = false;
       lastValidServiceAddress = "";
-      hideServiceAddressSelectionWarning();
       setServiceAddressReselectHelperVisible(false);
       selectedStartISO = null;
       recalcEndTimePreview();
       clearAppliedDiscount();
+      showServiceAddressSelectionWarning("Please select the updated service address from the Google dropdown before viewing availability.");
       loadCalendar();
     });
   }
