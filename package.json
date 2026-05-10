@@ -3,7 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "smoke": "node scripts/smoke-tests.js"
+    "smoke": "node scripts/smoke-tests.js",
+    "smoke:admin-booking": "node scripts/smoke-test-admin-create-booking.js",
+    "smoke:customer-24hr": "node scripts/smoke-test-customer-24hr-booking-rules.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.95.3",
