@@ -343,6 +343,142 @@ cursor: pointer;
   display: none;
 }
 
+/* Admin Book Customer */
+.admin-book-view {
+  max-width: 860px;
+  margin: 0 auto 40px;
+  color: white;
+}
+.admin-book-title {
+  margin: 0 0 14px;
+  color: var(--moon-primary);
+  text-align: center;
+}
+.admin-book-card {
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 14px;
+  background: rgba(111,147,196,0.14);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+}
+.admin-book-card h3 {
+  margin: 0 0 12px;
+  color: #cfe1f7;
+}
+.admin-book-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.admin-book-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.admin-book-field label,
+.admin-book-check {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.88);
+}
+.admin-book-field input,
+.admin-book-field select,
+.admin-book-field textarea {
+  width: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: white;
+  font: inherit;
+}
+.admin-book-field textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+.admin-book-field input::placeholder,
+.admin-book-field textarea::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+.admin-book-actions,
+.admin-book-options,
+.admin-book-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.admin-book-option {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 12px;
+  padding: 11px 12px;
+  background: rgba(255,255,255,0.07);
+  color: white;
+  cursor: pointer;
+}
+.admin-book-option:hover,
+.admin-book-option.selected {
+  border-color: var(--moon-primary);
+  background: rgba(111,147,196,0.32);
+}
+.admin-book-option strong {
+  display: block;
+  margin-bottom: 3px;
+}
+.admin-book-muted {
+  color: rgba(255,255,255,0.7);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.admin-book-summary {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.22);
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.admin-book-slot {
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  color: white;
+  padding: 9px 13px;
+  cursor: pointer;
+}
+.admin-book-slot.selected {
+  background: var(--moon-primary);
+  border-color: var(--moon-primary);
+}
+.admin-book-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.admin-book-check input {
+  width: auto;
+}
+@media (max-width: 720px) {
+  .admin-book-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-book-card {
+    padding: 14px;
+  }
+  .admin-book-actions .moon-tab,
+  .admin-book-actions button {
+    width: 100%;
+    margin-right: 0;
+  }
+}
+
 /* Toggle Debug only in menu, not as floating button */
 .admin-debug-toggle {
   display: none !important;
@@ -397,6 +533,119 @@ cursor: pointer;
 
 #loginPassword::placeholder {
   color: rgba(255,255,255,0.6);
+}
+
+/* ========== Payment & Expense modals ========== */
+#paymentModalOverlay, #expenseModalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 99998;
+  padding: 16px;
+}
+#paymentModalOverlay.open, #expenseModalOverlay.open { display: flex; }
+.payment-modal-card, .expense-modal-card {
+  width: 100%;
+  max-width: 460px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 24px;
+  border-radius: 18px;
+  background: rgba(20,28,42,0.96);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  color: #fff;
+}
+.payment-modal-card h3, .expense-modal-card h3 {
+  margin: 0 0 4px 0;
+  color: var(--moon-primary);
+  font-size: 20px;
+}
+.payment-modal-card .pmt-summary {
+  font-size: 13px;
+  color: rgba(255,255,255,0.75);
+  margin-bottom: 16px;
+  line-height: 1.4;
+}
+.payment-modal-card label, .expense-modal-card label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.85);
+  margin: 12px 0 6px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.payment-modal-card label.required::after,
+.expense-modal-card label.required::after {
+  content: " *";
+  color: #ff8a8a;
+}
+.payment-modal-card input,
+.payment-modal-card select,
+.payment-modal-card textarea,
+.expense-modal-card input,
+.expense-modal-card select,
+.expense-modal-card textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: white;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+.payment-modal-card textarea, .expense-modal-card textarea {
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
+}
+.payment-modal-card .pmt-row, .expense-modal-card .exp-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.payment-modal-card .pmt-actions, .expense-modal-card .exp-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+.payment-modal-card .pmt-actions button,
+.expense-modal-card .exp-actions button {
+  flex: 1;
+  padding: 11px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 14px;
+}
+.payment-modal-card .pmt-actions .confirm,
+.expense-modal-card .exp-actions .confirm { background: var(--moon-primary); color: white; }
+.payment-modal-card .pmt-actions .cancel,
+.expense-modal-card .exp-actions .cancel { background: rgba(255,255,255,0.12); color: white; }
+.payment-modal-card .pmt-actions button:disabled,
+.expense-modal-card .exp-actions button:disabled { opacity: 0.5; cursor: not-allowed; }
+.payment-modal-card .pmt-error, .expense-modal-card .exp-error {
+  color: #ff8a8a;
+  font-size: 13px;
+  margin-top: 10px;
+  display: none;
+}
+.payment-modal-card .pmt-error.show, .expense-modal-card .exp-error.show { display: block; }
+.payment-modal-card .discount-info {
+  background: rgba(255,255,255,0.06);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  margin: 8px 0 4px 0;
+  color: rgba(255,255,255,0.8);
 }
 
 #loginButton {
@@ -834,6 +1083,96 @@ style="
   <div id="viewContainer"></div>
 </div>
 
+<div id="paymentModalOverlay" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
+  <div class="payment-modal-card">
+    <h3 id="paymentModalTitle">Record Payment</h3>
+    <div class="pmt-summary" id="paymentModalSummary"></div>
+    <div class="discount-info" id="paymentModalDiscountInfo" style="display:none;"></div>
+
+    <label class="required" for="pmtAmountCollected">Amount Collected</label>
+    <input id="pmtAmountCollected" type="number" step="0.01" min="0" inputmode="decimal" />
+
+    <div class="pmt-row">
+      <div>
+        <label for="pmtTipAmount">Tip</label>
+        <input id="pmtTipAmount" type="number" step="0.01" min="0" inputmode="decimal" value="0" />
+      </div>
+      <div>
+        <label class="required" for="pmtMethod">Payment Method</label>
+        <select id="pmtMethod">
+          <option value="">— select —</option>
+          <option value="Cash">Cash</option>
+          <option value="PayPal">PayPal</option>
+          <option value="Venmo">Venmo</option>
+          <option value="Check">Check</option>
+        </select>
+      </div>
+    </div>
+
+    <label for="pmtNotes">Notes</label>
+    <textarea id="pmtNotes" placeholder="Optional"></textarea>
+
+    <div class="pmt-error" id="pmtError"></div>
+
+    <div class="pmt-actions">
+      <button type="button" class="cancel" id="pmtCancelBtn">Cancel</button>
+      <button type="button" class="confirm" id="pmtConfirmBtn">Confirm &amp; Complete</button>
+    </div>
+  </div>
+</div>
+
+<div id="expenseModalOverlay" role="dialog" aria-modal="true" aria-labelledby="expenseModalTitle">
+  <div class="expense-modal-card">
+    <h3 id="expenseModalTitle">Record Expense</h3>
+
+    <div class="exp-row">
+      <div>
+        <label class="required" for="expDate">Date</label>
+        <input id="expDate" type="date" />
+      </div>
+      <div>
+        <label class="required" for="expAmount">Amount</label>
+        <input id="expAmount" type="number" step="0.01" min="0" inputmode="decimal" />
+      </div>
+    </div>
+
+    <label class="required" for="expVendor">Vendor</label>
+    <input id="expVendor" type="text" placeholder="e.g. Costco, Shell, Chemical Guys" />
+
+    <div class="exp-row">
+      <div>
+        <label class="required" for="expCategory">Category</label>
+        <select id="expCategory"></select>
+      </div>
+      <div>
+        <label class="required" for="expType">Expense Type</label>
+        <select id="expType"></select>
+      </div>
+    </div>
+
+    <label class="required" for="expPaymentMethod">Payment Method</label>
+    <select id="expPaymentMethod"></select>
+
+    <label for="expDescription">Description</label>
+    <input id="expDescription" type="text" placeholder="Optional" />
+
+    <label for="expNotes">Notes</label>
+    <textarea id="expNotes" placeholder="Optional"></textarea>
+
+    <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-weight:500;">
+      <input id="expReceiptSaved" type="checkbox" style="width:auto;" />
+      <span>Receipt saved</span>
+    </label>
+
+    <div class="exp-error" id="expError"></div>
+
+    <div class="exp-actions">
+      <button type="button" class="cancel" id="expCancelBtn">Cancel</button>
+      <button type="button" class="confirm" id="expConfirmBtn">Save Expense</button>
+    </div>
+  </div>
+</div>
+
 <button id="debugToggle" class="admin-debug-toggle" style="
   position: fixed;
   top: 20px;
@@ -1224,6 +1563,119 @@ function setBookingButtonsDisabled(card, disabled) {
 }
 
 
+/* ===================== PAYMENT MODAL ===================== */
+function showPaymentModal(b, opts) {
+  const overlay = document.getElementById("paymentModalOverlay");
+  const summary = document.getElementById("paymentModalSummary");
+  const discountInfo = document.getElementById("paymentModalDiscountInfo");
+  const amountInput = document.getElementById("pmtAmountCollected");
+  const tipInput = document.getElementById("pmtTipAmount");
+  const methodSelect = document.getElementById("pmtMethod");
+  const notesInput = document.getElementById("pmtNotes");
+  const errorEl = document.getElementById("pmtError");
+  const cancelBtn = document.getElementById("pmtCancelBtn");
+  const confirmBtn = document.getElementById("pmtConfirmBtn");
+
+  if (!overlay) return;
+
+  const customerName = b.customers?.full_name || "Customer";
+  const cat = b.service_variants?.services?.category || "";
+  const lvl = b.service_variants?.services?.level || "";
+  const expectedTotal = Number(b.total_price) || 0;
+  const dateStr = b.scheduled_start ? new Date(b.scheduled_start).toLocaleDateString() : "";
+
+  summary.textContent = `${customerName} — ${[cat, lvl].filter(Boolean).join(" ")} — ${dateStr} — Expected: $${expectedTotal.toFixed(2)}`;
+
+  if (b.discount_code) {
+    const dPct = b.discount_percent != null ? `${b.discount_percent}% off` : "";
+    const dAmt = b.discount_amount != null ? `−$${Number(b.discount_amount).toFixed(2)}` : "";
+    discountInfo.textContent = `Discount applied: ${b.discount_code} ${dPct} ${dAmt}`.trim();
+    discountInfo.style.display = "block";
+  } else {
+    discountInfo.textContent = "";
+    discountInfo.style.display = "none";
+  }
+
+  amountInput.value = expectedTotal > 0 ? expectedTotal.toFixed(2) : "";
+  tipInput.value = "0";
+  methodSelect.value = "";
+  notesInput.value = "";
+  errorEl.textContent = "";
+  errorEl.classList.remove("show");
+  confirmBtn.disabled = false;
+  cancelBtn.disabled = false;
+
+  overlay.classList.add("open");
+  setTimeout(() => amountInput.focus(), 50);
+
+  function closeModal() {
+    overlay.classList.remove("open");
+    confirmBtn.onclick = null;
+    cancelBtn.onclick = null;
+    if (opts && typeof opts.onClose === "function") opts.onClose();
+  }
+
+  cancelBtn.onclick = () => closeModal();
+
+  confirmBtn.onclick = async () => {
+    errorEl.textContent = "";
+    errorEl.classList.remove("show");
+
+    const amount = Number(amountInput.value);
+    const tip = Number(tipInput.value || 0);
+    const method = methodSelect.value;
+    const notes = notesInput.value.trim();
+
+    if (!Number.isFinite(amount) || amount < 0) {
+      errorEl.textContent = "Amount Collected must be a non-negative number.";
+      errorEl.classList.add("show");
+      return;
+    }
+    if (!Number.isFinite(tip) || tip < 0) {
+      errorEl.textContent = "Tip must be a non-negative number.";
+      errorEl.classList.add("show");
+      return;
+    }
+    if (!method) {
+      errorEl.textContent = "Please select a payment method.";
+      errorEl.classList.add("show");
+      return;
+    }
+
+    confirmBtn.disabled = true;
+    cancelBtn.disabled = true;
+    confirmBtn.textContent = "Saving...";
+
+    const payload = {
+      amount_collected: Math.round(amount * 100) / 100,
+      tip_amount: Math.round(tip * 100) / 100,
+      payment_method: method
+    };
+    if (notes) payload.payment_notes = notes;
+
+    let result = { ok: false };
+    try {
+      result = (opts && typeof opts.onSubmit === "function")
+        ? await opts.onSubmit(payload)
+        : { ok: false, message: "No submit handler." };
+    } catch (e) {
+      result = { ok: false, message: e.message || "Submit failed." };
+    }
+
+    confirmBtn.textContent = "Confirm & Complete";
+
+    if (result && result.ok) {
+      closeModal();
+    } else {
+      errorEl.textContent = (result && result.message) || "Something went wrong. Try again.";
+      errorEl.classList.add("show");
+      confirmBtn.disabled = false;
+      cancelBtn.disabled = false;
+    }
+  };
+}
+
+
 /* ===================== FORMAT HELPERS ===================== */
 function isValidDate(d) {
   return d instanceof Date && !isNaN(d.getTime());
@@ -1595,14 +2047,19 @@ if (b.google_event_id) {
         .update({ status: "reschedule_requested" })
         .eq("id", b.id);
 
-         await adminFetch("/api/send-reschedule-link-email", {
+      if (error) throw error;
+
+      const emailRes = await adminFetch("/api/send-reschedule-link-email", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ bookingId: b.id })
 });
 
+      const emailData = await emailRes.json().catch(() => ({}));
 
-      if (error) throw error;
+      if (!emailRes.ok || emailData.ok === false) {
+        throw new Error(emailData.error || emailData.message || "Reschedule email failed");
+      }
 
       showAdminBanner("Reschedule requested.", "success");
       await loadAdminData();
@@ -1620,26 +2077,34 @@ if (b.google_event_id) {
   completeBtn.textContent = "Job Completed";
   completeBtn.className = "confirm";
   completeBtn.onclick = async () => {
-
     if (!lockBookingAction(b.id, "complete")) return;
     setBookingButtonsDisabled(card, true);
 
-    try {
-      await adminFetch("/api/admin-complete-booking", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ bookingId: b.id })
-});
-
-      showAdminBanner("Job marked completed.", "success");
-      await loadAdminData();
-    } catch (err) {
-      showAdminBanner("Complete failed.", "error");
-      hardLog(`COMPLETE ERROR ${err.message}`);
-    } finally {
-      unlockBookingAction(b.id, "complete");
-      setBookingButtonsDisabled(card, false);
-    }
+    showPaymentModal(b, {
+      onSubmit: async (payload) => {
+        try {
+          const resp = await adminFetch("/api/admin-complete-booking", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ bookingId: b.id, ...payload })
+          });
+          const data = await resp.json().catch(() => ({}));
+          if (!resp.ok) {
+            throw new Error(data.error || "Complete failed");
+          }
+          showAdminBanner("Job marked completed.", "success");
+          await loadAdminData();
+          return { ok: true };
+        } catch (err) {
+          hardLog(`COMPLETE ERROR ${err.message}`);
+          return { ok: false, message: err.message || "Complete failed." };
+        }
+      },
+      onClose: () => {
+        unlockBookingAction(b.id, "complete");
+        setBookingButtonsDisabled(card, false);
+      }
+    });
   };
 
   const cancelBtn = document.createElement("button");
@@ -1740,7 +2205,7 @@ function renderButtons() {
   viewButtons.innerHTML = "";
 
   const primaryKeys = ["pending", "today", "upcoming"];
-  const menuKeys = ["history", "subscriptions", "discount-codes", "availability"];
+  const menuKeys = ["history", "subscriptions", "discount-codes", "book-customer", "availability", "expenses", "bookkeeping"];
   const allButtons = [
     { key: "pending", label: "Pending Bookings" },
     { key: "today", label: "Today's Schedule" },
@@ -1748,7 +2213,10 @@ function renderButtons() {
     { key: "history", label: "History" },
     { key: "subscriptions", label: "Subscriptions" },
     { key: "discount-codes", label: "Discount Codes" },
-    { key: "availability", label: "Availability" }
+    { key: "book-customer", label: "Book Customer" },
+    { key: "availability", label: "Availability" },
+    { key: "expenses", label: "Expenses" },
+    { key: "bookkeeping", label: "Bookkeeping" }
   ];
 
   allButtons.forEach(btn => {
@@ -1848,8 +2316,444 @@ function highlightActiveButton(activeKey) {
   }
 }
 
+function adminBookEscapeHtml(value) {
+  return String(value == null ? "" : value).replace(/[&<>"']/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[ch]));
+}
+
+function renderBookCustomerView() {
+  const state = {
+    customer: null,
+    vehicle: null,
+    service: null,
+    customers: [],
+    vehicles: [],
+    services: [],
+    slots: [],
+    selectedSlot: null,
+    slotDurationMinutes: null
+  };
+
+  viewContainer.innerHTML = `
+    <div class="admin-book-view">
+      <h2 class="admin-book-title">Book Customer</h2>
+      <div class="admin-book-card">
+        <h3>1. Customer</h3>
+        <div class="admin-book-grid">
+          <div class="admin-book-field">
+            <label for="bookCustomerSearch">Search by name, email, or phone</label>
+            <input id="bookCustomerSearch" type="search" placeholder="Start typing..." autocomplete="off" />
+          </div>
+          <div class="admin-book-field" style="justify-content:end;">
+            <button id="bookCustomerSearchBtn" type="button" class="moon-tab">Search Customers</button>
+          </div>
+        </div>
+        <div id="bookCustomerResults" class="admin-book-options"></div>
+        <div class="admin-book-summary" id="bookSelectedCustomer">No customer selected.</div>
+        <div class="admin-book-grid" style="margin-top:12px;">
+          <div class="admin-book-field"><label>Full name</label><input id="bookNewCustomerName" type="text" /></div>
+          <div class="admin-book-field"><label>Email</label><input id="bookNewCustomerEmail" type="email" /></div>
+          <div class="admin-book-field"><label>Phone</label><input id="bookNewCustomerPhone" type="tel" /></div>
+          <div class="admin-book-field" style="justify-content:end;"><button id="bookCreateCustomerBtn" type="button" class="moon-tab">Create / Reuse Customer</button></div>
+        </div>
+      </div>
+
+      <div class="admin-book-card">
+        <h3>2. Vehicle</h3>
+        <p class="admin-book-muted">Select a customer first, then choose an existing vehicle or add one.</p>
+        <div id="bookVehicleResults" class="admin-book-options"></div>
+        <div class="admin-book-summary" id="bookSelectedVehicle">No vehicle selected.</div>
+        <div class="admin-book-grid" style="margin-top:12px;">
+          <div class="admin-book-field"><label>Year</label><input id="bookVehicleYear" type="number" inputmode="numeric" /></div>
+          <div class="admin-book-field"><label>Make</label><input id="bookVehicleMake" type="text" /></div>
+          <div class="admin-book-field"><label>Model</label><input id="bookVehicleModel" type="text" /></div>
+          <div class="admin-book-field">
+            <label>Vehicle size</label>
+            <select id="bookVehicleSize">
+              <option value="">Select size...</option>
+              <option value="compact">compact</option>
+              <option value="midsized">midsized</option>
+              <option value="oversized">oversized</option>
+            </select>
+          </div>
+        </div>
+        <div class="admin-book-actions"><button id="bookCreateVehicleBtn" type="button" class="moon-tab">Add Vehicle</button></div>
+      </div>
+
+      <div class="admin-book-card">
+        <h3>3. Service</h3>
+        <div class="admin-book-field">
+          <label for="bookServiceSelect">Service</label>
+          <select id="bookServiceSelect"><option value="">Loading services...</option></select>
+        </div>
+        <div class="admin-book-summary" id="bookSelectedService">No service selected.</div>
+      </div>
+
+      <div class="admin-book-card">
+        <h3>4. Location & Time</h3>
+        <div class="admin-book-grid">
+          <div class="admin-book-field"><label>Service address</label><input id="bookServiceAddress" type="text" placeholder="Street, City, State ZIP" /></div>
+          <div class="admin-book-field"><label>Date</label><input id="bookDate" type="date" /></div>
+        </div>
+        <div class="admin-book-actions"><button id="bookLoadSlotsBtn" type="button" class="moon-tab">Load Available Slots</button></div>
+        <div id="bookSlots" class="admin-book-slots"></div>
+        <div class="admin-book-summary" id="bookSelectedTime">No time selected.</div>
+      </div>
+
+      <div class="admin-book-card">
+        <h3>5. Review & Create</h3>
+        <div class="admin-book-summary" id="bookReviewSummary">Complete the sections above to create a booking.</div>
+        <div class="admin-book-grid" style="margin-top:12px;">
+          <div class="admin-book-field">
+            <label>Status</label>
+            <select id="bookStatus">
+              <option value="confirmed" selected>confirmed</option>
+              <option value="pending">pending</option>
+            </select>
+          </div>
+          <label class="admin-book-check">
+            <input id="bookSendEmail" type="checkbox" checked />
+            <span>Send customer email</span>
+          </label>
+        </div>
+        <div class="admin-book-field" style="margin-top:12px;">
+          <label>Customer notes (optional)</label>
+          <textarea id="bookCustomerNotes" placeholder="Optional notes for this booking"></textarea>
+        </div>
+        <div class="admin-book-actions">
+          <button id="bookSubmitBtn" type="button" class="confirm" style="border-radius:10px;padding:11px 16px;">Create Booking</button>
+          <button id="bookResetBtn" type="button" class="delay" style="border-radius:10px;padding:11px 16px;">Book Another Customer</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const $ = id => document.getElementById(id);
+
+  function serviceLabel(s) {
+    if (!s) return "—";
+    const parts = [s.category || "Service"];
+    if (s.level != null) parts.push("Level " + s.level);
+    if (s.vehicle_size) parts.push(s.vehicle_size);
+    if (s.duration_minutes) parts.push(s.duration_minutes + " min");
+    if (s.price != null) parts.push("$" + Number(s.price).toFixed(2));
+    return parts.join(" — ");
+  }
+
+  function vehicleLabel(v) {
+    if (!v) return "—";
+    return [v.year, v.make, v.model].filter(Boolean).join(" ") + (v.vehicle_size ? " (" + v.vehicle_size + ")" : "");
+  }
+
+  function updateSummaries() {
+    $("bookSelectedCustomer").innerHTML = state.customer
+      ? `<strong>Selected customer:</strong> ${adminBookEscapeHtml(state.customer.full_name || "—")}<br><span class="admin-book-muted">${adminBookEscapeHtml(state.customer.email || "—")} · ${adminBookEscapeHtml(state.customer.phone || "—")}</span>`
+      : "No customer selected.";
+    $("bookSelectedVehicle").innerHTML = state.vehicle
+      ? `<strong>Selected vehicle:</strong> ${adminBookEscapeHtml(vehicleLabel(state.vehicle))}`
+      : "No vehicle selected.";
+    $("bookSelectedService").innerHTML = state.service
+      ? `<strong>Selected service:</strong> ${adminBookEscapeHtml(serviceLabel(state.service))}`
+      : "No service selected.";
+    $("bookSelectedTime").innerHTML = state.selectedSlot
+      ? `<strong>Selected time:</strong> ${adminBookEscapeHtml(new Date(state.selectedSlot).toLocaleString())}`
+      : "No time selected.";
+    $("bookReviewSummary").innerHTML = `
+      <div><strong>Customer:</strong> ${adminBookEscapeHtml(state.customer?.full_name || "—")}</div>
+      <div><strong>Vehicle:</strong> ${adminBookEscapeHtml(state.vehicle ? vehicleLabel(state.vehicle) : "—")}</div>
+      <div><strong>Service:</strong> ${adminBookEscapeHtml(state.service ? serviceLabel(state.service) : "—")}</div>
+      <div><strong>Address:</strong> ${adminBookEscapeHtml($("bookServiceAddress").value || "—")}</div>
+      <div><strong>Time:</strong> ${adminBookEscapeHtml(state.selectedSlot ? new Date(state.selectedSlot).toLocaleString() : "—")}</div>
+    `;
+  }
+
+  function renderCustomerResults() {
+    const el = $("bookCustomerResults");
+    if (!state.customers.length) {
+      el.innerHTML = '<div class="admin-book-muted">No matching customers shown.</div>';
+      return;
+    }
+    el.innerHTML = state.customers.map((c, idx) => `
+      <button type="button" class="admin-book-option${state.customer?.id === c.id ? " selected" : ""}" data-customer-idx="${idx}">
+        <strong>${adminBookEscapeHtml(c.full_name || "Unnamed customer")}</strong>
+        <span class="admin-book-muted">${adminBookEscapeHtml(c.email || "—")} · ${adminBookEscapeHtml(c.phone || "—")}</span>
+      </button>
+    `).join("");
+    el.querySelectorAll("[data-customer-idx]").forEach(btn => {
+      btn.onclick = async () => {
+        state.customer = state.customers[Number(btn.dataset.customerIdx)];
+        state.vehicle = null;
+        state.vehicles = [];
+        updateSummaries();
+        renderCustomerResults();
+        await loadVehicles();
+      };
+    });
+  }
+
+  function renderVehicles() {
+    const el = $("bookVehicleResults");
+    if (!state.customer) {
+      el.innerHTML = '<div class="admin-book-muted">Select a customer to load vehicles.</div>';
+      return;
+    }
+    if (!state.vehicles.length) {
+      el.innerHTML = '<div class="admin-book-muted">No vehicles found for this customer.</div>';
+      return;
+    }
+    el.innerHTML = state.vehicles.map((v, idx) => `
+      <button type="button" class="admin-book-option${state.vehicle?.id === v.id ? " selected" : ""}" data-vehicle-idx="${idx}">
+        <strong>${adminBookEscapeHtml(vehicleLabel(v) || "Vehicle")}</strong>
+      </button>
+    `).join("");
+    el.querySelectorAll("[data-vehicle-idx]").forEach(btn => {
+      btn.onclick = () => {
+        state.vehicle = state.vehicles[Number(btn.dataset.vehicleIdx)];
+        updateSummaries();
+        renderVehicles();
+      };
+    });
+  }
+
+  function renderServices() {
+    const select = $("bookServiceSelect");
+    if (!state.services.length) {
+      select.innerHTML = '<option value="">No services loaded</option>';
+      return;
+    }
+    select.innerHTML = '<option value="">Select service...</option>' + state.services.map(s =>
+      `<option value="${adminBookEscapeHtml(s.service_variant_id)}">${adminBookEscapeHtml(serviceLabel(s))}</option>`
+    ).join("");
+  }
+
+  function renderSlots() {
+    const el = $("bookSlots");
+    if (!state.slots.length) {
+      el.innerHTML = '<div class="admin-book-muted">No available slots loaded.</div>';
+      return;
+    }
+    el.innerHTML = state.slots.map(slot => `
+      <button type="button" class="admin-book-slot${state.selectedSlot === slot ? " selected" : ""}" data-slot="${adminBookEscapeHtml(slot)}">
+        ${adminBookEscapeHtml(new Date(slot).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }))}
+      </button>
+    `).join("");
+    el.querySelectorAll("[data-slot]").forEach(btn => {
+      btn.onclick = () => {
+        state.selectedSlot = btn.dataset.slot;
+        updateSummaries();
+        renderSlots();
+      };
+    });
+  }
+
+  async function loadVehicles() {
+    if (!state.customer) return;
+    try {
+      const res = await adminFetch(`/api/admin-customer-vehicles?customer_id=${encodeURIComponent(state.customer.id)}`);
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Failed to load vehicles");
+      state.vehicles = data.vehicles || [];
+      renderVehicles();
+    } catch (err) {
+      showAdminBanner(err.message || "Vehicle load failed.", "error");
+    }
+  }
+
+  async function loadServices() {
+    try {
+      const res = await adminFetch("/api/admin-service-variants");
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Failed to load services");
+      state.services = data.service_variants || [];
+      renderServices();
+    } catch (err) {
+      showAdminBanner(err.message || "Service load failed.", "error");
+      $("bookServiceSelect").innerHTML = '<option value="">Service load failed</option>';
+    }
+  }
+
+  $("bookCustomerSearchBtn").onclick = async () => {
+    const q = $("bookCustomerSearch").value.trim();
+    if (!q) {
+      showAdminBanner("Enter a customer search term.", "error");
+      return;
+    }
+    try {
+      const res = await adminFetch(`/api/admin-search-customers?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Customer search failed");
+      state.customers = data.customers || [];
+      renderCustomerResults();
+    } catch (err) {
+      showAdminBanner(err.message || "Customer search failed.", "error");
+    }
+  };
+
+  $("bookCustomerSearch").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("bookCustomerSearchBtn").click();
+  });
+
+  $("bookCreateCustomerBtn").onclick = async () => {
+    try {
+      const body = {
+        full_name: $("bookNewCustomerName").value.trim(),
+        email: $("bookNewCustomerEmail").value.trim(),
+        phone: $("bookNewCustomerPhone").value.trim()
+      };
+      const res = await adminFetch("/api/admin-create-customer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Customer create failed");
+      state.customer = data.customer;
+      state.vehicle = null;
+      state.vehicles = [];
+      showAdminBanner("Customer selected.", "success");
+      updateSummaries();
+      await loadVehicles();
+    } catch (err) {
+      showAdminBanner(err.message || "Customer create failed.", "error");
+    }
+  };
+
+  $("bookCreateVehicleBtn").onclick = async () => {
+    if (!state.customer) {
+      showAdminBanner("Select a customer first.", "error");
+      return;
+    }
+    try {
+      const body = {
+        customer_id: state.customer.id,
+        year: $("bookVehicleYear").value.trim(),
+        make: $("bookVehicleMake").value.trim(),
+        model: $("bookVehicleModel").value.trim(),
+        vehicle_size: $("bookVehicleSize").value
+      };
+      const res = await adminFetch("/api/admin-create-vehicle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Vehicle create failed");
+      state.vehicle = data.vehicle;
+      state.vehicles = [data.vehicle, ...state.vehicles.filter(v => v.id !== data.vehicle.id)];
+      showAdminBanner("Vehicle selected.", "success");
+      updateSummaries();
+      renderVehicles();
+    } catch (err) {
+      showAdminBanner(err.message || "Vehicle create failed.", "error");
+    }
+  };
+
+  $("bookServiceSelect").onchange = () => {
+    state.service = state.services.find(s => s.service_variant_id === $("bookServiceSelect").value) || null;
+    state.selectedSlot = null;
+    state.slots = [];
+    updateSummaries();
+    renderSlots();
+  };
+
+  $("bookLoadSlotsBtn").onclick = async () => {
+    if (!state.service) {
+      showAdminBanner("Select a service first.", "error");
+      return;
+    }
+    const address = $("bookServiceAddress").value.trim();
+    const day = $("bookDate").value;
+    if (!address) {
+      showAdminBanner("Service address is required.", "error");
+      return;
+    }
+    if (!day) {
+      showAdminBanner("Select a date.", "error");
+      return;
+    }
+    try {
+      const params = new URLSearchParams({
+        day,
+        duration_minutes: String(state.service.duration_minutes),
+        service_address: address,
+        service_variant_id: state.service.service_variant_id
+      });
+      const res = await adminFetch(`/api/get-availability?${params.toString()}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || "Availability load failed");
+      state.slots = data.slots || [];
+      state.selectedSlot = null;
+      state.slotDurationMinutes = data.solo_effective_duration_minutes || state.service.duration_minutes;
+      renderSlots();
+      updateSummaries();
+      if (!state.slots.length) showAdminBanner(data.message || "No available slots for that date.", "error");
+    } catch (err) {
+      showAdminBanner(err.message || "Availability load failed.", "error");
+    }
+  };
+
+  $("bookSubmitBtn").onclick = async () => {
+    if (!state.customer || !state.vehicle || !state.service || !state.selectedSlot) {
+      showAdminBanner("Complete customer, vehicle, service, and time first.", "error");
+      return;
+    }
+    const address = $("bookServiceAddress").value.trim();
+    if (!address) {
+      showAdminBanner("Service address is required.", "error");
+      return;
+    }
+    const start = new Date(state.selectedSlot);
+    const duration = Number(state.slotDurationMinutes || state.service.duration_minutes);
+    if (!Number.isFinite(duration) || duration <= 0) {
+      showAdminBanner("Invalid service duration.", "error");
+      return;
+    }
+    const end = new Date(start.getTime() + duration * 60000);
+    const body = {
+      customer_id: state.customer.id,
+      vehicle_id: state.vehicle.id,
+      scheduled_start: start.toISOString(),
+      scheduled_end: end.toISOString(),
+      service_address: address,
+      service_variant_id: state.service.service_variant_id,
+      status: $("bookStatus").value,
+      send_customer_email: $("bookSendEmail").checked
+    };
+    const notes = $("bookCustomerNotes").value.trim();
+    if (notes) body.customer_notes = notes;
+
+    $("bookSubmitBtn").disabled = true;
+    try {
+      const res = await adminFetch("/api/admin-create-booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.message || data.error || "Booking create failed");
+      showAdminBanner(data.status === "pending" ? "Pending booking created." : "Confirmed booking created.", "success");
+      await loadAdminData();
+    } catch (err) {
+      showAdminBanner(err.message || "Booking create failed.", "error");
+    } finally {
+      $("bookSubmitBtn").disabled = false;
+    }
+  };
+
+  $("bookResetBtn").onclick = () => renderBookCustomerView();
+  $("bookServiceAddress").addEventListener("input", () => updateSummaries());
+  updateSummaries();
+  renderVehicles();
+  renderSlots();
+  loadServices();
+}
+
 function renderView(viewName) {
   viewContainer.innerHTML = "";
+
+  if (viewName === "book-customer") {
+    renderBookCustomerView();
+    return;
+  }
 
   // =========================
   // HISTORY (SERVER-SIDE)
@@ -3045,6 +3949,313 @@ function renderView(viewName) {
     loadAvailabilityData().then(() => {
       renderMonthGrid();
     });
+    return;
+  }
+
+  // =========================
+  // EXPENSES
+  // =========================
+  if (viewName === "expenses") {
+    const EXP_CATEGORIES = ["Chemicals","Towels / Supplies","Equipment","Fuel","Truck Maintenance / Repairs","Advertising / Marketing","Website / Software","Insurance","Phone","Payment Processing Fees","Business Meals","Office / Admin","Taxes / Fees","Other"];
+    const EXP_TYPES = ["Direct Cost","Operating Expense","Asset Purchase","Owner Draw","Owner Contribution","Liability Payment"];
+    const EXP_PMT_METHODS = ["Cash","PayPal","Venmo","Check","Credit Card","Bank Transfer","Other"];
+
+    const wrapper = document.createElement("div");
+    wrapper.style.color = "white";
+    wrapper.style.maxWidth = "960px";
+    wrapper.style.margin = "0 auto";
+
+    const header = document.createElement("div");
+    header.style.display = "flex";
+    header.style.justifyContent = "space-between";
+    header.style.alignItems = "center";
+    header.style.marginBottom = "16px";
+    header.style.flexWrap = "wrap";
+    header.style.gap = "12px";
+
+    const title = document.createElement("h2");
+    title.textContent = "Expenses";
+    title.style.margin = "0";
+    title.style.color = "var(--moon-primary)";
+    header.appendChild(title);
+
+    const controls = document.createElement("div");
+    controls.style.display = "flex";
+    controls.style.gap = "10px";
+    controls.style.alignItems = "center";
+
+    const monthInput = document.createElement("input");
+    monthInput.type = "month";
+    const now = new Date();
+    monthInput.value = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
+    monthInput.style.padding = "8px 10px";
+    monthInput.style.borderRadius = "8px";
+    monthInput.style.border = "1px solid rgba(255,255,255,0.25)";
+    monthInput.style.background = "rgba(255,255,255,0.08)";
+    monthInput.style.color = "white";
+    controls.appendChild(monthInput);
+
+    const addBtn = document.createElement("button");
+    addBtn.textContent = "+ New Expense";
+    addBtn.className = "moon-tab";
+    controls.appendChild(addBtn);
+
+    header.appendChild(controls);
+    wrapper.appendChild(header);
+
+    const totalRow = document.createElement("div");
+    totalRow.style.padding = "12px 16px";
+    totalRow.style.background = "rgba(111,147,196,0.12)";
+    totalRow.style.borderRadius = "10px";
+    totalRow.style.marginBottom = "12px";
+    totalRow.style.fontWeight = "600";
+    wrapper.appendChild(totalRow);
+
+    const listEl = document.createElement("div");
+    listEl.style.display = "flex";
+    listEl.style.flexDirection = "column";
+    listEl.style.gap = "8px";
+    wrapper.appendChild(listEl);
+
+    function fillExpenseSelectOptions() {
+      const cat = document.getElementById("expCategory");
+      const typ = document.getElementById("expType");
+      const pm = document.getElementById("expPaymentMethod");
+      if (cat && cat.options.length === 0) {
+        cat.innerHTML = '<option value="">— select —</option>' + EXP_CATEGORIES.map(v => `<option value="${v}">${v}</option>`).join("");
+      }
+      if (typ && typ.options.length === 0) {
+        typ.innerHTML = '<option value="">— select —</option>' + EXP_TYPES.map(v => `<option value="${v}">${v}</option>`).join("");
+      }
+      if (pm && pm.options.length === 0) {
+        pm.innerHTML = '<option value="">— select —</option>' + EXP_PMT_METHODS.map(v => `<option value="${v}">${v}</option>`).join("");
+      }
+    }
+
+    function escapeHtml(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[ch]));
+    }
+
+    async function loadExpenses() {
+      listEl.innerHTML = '<div style="opacity:0.7;">Loading...</div>';
+      totalRow.textContent = "";
+      try {
+        const resp = await adminFetch("/api/admin-list-expenses?month=" + encodeURIComponent(monthInput.value), { method: "GET" });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || "Failed to load");
+        const rows = data.expenses || [];
+        const total = rows.reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
+        totalRow.textContent = `${rows.length} expense${rows.length === 1 ? "" : "s"} · Total $${total.toFixed(2)}`;
+
+        if (rows.length === 0) {
+          listEl.innerHTML = '<div style="text-align:center;padding:24px;opacity:0.7;">No expenses for this month yet.</div>';
+          return;
+        }
+
+        listEl.innerHTML = "";
+        rows.forEach(r => {
+          const card = document.createElement("div");
+          card.style.padding = "12px 14px";
+          card.style.background = "rgba(255,255,255,0.05)";
+          card.style.border = "1px solid rgba(255,255,255,0.1)";
+          card.style.borderRadius = "10px";
+          card.style.display = "flex";
+          card.style.justifyContent = "space-between";
+          card.style.alignItems = "center";
+          card.style.gap = "12px";
+          card.style.flexWrap = "wrap";
+
+          const left = document.createElement("div");
+          left.style.flex = "1";
+          left.style.minWidth = "200px";
+          left.innerHTML = `
+            <div style="font-weight:600;">${escapeHtml(r.vendor)} — $${(Number(r.amount) || 0).toFixed(2)}</div>
+            <div style="font-size:12px;opacity:0.75;margin-top:2px;">
+              ${escapeHtml(r.expense_date)} · ${escapeHtml(r.category)} · ${escapeHtml(r.expense_type)} · ${escapeHtml(r.payment_method)}${r.receipt_saved ? " · Receipt ✓" : ""}
+            </div>
+            ${r.description ? `<div style="font-size:12px;opacity:0.85;margin-top:4px;">${escapeHtml(r.description)}</div>` : ""}
+          `;
+          card.appendChild(left);
+
+          const delBtn = document.createElement("button");
+          delBtn.textContent = "Delete";
+          delBtn.className = "cancel";
+          delBtn.style.padding = "6px 12px";
+          delBtn.style.borderRadius = "6px";
+          delBtn.style.border = "none";
+          delBtn.style.background = "rgba(255,138,138,0.18)";
+          delBtn.style.color = "#ff8a8a";
+          delBtn.style.cursor = "pointer";
+          delBtn.onclick = async () => {
+            if (!confirm("Delete this expense?")) return;
+            delBtn.disabled = true;
+            try {
+              const resp = await adminFetch("/api/admin-delete-expense", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ expense_id: r.id })
+              });
+              const dd = await resp.json().catch(() => ({}));
+              if (!resp.ok) throw new Error(dd.error || "Delete failed");
+              showAdminBanner("Expense deleted.", "success");
+              loadExpenses();
+            } catch (err) {
+              showAdminBanner(err.message || "Delete failed.", "error");
+              delBtn.disabled = false;
+            }
+          };
+          card.appendChild(delBtn);
+          listEl.appendChild(card);
+        });
+      } catch (err) {
+        listEl.innerHTML = `<div style="color:#ff8a8a;">${escapeHtml(err.message || "Load failed.")}</div>`;
+      }
+    }
+
+    function openExpenseModal() {
+      const overlay = document.getElementById("expenseModalOverlay");
+      if (!overlay) return;
+      fillExpenseSelectOptions();
+      const today = new Date();
+      const todayStr = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
+      document.getElementById("expDate").value = todayStr;
+      document.getElementById("expVendor").value = "";
+      document.getElementById("expCategory").value = "";
+      document.getElementById("expType").value = "";
+      document.getElementById("expPaymentMethod").value = "";
+      document.getElementById("expAmount").value = "";
+      document.getElementById("expDescription").value = "";
+      document.getElementById("expNotes").value = "";
+      document.getElementById("expReceiptSaved").checked = false;
+      const errEl = document.getElementById("expError");
+      errEl.textContent = "";
+      errEl.classList.remove("show");
+      const confirmBtn = document.getElementById("expConfirmBtn");
+      const cancelBtn = document.getElementById("expCancelBtn");
+      confirmBtn.disabled = false;
+      cancelBtn.disabled = false;
+      overlay.classList.add("open");
+
+      function close() {
+        overlay.classList.remove("open");
+        confirmBtn.onclick = null;
+        cancelBtn.onclick = null;
+      }
+
+      cancelBtn.onclick = () => close();
+
+      confirmBtn.onclick = async () => {
+        errEl.textContent = "";
+        errEl.classList.remove("show");
+        const payload = {
+          expense_date: document.getElementById("expDate").value,
+          vendor: document.getElementById("expVendor").value.trim(),
+          category: document.getElementById("expCategory").value,
+          expense_type: document.getElementById("expType").value,
+          amount: Number(document.getElementById("expAmount").value),
+          payment_method: document.getElementById("expPaymentMethod").value,
+          description: document.getElementById("expDescription").value.trim(),
+          notes: document.getElementById("expNotes").value.trim(),
+          receipt_saved: document.getElementById("expReceiptSaved").checked
+        };
+        if (!payload.expense_date) { errEl.textContent = "Date is required."; errEl.classList.add("show"); return; }
+        if (!payload.vendor) { errEl.textContent = "Vendor is required."; errEl.classList.add("show"); return; }
+        if (!payload.category) { errEl.textContent = "Category is required."; errEl.classList.add("show"); return; }
+        if (!payload.expense_type) { errEl.textContent = "Expense type is required."; errEl.classList.add("show"); return; }
+        if (!Number.isFinite(payload.amount) || payload.amount < 0) { errEl.textContent = "Amount must be a non-negative number."; errEl.classList.add("show"); return; }
+        if (!payload.payment_method) { errEl.textContent = "Payment method is required."; errEl.classList.add("show"); return; }
+
+        confirmBtn.disabled = true;
+        cancelBtn.disabled = true;
+        confirmBtn.textContent = "Saving...";
+        try {
+          const resp = await adminFetch("/api/admin-record-expense", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const dd = await resp.json().catch(() => ({}));
+          if (!resp.ok) throw new Error(dd.error || "Save failed");
+          showAdminBanner("Expense saved.", "success");
+          close();
+          confirmBtn.textContent = "Save Expense";
+          loadExpenses();
+        } catch (err) {
+          errEl.textContent = err.message || "Save failed.";
+          errEl.classList.add("show");
+          confirmBtn.disabled = false;
+          cancelBtn.disabled = false;
+          confirmBtn.textContent = "Save Expense";
+        }
+      };
+    }
+
+    monthInput.onchange = () => loadExpenses();
+    addBtn.onclick = () => openExpenseModal();
+
+    viewContainer.appendChild(wrapper);
+    loadExpenses();
+    return;
+  }
+
+  // =========================
+  // BOOKKEEPING (download workbook)
+  // =========================
+  if (viewName === "bookkeeping") {
+    const wrapper = document.createElement("div");
+    wrapper.style.color = "white";
+    wrapper.style.maxWidth = "640px";
+    wrapper.style.margin = "0 auto";
+    wrapper.style.padding = "24px";
+    wrapper.style.background = "rgba(111,147,196,0.10)";
+    wrapper.style.borderRadius = "14px";
+    wrapper.style.border = "1px solid rgba(255,255,255,0.12)";
+
+    wrapper.innerHTML = `
+      <h2 style="margin:0 0 8px 0;color:var(--moon-primary);">Bookkeeping Workbook</h2>
+      <p style="opacity:0.85;line-height:1.5;margin:0 0 20px 0;">
+        Download a fully-formatted Excel workbook with every completed booking, every recorded expense, and live monthly statements (Income Statement, Cash Flow, Balance Sheet, Dashboard).
+        The file is generated fresh from your live data each time.
+      </p>
+    `;
+
+    const btn = document.createElement("button");
+    btn.textContent = "Download Current Bookkeeping Workbook";
+    btn.className = "moon-tab";
+    btn.style.padding = "12px 18px";
+    btn.style.fontWeight = "700";
+    btn.onclick = async () => {
+      btn.disabled = true;
+      const original = btn.textContent;
+      btn.textContent = "Generating...";
+      try {
+        const resp = await adminFetch("/api/export-bookkeeping", { method: "GET" });
+        if (!resp.ok) {
+          const data = await resp.json().catch(() => ({}));
+          throw new Error(data.error || "Export failed");
+        }
+        const blob = await resp.blob();
+        const today = new Date().toISOString().split("T")[0];
+        const filename = `MoonAutoDetailing_Bookkeeping_${today}.xlsx`;
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showAdminBanner("Workbook downloaded.", "success");
+      } catch (err) {
+        showAdminBanner(err.message || "Export failed.", "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = original;
+      }
+    };
+    wrapper.appendChild(btn);
+
+    viewContainer.appendChild(wrapper);
     return;
   }
 

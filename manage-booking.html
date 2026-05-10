@@ -28,6 +28,7 @@ body { font-family: "Poppins", system-ui, sans-serif; margin: 0; background: #00
 .error-state p { color: #6b7280; margin: 0 0 24px; }
 .error-state .support-note { font-size: 13px; color: #6b7280; text-align: center; margin-top: 20px; }
 .error-state .btn-link { display: inline-block; margin-top: 12px; padding: 12px 24px; background: #7fb8e6; color: #fff; border-radius: 999px; font-weight: 600; text-decoration: none; box-shadow: 0 6px 16px rgba(127,184,230,0.45); }
+.action-error { margin-top: 14px; padding: 12px 14px; border-radius: 12px; background: #fff3f3; color: #8a0018; font-weight: 600; line-height: 1.4; }
 @media (max-width: 640px) { .page-wrap { padding: 0 16px; } .card { padding: 24px 20px; } }
 </style>
 </head>
@@ -64,6 +65,7 @@ body { font-family: "Poppins", system-ui, sans-serif; margin: 0; background: #00
 
       <button id="rescheduleBtn" class="btn reschedule">Request Reschedule</button>
       <button id="cancelBtn" class="btn cancel">Cancel Booking</button>
+      <div id="actionError" class="action-error hidden"></div>
     </div>
 
     <div id="done" class="hidden">
@@ -127,13 +129,25 @@ if (!token) {
   }
 
   async function callApi(endpoint) {
+    const actionError = document.getElementById("actionError");
+    actionError.classList.add("hidden");
+    actionError.textContent = "";
+
     const res = await fetch(endpoint, {
       method:"POST",
       headers:{ "Content-Type":"application/json" },
       body: JSON.stringify({ token })
     });
 
-    const data = await res.json();
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) {
+      actionError.textContent = data.code === "WITHIN_24_HOURS"
+        ? "Because your appointment is within 24 hours, online cancellations or reschedule requests are no longer available. Please call or text Darren at (518) 496-3691 to request a cancellation or reschedule."
+        : (data.message || data.error || "Action failed. Please try again.");
+      actionError.classList.remove("hidden");
+      return;
+    }
+
     document.getElementById("content").style.display="none";
     document.getElementById("done").classList.remove("hidden");
     document.getElementById("doneText").textContent = data.message;

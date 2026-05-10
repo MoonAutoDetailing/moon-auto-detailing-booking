@@ -10,6 +10,12 @@ function requireEnv(name) {
   return v;
 }
 
+const WITHIN_24_HOURS_RESPONSE = {
+  ok: false,
+  code: "WITHIN_24_HOURS",
+  message: "Because your appointment is within 24 hours, online cancellations or reschedule requests are no longer available. Please call or text Darren at (518) 496-3691 to request a cancellation or reschedule."
+};
+
 export default async function handler(req, res) {
   let body = req.body;
   if (!body) {
@@ -47,7 +53,7 @@ export default async function handler(req, res) {
     // =========================
     const { data: booking, error } = await supabase
       .from("bookings")
-      .select("id, google_event_id, status, customer_id, service_variant_id, manage_token, base_price, travel_fee, total_price, discount_code, discount_percent, discount_amount")
+      .select("id, google_event_id, status, scheduled_start, customer_id, service_variant_id, manage_token, base_price, travel_fee, total_price, discount_code, discount_percent, discount_amount")
       .eq("manage_token", token)
       .single();
 
@@ -60,6 +66,12 @@ export default async function handler(req, res) {
         hasBooking: !!booking
       });
       return res.status(404).json({ message: "Booking not found" });
+    }
+
+    const hoursUntilService = (new Date(booking.scheduled_start).getTime() - Date.now()) / (1000 * 60 * 60);
+    if (Number.isFinite(hoursUntilService) && hoursUntilService <= 24) {
+      console.log("[MANAGE_BOOKING] customer_reschedule_blocked_within_24 booking_id=" + booking.id);
+      return res.status(409).json(WITHIN_24_HOURS_RESPONSE);
     }
 
    if (booking.status === "reschedule_requested") {

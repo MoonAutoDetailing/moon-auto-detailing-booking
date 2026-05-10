@@ -15,6 +15,25 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Missing booking_id" });
   }
 
+  // Payment fields (required: amount_collected + payment_method)
+  const ALLOWED_PAYMENT_METHODS = ["Cash", "PayPal", "Venmo", "Check"];
+  const amountCollectedNum = body.amount_collected != null ? Number(body.amount_collected) : NaN;
+  const tipAmountRaw = body.tip_amount != null ? Number(body.tip_amount) : 0;
+  const paymentMethod = String(body.payment_method ?? "").trim();
+  const paymentNotes = body.payment_notes != null ? String(body.payment_notes).trim() : null;
+
+  if (!Number.isFinite(amountCollectedNum) || amountCollectedNum < 0) {
+    return res.status(400).json({ error: "amount_collected must be a non-negative number." });
+  }
+  if (!Number.isFinite(tipAmountRaw) || tipAmountRaw < 0) {
+    return res.status(400).json({ error: "tip_amount must be a non-negative number." });
+  }
+  if (ALLOWED_PAYMENT_METHODS.indexOf(paymentMethod) === -1) {
+    return res.status(400).json({ error: "Invalid payment_method." });
+  }
+  const amountCollected = Math.round(amountCollectedNum * 100) / 100;
+  const tipAmount = Math.round(tipAmountRaw * 100) / 100;
+
   req.body = { ...body, bookingId };
 
   try {
@@ -42,10 +61,38 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Database update failed" });
     }
 
+    // Record payment (job_payments). Roll booking back if insert fails.
+    const paymentInsert = {
+      booking_id: bookingId,
+      amount_collected: amountCollected,
+      tip_amount: tipAmount,
+      payment_method: paymentMethod
+    };
+    if (paymentNotes) paymentInsert.notes = paymentNotes;
+    if (adminAuthorized && typeof adminAuthorized === "object" && adminAuthorized.admin?.id) {
+      paymentInsert.recorded_by = adminAuthorized.admin.id;
+    }
+    const { data: paymentRow, error: paymentErr } = await supabase
+      .from("job_payments")
+      .insert(paymentInsert)
+      .select("id")
+      .single();
+    if (paymentErr) {
+      console.error("JOB_PAYMENT_INSERT_FAILED", paymentErr);
+      await supabase
+        .from("bookings")
+        .update({ status: "confirmed" })
+        .eq("id", bookingId);
+      return res.status(500).json({ error: "Payment record failed; action rolled back" });
+    }
+
     // Send completion email (must succeed or roll back)
     const emailResult = await sendBookingCompletedEmailCore(bookingId);
     if (!emailResult?.success) {
       console.error("Completion email failed", emailResult?.error);
+      if (paymentRow?.id) {
+        await supabase.from("job_payments").delete().eq("id", paymentRow.id);
+      }
       await supabase
         .from("bookings")
         .update({ status: "confirmed" })
@@ -117,6 +164,13 @@ export default async function handler(req, res) {
         }
       }
     }
+
+    console.log("JOB_PAYMENT_RECORDED", {
+      booking_id: bookingId,
+      amount_collected: amountCollected,
+      tip_amount: tipAmount,
+      payment_method: paymentMethod
+    });
 
     return res.status(200).json({ ok: true });
 

@@ -1,5 +1,4 @@
 import { createClient } from "@supabase/supabase-js";
-import { sendBookingEmail } from "./_sendEmail.js";
 import { sendRescheduleLinkEmailCore } from "../lib/email/sendRescheduleLinkEmail.js";
 import { formatServiceName } from "../lib/email/_shared.js";
 
@@ -34,7 +33,6 @@ const { data: booking, error } = await supabase
   .from("bookings")
   .select(`
     id,
-    reschedule_token,
     manage_token,
     base_price,
     travel_fee,
@@ -57,11 +55,16 @@ if (error || !booking) {
 
 const serviceLabel = formatServiceName(booking);
 
-await sendRescheduleLinkEmailCore({
+if (!booking.manage_token) {
+  console.error("[EMAIL] type=reschedule_link booking_id=" + booking.id + " status=failure missing_manage_token");
+  return res.status(500).json({ ok: false, error: "Booking is missing manage token" });
+}
+
+const emailResult = await sendRescheduleLinkEmailCore({
   email: booking.customers.email,
   fullName: booking.customers.full_name,
   manageToken: booking.manage_token,
-  rescheduleToken: booking.reschedule_token,
+  rescheduleToken: booking.manage_token,
   serviceLabel,
   price: booking.service_variants?.price ?? null,
   basePrice: booking.base_price ?? null,
@@ -72,10 +75,16 @@ await sendRescheduleLinkEmailCore({
   discountAmount: booking.discount_amount ?? null
 });
 
-    return res.status(200).json({ success: true });
+if (!emailResult?.success) {
+  console.error("[EMAIL] type=reschedule_link booking_id=" + booking.id + " status=failure", emailResult?.error);
+  return res.status(500).json({ ok: false, error: "Reschedule email failed" });
+}
+
+console.log("[EMAIL] type=reschedule_link booking_id=" + booking.id + " status=success");
+    return res.status(200).json({ ok: true, success: true });
 
   } catch (err) {
     console.error(err);
-    return res.status(500).json({ error: "Server error" });
+    return res.status(500).json({ ok: false, error: err?.message || "Server error" });
   }
 }
