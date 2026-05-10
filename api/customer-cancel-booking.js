@@ -9,6 +9,12 @@ function requireEnv(name) {
   return v;
 }
 
+const WITHIN_24_HOURS_RESPONSE = {
+  ok: false,
+  code: "WITHIN_24_HOURS",
+  message: "This appointment is within 24 hours. Please call or text (518) 496-3691 to request a cancellation or reschedule."
+};
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -50,7 +56,11 @@ const startUtcMs = Date.parse(booking.scheduled_start); // ISO → UTC ms
 
 const hoursUntilService = (startUtcMs - nowUtcMs) / 36e5;
 
-const isLateCancel = hoursUntilService < 24;
+const isLateCancel = Number.isFinite(hoursUntilService) && hoursUntilService <= 24;
+
+if (isLateCancel) {
+  return res.status(409).json(WITHIN_24_HOURS_RESPONSE);
+}
 
 
 

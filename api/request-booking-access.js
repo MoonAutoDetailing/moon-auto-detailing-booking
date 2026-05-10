@@ -116,31 +116,38 @@ export default async function handler(req, res) {
       requireEnv("SUPABASE_SERVICE_ROLE_KEY")
     );
 
-    const recovered = await findRecoverableBookingForCustomers(
-      supabase,
-      await findMatchingCustomerIds(supabase, normalizedEmail, normalizedPhone)
-    );
+    const customerIds = await findMatchingCustomerIds(supabase, normalizedEmail, normalizedPhone);
+    if (!customerIds.length) {
+      console.log("[BOOKING_ACCESS] result=no_customer_match");
+      return res.status(200).json({ ok: true });
+    }
 
-    if (recovered) {
-      let toEmail = normalizedEmail;
-      if (recovered.customerId) {
-        const { data: customer } = await supabase
-          .from("customers")
-          .select("email")
-          .eq("id", recovered.customerId)
-          .maybeSingle();
-        const resolvedEmail = customer?.email && String(customer.email).trim();
-        if (resolvedEmail) toEmail = resolvedEmail.toLowerCase();
-      }
-      try {
-        await sendBookingAccessLinkEmailCore(
-          toEmail,
-          recovered.manageToken,
-          recovered.id
-        );
-      } catch (err) {
-        console.warn("[request-booking-access] send failed:", err?.message || err);
-      }
+    const recovered = await findRecoverableBookingForCustomers(supabase, customerIds);
+    if (!recovered) {
+      console.log("[BOOKING_ACCESS] result=no_recoverable_booking customer_count=" + customerIds.length);
+      return res.status(200).json({ ok: true });
+    }
+
+    let toEmail = normalizedEmail;
+    if (recovered.customerId) {
+      const { data: customer } = await supabase
+        .from("customers")
+        .select("email")
+        .eq("id", recovered.customerId)
+        .maybeSingle();
+      const resolvedEmail = customer?.email && String(customer.email).trim();
+      if (resolvedEmail) toEmail = resolvedEmail.toLowerCase();
+    }
+    try {
+      await sendBookingAccessLinkEmailCore(
+        toEmail,
+        recovered.manageToken,
+        recovered.id
+      );
+      console.log("[BOOKING_ACCESS] result=email_sent booking_id=" + recovered.id);
+    } catch (err) {
+      console.warn("[BOOKING_ACCESS] result=email_failed booking_id=" + recovered.id);
+      console.warn("[request-booking-access] send failed:", err?.message || err);
     }
 
     return res.status(200).json({ ok: true });

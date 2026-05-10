@@ -343,6 +343,142 @@ cursor: pointer;
   display: none;
 }
 
+/* Admin Book Customer */
+.admin-book-view {
+  max-width: 860px;
+  margin: 0 auto 40px;
+  color: white;
+}
+.admin-book-title {
+  margin: 0 0 14px;
+  color: var(--moon-primary);
+  text-align: center;
+}
+.admin-book-card {
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  padding: 16px;
+  margin-top: 14px;
+  background: rgba(111,147,196,0.14);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.28);
+}
+.admin-book-card h3 {
+  margin: 0 0 12px;
+  color: #cfe1f7;
+}
+.admin-book-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.admin-book-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.admin-book-field label,
+.admin-book-check {
+  font-size: 13px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.88);
+}
+.admin-book-field input,
+.admin-book-field select,
+.admin-book-field textarea {
+  width: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 9px 11px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: white;
+  font: inherit;
+}
+.admin-book-field textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+.admin-book-field input::placeholder,
+.admin-book-field textarea::placeholder {
+  color: rgba(255,255,255,0.5);
+}
+.admin-book-actions,
+.admin-book-options,
+.admin-book-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.admin-book-option {
+  width: 100%;
+  text-align: left;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 12px;
+  padding: 11px 12px;
+  background: rgba(255,255,255,0.07);
+  color: white;
+  cursor: pointer;
+}
+.admin-book-option:hover,
+.admin-book-option.selected {
+  border-color: var(--moon-primary);
+  background: rgba(111,147,196,0.32);
+}
+.admin-book-option strong {
+  display: block;
+  margin-bottom: 3px;
+}
+.admin-book-muted {
+  color: rgba(255,255,255,0.7);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.admin-book-summary {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(0,0,0,0.22);
+  margin-top: 10px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.admin-book-slot {
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  color: white;
+  padding: 9px 13px;
+  cursor: pointer;
+}
+.admin-book-slot.selected {
+  background: var(--moon-primary);
+  border-color: var(--moon-primary);
+}
+.admin-book-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.admin-book-check input {
+  width: auto;
+}
+@media (max-width: 720px) {
+  .admin-book-grid {
+    grid-template-columns: 1fr;
+  }
+  .admin-book-card {
+    padding: 14px;
+  }
+  .admin-book-actions .moon-tab,
+  .admin-book-actions button {
+    width: 100%;
+    margin-right: 0;
+  }
+}
+
 /* Toggle Debug only in menu, not as floating button */
 .admin-debug-toggle {
   display: none !important;
@@ -1911,14 +2047,19 @@ if (b.google_event_id) {
         .update({ status: "reschedule_requested" })
         .eq("id", b.id);
 
-         await adminFetch("/api/send-reschedule-link-email", {
+      if (error) throw error;
+
+      const emailRes = await adminFetch("/api/send-reschedule-link-email", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({ bookingId: b.id })
 });
 
+      const emailData = await emailRes.json().catch(() => ({}));
 
-      if (error) throw error;
+      if (!emailRes.ok || emailData.ok === false) {
+        throw new Error(emailData.error || emailData.message || "Reschedule email failed");
+      }
 
       showAdminBanner("Reschedule requested.", "success");
       await loadAdminData();
@@ -2064,7 +2205,7 @@ function renderButtons() {
   viewButtons.innerHTML = "";
 
   const primaryKeys = ["pending", "today", "upcoming"];
-  const menuKeys = ["history", "subscriptions", "discount-codes", "availability", "expenses", "bookkeeping"];
+  const menuKeys = ["history", "subscriptions", "discount-codes", "book-customer", "availability", "expenses", "bookkeeping"];
   const allButtons = [
     { key: "pending", label: "Pending Bookings" },
     { key: "today", label: "Today's Schedule" },
@@ -2072,6 +2213,7 @@ function renderButtons() {
     { key: "history", label: "History" },
     { key: "subscriptions", label: "Subscriptions" },
     { key: "discount-codes", label: "Discount Codes" },
+    { key: "book-customer", label: "Book Customer" },
     { key: "availability", label: "Availability" },
     { key: "expenses", label: "Expenses" },
     { key: "bookkeeping", label: "Bookkeeping" }
@@ -2174,8 +2316,444 @@ function highlightActiveButton(activeKey) {
   }
 }
 
+function adminBookEscapeHtml(value) {
+  return String(value == null ? "" : value).replace(/[&<>"']/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[ch]));
+}
+
+function renderBookCustomerView() {
+  const state = {
+    customer: null,
+    vehicle: null,
+    service: null,
+    customers: [],
+    vehicles: [],
+    services: [],
+    slots: [],
+    selectedSlot: null,
+    slotDurationMinutes: null
+  };
+
+  viewContainer.innerHTML = `
+    <div class="admin-book-view">
+      <h2 class="admin-book-title">Book Customer</h2>
+      <div class="admin-book-card">
+        <h3>1. Customer</h3>
+        <div class="admin-book-grid">
+          <div class="admin-book-field">
+            <label for="bookCustomerSearch">Search by name, email, or phone</label>
+            <input id="bookCustomerSearch" type="search" placeholder="Start typing..." autocomplete="off" />
+          </div>
+          <div class="admin-book-field" style="justify-content:end;">
+            <button id="bookCustomerSearchBtn" type="button" class="moon-tab">Search Customers</button>
+          </div>
+        </div>
+        <div id="bookCustomerResults" class="admin-book-options"></div>
+        <div class="admin-book-summary" id="bookSelectedCustomer">No customer selected.</div>
+        <div class="admin-book-grid" style="margin-top:12px;">
+          <div class="admin-book-field"><label>Full name</label><input id="bookNewCustomerName" type="text" /></div>
+          <div class="admin-book-field"><label>Email</label><input id="bookNewCustomerEmail" type="email" /></div>
+          <div class="admin-book-field"><label>Phone</label><input id="bookNewCustomerPhone" type="tel" /></div>
+          <div class="admin-book-field" style="justify-content:end;"><button id="bookCreateCustomerBtn" type="button" class="moon-tab">Create / Reuse Customer</button></div>
+        </div>
+      </div>
+
+      <div class="admin-book-card">
+        <h3>2. Vehicle</h3>
+        <p class="admin-book-muted">Select a customer first, then choose an existing vehicle or add one.</p>
+        <div id="bookVehicleResults" class="admin-book-options"></div>
+        <div class="admin-book-summary" id="bookSelectedVehicle">No vehicle selected.</div>
+        <div class="admin-book-grid" style="margin-top:12px;">
+          <div class="admin-book-field"><label>Year</label><input id="bookVehicleYear" type="number" inputmode="numeric" /></div>
+          <div class="admin-book-field"><label>Make</label><input id="bookVehicleMake" type="text" /></div>
+          <div class="admin-book-field"><label>Model</label><input id="bookVehicleModel" type="text" /></div>
+          <div class="admin-book-field">
+            <label>Vehicle size</label>
+            <select id="bookVehicleSize">
+              <option value="">Select size...</option>
+              <option value="compact">compact</option>
+              <option value="midsized">midsized</option>
+              <option value="oversized">oversized</option>
+            </select>
+          </div>
+        </div>
+        <div class="admin-book-actions"><button id="bookCreateVehicleBtn" type="button" class="moon-tab">Add Vehicle</button></div>
+      </div>
+
+      <div class="admin-book-card">
+        <h3>3. Service</h3>
+        <div class="admin-book-field">
+          <label for="bookServiceSelect">Service</label>
+          <select id="bookServiceSelect"><option value="">Loading services...</option></select>
+        </div>
+        <div class="admin-book-summary" id="bookSelectedService">No service selected.</div>
+      </div>
+
+      <div class="admin-book-card">
+        <h3>4. Location & Time</h3>
+        <div class="admin-book-grid">
+          <div class="admin-book-field"><label>Service address</label><input id="bookServiceAddress" type="text" placeholder="Street, City, State ZIP" /></div>
+          <div class="admin-book-field"><label>Date</label><input id="bookDate" type="date" /></div>
+        </div>
+        <div class="admin-book-actions"><button id="bookLoadSlotsBtn" type="button" class="moon-tab">Load Available Slots</button></div>
+        <div id="bookSlots" class="admin-book-slots"></div>
+        <div class="admin-book-summary" id="bookSelectedTime">No time selected.</div>
+      </div>
+
+      <div class="admin-book-card">
+        <h3>5. Review & Create</h3>
+        <div class="admin-book-summary" id="bookReviewSummary">Complete the sections above to create a booking.</div>
+        <div class="admin-book-grid" style="margin-top:12px;">
+          <div class="admin-book-field">
+            <label>Status</label>
+            <select id="bookStatus">
+              <option value="confirmed" selected>confirmed</option>
+              <option value="pending">pending</option>
+            </select>
+          </div>
+          <label class="admin-book-check">
+            <input id="bookSendEmail" type="checkbox" checked />
+            <span>Send customer email</span>
+          </label>
+        </div>
+        <div class="admin-book-field" style="margin-top:12px;">
+          <label>Customer notes (optional)</label>
+          <textarea id="bookCustomerNotes" placeholder="Optional notes for this booking"></textarea>
+        </div>
+        <div class="admin-book-actions">
+          <button id="bookSubmitBtn" type="button" class="confirm" style="border-radius:10px;padding:11px 16px;">Create Booking</button>
+          <button id="bookResetBtn" type="button" class="delay" style="border-radius:10px;padding:11px 16px;">Book Another Customer</button>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const $ = id => document.getElementById(id);
+
+  function serviceLabel(s) {
+    if (!s) return "—";
+    const parts = [s.category || "Service"];
+    if (s.level != null) parts.push("Level " + s.level);
+    if (s.vehicle_size) parts.push(s.vehicle_size);
+    if (s.duration_minutes) parts.push(s.duration_minutes + " min");
+    if (s.price != null) parts.push("$" + Number(s.price).toFixed(2));
+    return parts.join(" — ");
+  }
+
+  function vehicleLabel(v) {
+    if (!v) return "—";
+    return [v.year, v.make, v.model].filter(Boolean).join(" ") + (v.vehicle_size ? " (" + v.vehicle_size + ")" : "");
+  }
+
+  function updateSummaries() {
+    $("bookSelectedCustomer").innerHTML = state.customer
+      ? `<strong>Selected customer:</strong> ${adminBookEscapeHtml(state.customer.full_name || "—")}<br><span class="admin-book-muted">${adminBookEscapeHtml(state.customer.email || "—")} · ${adminBookEscapeHtml(state.customer.phone || "—")}</span>`
+      : "No customer selected.";
+    $("bookSelectedVehicle").innerHTML = state.vehicle
+      ? `<strong>Selected vehicle:</strong> ${adminBookEscapeHtml(vehicleLabel(state.vehicle))}`
+      : "No vehicle selected.";
+    $("bookSelectedService").innerHTML = state.service
+      ? `<strong>Selected service:</strong> ${adminBookEscapeHtml(serviceLabel(state.service))}`
+      : "No service selected.";
+    $("bookSelectedTime").innerHTML = state.selectedSlot
+      ? `<strong>Selected time:</strong> ${adminBookEscapeHtml(new Date(state.selectedSlot).toLocaleString())}`
+      : "No time selected.";
+    $("bookReviewSummary").innerHTML = `
+      <div><strong>Customer:</strong> ${adminBookEscapeHtml(state.customer?.full_name || "—")}</div>
+      <div><strong>Vehicle:</strong> ${adminBookEscapeHtml(state.vehicle ? vehicleLabel(state.vehicle) : "—")}</div>
+      <div><strong>Service:</strong> ${adminBookEscapeHtml(state.service ? serviceLabel(state.service) : "—")}</div>
+      <div><strong>Address:</strong> ${adminBookEscapeHtml($("bookServiceAddress").value || "—")}</div>
+      <div><strong>Time:</strong> ${adminBookEscapeHtml(state.selectedSlot ? new Date(state.selectedSlot).toLocaleString() : "—")}</div>
+    `;
+  }
+
+  function renderCustomerResults() {
+    const el = $("bookCustomerResults");
+    if (!state.customers.length) {
+      el.innerHTML = '<div class="admin-book-muted">No matching customers shown.</div>';
+      return;
+    }
+    el.innerHTML = state.customers.map((c, idx) => `
+      <button type="button" class="admin-book-option${state.customer?.id === c.id ? " selected" : ""}" data-customer-idx="${idx}">
+        <strong>${adminBookEscapeHtml(c.full_name || "Unnamed customer")}</strong>
+        <span class="admin-book-muted">${adminBookEscapeHtml(c.email || "—")} · ${adminBookEscapeHtml(c.phone || "—")}</span>
+      </button>
+    `).join("");
+    el.querySelectorAll("[data-customer-idx]").forEach(btn => {
+      btn.onclick = async () => {
+        state.customer = state.customers[Number(btn.dataset.customerIdx)];
+        state.vehicle = null;
+        state.vehicles = [];
+        updateSummaries();
+        renderCustomerResults();
+        await loadVehicles();
+      };
+    });
+  }
+
+  function renderVehicles() {
+    const el = $("bookVehicleResults");
+    if (!state.customer) {
+      el.innerHTML = '<div class="admin-book-muted">Select a customer to load vehicles.</div>';
+      return;
+    }
+    if (!state.vehicles.length) {
+      el.innerHTML = '<div class="admin-book-muted">No vehicles found for this customer.</div>';
+      return;
+    }
+    el.innerHTML = state.vehicles.map((v, idx) => `
+      <button type="button" class="admin-book-option${state.vehicle?.id === v.id ? " selected" : ""}" data-vehicle-idx="${idx}">
+        <strong>${adminBookEscapeHtml(vehicleLabel(v) || "Vehicle")}</strong>
+      </button>
+    `).join("");
+    el.querySelectorAll("[data-vehicle-idx]").forEach(btn => {
+      btn.onclick = () => {
+        state.vehicle = state.vehicles[Number(btn.dataset.vehicleIdx)];
+        updateSummaries();
+        renderVehicles();
+      };
+    });
+  }
+
+  function renderServices() {
+    const select = $("bookServiceSelect");
+    if (!state.services.length) {
+      select.innerHTML = '<option value="">No services loaded</option>';
+      return;
+    }
+    select.innerHTML = '<option value="">Select service...</option>' + state.services.map(s =>
+      `<option value="${adminBookEscapeHtml(s.service_variant_id)}">${adminBookEscapeHtml(serviceLabel(s))}</option>`
+    ).join("");
+  }
+
+  function renderSlots() {
+    const el = $("bookSlots");
+    if (!state.slots.length) {
+      el.innerHTML = '<div class="admin-book-muted">No available slots loaded.</div>';
+      return;
+    }
+    el.innerHTML = state.slots.map(slot => `
+      <button type="button" class="admin-book-slot${state.selectedSlot === slot ? " selected" : ""}" data-slot="${adminBookEscapeHtml(slot)}">
+        ${adminBookEscapeHtml(new Date(slot).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }))}
+      </button>
+    `).join("");
+    el.querySelectorAll("[data-slot]").forEach(btn => {
+      btn.onclick = () => {
+        state.selectedSlot = btn.dataset.slot;
+        updateSummaries();
+        renderSlots();
+      };
+    });
+  }
+
+  async function loadVehicles() {
+    if (!state.customer) return;
+    try {
+      const res = await adminFetch(`/api/admin-customer-vehicles?customer_id=${encodeURIComponent(state.customer.id)}`);
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Failed to load vehicles");
+      state.vehicles = data.vehicles || [];
+      renderVehicles();
+    } catch (err) {
+      showAdminBanner(err.message || "Vehicle load failed.", "error");
+    }
+  }
+
+  async function loadServices() {
+    try {
+      const res = await adminFetch("/api/admin-service-variants");
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Failed to load services");
+      state.services = data.service_variants || [];
+      renderServices();
+    } catch (err) {
+      showAdminBanner(err.message || "Service load failed.", "error");
+      $("bookServiceSelect").innerHTML = '<option value="">Service load failed</option>';
+    }
+  }
+
+  $("bookCustomerSearchBtn").onclick = async () => {
+    const q = $("bookCustomerSearch").value.trim();
+    if (!q) {
+      showAdminBanner("Enter a customer search term.", "error");
+      return;
+    }
+    try {
+      const res = await adminFetch(`/api/admin-search-customers?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Customer search failed");
+      state.customers = data.customers || [];
+      renderCustomerResults();
+    } catch (err) {
+      showAdminBanner(err.message || "Customer search failed.", "error");
+    }
+  };
+
+  $("bookCustomerSearch").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") $("bookCustomerSearchBtn").click();
+  });
+
+  $("bookCreateCustomerBtn").onclick = async () => {
+    try {
+      const body = {
+        full_name: $("bookNewCustomerName").value.trim(),
+        email: $("bookNewCustomerEmail").value.trim(),
+        phone: $("bookNewCustomerPhone").value.trim()
+      };
+      const res = await adminFetch("/api/admin-create-customer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Customer create failed");
+      state.customer = data.customer;
+      state.vehicle = null;
+      state.vehicles = [];
+      showAdminBanner("Customer selected.", "success");
+      updateSummaries();
+      await loadVehicles();
+    } catch (err) {
+      showAdminBanner(err.message || "Customer create failed.", "error");
+    }
+  };
+
+  $("bookCreateVehicleBtn").onclick = async () => {
+    if (!state.customer) {
+      showAdminBanner("Select a customer first.", "error");
+      return;
+    }
+    try {
+      const body = {
+        customer_id: state.customer.id,
+        year: $("bookVehicleYear").value.trim(),
+        make: $("bookVehicleMake").value.trim(),
+        model: $("bookVehicleModel").value.trim(),
+        vehicle_size: $("bookVehicleSize").value
+      };
+      const res = await adminFetch("/api/admin-create-vehicle", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.error || "Vehicle create failed");
+      state.vehicle = data.vehicle;
+      state.vehicles = [data.vehicle, ...state.vehicles.filter(v => v.id !== data.vehicle.id)];
+      showAdminBanner("Vehicle selected.", "success");
+      updateSummaries();
+      renderVehicles();
+    } catch (err) {
+      showAdminBanner(err.message || "Vehicle create failed.", "error");
+    }
+  };
+
+  $("bookServiceSelect").onchange = () => {
+    state.service = state.services.find(s => s.service_variant_id === $("bookServiceSelect").value) || null;
+    state.selectedSlot = null;
+    state.slots = [];
+    updateSummaries();
+    renderSlots();
+  };
+
+  $("bookLoadSlotsBtn").onclick = async () => {
+    if (!state.service) {
+      showAdminBanner("Select a service first.", "error");
+      return;
+    }
+    const address = $("bookServiceAddress").value.trim();
+    const day = $("bookDate").value;
+    if (!address) {
+      showAdminBanner("Service address is required.", "error");
+      return;
+    }
+    if (!day) {
+      showAdminBanner("Select a date.", "error");
+      return;
+    }
+    try {
+      const params = new URLSearchParams({
+        day,
+        duration_minutes: String(state.service.duration_minutes),
+        service_address: address,
+        service_variant_id: state.service.service_variant_id
+      });
+      const res = await adminFetch(`/api/get-availability?${params.toString()}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || "Availability load failed");
+      state.slots = data.slots || [];
+      state.selectedSlot = null;
+      state.slotDurationMinutes = data.solo_effective_duration_minutes || state.service.duration_minutes;
+      renderSlots();
+      updateSummaries();
+      if (!state.slots.length) showAdminBanner(data.message || "No available slots for that date.", "error");
+    } catch (err) {
+      showAdminBanner(err.message || "Availability load failed.", "error");
+    }
+  };
+
+  $("bookSubmitBtn").onclick = async () => {
+    if (!state.customer || !state.vehicle || !state.service || !state.selectedSlot) {
+      showAdminBanner("Complete customer, vehicle, service, and time first.", "error");
+      return;
+    }
+    const address = $("bookServiceAddress").value.trim();
+    if (!address) {
+      showAdminBanner("Service address is required.", "error");
+      return;
+    }
+    const start = new Date(state.selectedSlot);
+    const duration = Number(state.slotDurationMinutes || state.service.duration_minutes);
+    if (!Number.isFinite(duration) || duration <= 0) {
+      showAdminBanner("Invalid service duration.", "error");
+      return;
+    }
+    const end = new Date(start.getTime() + duration * 60000);
+    const body = {
+      customer_id: state.customer.id,
+      vehicle_id: state.vehicle.id,
+      scheduled_start: start.toISOString(),
+      scheduled_end: end.toISOString(),
+      service_address: address,
+      service_variant_id: state.service.service_variant_id,
+      status: $("bookStatus").value,
+      send_customer_email: $("bookSendEmail").checked
+    };
+    const notes = $("bookCustomerNotes").value.trim();
+    if (notes) body.customer_notes = notes;
+
+    $("bookSubmitBtn").disabled = true;
+    try {
+      const res = await adminFetch("/api/admin-create-booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) throw new Error(data.message || data.error || "Booking create failed");
+      showAdminBanner(data.status === "pending" ? "Pending booking created." : "Confirmed booking created.", "success");
+      await loadAdminData();
+    } catch (err) {
+      showAdminBanner(err.message || "Booking create failed.", "error");
+    } finally {
+      $("bookSubmitBtn").disabled = false;
+    }
+  };
+
+  $("bookResetBtn").onclick = () => renderBookCustomerView();
+  $("bookServiceAddress").addEventListener("input", () => updateSummaries());
+  updateSummaries();
+  renderVehicles();
+  renderSlots();
+  loadServices();
+}
+
 function renderView(viewName) {
   viewContainer.innerHTML = "";
+
+  if (viewName === "book-customer") {
+    renderBookCustomerView();
+    return;
+  }
 
   // =========================
   // HISTORY (SERVER-SIDE)
