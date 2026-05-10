@@ -16,6 +16,10 @@ function normalizePhone(value) {
   return String(value || "").trim();
 }
 
+function normalizeAddress(value) {
+  return String(value || "").trim();
+}
+
 export default async function handler(req, res) {
   try {
     await verifyAdmin(req);
@@ -31,6 +35,7 @@ export default async function handler(req, res) {
     const fullName = String(req.body?.full_name || "").trim();
     const email = normalizeEmail(req.body?.email);
     const phone = normalizePhone(req.body?.phone);
+    const address = normalizeAddress(req.body?.address || req.body?.customer_address || req.body?.service_address);
 
     if (!fullName || !email) {
       return res.status(400).json({ ok: false, error: "full_name and email are required" });
@@ -64,7 +69,13 @@ export default async function handler(req, res) {
 
     const { data: created, error: createErr } = await supabase
       .from("customers")
-      .insert([{ id: crypto.randomUUID(), full_name: fullName, email, phone: phone || null }])
+      .insert([{
+        id: crypto.randomUUID(),
+        full_name: fullName,
+        email,
+        phone: phone || null,
+        address: address || ""
+      }])
       .select("id, full_name, email, phone")
       .single();
 
@@ -80,7 +91,7 @@ export default async function handler(req, res) {
       }
     });
   } catch (err) {
-    console.error("admin-create-customer error:", err);
+    console.error("[ADMIN_CREATE_CUSTOMER] error", err);
     return res.status(500).json({ ok: false, error: "Server error" });
   }
 }
