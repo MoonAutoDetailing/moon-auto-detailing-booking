@@ -12,7 +12,7 @@ function requireEnv(name) {
 const WITHIN_24_HOURS_RESPONSE = {
   ok: false,
   code: "WITHIN_24_HOURS",
-  message: "This appointment is within 24 hours. Please call or text (518) 496-3691 to request a cancellation or reschedule."
+  message: "Because your appointment is within 24 hours, online cancellations or reschedule requests are no longer available. Please call or text Darren at (518) 496-3691 to request a cancellation or reschedule."
 };
 
 export default async function handler(req, res) {
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
   try {
-    const { token } = req.body;
+    const token = req.body?.token || req.body?.manage_token;
     if (!token) return res.status(400).json({ message: "Missing token" });
 
     const supabase = createClient(
@@ -48,19 +48,14 @@ export default async function handler(req, res) {
       return res.status(200).json({ message: "Booking already cancelled" });
     }
 
-// =========================
-// 24-HOUR CANCEL RULE (UTC SAFE)
-// =========================
-const nowUtcMs = Date.now(); // always UTC
-const startUtcMs = Date.parse(booking.scheduled_start); // ISO → UTC ms
-
-const hoursUntilService = (startUtcMs - nowUtcMs) / 36e5;
-
-const isLateCancel = Number.isFinite(hoursUntilService) && hoursUntilService <= 24;
-
-if (isLateCancel) {
-  return res.status(409).json(WITHIN_24_HOURS_RESPONSE);
-}
+    // =========================
+    // 24-HOUR CUSTOMER CANCEL RULE
+    // =========================
+    const hoursUntilService = (new Date(booking.scheduled_start).getTime() - Date.now()) / (1000 * 60 * 60);
+    if (Number.isFinite(hoursUntilService) && hoursUntilService <= 24) {
+      console.log("[MANAGE_BOOKING] customer_cancel_blocked_within_24 booking_id=" + booking.id);
+      return res.status(409).json(WITHIN_24_HOURS_RESPONSE);
+    }
 
 
 
@@ -110,23 +105,19 @@ if (isLateCancel) {
       return res.status(500).json({ message: "Database update failed" });
     }
 
-    // Send cancellation email (only for normal cancellations; must succeed or roll back)
-if (!isLateCancel) {
-  const emailResult = await sendBookingCancelledEmailCore(booking.id);
-  if (!emailResult?.success) {
-    console.error("Cancel email failed:", emailResult?.error);
-    await supabase
-      .from("bookings")
-      .update({ status: previousStatus })
-      .eq("id", booking.id);
-    return res.status(500).json({ message: "Email failed; action rolled back" });
-  }
-}
+    // Send cancellation email (only after status update succeeds; must succeed or roll back)
+    const emailResult = await sendBookingCancelledEmailCore(booking.id);
+    if (!emailResult?.success) {
+      console.error("Cancel email failed:", emailResult?.error);
+      await supabase
+        .from("bookings")
+        .update({ status: previousStatus })
+        .eq("id", booking.id);
+      return res.status(500).json({ message: "Email failed; action rolled back" });
+    }
 
    return res.status(200).json({
-  message: isLateCancel
-    ? "Your cancellation request was received. Our team will follow up shortly."
-    : "Your booking has been cancelled."
+  message: "Your booking has been cancelled."
 });
 
 

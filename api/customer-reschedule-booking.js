@@ -13,7 +13,7 @@ function requireEnv(name) {
 const WITHIN_24_HOURS_RESPONSE = {
   ok: false,
   code: "WITHIN_24_HOURS",
-  message: "This appointment is within 24 hours. Please call or text (518) 496-3691 to request a cancellation or reschedule."
+  message: "Because your appointment is within 24 hours, online cancellations or reschedule requests are no longer available. Please call or text Darren at (518) 496-3691 to request a cancellation or reschedule."
 };
 
 export default async function handler(req, res) {
@@ -68,9 +68,9 @@ export default async function handler(req, res) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    const startUtcMs = Date.parse(booking.scheduled_start);
-    const hoursUntilService = (startUtcMs - Date.now()) / 36e5;
+    const hoursUntilService = (new Date(booking.scheduled_start).getTime() - Date.now()) / (1000 * 60 * 60);
     if (Number.isFinite(hoursUntilService) && hoursUntilService <= 24) {
+      console.log("[MANAGE_BOOKING] customer_reschedule_blocked_within_24 booking_id=" + booking.id);
       return res.status(409).json(WITHIN_24_HOURS_RESPONSE);
     }
 

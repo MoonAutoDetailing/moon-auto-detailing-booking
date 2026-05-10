@@ -14,6 +14,7 @@
 const BASE_URL = (process.env.BASE_URL || "").replace(/\/$/, "");
 const TOKEN = process.env.TEST_MANAGE_TOKEN_WITHIN_24H;
 const BYPASS = process.env.VERCEL_PROTECTION_BYPASS;
+const WITHIN_24_HOURS_MESSAGE = "Because your appointment is within 24 hours, online cancellations or reschedule requests are no longer available. Please call or text Darren at (518) 496-3691 to request a cancellation or reschedule.";
 
 let bypassCookie = null;
 const results = [];
@@ -71,7 +72,7 @@ async function postEndpoint(path) {
 function assertBlocked(name, result) {
   const code = result.json?.code;
   const appOk = result.json?.ok;
-  const blocked = code === "WITHIN_24_HOURS" && (!result.ok || appOk === false);
+  const blocked = code === "WITHIN_24_HOURS" && result.json?.message === WITHIN_24_HOURS_MESSAGE && (!result.ok || appOk === false);
   if (blocked) {
     logTest(name, true, `HTTP ${result.status} code=${code}`);
     return;
@@ -80,7 +81,7 @@ function assertBlocked(name, result) {
   logTest(
     name,
     false,
-    `Expected WITHIN_24_HOURS block. Endpoint=${result.endpoint} HTTP ${result.status} response=${result.text}`
+    `Expected WITHIN_24_HOURS block with exact message. Endpoint=${result.endpoint} HTTP ${result.status} response=${result.text}`
   );
 }
 

@@ -141,7 +141,9 @@ if (!token) {
 
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data.ok === false) {
-      actionError.textContent = data.message || data.error || "Action failed. Please try again.";
+      actionError.textContent = data.code === "WITHIN_24_HOURS"
+        ? "Because your appointment is within 24 hours, online cancellations or reschedule requests are no longer available. Please call or text Darren at (518) 496-3691 to request a cancellation or reschedule."
+        : (data.message || data.error || "Action failed. Please try again.");
       actionError.classList.remove("hidden");
       return;
     }
