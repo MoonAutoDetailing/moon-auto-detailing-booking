@@ -1266,7 +1266,6 @@ body.help-modal-open {
   color: #ffffff;
   outline: none;
 }
-.address-callout,
 .address-selection-warning {
   margin: 0 0 14px;
   padding: 12px 14px;
@@ -1274,11 +1273,6 @@ body.help-modal-open {
   font-size: 13px;
   line-height: 1.45;
   text-align: left;
-}
-.address-callout {
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
-  color: #9a3412;
 }
 .address-selection-warning {
   margin-top: 8px;
@@ -1400,7 +1394,6 @@ body.help-modal-open {
     min-height: 38px;
     font-size: 16px;
   }
-  .address-callout,
   .address-selection-warning {
     padding: 11px 12px;
     font-size: 12px;
@@ -1594,7 +1587,6 @@ View Maintenance Plans </a>
     <div class="step-panel step-panel--address">
     <div class="row full">
       <div>
-        <p class="address-callout"><strong>Important:</strong> Do not use your phone or browser autofill for this field. Start typing your service address and select the matching address from the dropdown so travel time and availability can calculate correctly.</p>
         <label for="serviceAddress" class="label-with-help">
           <span>Address where the detail will be completed</span>
           <button type="button" class="help-button" data-help-topic="service-address" aria-label="Service address help">?</button>
@@ -1613,8 +1605,8 @@ View Maintenance Plans </a>
           data-1p-ignore
           required
         />
-        <p class="muted" style="margin-top:6px; margin-bottom:0; font-size:13px; line-height:1.4;">Please type your address and select it from the Google dropdown. Do not use your device's autofill suggestion for this field.</p>
-        <p id="serviceAddressSelectionWarning" class="address-selection-warning" hidden aria-hidden="true">Please select your service address from the Google dropdown before viewing availability or submitting.</p>
+        <p class="muted" style="margin-top:6px; margin-bottom:0; font-size:13px; line-height:1.4;">Start typing your service address and choose it from the dropdown.</p>
+        <p id="serviceAddressSelectionWarning" class="address-selection-warning" hidden aria-hidden="true">Please select your service address from the Google dropdown so travel time and availability can calculate correctly.</p>
         <p id="serviceAddressReselectHelper" class="muted" style="display:none; margin-top:8px; font-size:13px;">Need a different location? Edit the address and select a new one from the dropdown.</p>
       </div>
     </div>
@@ -1990,11 +1982,11 @@ let selectedStartISO = null;
               </div>
               <div class="help-card">
                 <h4>How to enter it</h4>
-                <p>Start typing your service address, then select the matching address from the dropdown.</p>
+                <p>Do not use your phone or browser autofill for this field. Start typing your service address and select the matching address from the dropdown.</p>
               </div>
               <div class="help-card">
                 <h4>Avoid autofill</h4>
-                <p>Autofill or incomplete manual addresses can prevent accurate availability.</p>
+                <p>Autofill or incomplete manual addresses can prevent travel time and availability from calculating correctly.</p>
               </div>
             </div>
           `
@@ -3676,7 +3668,7 @@ function initAddressAutocomplete() {
       selectedStartISO = null;
       recalcEndTimePreview();
       clearAppliedDiscount();
-      showServiceAddressSelectionWarning("Please select the updated service address from the Google dropdown before viewing availability.");
+      showServiceAddressSelectionWarning("Please select your service address from the Google dropdown so travel time and availability can calculate correctly.");
       loadCalendar();
     });
     serviceAddress.addEventListener("change", () => {
@@ -3700,7 +3692,7 @@ function initAddressAutocomplete() {
       selectedStartISO = null;
       recalcEndTimePreview();
       clearAppliedDiscount();
-      showServiceAddressSelectionWarning("Please select the updated service address from the Google dropdown before viewing availability.");
+      showServiceAddressSelectionWarning("Please select your service address from the Google dropdown so travel time and availability can calculate correctly.");
       loadCalendar();
     });
   }
@@ -4198,7 +4190,7 @@ if (toggleBtn && calContainer) {
   toggleBtn.addEventListener("click", () => {
     const isOpen = calContainer.style.display === "block";
     if (!isOpen && elServiceAddress && (elServiceAddress.value || "").trim() && !hasValidServiceAddress) {
-      showServiceAddressSelectionWarning("Please select your service address from the Google dropdown before viewing availability.");
+      showServiceAddressSelectionWarning("Please select your service address from the Google dropdown so travel time and availability can calculate correctly.");
       return;
     }
     calContainer.style.display = isOpen ? "none" : "block";
