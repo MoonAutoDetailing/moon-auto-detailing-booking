@@ -17,7 +17,8 @@ function normalizePhone(value) {
 }
 
 function normalizeAddress(value) {
-  return String(value || "").trim();
+  const address = String(value || "").trim();
+  return address || "Address not provided";
 }
 
 export default async function handler(req, res) {
@@ -74,7 +75,7 @@ export default async function handler(req, res) {
         full_name: fullName,
         email,
         phone: phone || null,
-        address: address || ""
+        address
       }])
       .select("id, full_name, email, phone")
       .single();

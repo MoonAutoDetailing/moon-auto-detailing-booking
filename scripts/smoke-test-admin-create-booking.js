@@ -204,7 +204,8 @@ async function main() {
   const customerRes = await adminPost("admin-create-customer", {
     full_name: "Smoke Test Admin Booking",
     email: `smoke-admin-booking-${stamp}@example.com`,
-    phone: "5185550100"
+    phone: "5185550100",
+    address: TEST_SERVICE_ADDRESS
   });
   if (!customerRes.ok || !customerRes.json?.ok || !customerRes.json.customer?.id) {
     logTest("Admin create/reuse customer", false, failureDetails(customerRes));
