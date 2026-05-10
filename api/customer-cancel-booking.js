@@ -44,10 +44,6 @@ export default async function handler(req, res) {
       return res.status(404).json({ message: "Booking not found" });
     }
 
-    if (booking.status === "cancelled") {
-      return res.status(200).json({ message: "Booking already cancelled" });
-    }
-
     // =========================
     // 24-HOUR CUSTOMER CANCEL RULE
     // =========================
@@ -55,6 +51,10 @@ export default async function handler(req, res) {
     if (Number.isFinite(hoursUntilService) && hoursUntilService <= 24) {
       console.log("[MANAGE_BOOKING] customer_cancel_blocked_within_24 booking_id=" + booking.id);
       return res.status(409).json(WITHIN_24_HOURS_RESPONSE);
+    }
+
+    if (booking.status === "cancelled") {
+      return res.status(200).json({ message: "Booking already cancelled" });
     }
 
 
