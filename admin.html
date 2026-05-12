@@ -465,6 +465,28 @@ cursor: pointer;
 .admin-book-check input {
   width: auto;
 }
+.admin-book-toggle {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+.admin-book-toggle .moon-tab.selected {
+  background: var(--moon-primary);
+  color: white;
+}
+.admin-book-panel {
+  margin-top: 12px;
+}
+.admin-book-panel[hidden] {
+  display: none;
+}
+.admin-book-caution {
+  margin: 8px 0 0;
+  color: #ffdca8;
+  font-size: 13px;
+  line-height: 1.4;
+}
 @media (max-width: 720px) {
   .admin-book-grid {
     grid-template-columns: 1fr;
@@ -473,7 +495,8 @@ cursor: pointer;
     padding: 14px;
   }
   .admin-book-actions .moon-tab,
-  .admin-book-actions button {
+  .admin-book-actions button,
+  .admin-book-toggle .moon-tab {
     width: 100%;
     margin-right: 0;
   }
@@ -2330,7 +2353,10 @@ function renderBookCustomerView() {
     services: [],
     slots: [],
     selectedSlot: null,
-    slotDurationMinutes: null
+    slotDurationMinutes: null,
+    customerMode: null,
+    timeMode: "slots",
+    addressFromPlaces: false
   };
 
   viewContainer.innerHTML = `
@@ -2338,22 +2364,31 @@ function renderBookCustomerView() {
       <h2 class="admin-book-title">Book Customer</h2>
       <div class="admin-book-card">
         <h3>1. Customer</h3>
-        <div class="admin-book-grid">
-          <div class="admin-book-field">
-            <label for="bookCustomerSearch">Search by name, email, or phone</label>
-            <input id="bookCustomerSearch" type="search" placeholder="Start typing..." autocomplete="off" />
-          </div>
-          <div class="admin-book-field" style="justify-content:end;">
-            <button id="bookCustomerSearchBtn" type="button" class="moon-tab">Search Customers</button>
-          </div>
+        <div class="admin-book-toggle" aria-label="Customer mode">
+          <button id="bookCustomerSearchModeBtn" type="button" class="moon-tab">Search Existing Customer</button>
+          <button id="bookCustomerCreateModeBtn" type="button" class="moon-tab">Add New Customer</button>
         </div>
-        <div id="bookCustomerResults" class="admin-book-options"></div>
+        <div id="bookCustomerSearchPanel" class="admin-book-panel" hidden>
+          <div class="admin-book-grid">
+            <div class="admin-book-field">
+              <label for="bookCustomerSearch">Search by name, email, or phone</label>
+              <input id="bookCustomerSearch" type="search" placeholder="Start typing..." autocomplete="off" />
+            </div>
+            <div class="admin-book-field" style="justify-content:end;">
+              <button id="bookCustomerSearchBtn" type="button" class="moon-tab">Search Customers</button>
+            </div>
+          </div>
+          <div id="bookCustomerResults" class="admin-book-options"></div>
+        </div>
         <div class="admin-book-summary" id="bookSelectedCustomer">No customer selected.</div>
-        <div class="admin-book-grid" style="margin-top:12px;">
-          <div class="admin-book-field"><label>Full name</label><input id="bookNewCustomerName" type="text" /></div>
-          <div class="admin-book-field"><label>Email</label><input id="bookNewCustomerEmail" type="email" /></div>
-          <div class="admin-book-field"><label>Phone</label><input id="bookNewCustomerPhone" type="tel" /></div>
+        <div id="bookCustomerCreatePanel" class="admin-book-panel" hidden>
+        <div class="admin-book-grid">
+          <div class="admin-book-field"><label>First name</label><input id="bookNewCustomerFirstName" type="text" autocomplete="given-name" /></div>
+          <div class="admin-book-field"><label>Last name</label><input id="bookNewCustomerLastName" type="text" autocomplete="family-name" /></div>
+          <div class="admin-book-field"><label>Email</label><input id="bookNewCustomerEmail" type="email" autocomplete="email" /></div>
+          <div class="admin-book-field"><label>Phone</label><input id="bookNewCustomerPhone" type="tel" autocomplete="tel" /></div>
           <div class="admin-book-field" style="justify-content:end;"><button id="bookCreateCustomerBtn" type="button" class="moon-tab">Create / Reuse Customer</button></div>
+        </div>
         </div>
       </div>
 
@@ -2391,11 +2426,27 @@ function renderBookCustomerView() {
       <div class="admin-book-card">
         <h3>4. Location & Time</h3>
         <div class="admin-book-grid">
-          <div class="admin-book-field"><label>Service address</label><input id="bookServiceAddress" type="text" placeholder="Street, City, State ZIP" /></div>
-          <div class="admin-book-field"><label>Date</label><input id="bookDate" type="date" /></div>
+          <div class="admin-book-field"><label>Service address</label><input id="bookServiceAddress" type="text" placeholder="Start typing service address..." autocomplete="street-address" /><p class="admin-book-muted" style="margin:4px 0 0;">Choose a Google result when available, or type the address manually.</p></div>
         </div>
-        <div class="admin-book-actions"><button id="bookLoadSlotsBtn" type="button" class="moon-tab">Load Available Slots</button></div>
-        <div id="bookSlots" class="admin-book-slots"></div>
+        <div class="admin-book-toggle" aria-label="Time mode">
+          <button id="bookUseSlotsModeBtn" type="button" class="moon-tab">Use available slots</button>
+          <button id="bookManualTimeModeBtn" type="button" class="moon-tab">Manual admin time</button>
+        </div>
+        <div id="bookSlotsPanel" class="admin-book-panel">
+          <div class="admin-book-grid">
+            <div class="admin-book-field"><label>Date</label><input id="bookDate" type="date" /></div>
+          </div>
+          <div class="admin-book-actions"><button id="bookLoadSlotsBtn" type="button" class="moon-tab">Load Available Slots</button></div>
+          <div id="bookSlots" class="admin-book-slots"></div>
+        </div>
+        <div id="bookManualTimePanel" class="admin-book-panel" hidden>
+          <p class="admin-book-muted" style="margin:0 0 8px;"><strong>Admin override:</strong> choose any time manually.</p>
+          <p class="admin-book-caution">This can bypass normal customer availability. Check your calendar before booking.</p>
+          <div class="admin-book-grid" style="margin-top:10px;">
+            <div class="admin-book-field"><label for="bookManualStart">Manual date and time</label><input id="bookManualStart" type="datetime-local" /></div>
+          </div>
+          <div class="admin-book-summary" id="bookManualTimeSummary">Select a service and manual start time to estimate the end time.</div>
+        </div>
         <div class="admin-book-summary" id="bookSelectedTime">No time selected.</div>
       </div>
 
@@ -2444,7 +2495,69 @@ function renderBookCustomerView() {
     return [v.year, v.make, v.model].filter(Boolean).join(" ") + (v.vehicle_size ? " (" + v.vehicle_size + ")" : "");
   }
 
+  function formatDateTime(date) {
+    return date instanceof Date && !Number.isNaN(date.getTime())
+      ? date.toLocaleString([], { dateStyle: "medium", timeStyle: "short" })
+      : "—";
+  }
+
+  function getServiceDurationMinutes() {
+    const duration = Number(state.service?.duration_minutes);
+    return Number.isFinite(duration) && duration > 0 ? duration : null;
+  }
+
+  function getManualStartDate() {
+    const value = $("bookManualStart")?.value;
+    if (!value) return null;
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function getSelectedTimeRange() {
+    if (state.timeMode === "manual") {
+      const start = getManualStartDate();
+      const duration = getServiceDurationMinutes();
+      if (!start || !duration) return null;
+      return {
+        start,
+        end: new Date(start.getTime() + duration * 60000),
+        manual: true
+      };
+    }
+    if (!state.selectedSlot) return null;
+    const start = new Date(state.selectedSlot);
+    const duration = Number(state.slotDurationMinutes || state.service?.duration_minutes);
+    if (Number.isNaN(start.getTime()) || !Number.isFinite(duration) || duration <= 0) return null;
+    return {
+      start,
+      end: new Date(start.getTime() + duration * 60000),
+      manual: false
+    };
+  }
+
+  function updateManualTimeSummary() {
+    const el = $("bookManualTimeSummary");
+    if (!el) return;
+    const start = getManualStartDate();
+    const duration = getServiceDurationMinutes();
+    if (!state.service) {
+      el.textContent = "Select a service before using manual admin time.";
+      return;
+    }
+    if (!duration) {
+      el.textContent = "Selected service is missing a valid duration.";
+      return;
+    }
+    if (!start) {
+      el.textContent = "Choose a manual start time to estimate the end time.";
+      return;
+    }
+    const end = new Date(start.getTime() + duration * 60000);
+    el.innerHTML = `<strong>Start:</strong> ${adminBookEscapeHtml(formatDateTime(start))}<br><strong>Estimated end:</strong> ${adminBookEscapeHtml(formatDateTime(end))}`;
+  }
+
   function updateSummaries() {
+    const selectedTime = getSelectedTimeRange();
     $("bookSelectedCustomer").innerHTML = state.customer
       ? `<strong>Selected customer:</strong> ${adminBookEscapeHtml(state.customer.full_name || "—")}<br><span class="admin-book-muted">${adminBookEscapeHtml(state.customer.email || "—")} · ${adminBookEscapeHtml(state.customer.phone || "—")}</span>`
       : "No customer selected.";
@@ -2454,16 +2567,38 @@ function renderBookCustomerView() {
     $("bookSelectedService").innerHTML = state.service
       ? `<strong>Selected service:</strong> ${adminBookEscapeHtml(serviceLabel(state.service))}`
       : "No service selected.";
-    $("bookSelectedTime").innerHTML = state.selectedSlot
-      ? `<strong>Selected time:</strong> ${adminBookEscapeHtml(new Date(state.selectedSlot).toLocaleString())}`
+    $("bookSelectedTime").innerHTML = selectedTime
+      ? `<strong>Selected time:</strong> ${adminBookEscapeHtml(formatDateTime(selectedTime.start))} to ${adminBookEscapeHtml(formatDateTime(selectedTime.end))}${selectedTime.manual ? '<br><span class="admin-book-muted">Manual admin time override</span>' : ""}`
       : "No time selected.";
     $("bookReviewSummary").innerHTML = `
       <div><strong>Customer:</strong> ${adminBookEscapeHtml(state.customer?.full_name || "—")}</div>
       <div><strong>Vehicle:</strong> ${adminBookEscapeHtml(state.vehicle ? vehicleLabel(state.vehicle) : "—")}</div>
       <div><strong>Service:</strong> ${adminBookEscapeHtml(state.service ? serviceLabel(state.service) : "—")}</div>
       <div><strong>Address:</strong> ${adminBookEscapeHtml($("bookServiceAddress").value || "—")}</div>
-      <div><strong>Time:</strong> ${adminBookEscapeHtml(state.selectedSlot ? new Date(state.selectedSlot).toLocaleString() : "—")}</div>
+      <div><strong>Time:</strong> ${adminBookEscapeHtml(selectedTime ? `${formatDateTime(selectedTime.start)} to ${formatDateTime(selectedTime.end)}` : "—")}</div>
     `;
+    updateManualTimeSummary();
+  }
+
+  function setCustomerMode(mode) {
+    state.customerMode = mode;
+    $("bookCustomerSearchPanel").hidden = mode !== "search";
+    $("bookCustomerCreatePanel").hidden = mode !== "create";
+    $("bookCustomerSearchModeBtn").classList.toggle("selected", mode === "search");
+    $("bookCustomerCreateModeBtn").classList.toggle("selected", mode === "create");
+  }
+
+  function setTimeMode(mode) {
+    state.timeMode = mode;
+    if (mode === "manual") {
+      state.selectedSlot = null;
+    }
+    $("bookSlotsPanel").hidden = mode !== "slots";
+    $("bookManualTimePanel").hidden = mode !== "manual";
+    $("bookUseSlotsModeBtn").classList.toggle("selected", mode === "slots");
+    $("bookManualTimeModeBtn").classList.toggle("selected", mode === "manual");
+    updateSummaries();
+    renderSlots();
   }
 
   function renderCustomerResults() {
@@ -2571,6 +2706,48 @@ function renderBookCustomerView() {
     }
   }
 
+  function formatGooglePlaceAddress(place) {
+    if (!place) return "";
+    if (place.address_components && place.address_components.length) {
+      const components = {};
+      for (const c of place.address_components) {
+        for (const t of c.types) components[t] = c.long_name;
+      }
+      const street = [components.street_number, components.route].filter(Boolean).join(" ");
+      const city = components.locality || components.sublocality || components.postal_town || "";
+      const stateValue = components.administrative_area_level_1 || "";
+      const zip = components.postal_code || "";
+      return [street, city, stateValue, zip].filter(Boolean).join(", ");
+    }
+    return String(place.formatted_address || "").trim();
+  }
+
+  function initAdminBookAddressAutocomplete() {
+    const input = $("bookServiceAddress");
+    if (!input || input.dataset.placesAttached === "true") return;
+    if (!window.google || !google.maps?.places) return;
+    const autocomplete = new google.maps.places.Autocomplete(input, {
+      types: ["address"],
+      componentRestrictions: { country: "us" },
+      fields: ["address_components", "formatted_address", "place_id"]
+    });
+    input.dataset.placesAttached = "true";
+    autocomplete.addListener("place_changed", () => {
+      const place = autocomplete.getPlace();
+      const address = formatGooglePlaceAddress(place);
+      if (!address) return;
+      input.value = address;
+      state.addressFromPlaces = true;
+      updateSummaries();
+    });
+  }
+
+  function waitForAdminBookPlaces(attemptsLeft = 40) {
+    initAdminBookAddressAutocomplete();
+    if (($("bookServiceAddress")?.dataset.placesAttached === "true") || attemptsLeft <= 0) return;
+    setTimeout(() => waitForAdminBookPlaces(attemptsLeft - 1), 100);
+  }
+
   $("bookCustomerSearchBtn").onclick = async () => {
     const q = $("bookCustomerSearch").value.trim();
     if (!q) {
@@ -2592,10 +2769,22 @@ function renderBookCustomerView() {
     if (e.key === "Enter") $("bookCustomerSearchBtn").click();
   });
 
+  $("bookCustomerSearchModeBtn").onclick = () => setCustomerMode("search");
+  $("bookCustomerCreateModeBtn").onclick = () => setCustomerMode("create");
+  $("bookUseSlotsModeBtn").onclick = () => setTimeMode("slots");
+  $("bookManualTimeModeBtn").onclick = () => setTimeMode("manual");
+
   $("bookCreateCustomerBtn").onclick = async () => {
     try {
+      const firstName = $("bookNewCustomerFirstName").value.trim();
+      const lastName = $("bookNewCustomerLastName").value.trim();
+      if (!firstName || !lastName) {
+        showAdminBanner("First name and last name are required.", "error");
+        return;
+      }
       const body = {
-        full_name: $("bookNewCustomerName").value.trim(),
+        first_name: firstName,
+        last_name: lastName,
         email: $("bookNewCustomerEmail").value.trim(),
         phone: $("bookNewCustomerPhone").value.trim()
       };
@@ -2692,8 +2881,8 @@ function renderBookCustomerView() {
   };
 
   $("bookSubmitBtn").onclick = async () => {
-    if (!state.customer || !state.vehicle || !state.service || !state.selectedSlot) {
-      showAdminBanner("Complete customer, vehicle, service, and time first.", "error");
+    if (!state.customer || !state.vehicle || !state.service) {
+      showAdminBanner("Complete customer, vehicle, and service first.", "error");
       return;
     }
     const address = $("bookServiceAddress").value.trim();
@@ -2701,22 +2890,33 @@ function renderBookCustomerView() {
       showAdminBanner("Service address is required.", "error");
       return;
     }
-    const start = new Date(state.selectedSlot);
-    const duration = Number(state.slotDurationMinutes || state.service.duration_minutes);
-    if (!Number.isFinite(duration) || duration <= 0) {
-      showAdminBanner("Invalid service duration.", "error");
+    if (state.timeMode === "manual" && !getServiceDurationMinutes()) {
+      showAdminBanner("Selected service is missing a valid duration. Cannot calculate manual end time.", "error");
       return;
     }
-    const end = new Date(start.getTime() + duration * 60000);
+    if (state.timeMode === "manual" && !$("bookManualStart").value) {
+      showAdminBanner("Choose a manual admin date and time.", "error");
+      return;
+    }
+    if (state.timeMode === "slots" && !state.selectedSlot) {
+      showAdminBanner("Load and select an available slot first.", "error");
+      return;
+    }
+    const selectedTime = getSelectedTimeRange();
+    if (!selectedTime) {
+      showAdminBanner("Select a valid booking time.", "error");
+      return;
+    }
     const body = {
       customer_id: state.customer.id,
       vehicle_id: state.vehicle.id,
-      scheduled_start: start.toISOString(),
-      scheduled_end: end.toISOString(),
+      scheduled_start: selectedTime.start.toISOString(),
+      scheduled_end: selectedTime.end.toISOString(),
       service_address: address,
       service_variant_id: state.service.service_variant_id,
       status: $("bookStatus").value,
-      send_customer_email: $("bookSendEmail").checked
+      send_customer_email: $("bookSendEmail").checked,
+      admin_manual_time: state.timeMode === "manual"
     };
     const notes = $("bookCustomerNotes").value.trim();
     if (notes) body.customer_notes = notes;
@@ -2740,10 +2940,17 @@ function renderBookCustomerView() {
   };
 
   $("bookResetBtn").onclick = () => renderBookCustomerView();
-  $("bookServiceAddress").addEventListener("input", () => updateSummaries());
+  $("bookManualStart").addEventListener("input", () => updateSummaries());
+  $("bookServiceAddress").addEventListener("input", () => {
+    state.addressFromPlaces = false;
+    updateSummaries();
+  });
+  setCustomerMode(null);
+  setTimeMode("slots");
   updateSummaries();
   renderVehicles();
   renderSlots();
+  waitForAdminBookPlaces();
   loadServices();
 }
 
@@ -4283,5 +4490,10 @@ renderSection(sectionTitle, data);
 
      
 </script>
+<script
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAszMW1x5-TUHnlDkxpms-z4rDfHxDcTyI&libraries=places&loading=async"
+  async
+  defer
+></script>
 </body>
 </html>

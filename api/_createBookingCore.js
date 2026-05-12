@@ -127,7 +127,8 @@ export async function createBookingCore({
   body,
   status = "pending",
   allowDiscount = true,
-  allowSubscription = true
+  allowSubscription = true,
+  allowAvailabilityOverride = false
 }) {
   const {
     customer_id,
@@ -170,7 +171,7 @@ export async function createBookingCore({
 
   let effectiveScheduledEnd = scheduled_end;
   const dayStr = scheduled_start.slice(0, 10);
-  if (await isSoloMode(supabase, dayStr) && variantRow.duration_minutes != null) {
+  if (!allowAvailabilityOverride && await isSoloMode(supabase, dayStr) && variantRow.duration_minutes != null) {
     const category = variantRow.service?.category ?? null;
     const level = variantRow.service?.level ?? null;
     const vehicleSize = variantRow.vehicle_size ?? null;
@@ -185,9 +186,11 @@ export async function createBookingCore({
     effectiveScheduledEnd = endDate.toISOString();
   }
 
-  const isAvailable = await checkAvailability(scheduled_start, effectiveScheduledEnd);
-  if (!isAvailable) {
-    return { ok: false, statusCode: 409, body: { ok: false, message: "Time slot no longer available." } };
+  if (!allowAvailabilityOverride) {
+    const isAvailable = await checkAvailability(scheduled_start, effectiveScheduledEnd);
+    if (!isAvailable) {
+      return { ok: false, statusCode: 409, body: { ok: false, message: "Time slot no longer available." } };
+    }
   }
 
   let base_price = Number(variantRow.price);

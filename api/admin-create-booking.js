@@ -20,6 +20,7 @@ const FORBIDDEN_FIELDS = [
   "travel_fee",
   "travel_minutes",
   "total_price",
+  "allowAvailabilityOverride",
   "manage_token",
   "google_event_id",
   "google_event_html_link"
@@ -48,6 +49,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: "status must be confirmed or pending" });
     }
     const sendCustomerEmail = req.body?.send_customer_email !== false;
+    const adminManualTime = req.body?.admin_manual_time === true;
 
     const supabase = createClient(
       requireEnv("SUPABASE_URL"),
@@ -68,11 +70,36 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: "Vehicle does not belong to customer" });
     }
 
+    let bookingBody = req.body || {};
+    if (adminManualTime) {
+      const { data: variant, error: variantErr } = await supabase
+        .from("service_variants")
+        .select("duration_minutes")
+        .eq("id", req.body?.service_variant_id)
+        .maybeSingle();
+      if (variantErr) throw variantErr;
+
+      const durationMinutes = Number(variant?.duration_minutes);
+      const manualStart = new Date(req.body?.scheduled_start);
+      if (!Number.isFinite(durationMinutes) || durationMinutes <= 0) {
+        return res.status(400).json({ ok: false, error: "Selected service is missing a valid duration" });
+      }
+      if (Number.isNaN(manualStart.getTime())) {
+        return res.status(400).json({ ok: false, error: "scheduled_start is invalid" });
+      }
+
+      bookingBody = {
+        ...bookingBody,
+        scheduled_end: new Date(manualStart.getTime() + durationMinutes * 60000).toISOString()
+      };
+    }
+
     const result = await createBookingCore({
-      body: req.body || {},
+      body: bookingBody,
       status: "pending",
       allowDiscount: false,
-      allowSubscription: false
+      allowSubscription: false,
+      allowAvailabilityOverride: adminManualTime
     });
 
     if (!result.ok) {

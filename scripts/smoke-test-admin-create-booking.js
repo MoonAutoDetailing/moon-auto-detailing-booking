@@ -13,7 +13,9 @@
  *   - admin customer create/reuse
  *   - admin vehicle create
  *   - availability slots load
+ *   - unsafe admin override fields are rejected
  *   - admin pending booking creation with send_customer_email=false
+ *   - manual admin-time pending booking creation
  *   - admin confirmed booking creation with send_customer_email=false when a second slot is available
  */
 
@@ -176,6 +178,24 @@ function bookingBody({ customerId, vehicleId, service, slot, availability, statu
   };
 }
 
+function manualBookingBody({ customerId, vehicleId, service, day, hour, status }) {
+  const duration = Number(service.duration_minutes);
+  const start = new Date(`${day}T${String(hour).padStart(2, "0")}:17:00`);
+  const end = new Date(start.getTime() + duration * 60000);
+  return {
+    customer_id: customerId,
+    vehicle_id: vehicleId,
+    scheduled_start: start.toISOString(),
+    scheduled_end: end.toISOString(),
+    service_address: TEST_SERVICE_ADDRESS,
+    service_variant_id: service.service_variant_id,
+    status,
+    send_customer_email: false,
+    admin_manual_time: true,
+    customer_notes: "Smoke test manual admin-time booking"
+  };
+}
+
 async function main() {
   requireEnv("BASE_URL", BASE_URL);
   requireEnv("ADMIN_PASSWORD", ADMIN_PASSWORD);
@@ -202,7 +222,8 @@ async function main() {
 
   const stamp = Date.now();
   const customerRes = await adminPost("admin-create-customer", {
-    full_name: "Smoke Test Admin Booking",
+    first_name: "Smoke",
+    last_name: "Admin Booking",
     email: `smoke-admin-booking-${stamp}@example.com`,
     phone: "5185550100",
     address: TEST_SERVICE_ADDRESS
@@ -235,6 +256,24 @@ async function main() {
   }
   logTest("Availability slots", true, `${availability.slots.length} slot(s) on ${availability.day}`);
 
+  const unsafeBody = {
+    ...bookingBody({
+      customerId,
+      vehicleId,
+      service,
+      slot: availability.slots[0],
+      availability,
+      status: "pending"
+    }),
+    allowAvailabilityOverride: true
+  };
+  const unsafeRes = await adminPost("admin-create-booking", unsafeBody);
+  if (unsafeRes.status !== 400 || unsafeRes.json?.ok !== false) {
+    logTest("Admin rejects unsafe override fields", false, failureDetails(unsafeRes));
+    return finish();
+  }
+  logTest("Admin rejects unsafe override fields", true);
+
   const pendingBody = bookingBody({
     customerId,
     vehicleId,
@@ -250,27 +289,57 @@ async function main() {
   }
   logTest("Admin create pending booking", true, `bookingId=${pendingRes.json.bookingId}`);
 
+  const manualDays = nextWeekdays(16).slice(-2).map(yyyyMmDd);
+  const manualPendingBody = manualBookingBody({
+    customerId,
+    vehicleId,
+    service,
+    day: manualDays[0],
+    hour: 7,
+    status: "pending"
+  });
+  const manualPendingRes = await adminPost("admin-create-booking", manualPendingBody);
+  if (!manualPendingRes.ok || !manualPendingRes.json?.ok || manualPendingRes.json.status !== "pending") {
+    logTest("Admin create manual pending booking", false, failureDetails(manualPendingRes));
+    return finish();
+  }
+  logTest("Admin create manual pending booking", true, `bookingId=${manualPendingRes.json.bookingId}`);
+
   const confirmedAvailability = await loadAvailability(service, 1);
   const confirmedSlot = confirmedAvailability?.slots?.find(s => s !== availability.slots[0]);
   if (!confirmedSlot) {
     logTest("Admin create confirmed booking", "skip", "No second available slot found after pending booking was created");
-    return finish();
+  } else {
+    const confirmedBody = bookingBody({
+      customerId,
+      vehicleId,
+      service,
+      slot: confirmedSlot,
+      availability: confirmedAvailability,
+      status: "confirmed"
+    });
+    const confirmedRes = await adminPost("admin-create-booking", confirmedBody);
+    if (!confirmedRes.ok || !confirmedRes.json?.ok || confirmedRes.json.status !== "confirmed") {
+      logTest("Admin create confirmed booking", false, failureDetails(confirmedRes));
+      return finish();
+    }
+    logTest("Admin create confirmed booking", true, `bookingId=${confirmedRes.json.bookingId}`);
   }
 
-  const confirmedBody = bookingBody({
+  const manualConfirmedBody = manualBookingBody({
     customerId,
     vehicleId,
     service,
-    slot: confirmedSlot,
-    availability: confirmedAvailability,
+    day: manualDays[1],
+    hour: 19,
     status: "confirmed"
   });
-  const confirmedRes = await adminPost("admin-create-booking", confirmedBody);
-  if (!confirmedRes.ok || !confirmedRes.json?.ok || confirmedRes.json.status !== "confirmed") {
-    logTest("Admin create confirmed booking", false, failureDetails(confirmedRes));
+  const manualConfirmedRes = await adminPost("admin-create-booking", manualConfirmedBody);
+  if (!manualConfirmedRes.ok || !manualConfirmedRes.json?.ok || manualConfirmedRes.json.status !== "confirmed") {
+    logTest("Admin create manual confirmed booking", false, failureDetails(manualConfirmedRes));
     return finish();
   }
-  logTest("Admin create confirmed booking", true, `bookingId=${confirmedRes.json.bookingId}`);
+  logTest("Admin create manual confirmed booking", true, `bookingId=${manualConfirmedRes.json.bookingId}`);
 
   finish();
 }

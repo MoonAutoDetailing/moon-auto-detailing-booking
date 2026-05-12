@@ -33,7 +33,11 @@ export default async function handler(req, res) {
   }
 
   try {
-    const fullName = String(req.body?.full_name || "").trim();
+    const firstName = String(req.body?.first_name || "").trim();
+    const lastName = String(req.body?.last_name || "").trim();
+    const fullName = firstName || lastName
+      ? `${firstName} ${lastName}`.trim()
+      : String(req.body?.full_name || "").trim();
     const email = normalizeEmail(req.body?.email);
     const phone = normalizePhone(req.body?.phone);
     const address = normalizeAddress(req.body?.address || req.body?.customer_address || req.body?.service_address);
