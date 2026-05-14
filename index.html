@@ -2388,6 +2388,7 @@ let selectedStartISO = null;
     const elWizardProgress = document.getElementById("wizardProgress");
     const elWizardCurrentTitle = document.getElementById("wizardCurrentTitle");
     const wizardSteps = Array.from(document.querySelectorAll("[data-wizard-step]"));
+    const RESCHEDULE_WIZARD_STEP_INDEX = 4;
     let currentWizardStep = 0;
 
     function scrollWizardIntoView() {
@@ -2415,17 +2416,21 @@ let selectedStartISO = null;
     }
 
     function showStarter() {
+      if (RESCHEDULE_MODE) {
+        enterWizard(RESCHEDULE_WIZARD_STEP_INDEX);
+        return;
+      }
       if (elBookingStarter) elBookingStarter.hidden = false;
       if (elRecommendationFlow) elRecommendationFlow.hidden = true;
       if (elBookingWizard) elBookingWizard.hidden = true;
       scrollWizardIntoView();
     }
 
-    function enterWizard(stepIndex = 0) {
+    function enterWizard(stepIndex = 0, shouldScroll = true) {
       if (elBookingStarter) elBookingStarter.hidden = true;
       if (elRecommendationFlow) elRecommendationFlow.hidden = true;
       if (elBookingWizard) elBookingWizard.hidden = false;
-      showWizardStep(stepIndex);
+      showWizardStep(stepIndex, shouldScroll);
     }
 
     function validateWizardStep(stepIndex) {
@@ -2469,7 +2474,11 @@ let selectedStartISO = null;
 
     function setupBookingWizard() {
       renderWizardProgress();
-      showWizardStep(0, false);
+      if (RESCHEDULE_MODE) {
+        enterWizard(RESCHEDULE_WIZARD_STEP_INDEX, false);
+      } else {
+        showWizardStep(0, false);
+      }
 
       document.getElementById("startWizardBtn")?.addEventListener("click", () => enterWizard(0));
       document.querySelectorAll("[data-wizard-next]").forEach(btn => {
@@ -2481,7 +2490,9 @@ let selectedStartISO = null;
       });
       document.querySelectorAll("[data-wizard-back]").forEach(btn => {
         btn.addEventListener("click", () => {
-          if (currentWizardStep === 0) showStarter();
+          if (RESCHEDULE_MODE && currentWizardStep === 0) {
+            showWizardStep(RESCHEDULE_WIZARD_STEP_INDEX);
+          } else if (currentWizardStep === 0) showStarter();
           else showWizardStep(currentWizardStep - 1);
         });
       });
@@ -4761,7 +4772,7 @@ async function bootApp() {
 
     if (RESCHEDULE_MODE) {
       await loadRescheduleBooking();
-      enterWizard(4);
+      enterWizard(RESCHEDULE_WIZARD_STEP_INDEX);
     } else if (SUBSCRIPTION_MODE) {
       await loadCalendar();
       enterWizard(0);
