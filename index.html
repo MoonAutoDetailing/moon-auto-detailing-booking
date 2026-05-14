@@ -1443,6 +1443,248 @@ body.help-modal-open {
   }
 }
 
+/* =====================
+   BOOKING WIZARD UI
+   ===================== */
+.booking-starter,
+.recommendation-flow,
+.booking-wizard {
+  margin-top: 24px;
+}
+.wizard-hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  padding: 28px;
+  background:
+    radial-gradient(circle at top left, rgba(127, 184, 230, 0.35), transparent 36%),
+    linear-gradient(135deg, #07111f 0%, #101827 58%, #162033 100%);
+  color: #ffffff;
+  border: 1px solid rgba(127, 184, 230, 0.35);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+}
+.wizard-hero-logo {
+  display: block;
+  width: 72px;
+  height: auto;
+  margin: 0 auto 14px;
+}
+.wizard-hero h2,
+.wizard-hero p {
+  text-align: center;
+}
+.wizard-hero h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(1.55rem, 4vw, 2.15rem);
+}
+.wizard-hero p {
+  max-width: 620px;
+  margin: 10px auto 0;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.55;
+}
+.starter-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 24px;
+}
+.starter-action-card,
+.recommendation-option,
+.wizard-nav-btn {
+  min-height: 52px;
+  border-radius: 18px;
+  font-family: inherit;
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
+}
+.starter-action-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-height: 128px;
+  padding: 18px;
+  color: #ffffff;
+  text-decoration: none;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.09);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+.starter-action-card:hover,
+.recommendation-option:hover,
+.wizard-nav-btn:hover {
+  transform: translateY(-1px);
+}
+.starter-action-card strong {
+  font-size: 16px;
+}
+.starter-action-card span {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 13px;
+  line-height: 1.35;
+}
+.starter-action-card--primary {
+  background: linear-gradient(135deg, #7fb8e6, #5ca7df);
+  box-shadow: 0 10px 24px rgba(127, 184, 230, 0.4);
+}
+.recommendation-card,
+.wizard-shell {
+  padding: 22px;
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1px solid rgba(127, 184, 230, 0.24);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
+}
+.recommendation-card h2,
+.recommendation-card h3 {
+  margin-top: 0;
+  color: #7fb8e6;
+}
+.recommendation-question {
+  margin: 0 0 16px;
+  color: #374151;
+  font-size: 16px;
+  font-weight: 600;
+  text-align: center;
+}
+.recommendation-options {
+  display: grid;
+  gap: 10px;
+}
+.recommendation-option {
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  color: #1f2937;
+}
+.recommendation-option.is-selected {
+  border-color: #7fb8e6;
+  background: rgba(127, 184, 230, 0.18);
+  box-shadow: 0 0 0 3px rgba(127, 184, 230, 0.16);
+}
+.recommendation-result {
+  padding: 18px;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #eff8ff, #ffffff);
+  border: 1px solid rgba(127, 184, 230, 0.35);
+  text-align: center;
+}
+.recommendation-result strong {
+  display: block;
+  margin-top: 8px;
+  color: #111827;
+  font-size: 20px;
+}
+.wizard-progress {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+  margin: 18px 0 22px;
+}
+.wizard-progress-step {
+  min-height: 50px;
+  padding: 8px 6px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 11px;
+  line-height: 1.25;
+  text-align: center;
+}
+.wizard-progress-step::before {
+  content: "";
+  display: block;
+  width: 9px;
+  height: 9px;
+  margin: 0 auto 6px;
+  border-radius: 999px;
+  background: #d1d5db;
+}
+.wizard-progress-step.is-active {
+  color: #111827;
+  border-color: rgba(127, 184, 230, 0.7);
+  background: #eff8ff;
+  box-shadow: 0 8px 20px rgba(127, 184, 230, 0.18);
+}
+.wizard-progress-step.is-active::before {
+  background: #7fb8e6;
+}
+.wizard-current-title {
+  margin: 0 0 14px;
+  color: #7fb8e6;
+  text-align: center;
+}
+.wizard-step {
+  display: none;
+  animation: wizardFade 0.18s ease;
+}
+.wizard-step.is-active {
+  display: block;
+}
+@keyframes wizardFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.wizard-step-actions,
+.recommendation-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+.wizard-nav-btn {
+  width: auto;
+  min-width: 130px;
+  padding: 13px 22px;
+  border: none;
+  font-weight: 600;
+}
+.wizard-nav-btn--back {
+  background: #e5e7eb;
+  color: #374151;
+}
+.wizard-nav-btn--next {
+  background: #7fb8e6;
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(127, 184, 230, 0.36);
+}
+.wizard-final-note {
+  margin-top: 14px;
+}
+@media (max-width: 760px) {
+  .starter-actions {
+    grid-template-columns: 1fr;
+  }
+  .wizard-hero {
+    padding: 22px 16px;
+  }
+  .starter-action-card {
+    min-height: 98px;
+    text-align: center;
+  }
+  .wizard-shell,
+  .recommendation-card {
+    padding: 18px 14px;
+  }
+  .wizard-progress {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .wizard-progress-step {
+    min-height: 44px;
+    font-size: 10px;
+  }
+  .wizard-step-actions,
+  .recommendation-actions {
+    flex-direction: column;
+  }
+  .wizard-nav-btn {
+    width: 100%;
+  }
+}
+
   </style>                              <!--PAGE UI DESIGN END-->
 
   
@@ -1457,72 +1699,151 @@ body.help-modal-open {
     <p class="page-subtitle">
   Mobile Auto Detailing, WE come to YOU. Book in now, no payment required today.                      <!--ALL BOOKING CONTENT-->
 </p>
-    <p style="text-align:center; margin-top:6px; margin-bottom:0;">
-      <a href="/booking-lookup.html" class="link-secondary">Manage Existing Booking</a>
-    </p>
 
-    <h3 class="section-title">1. Customer Information</h3> <!--Customer-Information-->
-    <div class="step-panel">
-    <div class="row">
-      <div>
-        <label for="fullName">Full name</label>
-        <input id="fullName" type="text" placeholder="First Last" autocomplete="name" required />
+    <section id="bookingStarter" class="booking-starter" aria-label="Booking start">
+      <div class="wizard-hero">
+        <img src="/NewLogoColor.png" class="wizard-hero-logo" alt="Moon Auto Detailing" />
+        <h2>How can we help today?</h2>
+        <p>Choose the path that fits where you are. You can manage an existing request, get a quick package recommendation, or start a new booking.</p>
+        <div class="starter-actions">
+          <a href="/booking-lookup.html" class="starter-action-card">
+            <strong>Find Existing Booking</strong>
+            <span>Look up or manage a booking you already requested.</span>
+          </a>
+          <button type="button" id="startRecommendationBtn" class="starter-action-card">
+            <strong>Help Me Choose</strong>
+            <span>Answer three quick questions to find the right package direction.</span>
+          </button>
+          <button type="button" id="startWizardBtn" class="starter-action-card starter-action-card--primary">
+            <strong>Book Now / Get Started</strong>
+            <span>Start a new mobile detailing booking request.</span>
+          </button>
+        </div>
       </div>
-      <div>
-        <label for="email">Email</label>
-        <input id="email" type="email" placeholder="you@email.com" autocomplete="email" required />
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label for="phone">Phone</label>
-        <input id="phone" type="tel" placeholder="(518) 555-1234" autocomplete="tel" />
-      </div>
-      <div>
-        <label for="address">Address</label>
-        <input
-  id="address"
-  type="text"
-  autocomplete="street-address"
-  inputmode="text"
-  placeholder="Street, City, State ZIP"
-  required
-/>
+    </section>
 
+    <section id="recommendationFlow" class="recommendation-flow" hidden aria-label="Help me choose">
+      <div class="recommendation-card">
+        <h2>Help Me Choose</h2>
+        <p class="muted">This recommends a package direction only. You will still choose your service during booking.</p>
+        <div id="recommendationQuestion" class="recommendation-question"></div>
+        <div id="recommendationOptions" class="recommendation-options"></div>
+        <div id="recommendationResult" class="recommendation-result" hidden></div>
+        <div class="recommendation-actions">
+          <button type="button" id="recommendationBackBtn" class="wizard-nav-btn wizard-nav-btn--back">Back</button>
+          <button type="button" id="recommendationStartBookingBtn" class="wizard-nav-btn wizard-nav-btn--next" hidden>Start Booking</button>
+        </div>
       </div>
-    </div>
-    </div><!-- /.step-panel -->
+    </section>
 
-    <h3 class="section-title">2. Vehicle Details</h3> <!--Vehicle-Details-->
-    <div class="step-panel">
-    <div class="row row--three-cols">
-    <div>
-        <label for="vehicleSize" class="label-with-help">
-          <span>Vehicle size</span>
-          <button type="button" class="help-button" data-help-topic="vehicle-size" aria-label="Vehicle size help">?</button>
-        </label> <!--Vehicle size-->
-        <select id="vehicleSize" required>
-          <option value="">Select size…</option>
-          <option value="compact">compact</option>
-          <option value="midsized">midsized</option>
-          <option value="oversized">oversized</option>
-        </select>
-      </div>
-      <div>
-        <label for="serviceCategory">Service type</label>
-        <select id="serviceCategory" disabled>
-          <option value="">Select vehicle size first…</option>
-        </select>
-      </div>
-      <div>
-        <label for="serviceVariant" class="label-with-help">
-          <span>Service</span>
-          <button type="button" class="help-button" data-help-topic="service-package" aria-label="Service and package help">?</button>
-        </label> <!--Select-service-->
-        <select id="serviceVariant" required disabled>
-          <option value="">Select vehicle size first…</option>
-        </select>
-        <div id="maintenanceUpsell" style="
+    <section id="bookingWizard" class="booking-wizard" hidden aria-label="Booking wizard">
+      <div class="wizard-shell">
+        <div class="wizard-progress" id="wizardProgress" aria-label="Booking progress"></div>
+        <h2 id="wizardCurrentTitle" class="wizard-current-title">Customer Information</h2>
+
+        <section class="wizard-step" data-wizard-step="0" data-step-title="Customer Information">
+          <h3 class="section-title">1. Customer Information</h3> <!--Customer-Information-->
+          <div class="step-panel">
+          <div class="row">
+            <div>
+              <label for="fullName">Full name</label>
+              <input id="fullName" type="text" placeholder="First Last" autocomplete="name" required />
+            </div>
+            <div>
+              <label for="email">Email</label>
+              <input id="email" type="email" placeholder="you@email.com" autocomplete="email" required />
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label for="phone">Phone</label>
+              <input id="phone" type="tel" placeholder="(518) 555-1234" autocomplete="tel" />
+            </div>
+            <div>
+              <label for="address">Address</label>
+              <input
+        id="address"
+        type="text"
+        autocomplete="street-address"
+        inputmode="text"
+        placeholder="Street, City, State ZIP"
+        required
+      />
+
+            </div>
+          </div>
+          </div><!-- /.step-panel -->
+          <div class="wizard-step-actions">
+            <button type="button" class="wizard-nav-btn wizard-nav-btn--back" data-wizard-back>Back</button>
+            <button type="button" class="wizard-nav-btn wizard-nav-btn--next" data-wizard-next>Next</button>
+          </div>
+        </section>
+
+        <section class="wizard-step" data-wizard-step="1" data-step-title="Vehicle Information">
+          <h3 class="section-title">2. Vehicle Information</h3> <!--Vehicle-Details-->
+          <div class="step-panel">
+            <div class="row">
+              <div>
+                <label for="year">Year</label>
+                <input id="year" type="number" min="1900" max="2100" placeholder="2015" />
+              </div>
+              <div>
+                <label for="make">Make</label>
+                <input id="make" type="text" placeholder="Toyota" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="model">Model</label>
+                <input id="model" type="text" placeholder="Corolla" />
+              </div>
+              <div>
+                <label for="plate">License plate</label>
+                <input id="plate" type="text" placeholder="ABC-1234" />
+              </div>
+            </div>
+            <div class="row full">
+              <div>
+                <label for="vehicleSize" class="label-with-help">
+                  <span>Vehicle size</span>
+                  <button type="button" class="help-button" data-help-topic="vehicle-size" aria-label="Vehicle size help">?</button>
+                </label> <!--Vehicle size-->
+                <select id="vehicleSize" required>
+                  <option value="">Select size…</option>
+                  <option value="compact">compact</option>
+                  <option value="midsized">midsized</option>
+                  <option value="oversized">oversized</option>
+                </select>
+              </div>
+            </div>
+          </div><!-- /.step-panel -->
+          <div class="wizard-step-actions">
+            <button type="button" class="wizard-nav-btn wizard-nav-btn--back" data-wizard-back>Back</button>
+            <button type="button" class="wizard-nav-btn wizard-nav-btn--next" data-wizard-next>Next</button>
+          </div>
+        </section>
+
+        <section class="wizard-step" data-wizard-step="2" data-step-title="Service Selection">
+          <h3 class="section-title">3. Service Selection</h3>
+          <div class="step-panel">
+            <div class="row">
+              <div>
+                <label for="serviceCategory">Service type</label>
+                <select id="serviceCategory" disabled>
+                  <option value="">Select vehicle size first…</option>
+                </select>
+              </div>
+              <div>
+                <label for="serviceVariant" class="label-with-help">
+                  <span>Service</span>
+                  <button type="button" class="help-button" data-help-topic="service-package" aria-label="Service and package help">?</button>
+                </label> <!--Select-service-->
+                <select id="serviceVariant" required disabled>
+                  <option value="">Select vehicle size first…</option>
+                </select>
+              </div>
+            </div>
+            <div id="maintenanceUpsell" style="
 display:none;
 margin-top:14px;
 text-align:center;
@@ -1555,66 +1876,55 @@ View Maintenance Plans </a>
 <button type="button" id="upsellNoThanks" style="display:block;margin:10px auto 0;background:none;border:none;font-size:14px;cursor:pointer;color:#6b7280;text-decoration:underline;">No thanks</button>
 
 </div>
-        <div id="serviceMeta" class="muted"></div>
-        <div id="serviceClarity" class="service-clarity" style="display:none;"></div>
-      </div>
-    </div>
-      
-    <div class="row"> 
-      <div>
-        <label for="year">Year</label>
-        <input id="year" type="number" min="1900" max="2100" placeholder="2015" />
-      </div>
-      <div>
-        <label for="make">Make</label>
-        <input id="make" type="text" placeholder="Toyota" />
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label for="model">Model</label>
-        <input id="model" type="text" placeholder="Corolla" />
-      </div>
-      <div>
-        <label for="plate">License plate</label>
-        <input id="plate" type="text" placeholder="ABC-1234" />
-      </div>
-    </div>
-    </div><!-- /.step-panel -->
+            <div id="serviceMeta" class="muted"></div>
+            <div id="serviceClarity" class="service-clarity" style="display:none;"></div>
+          </div><!-- /.step-panel -->
+          <div class="wizard-step-actions">
+            <button type="button" class="wizard-nav-btn wizard-nav-btn--back" data-wizard-back>Back</button>
+            <button type="button" class="wizard-nav-btn wizard-nav-btn--next" data-wizard-next>Next</button>
+          </div>
+        </section>
 
-    <h3 class="section-title">3. Service Address</h3>
-    <p class="muted" style="margin: 0 0 8px; text-align: center;">Where the detail will be completed. Availability is based on this address.</p>
-    <div class="step-panel step-panel--address">
-    <div class="row full">
-      <div>
-        <label for="serviceAddress" class="label-with-help">
-          <span>Address where the detail will be completed</span>
-          <button type="button" class="help-button" data-help-topic="service-address" aria-label="Service address help">?</button>
-        </label>
-        <input
-          id="serviceAddress"
-          type="text"
-          name="service-location"
-          autocomplete="off"
-          autocorrect="off"
-          autocapitalize="off"
-          spellcheck="false"
-          inputmode="text"
-          placeholder="Start typing service address…"
-          data-lpignore="true"
-          data-1p-ignore
-          required
-        />
-        <p class="muted" style="margin-top:6px; margin-bottom:0; font-size:13px; line-height:1.4;">Start typing your service address and choose it from the dropdown.</p>
-        <p id="serviceAddressSelectionWarning" class="address-selection-warning" hidden aria-hidden="true">Please select your service address from the Google dropdown so travel time and availability can calculate correctly.</p>
-        <p id="serviceAddressReselectHelper" class="muted" style="display:none; margin-top:8px; font-size:13px;">Need a different location? Edit the address and select a new one from the dropdown.</p>
-      </div>
-    </div>
-    </div><!-- /.step-panel -->
+        <section class="wizard-step" data-wizard-step="3" data-step-title="Service Address">
+          <h3 class="section-title">4. Service Address</h3>
+          <p class="muted" style="margin: 0 0 8px; text-align: center;">Where the detail will be completed. Availability is based on this address.</p>
+          <div class="step-panel step-panel--address">
+          <div class="row full">
+            <div>
+              <label for="serviceAddress" class="label-with-help">
+                <span>Address where the detail will be completed</span>
+                <button type="button" class="help-button" data-help-topic="service-address" aria-label="Service address help">?</button>
+              </label>
+              <input
+                id="serviceAddress"
+                type="text"
+                name="service-location"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                inputmode="text"
+                placeholder="Start typing service address…"
+                data-lpignore="true"
+                data-1p-ignore
+                required
+              />
+              <p class="muted" style="margin-top:6px; margin-bottom:0; font-size:13px; line-height:1.4;">Start typing your service address and choose it from the dropdown.</p>
+              <p id="serviceAddressSelectionWarning" class="address-selection-warning" hidden aria-hidden="true">Please select your service address from the Google dropdown so travel time and availability can calculate correctly.</p>
+              <p id="serviceAddressReselectHelper" class="muted" style="display:none; margin-top:8px; font-size:13px;">Need a different location? Edit the address and select a new one from the dropdown.</p>
+            </div>
+          </div>
+          </div><!-- /.step-panel -->
+          <div class="wizard-step-actions">
+            <button type="button" class="wizard-nav-btn wizard-nav-btn--back" data-wizard-back>Back</button>
+            <button type="button" class="wizard-nav-btn wizard-nav-btn--next" data-wizard-next>Next</button>
+          </div>
+        </section>
 
-    <h3 class="section-title">4. Appointment Time</h3>
-                                                                 <!-- Confirmed Bookings Calendar (read-only reference) -->
-    <div class="step-panel step-panel--time">
+        <section class="wizard-step" data-wizard-step="4" data-step-title="Date & Time">
+          <h3 class="section-title">5. Date & Time / Availability</h3>
+                                                                       <!-- Confirmed Bookings Calendar (read-only reference) -->
+          <div class="step-panel step-panel--time">
 <p class="muted" style="margin:0 0 12px; font-size:14px;">Select an available time below. Your appointment request is not confirmed until we review it.</p>
 <button
   type="button"
@@ -1641,53 +1951,65 @@ View Maintenance Plans </a>
   
   </div> <!-- calendarContainer -->
 
-    <div class="row">
-      <div>
-        <label for="start">Desired Start Time</label>
-        <input id="start" type="text" readonly placeholder="Select a time on the calendar" aria-required="true" />
-      </div>
-      <div>
-        <label for="end">Estimated End Time</label>
-        <input id="end" type="text" readonly placeholder="—" />
-      </div>
-    </div>
-    <div id="soloModeNotice" class="solo-mode-notice" style="display:none; margin-top:10px; padding:10px 14px; background:#fef3c7; border-radius:8px; font-size:14px; color:#92400e;"></div>
-    </div><!-- /.step-panel -->
+          <div class="row">
+            <div>
+              <label for="start">Desired Start Time</label>
+              <input id="start" type="text" readonly placeholder="Select a time on the calendar" aria-required="true" />
+            </div>
+            <div>
+              <label for="end">Estimated End Time</label>
+              <input id="end" type="text" readonly placeholder="—" />
+            </div>
+          </div>
+          <div id="soloModeNotice" class="solo-mode-notice" style="display:none; margin-top:10px; padding:10px 14px; background:#fef3c7; border-radius:8px; font-size:14px; color:#92400e;"></div>
+          </div><!-- /.step-panel -->
+          <div class="wizard-step-actions">
+            <button type="button" class="wizard-nav-btn wizard-nav-btn--back" data-wizard-back>Back</button>
+            <button type="button" class="wizard-nav-btn wizard-nav-btn--next" data-wizard-next>Next</button>
+          </div>
+        </section>
 
-    <h3 class="section-title">Anything else?</h3>
-    <div class="step-panel">
-      <label for="customerNotes">Special requests or instructions (optional)</label>
-      <textarea id="customerNotes" maxlength="500" placeholder="e.g. gate code, parking instructions, pet in yard…" rows="3" style="width:100%; border-radius:16px; padding:12px 14px; border:1px solid #e5e7eb; font-family:inherit; resize:vertical;"></textarea>
-      <p class="muted" style="margin-top:6px; font-size:13px;"><span id="customerNotesCount">0</span>/500</p>
-    </div><!-- /.step-panel -->
+        <section class="wizard-step" data-wizard-step="5" data-step-title="Review & Submit">
+          <h3 class="section-title">6. Review & Submit</h3>
+          <div class="step-panel">
+            <label for="customerNotes">Special requests or instructions (optional)</label>
+            <textarea id="customerNotes" maxlength="500" placeholder="e.g. gate code, parking instructions, pet in yard…" rows="3" style="width:100%; border-radius:16px; padding:12px 14px; border:1px solid #e5e7eb; font-family:inherit; resize:vertical;"></textarea>
+            <p class="muted" style="margin-top:6px; font-size:13px;"><span id="customerNotesCount">0</span>/500</p>
+          </div><!-- /.step-panel -->
 
-    <h3 class="section-title">Discount Code</h3>
-    <div class="step-panel">
-    <div class="row" style="align-items:flex-end;">
-      <div style="flex:1;">
-        <label for="discountCodeInput">Code</label>
-        <input id="discountCodeInput" type="text" placeholder="Enter code" autocomplete="off" style="text-transform:uppercase;" />
+          <h3 class="section-title">Discount Code</h3>
+          <div class="step-panel">
+          <div class="row" style="align-items:flex-end;">
+            <div style="flex:1;">
+              <label for="discountCodeInput">Code</label>
+              <input id="discountCodeInput" type="text" placeholder="Enter code" autocomplete="off" style="text-transform:uppercase;" />
+            </div>
+            <div style="flex:0 0 auto;">
+              <button type="button" id="discountApplyBtn" class="primary-btn" style="margin-top:0;">Apply</button>
+            </div>
+          </div>
+          <div id="discountFeedback" class="muted" style="margin-top:6px; font-size:14px;"></div>
+          <div id="discountRemoveWrap" style="display:none; margin-top:6px;">
+            <span id="discountAppliedLabel"></span>
+            <button type="button" id="discountRemoveBtn" class="muted" style="background:none; border:none; cursor:pointer; text-decoration:underline; padding:0; margin-left:8px;">Remove</button>
+          </div>
+          </div><!-- /.step-panel -->
+
+          <div class="wizard-step-actions">
+            <button type="button" class="wizard-nav-btn wizard-nav-btn--back" data-wizard-back>Back</button>
+          </div>
+          <button id="submitBtn" class="primary-btn">
+        Submit Booking Request
+      </button>
+            <p class="muted wizard-final-note">
+        Your request will be reviewed and confirmed shortly. You’ll receive a follow-up once it’s scheduled.
+      </p>
+        </section>
+
+        <div id="status" class="muted" style="margin-top:10px;"></div>
+        <pre id="log" style="margin-top:10px; display:none;"></pre>
       </div>
-      <div style="flex:0 0 auto;">
-        <button type="button" id="discountApplyBtn" class="primary-btn" style="margin-top:0;">Apply</button>
-      </div>
-    </div>
-    <div id="discountFeedback" class="muted" style="margin-top:6px; font-size:14px;"></div>
-    <div id="discountRemoveWrap" style="display:none; margin-top:6px;">
-      <span id="discountAppliedLabel"></span>
-      <button type="button" id="discountRemoveBtn" class="muted" style="background:none; border:none; cursor:pointer; text-decoration:underline; padding:0; margin-left:8px;">Remove</button>
-    </div>
-    </div><!-- /.step-panel -->
-
-    <button id="submitBtn" class="primary-btn">
-  Submit Booking Request
-</button>
-      <p class="muted" style="margin-top:14px;">
-  Your request will be reviewed and confirmed shortly. You’ll receive a follow-up once it’s scheduled.
-</p>
-
-    <div id="status" class="muted" style="margin-top:10px;"></div>
-    <pre id="log" style="margin-top:10px; display:none;"></pre>
+    </section>
   </div> <!-- booking-card -->
 
   <!-- Review modal (Stage 1: submit → review → confirm) -->
@@ -2040,6 +2362,234 @@ let selectedStartISO = null;
         setStatus("muted", "");
       }
     }
+
+    // =========================
+    // BOOKING WIZARD UI (layout only)
+    // =========================
+    const wizardStepNames = [
+      "Customer",
+      "Vehicle",
+      "Service",
+      "Address",
+      "Time",
+      "Review"
+    ];
+    const wizardFullStepNames = [
+      "Customer Information",
+      "Vehicle Information",
+      "Service Selection",
+      "Service Address",
+      "Date & Time",
+      "Review & Submit"
+    ];
+    const elBookingStarter = document.getElementById("bookingStarter");
+    const elRecommendationFlow = document.getElementById("recommendationFlow");
+    const elBookingWizard = document.getElementById("bookingWizard");
+    const elWizardProgress = document.getElementById("wizardProgress");
+    const elWizardCurrentTitle = document.getElementById("wizardCurrentTitle");
+    const wizardSteps = Array.from(document.querySelectorAll("[data-wizard-step]"));
+    let currentWizardStep = 0;
+
+    function scrollWizardIntoView() {
+      const target = elBookingWizard && !elBookingWizard.hidden ? elBookingWizard : elBookingStarter;
+      target?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function renderWizardProgress() {
+      if (!elWizardProgress) return;
+      elWizardProgress.innerHTML = wizardStepNames.map((name, index) => (
+        `<div class="wizard-progress-step${index === currentWizardStep ? " is-active" : ""}" aria-current="${index === currentWizardStep ? "step" : "false"}">${index + 1}. ${name}</div>`
+      )).join("");
+      if (elWizardCurrentTitle) {
+        elWizardCurrentTitle.textContent = wizardFullStepNames[currentWizardStep] || "";
+      }
+    }
+
+    function showWizardStep(stepIndex, shouldScroll = true) {
+      currentWizardStep = Math.max(0, Math.min(stepIndex, wizardSteps.length - 1));
+      wizardSteps.forEach((step, index) => {
+        step.classList.toggle("is-active", index === currentWizardStep);
+      });
+      renderWizardProgress();
+      if (shouldScroll) scrollWizardIntoView();
+    }
+
+    function showStarter() {
+      if (elBookingStarter) elBookingStarter.hidden = false;
+      if (elRecommendationFlow) elRecommendationFlow.hidden = true;
+      if (elBookingWizard) elBookingWizard.hidden = true;
+      scrollWizardIntoView();
+    }
+
+    function enterWizard(stepIndex = 0) {
+      if (elBookingStarter) elBookingStarter.hidden = true;
+      if (elRecommendationFlow) elRecommendationFlow.hidden = true;
+      if (elBookingWizard) elBookingWizard.hidden = false;
+      showWizardStep(stepIndex);
+    }
+
+    function validateWizardStep(stepIndex) {
+      try {
+        if (stepIndex === 0) {
+          requireNonEmpty("Full name", elFullName.value);
+          requireNonEmpty("Email", elEmail.value);
+          requireNonEmpty("Customer address", elAddress.value);
+        } else if (stepIndex === 1) {
+          const vehicleSize = normalizeVehicleSize(requireNonEmpty("Vehicle size", elVehicleSize.value));
+          if (!["compact","midsized","oversized"].includes(vehicleSize)) {
+            throw new Error("Please select a valid vehicle size.");
+          }
+        } else if (stepIndex === 2) {
+          requireNonEmpty("Service type", elServiceCategory.value);
+          requireNonEmpty("Service", elServiceVariant.value);
+        } else if (stepIndex === 3) {
+          const serviceAddress = requireNonEmpty("Service address", elServiceAddress.value);
+          if (serviceAddress && !hasValidServiceAddress) {
+            const msg = "Please select your service address from the Google dropdown so travel time and availability can calculate correctly.";
+            showServiceAddressSelectionWarning(msg);
+            return false;
+          }
+        } else if (stepIndex === 4) {
+          if (!selectedStartISO) {
+            throw new Error("Please select a time on the calendar.");
+          }
+        }
+        setStatus("muted", "");
+        return true;
+      } catch (err) {
+        setStatus("bad", err?.message || "Please complete this step before continuing.");
+        const activeStep = wizardSteps[stepIndex];
+        const firstField = activeStep?.querySelector("input:not([type='hidden']):not([disabled]), select:not([disabled]), textarea:not([disabled])");
+        const isTouchDevice = window.matchMedia?.("(pointer: coarse)")?.matches;
+        if (firstField && !isTouchDevice) firstField.focus();
+        activeStep?.scrollIntoView({ behavior: "smooth", block: "start" });
+        return false;
+      }
+    }
+
+    function setupBookingWizard() {
+      renderWizardProgress();
+      showWizardStep(0, false);
+
+      document.getElementById("startWizardBtn")?.addEventListener("click", () => enterWizard(0));
+      document.querySelectorAll("[data-wizard-next]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          if (validateWizardStep(currentWizardStep)) {
+            showWizardStep(currentWizardStep + 1);
+          }
+        });
+      });
+      document.querySelectorAll("[data-wizard-back]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          if (currentWizardStep === 0) showStarter();
+          else showWizardStep(currentWizardStep - 1);
+        });
+      });
+    }
+
+    const recommendationQuestions = [
+      {
+        key: "area",
+        text: "What part of the vehicle needs attention?",
+        options: [
+          { label: "Interior", value: "interior" },
+          { label: "Exterior", value: "exterior" },
+          { label: "Both", value: "both" }
+        ]
+      },
+      {
+        key: "condition",
+        text: "How bad is it?",
+        options: [
+          { label: "Normal dirt / maintenance", value: "normal" },
+          { label: "Heavy buildup, stains, pet hair, or neglected", value: "heavy" }
+        ]
+      },
+      {
+        key: "outcome",
+        text: "What outcome do you want?",
+        options: [
+          { label: "Quick refresh", value: "quick" },
+          { label: "Deep reset", value: "deep" },
+          { label: "Best overall result", value: "best" }
+        ]
+      }
+    ];
+    const recommendationAnswers = {};
+    let recommendationIndex = 0;
+
+    function getRecommendation() {
+      const area = recommendationAnswers.area;
+      const wantsLevelTwo = recommendationAnswers.condition === "heavy" || ["deep", "best"].includes(recommendationAnswers.outcome);
+      if (area === "interior") return wantsLevelTwo ? "Interior Level 2" : "Interior Level 1";
+      if (area === "exterior") return wantsLevelTwo ? "Exterior Level 2" : "Exterior Level 1";
+      return wantsLevelTwo ? "Full Detail Level 2" : "Full Detail Level 1";
+    }
+
+    function renderRecommendationQuestion() {
+      const questionEl = document.getElementById("recommendationQuestion");
+      const optionsEl = document.getElementById("recommendationOptions");
+      const resultEl = document.getElementById("recommendationResult");
+      const startBtn = document.getElementById("recommendationStartBookingBtn");
+      if (!questionEl || !optionsEl || !resultEl || !startBtn) return;
+
+      const question = recommendationQuestions[recommendationIndex];
+      resultEl.hidden = true;
+      startBtn.hidden = true;
+      questionEl.hidden = false;
+      optionsEl.hidden = false;
+      questionEl.textContent = question.text;
+      optionsEl.innerHTML = question.options.map(option => (
+        `<button type="button" class="recommendation-option" data-recommendation-value="${option.value}">${option.label}</button>`
+      )).join("");
+      optionsEl.querySelectorAll("[data-recommendation-value]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          recommendationAnswers[question.key] = btn.dataset.recommendationValue;
+          if (recommendationIndex < recommendationQuestions.length - 1) {
+            recommendationIndex += 1;
+            renderRecommendationQuestion();
+            return;
+          }
+          const recommendation = getRecommendation();
+          questionEl.hidden = true;
+          optionsEl.hidden = true;
+          resultEl.hidden = false;
+          resultEl.innerHTML = `Based on your answers, we recommend looking at:<strong>${recommendation}</strong><p class="muted" style="margin-bottom:0;">This is guidance only. Nothing has been auto-selected in the booking form.</p>`;
+          startBtn.hidden = false;
+        });
+      });
+    }
+
+    function openRecommendationFlow() {
+      recommendationIndex = 0;
+      Object.keys(recommendationAnswers).forEach(key => delete recommendationAnswers[key]);
+      if (elBookingStarter) elBookingStarter.hidden = true;
+      if (elBookingWizard) elBookingWizard.hidden = true;
+      if (elRecommendationFlow) elRecommendationFlow.hidden = false;
+      renderRecommendationQuestion();
+      elRecommendationFlow?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function setupRecommendationFlow() {
+      document.getElementById("startRecommendationBtn")?.addEventListener("click", openRecommendationFlow);
+      document.getElementById("recommendationStartBookingBtn")?.addEventListener("click", () => enterWizard(0));
+      document.getElementById("recommendationBackBtn")?.addEventListener("click", () => {
+        if (!document.getElementById("recommendationResult")?.hidden) {
+          recommendationIndex = recommendationQuestions.length - 1;
+          renderRecommendationQuestion();
+          return;
+        }
+        if (recommendationIndex > 0) {
+          recommendationIndex -= 1;
+          renderRecommendationQuestion();
+          return;
+        }
+        showStarter();
+      });
+    }
+
+    setupBookingWizard();
+    setupRecommendationFlow();
 
     document.querySelectorAll("[data-help-topic]").forEach(btn => {
       btn.addEventListener("click", () => openHelpModal(btn.dataset.helpTopic, btn));
@@ -4211,6 +4761,10 @@ async function bootApp() {
 
     if (RESCHEDULE_MODE) {
       await loadRescheduleBooking();
+      enterWizard(4);
+    } else if (SUBSCRIPTION_MODE) {
+      await loadCalendar();
+      enterWizard(0);
     } else {
       await loadCalendar();
     }
