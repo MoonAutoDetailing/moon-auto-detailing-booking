@@ -5,6 +5,7 @@
   "scripts": {
     "smoke": "node scripts/smoke-tests.js",
     "smoke:admin-booking": "node scripts/smoke-test-admin-create-booking.js",
+    "smoke:admin-reschedule": "node scripts/smoke-test-admin-reschedule-booking.js",
     "smoke:customer-24hr": "node scripts/smoke-test-customer-24hr-booking-rules.js"
   },
   "dependencies": {

@@ -75,6 +75,50 @@ padding: 8px 12px;
 font-weight: 700;
 cursor: pointer;
 }
+.admin-reschedule-panel {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 10px;
+  background: rgba(0,0,0,0.18);
+}
+.admin-reschedule-panel[hidden] {
+  display: none;
+}
+.admin-reschedule-panel label {
+  display: block;
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.admin-reschedule-panel input[type="datetime-local"] {
+  width: 100%;
+  max-width: 320px;
+  box-sizing: border-box;
+  margin-top: 4px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: white;
+}
+.admin-reschedule-panel input[type="checkbox"] {
+  margin-right: 8px;
+}
+.admin-reschedule-panel .admin-reschedule-caution {
+  margin: 0 0 10px;
+  color: #ffd966;
+  font-size: 13px;
+}
+.admin-reschedule-panel .admin-reschedule-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.admin-reschedule-panel .admin-reschedule-actions button {
+  min-height: 42px;
+}
 .confirm { background: #0a7a2f; color: white; border: none; }
 .cancel { background: #b00020; color: white; border: none; }
 .delay { background: #666; color: white; border: none; }
@@ -983,6 +1027,8 @@ cursor: pointer;
   .card { padding: 10px 12px; margin-top: 8px; }
   .card.expanded { padding: 12px 14px; }
   .booking-header { min-height: 44px; align-items: center; gap: 6px 10px; }
+  .admin-reschedule-panel input[type="datetime-local"] { max-width: none; }
+  .admin-reschedule-panel .admin-reschedule-actions button { flex: 1 1 120px; }
   .subscription-card-header { min-height: 44px; align-items: center; padding: 10px 12px; }
   .subscription-card-detail { padding: 10px 12px; }
   .discount-code-header { min-height: 44px; align-items: center; }
@@ -1718,6 +1764,18 @@ function formatTime(d) {
   if (!isValidDate(d)) return "—";
   return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
+
+function toDatetimeLocalValue(value) {
+  const d = new Date(value);
+  if (!isValidDate(d)) return "";
+  const pad = n => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function getBookingDurationMinutes(b) {
+  const duration = Number(b.service_variants?.duration_minutes);
+  return Number.isFinite(duration) && duration > 0 ? duration : null;
+}
      
 /* ===================== LOAD BOOKINGS ===================== */
 async function loadAdminData(opts = {}) {
@@ -1839,6 +1897,123 @@ function renderSection(title, bookings, startCollapsed = false) {
   viewContainer.appendChild(section);
 }
 
+function createAdminReschedulePanel(b, card) {
+  const panel = document.createElement("div");
+  panel.className = "admin-reschedule-panel";
+  panel.hidden = true;
+
+  const durationMinutes = getBookingDurationMinutes(b);
+  const startInput = document.createElement("input");
+  startInput.type = "datetime-local";
+  startInput.value = toDatetimeLocalValue(b.scheduled_start);
+
+  const endPreview = document.createElement("div");
+  endPreview.className = "row";
+
+  function updateEndPreview() {
+    if (!durationMinutes || !startInput.value) {
+      endPreview.innerHTML = `<span class="label">Estimated end:</span> Backend will calculate from service duration.`;
+      return;
+    }
+    const start = new Date(startInput.value);
+    if (!isValidDate(start)) {
+      endPreview.innerHTML = `<span class="label">Estimated end:</span> —`;
+      return;
+    }
+    const end = new Date(start.getTime() + durationMinutes * 60000);
+    endPreview.innerHTML = `<span class="label">Estimated end:</span> ${formatTime(end)}`;
+  }
+
+  const emailCheckbox = document.createElement("input");
+  emailCheckbox.type = "checkbox";
+
+  const saveBtn = document.createElement("button");
+  saveBtn.type = "button";
+  saveBtn.className = "confirm";
+  saveBtn.textContent = "Save";
+
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.className = "delay";
+  cancelBtn.textContent = "Cancel";
+
+  panel.innerHTML = `
+    <p class="admin-reschedule-caution">Admin override: this can bypass normal customer availability. Check your calendar before saving.</p>
+    <div class="row"><span class="label">Current:</span> ${new Date(b.scheduled_start).toLocaleString()} → ${new Date(b.scheduled_end).toLocaleString()}</div>
+    <label>New date/time</label>
+  `;
+  panel.appendChild(startInput);
+  panel.appendChild(endPreview);
+
+  const emailLabel = document.createElement("label");
+  emailLabel.appendChild(emailCheckbox);
+  emailLabel.appendChild(document.createTextNode("Email customer about this change"));
+  panel.appendChild(emailLabel);
+
+  const actionRow = document.createElement("div");
+  actionRow.className = "admin-reschedule-actions";
+  actionRow.appendChild(cancelBtn);
+  actionRow.appendChild(saveBtn);
+  panel.appendChild(actionRow);
+
+  startInput.oninput = updateEndPreview;
+  updateEndPreview();
+
+  cancelBtn.onclick = () => {
+    panel.hidden = true;
+    startInput.value = toDatetimeLocalValue(b.scheduled_start);
+    emailCheckbox.checked = false;
+    updateEndPreview();
+  };
+
+  saveBtn.onclick = async () => {
+    if (!startInput.value) {
+      showAdminBanner("Choose a new date/time.", "error");
+      return;
+    }
+    if (!lockBookingAction(b.id, "admin-reschedule")) return;
+
+    saveBtn.disabled = true;
+    cancelBtn.disabled = true;
+    saveBtn.textContent = "Saving...";
+
+    try {
+      const newStart = new Date(startInput.value);
+      if (!isValidDate(newStart)) {
+        throw new Error("Choose a valid new date/time.");
+      }
+
+      const res = await adminFetch("/api/admin-reschedule-booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          booking_id: b.id,
+          scheduled_start: newStart.toISOString(),
+          send_customer_email: emailCheckbox.checked
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || data.message || "Admin reschedule failed");
+      }
+
+      showAdminBanner(data.warning ? `Booking rescheduled. ${data.warning}` : "Booking rescheduled.", "success");
+      await loadAdminData();
+    } catch (err) {
+      showAdminBanner(err.message || "Admin reschedule failed.", "error");
+      hardLog(`ADMIN RESCHEDULE ERROR ${err.message}`);
+    } finally {
+      unlockBookingAction(b.id, "admin-reschedule");
+      saveBtn.disabled = false;
+      cancelBtn.disabled = false;
+      saveBtn.textContent = "Save";
+    }
+  };
+
+  return panel;
+}
+
 function buildCard(b) {
   const start = new Date(b.scheduled_start);
   const end = new Date(b.scheduled_end);
@@ -1954,6 +2129,20 @@ header.onclick = () => {
 
   const actions = document.createElement("div");
   actions.className = "actions";
+  const canAdminReschedule = b.status === "pending" || b.status === "confirmed";
+  const adminReschedulePanel = canAdminReschedule ? createAdminReschedulePanel(b, card) : null;
+  const adminRescheduleBtn = canAdminReschedule ? document.createElement("button") : null;
+  if (adminRescheduleBtn) {
+    adminRescheduleBtn.textContent = "Admin Reschedule";
+    adminRescheduleBtn.className = "delay";
+    adminRescheduleBtn.onclick = () => {
+      adminReschedulePanel.hidden = !adminReschedulePanel.hidden;
+      if (!adminReschedulePanel.hidden) {
+        const input = adminReschedulePanel.querySelector('input[type="datetime-local"]');
+        if (input) input.focus();
+      }
+    };
+  }
 
   // Pending
   if (b.status === "pending") {
@@ -2030,6 +2219,7 @@ denyBtn.className = "cancel";
 
 
 
+    actions.appendChild(adminRescheduleBtn);
     actions.appendChild(confirmBtn);
     actions.appendChild(denyBtn);
   }
@@ -2038,7 +2228,7 @@ denyBtn.className = "cancel";
   else if (b.status === "confirmed") {
 
   const rescheduleBtn = document.createElement("button");
-  rescheduleBtn.textContent = "Reschedule";
+  rescheduleBtn.textContent = "Send Reschedule Link";
   rescheduleBtn.className = "delay";
   rescheduleBtn.onclick = async () => {
 
@@ -2183,11 +2373,15 @@ if (b.google_event_id) {
     }
   };
 
+  actions.appendChild(adminRescheduleBtn);
   actions.appendChild(rescheduleBtn);
   actions.appendChild(completeBtn);
   actions.appendChild(cancelBtn);
 }
      card.querySelector(".booking-content").appendChild(actions);
+     if (adminReschedulePanel) {
+       card.querySelector(".booking-content").appendChild(adminReschedulePanel);
+     }
       
   return card;
 }
