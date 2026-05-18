@@ -128,7 +128,8 @@ export async function createBookingCore({
   status = "pending",
   allowDiscount = true,
   allowSubscription = true,
-  allowAvailabilityOverride = false
+  allowAvailabilityOverride = false,
+  adminPriceOverride = null
 }) {
   const {
     customer_id,
@@ -168,6 +169,13 @@ export async function createBookingCore({
   if (!variantRow || variantRow.price == null) {
     return { ok: false, statusCode: 400, body: { ok: false, message: "Invalid service variant." } };
   }
+  if (adminPriceOverride != null) {
+    const overrideBasePrice = Number(adminPriceOverride.base_price);
+    if (!Number.isFinite(overrideBasePrice) || overrideBasePrice <= 0) {
+      return { ok: false, statusCode: 400, body: { ok: false, message: "Invalid admin price override." } };
+    }
+    adminPriceOverride = { base_price: overrideBasePrice };
+  }
 
   let effectiveScheduledEnd = scheduled_end;
   const dayStr = scheduled_start.slice(0, 10);
@@ -194,7 +202,9 @@ export async function createBookingCore({
   }
 
   let base_price = Number(variantRow.price);
-  if (allowSubscription && body.subscription_mode === true) {
+  if (adminPriceOverride != null) {
+    base_price = adminPriceOverride.base_price;
+  } else if (allowSubscription && body.subscription_mode === true) {
     const { data: subPrice } = await supabase
       .from("subscription_prices")
       .select("price")

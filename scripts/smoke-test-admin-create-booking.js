@@ -14,9 +14,13 @@
  *   - admin vehicle create
  *   - availability slots load
  *   - unsafe admin override fields are rejected
+ *   - invalid custom price is rejected
+ *   - unsafe direct price fields are rejected
  *   - admin pending booking creation with send_customer_email=false
  *   - manual admin-time pending booking creation
+ *   - admin custom-price pending booking creation
  *   - admin confirmed booking creation with send_customer_email=false when a second slot is available
+ *   - admin custom-price confirmed booking creation
  */
 
 const BASE_URL = (process.env.BASE_URL || "").replace(/\/$/, "");
@@ -117,6 +121,38 @@ async function adminPost(path, body) {
   });
   const { json, text } = await readJson(res);
   return { endpoint: url, status: res.status, ok: res.ok, json, text };
+}
+
+async function getAdminBookingById(bookingId) {
+  const res = await adminGet("admin-bookings");
+  if (!res.ok) return { ok: false, details: failureDetails(res) };
+  const rows = Array.isArray(res.json)
+    ? res.json
+    : (res.json.bookings || res.json.rows || res.json.data || []);
+  const booking = rows.find(row => row.id === bookingId);
+  return booking
+    ? { ok: true, booking }
+    : { ok: false, details: `booking_id=${bookingId} not found in admin-bookings response` };
+}
+
+async function assertStoredCustomPrice(bookingId, expectedBasePrice, requireCalendarEvent) {
+  const lookup = await getAdminBookingById(bookingId);
+  if (!lookup.ok) return lookup;
+  const b = lookup.booking;
+  const basePrice = Number(b.base_price);
+  const travelFee = Number(b.travel_fee || 0);
+  const totalPrice = Number(b.total_price);
+  const expectedTotal = Math.round((expectedBasePrice + travelFee) * 100) / 100;
+  if (Math.round(basePrice * 100) / 100 !== expectedBasePrice) {
+    return { ok: false, details: `base_price=${b.base_price}, expected=${expectedBasePrice}` };
+  }
+  if (Math.round(totalPrice * 100) / 100 !== expectedTotal) {
+    return { ok: false, details: `total_price=${b.total_price}, expected=${expectedTotal}, travel_fee=${travelFee}` };
+  }
+  if (requireCalendarEvent && !b.google_event_id) {
+    return { ok: false, details: "confirmed custom-price booking did not return google_event_id in admin-bookings" };
+  }
+  return { ok: true, details: `base_price=${basePrice.toFixed(2)} travel_fee=${travelFee.toFixed(2)} total_price=${totalPrice.toFixed(2)}` };
 }
 
 function failureDetails(result) {
@@ -274,6 +310,44 @@ async function main() {
   }
   logTest("Admin rejects unsafe override fields", true);
 
+  const unsafePriceBody = {
+    ...bookingBody({
+      customerId,
+      vehicleId,
+      service,
+      slot: availability.slots[0],
+      availability,
+      status: "pending"
+    }),
+    base_price: 1,
+    total_price: 1
+  };
+  const unsafePriceRes = await adminPost("admin-create-booking", unsafePriceBody);
+  if (unsafePriceRes.status !== 400 || unsafePriceRes.json?.ok !== false) {
+    logTest("Admin rejects direct price fields", false, failureDetails(unsafePriceRes));
+    return finish();
+  }
+  logTest("Admin rejects direct price fields", true);
+
+  const invalidCustomPriceBody = {
+    ...bookingBody({
+      customerId,
+      vehicleId,
+      service,
+      slot: availability.slots[0],
+      availability,
+      status: "pending"
+    }),
+    custom_price_enabled: true,
+    custom_base_price: 0
+  };
+  const invalidCustomPriceRes = await adminPost("admin-create-booking", invalidCustomPriceBody);
+  if (invalidCustomPriceRes.status !== 400 || invalidCustomPriceRes.json?.ok !== false) {
+    logTest("Admin rejects invalid custom price", false, failureDetails(invalidCustomPriceRes));
+    return finish();
+  }
+  logTest("Admin rejects invalid custom price", true);
+
   const pendingBody = bookingBody({
     customerId,
     vehicleId,
@@ -289,7 +363,7 @@ async function main() {
   }
   logTest("Admin create pending booking", true, `bookingId=${pendingRes.json.bookingId}`);
 
-  const manualDays = nextWeekdays(16).slice(-2).map(yyyyMmDd);
+  const manualDays = nextWeekdays(20).slice(-4).map(yyyyMmDd);
   const manualPendingBody = manualBookingBody({
     customerId,
     vehicleId,
@@ -304,6 +378,32 @@ async function main() {
     return finish();
   }
   logTest("Admin create manual pending booking", true, `bookingId=${manualPendingRes.json.bookingId}`);
+
+  const customPendingPrice = 250;
+  const customPendingBody = {
+    ...manualBookingBody({
+      customerId,
+      vehicleId,
+      service,
+      day: manualDays[1],
+      hour: 7,
+      status: "pending"
+    }),
+    custom_price_enabled: true,
+    custom_base_price: customPendingPrice,
+    customer_notes: "Smoke test custom-price pending booking"
+  };
+  const customPendingRes = await adminPost("admin-create-booking", customPendingBody);
+  if (!customPendingRes.ok || !customPendingRes.json?.ok || customPendingRes.json.status !== "pending") {
+    logTest("Admin create custom-price pending booking", false, failureDetails(customPendingRes));
+    return finish();
+  }
+  const customPendingCheck = await assertStoredCustomPrice(customPendingRes.json.bookingId, customPendingPrice, false);
+  if (!customPendingCheck.ok) {
+    logTest("Custom-price pending stored totals", false, customPendingCheck.details);
+    return finish();
+  }
+  logTest("Admin create custom-price pending booking", true, `bookingId=${customPendingRes.json.bookingId}; ${customPendingCheck.details}`);
 
   const confirmedAvailability = await loadAvailability(service, 1);
   const confirmedSlot = confirmedAvailability?.slots?.find(s => s !== availability.slots[0]);
@@ -330,7 +430,7 @@ async function main() {
     customerId,
     vehicleId,
     service,
-    day: manualDays[1],
+    day: manualDays[2],
     hour: 19,
     status: "confirmed"
   });
@@ -340,6 +440,32 @@ async function main() {
     return finish();
   }
   logTest("Admin create manual confirmed booking", true, `bookingId=${manualConfirmedRes.json.bookingId}`);
+
+  const customConfirmedPrice = 325;
+  const customConfirmedBody = {
+    ...manualBookingBody({
+      customerId,
+      vehicleId,
+      service,
+      day: manualDays[3],
+      hour: 19,
+      status: "confirmed"
+    }),
+    custom_price_enabled: true,
+    custom_base_price: customConfirmedPrice,
+    customer_notes: "Smoke test custom-price confirmed booking"
+  };
+  const customConfirmedRes = await adminPost("admin-create-booking", customConfirmedBody);
+  if (!customConfirmedRes.ok || !customConfirmedRes.json?.ok || customConfirmedRes.json.status !== "confirmed") {
+    logTest("Admin create custom-price confirmed booking", false, failureDetails(customConfirmedRes));
+    return finish();
+  }
+  const customConfirmedCheck = await assertStoredCustomPrice(customConfirmedRes.json.bookingId, customConfirmedPrice, true);
+  if (!customConfirmedCheck.ok) {
+    logTest("Custom-price confirmed stored totals and calendar", false, customConfirmedCheck.details);
+    return finish();
+  }
+  logTest("Admin create custom-price confirmed booking", true, `bookingId=${customConfirmedRes.json.bookingId}; ${customConfirmedCheck.details}`);
 
   finish();
 }
