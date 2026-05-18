@@ -2424,7 +2424,25 @@ function renderBookCustomerView() {
       </div>
 
       <div class="admin-book-card">
-        <h3>4. Location & Time</h3>
+        <h3>4. Custom Pricing (optional)</h3>
+        <label class="admin-book-check">
+          <input id="bookUseCustomPrice" type="checkbox" />
+          <span>Use custom price</span>
+        </label>
+        <div id="bookCustomPriceFields" class="admin-book-panel" hidden>
+          <div class="admin-book-grid">
+            <div class="admin-book-field">
+              <label for="bookCustomBasePrice">Custom base price</label>
+              <input id="bookCustomBasePrice" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="250" />
+            </div>
+          </div>
+        </div>
+        <p class="admin-book-muted" style="margin:8px 0 0;">Admin-only. This price becomes the official price for this booking while keeping the selected service as the database category.</p>
+        <p class="admin-book-muted" style="margin:4px 0 0;">Custom service labels are not available in this phase because there is no safe booking column for them.</p>
+      </div>
+
+      <div class="admin-book-card">
+        <h3>5. Location & Time</h3>
         <div class="admin-book-grid">
           <div class="admin-book-field"><label>Service address</label><input id="bookServiceAddress" type="text" placeholder="Start typing service address..." autocomplete="street-address" /><p class="admin-book-muted" style="margin:4px 0 0;">Choose a Google result when available, or type the address manually.</p></div>
         </div>
@@ -2451,7 +2469,7 @@ function renderBookCustomerView() {
       </div>
 
       <div class="admin-book-card">
-        <h3>5. Review & Create</h3>
+        <h3>6. Review & Create</h3>
         <div class="admin-book-summary" id="bookReviewSummary">Complete the sections above to create a booking.</div>
         <div class="admin-book-grid" style="margin-top:12px;">
           <div class="admin-book-field">
@@ -2499,6 +2517,12 @@ function renderBookCustomerView() {
     return date instanceof Date && !Number.isNaN(date.getTime())
       ? date.toLocaleString([], { dateStyle: "medium", timeStyle: "short" })
       : "—";
+  }
+
+  function getCustomBasePrice() {
+    if (!$("bookUseCustomPrice")?.checked) return null;
+    const value = Number($("bookCustomBasePrice")?.value);
+    return Number.isFinite(value) && value > 0 ? Math.round(value * 100) / 100 : null;
   }
 
   function getServiceDurationMinutes() {
@@ -2556,8 +2580,19 @@ function renderBookCustomerView() {
     el.innerHTML = `<strong>Start:</strong> ${adminBookEscapeHtml(formatDateTime(start))}<br><strong>Estimated end:</strong> ${adminBookEscapeHtml(formatDateTime(end))}`;
   }
 
+  function updateCustomPricingFields() {
+    const enabled = $("bookUseCustomPrice")?.checked === true;
+    $("bookCustomPriceFields").hidden = !enabled;
+    $("bookCustomBasePrice").required = enabled;
+    $("bookCustomBasePrice").disabled = !enabled;
+  }
+
   function updateSummaries() {
     const selectedTime = getSelectedTimeRange();
+    const customBasePrice = getCustomBasePrice();
+    const customPriceText = $("bookUseCustomPrice")?.checked
+      ? (customBasePrice != null ? "$" + customBasePrice.toFixed(2) : "enabled, price required")
+      : "standard service price";
     $("bookSelectedCustomer").innerHTML = state.customer
       ? `<strong>Selected customer:</strong> ${adminBookEscapeHtml(state.customer.full_name || "—")}<br><span class="admin-book-muted">${adminBookEscapeHtml(state.customer.email || "—")} · ${adminBookEscapeHtml(state.customer.phone || "—")}</span>`
       : "No customer selected.";
@@ -2574,6 +2609,7 @@ function renderBookCustomerView() {
       <div><strong>Customer:</strong> ${adminBookEscapeHtml(state.customer?.full_name || "—")}</div>
       <div><strong>Vehicle:</strong> ${adminBookEscapeHtml(state.vehicle ? vehicleLabel(state.vehicle) : "—")}</div>
       <div><strong>Service:</strong> ${adminBookEscapeHtml(state.service ? serviceLabel(state.service) : "—")}</div>
+      <div><strong>Pricing:</strong> ${adminBookEscapeHtml(customPriceText)}</div>
       <div><strong>Address:</strong> ${adminBookEscapeHtml($("bookServiceAddress").value || "—")}</div>
       <div><strong>Time:</strong> ${adminBookEscapeHtml(selectedTime ? `${formatDateTime(selectedTime.start)} to ${formatDateTime(selectedTime.end)}` : "—")}</div>
     `;
@@ -2902,6 +2938,10 @@ function renderBookCustomerView() {
       showAdminBanner("Load and select an available slot first.", "error");
       return;
     }
+    if ($("bookUseCustomPrice").checked && getCustomBasePrice() == null) {
+      showAdminBanner("Custom base price must be greater than 0.", "error");
+      return;
+    }
     const selectedTime = getSelectedTimeRange();
     if (!selectedTime) {
       showAdminBanner("Select a valid booking time.", "error");
@@ -2920,6 +2960,11 @@ function renderBookCustomerView() {
     };
     const notes = $("bookCustomerNotes").value.trim();
     if (notes) body.customer_notes = notes;
+    const customBasePrice = getCustomBasePrice();
+    if ($("bookUseCustomPrice").checked) {
+      body.custom_price_enabled = true;
+      body.custom_base_price = customBasePrice;
+    }
 
     $("bookSubmitBtn").disabled = true;
     try {
@@ -2940,6 +2985,11 @@ function renderBookCustomerView() {
   };
 
   $("bookResetBtn").onclick = () => renderBookCustomerView();
+  $("bookUseCustomPrice").addEventListener("change", () => {
+    updateCustomPricingFields();
+    updateSummaries();
+  });
+  $("bookCustomBasePrice").addEventListener("input", () => updateSummaries());
   $("bookManualStart").addEventListener("input", () => updateSummaries());
   $("bookServiceAddress").addEventListener("input", () => {
     state.addressFromPlaces = false;
@@ -2947,6 +2997,7 @@ function renderBookCustomerView() {
   });
   setCustomerMode(null);
   setTimeMode("slots");
+  updateCustomPricingFields();
   updateSummaries();
   renderVehicles();
   renderSlots();

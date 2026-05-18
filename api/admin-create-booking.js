@@ -23,8 +23,38 @@ const FORBIDDEN_FIELDS = [
   "allowAvailabilityOverride",
   "manage_token",
   "google_event_id",
-  "google_event_html_link"
+  "google_event_html_link",
+  "custom_service_label"
 ];
+
+function parseAdminPriceOverride(body) {
+  const hasCustomEnabled = Object.prototype.hasOwnProperty.call(body || {}, "custom_price_enabled");
+  const hasCustomBase = Object.prototype.hasOwnProperty.call(body || {}, "custom_base_price");
+  const enabled = body?.custom_price_enabled === true;
+
+  if (hasCustomEnabled && body.custom_price_enabled !== true && body.custom_price_enabled !== false) {
+    return { ok: false, error: "custom_price_enabled must be true or false" };
+  }
+
+  if (!enabled) {
+    if (hasCustomBase) {
+      return { ok: false, error: "custom_base_price requires custom_price_enabled" };
+    }
+    return { ok: true, override: null };
+  }
+
+  const customBasePrice = Number(body?.custom_base_price);
+  if (!Number.isFinite(customBasePrice) || customBasePrice <= 0) {
+    return { ok: false, error: "custom_base_price must be a number greater than 0" };
+  }
+
+  return {
+    ok: true,
+    override: {
+      base_price: Math.round(customBasePrice * 100) / 100
+    }
+  };
+}
 
 export default async function handler(req, res) {
   try {
@@ -42,6 +72,11 @@ export default async function handler(req, res) {
       if (Object.prototype.hasOwnProperty.call(req.body || {}, field)) {
         return res.status(400).json({ ok: false, error: `${field} is not supported for admin booking v1` });
       }
+    }
+
+    const priceOverrideResult = parseAdminPriceOverride(req.body || {});
+    if (!priceOverrideResult.ok) {
+      return res.status(400).json({ ok: false, error: priceOverrideResult.error });
     }
 
     const requestedStatus = req.body?.status || "confirmed";
@@ -70,7 +105,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ ok: false, error: "Vehicle does not belong to customer" });
     }
 
-    let bookingBody = req.body || {};
+    const {
+      custom_price_enabled,
+      custom_base_price,
+      ...safeBookingBody
+    } = req.body || {};
+    let bookingBody = safeBookingBody;
     if (adminManualTime) {
       const { data: variant, error: variantErr } = await supabase
         .from("service_variants")
@@ -99,7 +139,8 @@ export default async function handler(req, res) {
       status: "pending",
       allowDiscount: false,
       allowSubscription: false,
-      allowAvailabilityOverride: adminManualTime
+      allowAvailabilityOverride: adminManualTime,
+      adminPriceOverride: priceOverrideResult.override
     });
 
     if (!result.ok) {
@@ -113,7 +154,7 @@ export default async function handler(req, res) {
         try {
           await sendBookingCreatedEmailCore(booking.id);
         } catch (emailErr) {
-          console.error("[ADMIN_BOOKING] email_failed type=booking-created booking_id=" + booking.id, emailErr);
+          console.error("[EMAIL] type=booking-created booking_id=" + booking.id + " status=failure", emailErr);
         }
       }
       console.log("[ADMIN_BOOKING] created status=pending booking_id=" + booking.id);
@@ -132,7 +173,7 @@ export default async function handler(req, res) {
 
     if (!confirmResult.ok) {
       if (confirmResult.body?.message?.toLowerCase().includes("email")) {
-        console.error("[ADMIN_BOOKING] email_failed type=booking-confirmed booking_id=" + booking.id);
+        console.error("[EMAIL] type=booking-confirmed booking_id=" + booking.id + " status=failure");
       }
       await supabase
         .from("bookings")
