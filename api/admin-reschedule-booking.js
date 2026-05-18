@@ -49,6 +49,16 @@ function getCalendarClient() {
   return google.calendar({ version: "v3", auth });
 }
 
+function isBookingOverlapError(err) {
+  const message = String(err?.message || "").toLowerCase();
+  const details = String(err?.details || "").toLowerCase();
+  return err?.code === "23P01" ||
+    message.includes("bookings_no_overlap") ||
+    details.includes("bookings_no_overlap") ||
+    message.includes("exclusion constraint") ||
+    details.includes("exclusion constraint");
+}
+
 export default async function handler(req, res) {
   try {
     await verifyAdmin(req);
@@ -153,10 +163,25 @@ export default async function handler(req, res) {
       .select("id");
 
     if (updateError || !updatedRows || updatedRows.length === 0) {
+      console.error("[ADMIN_RESCHEDULE] db_update_failed", {
+        booking_id: bookingId,
+        code: updateError?.code,
+        message: updateError?.message,
+        details: updateError?.details
+      });
+      if (isBookingOverlapError(updateError)) {
+        return res.status(409).json({
+          ok: false,
+          error: "This time overlaps another booking. Choose a different time or adjust the calendar manually."
+        });
+      }
       const logKey = booking.status === "confirmed" && booking.google_event_id
         ? "serious_db_update_failed_after_calendar_update"
         : "db_update_failed";
-      console.error("[ADMIN_RESCHEDULE] " + logKey + " booking_id=" + booking.id, updateError);
+      console.error("[ADMIN_RESCHEDULE] " + logKey, {
+        booking_id: bookingId,
+        no_rows_updated: !updateError && (!updatedRows || updatedRows.length === 0)
+      });
       return res.status(500).json({ ok: false, error: "Database update failed" });
     }
 

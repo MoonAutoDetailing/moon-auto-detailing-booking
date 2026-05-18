@@ -115,10 +115,10 @@ function yyyyMmDd(date) {
   return date.toISOString().slice(0, 10);
 }
 
-function nextWeekdays(count) {
+function nextWeekdays(count, startOffsetDays = 45) {
   const days = [];
   const d = new Date();
-  d.setDate(d.getDate() + 7);
+  d.setDate(d.getDate() + startOffsetDays);
   d.setHours(12, 0, 0, 0);
   while (days.length < count) {
     const day = d.getDay();
@@ -128,9 +128,24 @@ function nextWeekdays(count) {
   return days;
 }
 
-function manualBookingBody({ customerId, vehicleId, service, day, hour, customPrice }) {
+function isSlotConflict(result) {
+  const text = `${result.text || ""} ${result.json?.message || ""} ${result.json?.error || ""}`.toLowerCase();
+  return result.status === 409 && (
+    text.includes("time slot no longer available") ||
+    text.includes("overlaps another booking") ||
+    text.includes("bookings_no_overlap")
+  );
+}
+
+function candidateTime(day, index) {
+  const hour = 6 + (index % 10);
+  const minute = 7 + ((index * 11) % 45);
+  return { day, hour, minute };
+}
+
+function manualBookingBody({ customerId, vehicleId, service, day, hour, minute = 11, customPrice }) {
   const duration = Number(service.duration_minutes);
-  const start = new Date(`${day}T${String(hour).padStart(2, "0")}:11:00`);
+  const start = new Date(`${day}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00`);
   const end = new Date(start.getTime() + duration * 60000);
   return {
     customer_id: customerId,
@@ -211,15 +226,23 @@ async function main() {
   logTest("Admin create vehicle", true, `vehicle_id=${vehicleId}`);
 
   const customPrice = 275;
-  const [originalDay, newDay] = nextWeekdays(2).map(yyyyMmDd);
-  const createRes = await adminPost("admin-create-booking", manualBookingBody({
-    customerId,
-    vehicleId,
-    service,
-    day: originalDay,
-    hour: 8,
-    customPrice
-  }));
+  const createDays = nextWeekdays(18, 45 + (stamp % 21)).map(yyyyMmDd);
+  let createRes = null;
+  let createAttempt = null;
+  for (let i = 0; i < createDays.length; i++) {
+    const slot = candidateTime(createDays[i], i);
+    const result = await adminPost("admin-create-booking", manualBookingBody({
+      customerId,
+      vehicleId,
+      service,
+      ...slot,
+      customPrice
+    }));
+    createRes = result;
+    createAttempt = slot;
+    if (result.ok && result.json?.ok && result.json.status === "pending") break;
+    if (!isSlotConflict(result)) break;
+  }
   if (!createRes.ok || !createRes.json?.ok || createRes.json.status !== "pending") {
     logTest("Admin create pending custom-price booking", false, failureDetails(createRes));
     return finish();
@@ -231,12 +254,14 @@ async function main() {
     return finish();
   }
   const before = beforeLookup.booking;
-  logTest("Admin create pending custom-price booking", true, `booking_id=${bookingId}`);
+  logTest("Admin create pending custom-price booking", true, `booking_id=${bookingId}; start=${createAttempt.day} ${createAttempt.hour}:${String(createAttempt.minute).padStart(2, "0")}`);
 
+  const rescheduleDays = nextWeekdays(18, 90 + (stamp % 21)).map(yyyyMmDd);
+  const firstRescheduleSlot = candidateTime(rescheduleDays[0], 3);
   const forbiddenRes = await adminPost("admin-reschedule-booking", {
     booking_id: bookingId,
-    scheduled_start: new Date(`${newDay}T09:11:00`).toISOString(),
-    scheduled_end: new Date(`${newDay}T10:11:00`).toISOString()
+    scheduled_start: new Date(`${firstRescheduleSlot.day}T${String(firstRescheduleSlot.hour).padStart(2, "0")}:${String(firstRescheduleSlot.minute).padStart(2, "0")}:00`).toISOString(),
+    scheduled_end: new Date(`${firstRescheduleSlot.day}T10:11:00`).toISOString()
   });
   if (forbiddenRes.status !== 400 || forbiddenRes.json?.ok !== false) {
     logTest("Admin reschedule rejects client scheduled_end", false, failureDetails(forbiddenRes));
@@ -244,12 +269,20 @@ async function main() {
   }
   logTest("Admin reschedule rejects client scheduled_end", true);
 
-  const newStart = new Date(`${newDay}T09:11:00`);
-  const rescheduleRes = await adminPost("admin-reschedule-booking", {
-    booking_id: bookingId,
-    scheduled_start: newStart.toISOString(),
-    send_customer_email: false
-  });
+  let newStart = null;
+  let rescheduleRes = null;
+  for (let i = 0; i < rescheduleDays.length; i++) {
+    const slot = candidateTime(rescheduleDays[i], i + 4);
+    newStart = new Date(`${slot.day}T${String(slot.hour).padStart(2, "0")}:${String(slot.minute).padStart(2, "0")}:00`);
+    const result = await adminPost("admin-reschedule-booking", {
+      booking_id: bookingId,
+      scheduled_start: newStart.toISOString(),
+      send_customer_email: false
+    });
+    rescheduleRes = result;
+    if (result.ok && result.json?.ok) break;
+    if (!isSlotConflict(result)) break;
+  }
   if (!rescheduleRes.ok || !rescheduleRes.json?.ok) {
     logTest("Admin reschedule pending booking", false, failureDetails(rescheduleRes));
     return finish();
@@ -263,8 +296,12 @@ async function main() {
   }
   const after = afterLookup.booking;
   const expectedEnd = new Date(newStart.getTime() + Number(service.duration_minutes) * 60000).toISOString();
-  const startChanged = after.scheduled_start === newStart.toISOString();
-  const endCalculated = after.scheduled_end === expectedEnd;
+  const afterStartMs = new Date(after.scheduled_start).getTime();
+  const beforeStartMs = new Date(before.scheduled_start).getTime();
+  const afterEndMs = new Date(after.scheduled_end).getTime();
+  const expectedEndMs = new Date(expectedEnd).getTime();
+  const startChanged = afterStartMs === newStart.getTime() && afterStartMs !== beforeStartMs;
+  const endCalculated = afterEndMs === expectedEndMs;
   const priceUnchanged =
     String(after.base_price) === String(before.base_price) &&
     String(after.travel_fee) === String(before.travel_fee) &&
