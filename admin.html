@@ -324,6 +324,7 @@ cursor: pointer;
   gap: 6px;
   z-index: 100;
 }
+.admin-top-utility #backToPortalBtn,
 .admin-top-utility #logoutBtn,
 .admin-top-utility #refreshNow {
   padding: 6px 12px;
@@ -333,11 +334,13 @@ cursor: pointer;
   font-weight: 600;
   cursor: pointer;
 }
+.admin-top-utility #backToPortalBtn,
 .admin-top-utility #logoutBtn {
   background: transparent;
   border: 1px solid rgba(255,255,255,0.25);
   color: white;
 }
+.admin-top-utility #backToPortalBtn:hover,
 .admin-top-utility #logoutBtn:hover {
   background: rgba(255,255,255,0.08);
 }
@@ -385,6 +388,91 @@ cursor: pointer;
 /* One nav model: History / Subscriptions / Discount Codes only in menu */
 #viewButtons button.admin-nav-secondary {
   display: none;
+}
+
+/* Admin Portal Gateway */
+#adminGatewaySection {
+  min-height: calc(100vh - 80px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 64px 18px;
+}
+#adminGatewaySection.open {
+  display: flex;
+}
+.admin-gateway-card {
+  width: 100%;
+  max-width: 880px;
+  text-align: center;
+}
+.admin-gateway-logo {
+  width: 130px;
+  opacity: 0.95;
+  margin-bottom: 18px;
+}
+.admin-gateway-title {
+  margin: 0;
+  color: var(--moon-primary);
+  font-size: clamp(32px, 5vw, 48px);
+}
+.admin-gateway-subtitle {
+  margin: 10px auto 28px;
+  max-width: 560px;
+  color: rgba(255,255,255,0.74);
+  line-height: 1.5;
+}
+.admin-gateway-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.admin-gateway-option {
+  display: block;
+  width: 100%;
+  min-height: 190px;
+  padding: 24px;
+  border: 1px solid rgba(111,147,196,0.36);
+  border-radius: 18px;
+  background: #f4f8fd;
+  color: #152235;
+  text-align: left;
+  box-shadow: 0 18px 45px rgba(0,0,0,0.35);
+  transition: transform 0.16s ease, box-shadow 0.16s ease, border-color 0.16s ease;
+  text-decoration: none;
+}
+.admin-gateway-option:hover {
+  transform: translateY(-2px);
+  border-color: var(--moon-primary);
+  box-shadow: 0 24px 58px rgba(0,0,0,0.42);
+}
+.admin-gateway-option h2 {
+  margin: 0 0 10px;
+  color: #24496f;
+  font-size: 24px;
+}
+.admin-gateway-option p {
+  margin: 0;
+  color: #526174;
+  line-height: 1.45;
+}
+.admin-gateway-pill {
+  display: inline-block;
+  margin-bottom: 18px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(111,147,196,0.16);
+  color: #24496f;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+#bookingAdminSection {
+  display: none;
+}
+#bookingAdminSection.open {
+  display: block;
 }
 
 /* Admin Book Customer */
@@ -1007,6 +1095,8 @@ cursor: pointer;
   }
   #adminMenuDropdown { margin-top: 8px; min-width: 200px; }
   #adminMenuDropdown .moon-tab { min-height: 44px; }
+  .admin-gateway-grid { grid-template-columns: 1fr; }
+  .admin-gateway-option { min-height: 150px; }
   #topBarPrimary {
     display: flex;
     justify-content: center;
@@ -1021,6 +1111,7 @@ cursor: pointer;
   }
   #topBarPrimary #viewButtons .moon-tab { min-height: 44px; padding: 8px 12px; font-size: 13px; }
   .admin-top-utility { top: 12px; right: 12px; gap: 6px; }
+  .admin-top-utility #backToPortalBtn,
   .admin-top-utility #logoutBtn,
   .admin-top-utility #refreshNow { min-height: 44px; }
   .moon-tab { margin-bottom: 0; }
@@ -1130,26 +1221,50 @@ style="
 </div>
 
 <div id="pageOverlay">
-  <div id="topBar">
-    <div id="topBarRow1" class="topBar-row1">
-      <div id="topBarMenuWrap" class="topBar-menu-wrap">
-        <button id="adminMenuBtn" type="button" class="admin-menu-btn" aria-label="Menu">
-          <span class="admin-menu-icon" aria-hidden="true"></span>
+  <section id="adminGatewaySection" aria-label="Admin Portal">
+    <div class="admin-gateway-card">
+      <img src="/NewLogoColor.png" class="admin-gateway-logo" alt="Moon Auto Detailing Logo" />
+      <h1 class="admin-gateway-title">Admin Portal</h1>
+      <p class="admin-gateway-subtitle">Choose the workspace you need for bookings, operations, and customer follow-up.</p>
+      <div class="admin-gateway-grid">
+        <button id="openBookingAdminBtn" class="admin-gateway-option" type="button">
+          <span class="admin-gateway-pill">Operations</span>
+          <h2>Booking Admin</h2>
+          <p>Manage bookings, approvals, reschedules, subscriptions, discounts, and admin-created appointments.</p>
         </button>
-        <div id="adminMenuDropdown" role="menu"></div>
+        <a class="admin-gateway-option" href="/crm.html">
+          <span class="admin-gateway-pill">Customer Growth</span>
+          <h2>CRM Dashboard</h2>
+          <p>Track leads, outreach, follow-up tasks, tags, and customer relationship notes.</p>
+        </a>
+      </div>
+      <button id="portalLogoutBtn" class="moon-tab" type="button" style="margin-top:22px;">Logout</button>
+    </div>
+  </section>
+
+  <section id="bookingAdminSection" aria-label="Booking Admin">
+    <div id="topBar">
+      <div id="topBarRow1" class="topBar-row1">
+        <div id="topBarMenuWrap" class="topBar-menu-wrap">
+          <button id="adminMenuBtn" type="button" class="admin-menu-btn" aria-label="Menu">
+            <span class="admin-menu-icon" aria-hidden="true"></span>
+          </button>
+          <div id="adminMenuDropdown" role="menu"></div>
+        </div>
+      </div>
+      <div id="topBarPrimary" class="topBar-primary">
+        <div id="viewButtons"></div>
       </div>
     </div>
-    <div id="topBarPrimary" class="topBar-primary">
-      <div id="viewButtons"></div>
+
+    <div id="topBarUtility" class="admin-top-utility">
+      <button id="backToPortalBtn" type="button">Back to Admin Portal</button>
+      <button id="logoutBtn" type="button">Logout</button>
+      <button id="refreshNow" type="button" class="moon-tab">Refresh</button>
     </div>
-  </div>
 
-  <div id="topBarUtility" class="admin-top-utility">
-    <button id="logoutBtn" type="button">Logout</button>
-    <button id="refreshNow" type="button" class="moon-tab">Refresh</button>
-  </div>
-
-  <div id="viewContainer"></div>
+    <div id="viewContainer"></div>
+  </section>
 </div>
 
 <div id="paymentModalOverlay" role="dialog" aria-modal="true" aria-labelledby="paymentModalTitle">
@@ -1261,8 +1376,7 @@ style="
 <div id="toastContainer"></div>
 <script type="module">
 // ================= ADMIN LOGIN UI =================
-let ADMIN_SESSION = null;
-sessionStorage.removeItem("moon_admin_session");
+let ADMIN_SESSION = sessionStorage.getItem("moon_admin_session");
 function isLoggedIn() {
   return !!ADMIN_SESSION;
 }
@@ -1279,6 +1393,7 @@ async function performLogin(password) {
   if (!res.ok) throw new Error("Unauthorized");
 
   ADMIN_SESSION = data.token;
+  sessionStorage.setItem("moon_admin_session", ADMIN_SESSION);
 }
 
 async function requireLoginUI() {
@@ -1315,6 +1430,7 @@ async function requireLoginUI() {
      
 function clearAdminSession() {
   ADMIN_SESSION = null;
+  sessionStorage.removeItem("moon_admin_session");
 }
 
 function showLoginOverlay() {
@@ -1324,11 +1440,54 @@ function showLoginOverlay() {
 function hideLoginOverlay() {
   document.getElementById("loginOverlay").style.display = "none";
 }
-     document.getElementById("logoutBtn").onclick = async () => {
+
+function showAdminGateway() {
+  stopRealtimeBookings();
+  document.getElementById("bookingAdminSection").classList.remove("open");
+  document.getElementById("adminGatewaySection").classList.add("open");
+}
+
+async function showBookingAdmin() {
+  document.getElementById("adminGatewaySection").classList.remove("open");
+  document.getElementById("bookingAdminSection").classList.add("open");
+
+  if (!currentView && !viewContainer.innerHTML.trim()) {
+    viewContainer.innerHTML =
+      "<div style='margin-top:40px;font-weight:600;'>Loading bookings...</div>";
+  }
+
+  const ok = await loadAdminData({ silentUnauthorized: true });
+  if (!ok) {
+    clearAdminSession();
+    showLoginOverlay();
+    await requireLoginUI();
+    hideLoginOverlay();
+    const ok2 = await loadAdminData({ silentUnauthorized: false });
+    if (!ok2) throw new Error("Unauthorized after re-login");
+  }
+
+  startRealtimeBookings();
+}
+
+document.getElementById("openBookingAdminBtn").onclick = () => {
+  showBookingAdmin().catch((err) => {
+    hardLog("BOOKING ADMIN OPEN FAILED " + (err?.message || err));
+    console.error(err);
+  });
+};
+
+document.getElementById("backToPortalBtn").onclick = () => {
+  hardLog("BACK TO ADMIN PORTAL");
+  showAdminGateway();
+};
+
+async function logoutAndReloginToPortal() {
   hardLog("ADMIN LOGOUT");
 
   stopRealtimeBookings();
   clearAdminSession();
+  document.getElementById("adminGatewaySection").classList.remove("open");
+  document.getElementById("bookingAdminSection").classList.remove("open");
 
   currentView = null;
   refreshInFlight = false;
@@ -1346,9 +1505,11 @@ function hideLoginOverlay() {
   await requireLoginUI();
   hideLoginOverlay();
 
-  await loadAdminData();
-  startRealtimeBookings();
-};
+  showAdminGateway();
+}
+
+document.getElementById("logoutBtn").onclick = logoutAndReloginToPortal;
+document.getElementById("portalLogoutBtn").onclick = logoutAndReloginToPortal;
 
 
 async function bootAdminApp() {
@@ -1358,21 +1519,9 @@ async function bootAdminApp() {
 
     hardLog("ADMIN AUTH TRY");
 
-    // Try first data load. If unauthorized, force re-login.
-    const ok = await loadAdminData({ silentUnauthorized: true });
-    if (!ok) {
-      hardLog("ADMIN TOKEN INVALID — RELOGIN");
-      clearAdminSession();
-      showLoginOverlay();
-      await requireLoginUI();
-
-      const ok2 = await loadAdminData({ silentUnauthorized: false });
-      if (!ok2) throw new Error("Unauthorized after re-login");
-    }
-
     hideLoginOverlay();
     hardLog("ADMIN AUTH SUCCESS");
-    startRealtimeBookings();
+    showAdminGateway();
   } catch (err) {
     hardLog("ADMIN AUTH FAILED");
     console.error(err);

@@ -1,0 +1,1196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Moon Auto Detailing - CRM</title>
+<link rel="icon" href="/NewLogoColor.png" type="image/png" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<style>
+:root {
+  --moon-primary: #6f93c4;
+  --moon-primary-dark: #4f78a8;
+  --moon-light-bg: #e9f1fb;
+  --moon-soft: #9fb7d3;
+  --moon-shadow: rgba(0,0,0,0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  margin: 0;
+  padding: 20px;
+  background: #0e0e0e;
+  min-height: 100vh;
+  color: white;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+#watermarkLogo {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  width: 1200px;
+  max-width: 95vw;
+  opacity: 0.08;
+  z-index: 1;
+  pointer-events: none;
+}
+
+#watermarkUnderlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  opacity: 0.12;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#pageOverlay {
+  position: relative;
+  z-index: 2;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+#loginOverlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, #0e0e0e 0%, #000 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  padding: 18px;
+}
+
+#loginCard {
+  width: 360px;
+  padding: 40px 34px;
+  border-radius: 18px;
+  background: rgba(111,147,196,0.12);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  text-align: center;
+}
+
+#loginLogo {
+  width: 140px;
+  margin-bottom: 18px;
+  opacity: 0.95;
+}
+
+.loginTitle {
+  color: var(--moon-primary);
+  margin: 0 0 20px;
+  font-weight: 700;
+}
+
+#loginPassword {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: white;
+  outline: none;
+  margin-bottom: 14px;
+  font-size: 15px;
+}
+
+#loginPassword::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+
+#loginButton,
+.moon-tab,
+.primary-btn {
+  padding: 10px 16px;
+  font-weight: 700;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--moon-primary);
+  color: white;
+  transition: all 0.15s ease;
+}
+
+#loginButton {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+}
+
+#loginButton:hover,
+.moon-tab:hover,
+.primary-btn:hover {
+  background: var(--moon-primary-dark);
+}
+
+.secondary-btn {
+  padding: 10px 14px;
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.08);
+  color: white;
+  font-weight: 700;
+}
+
+.danger-btn {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 8px;
+  background: #b00020;
+  color: white;
+  font-weight: 700;
+}
+
+#loginError {
+  margin-top: 12px;
+  color: #ff6b6b;
+  display: none;
+  font-size: 14px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.topbar h1 {
+  margin: 0;
+  color: var(--moon-primary);
+}
+
+.topbar p {
+  margin: 4px 0 0;
+  color: rgba(255,255,255,0.72);
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.crm-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 16px;
+  align-items: start;
+}
+
+.panel,
+.lead-form-card,
+.detail-panel {
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 16px;
+  background: rgba(111,147,196,0.14);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.28);
+}
+
+.panel {
+  padding: 16px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: 2fr repeat(4, 1fr) auto;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.field label,
+.lead-form-card label,
+.detail-form label {
+  display: block;
+  margin: 0 0 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255,255,255,0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.field input,
+.field select,
+.lead-form-card input,
+.lead-form-card select,
+.lead-form-card textarea,
+.detail-form input,
+.detail-form select,
+.detail-form textarea {
+  width: 100%;
+  padding: 10px 11px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: white;
+  outline: none;
+}
+
+.field select option,
+.lead-form-card select option,
+.detail-form select option {
+  background: #162033;
+  color: white;
+}
+
+.lead-form-card textarea,
+.detail-form textarea {
+  min-height: 70px;
+  resize: vertical;
+}
+
+.customer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.customer-card {
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 14px;
+  padding: 14px;
+  background: var(--moon-light-bg);
+  color: #142033;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.18);
+  transition: 0.15s ease;
+}
+
+.customer-card:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.22);
+}
+
+.customer-card.active {
+  outline: 3px solid var(--moon-primary);
+}
+
+.customer-name {
+  font-size: 18px;
+  font-weight: 800;
+  margin-bottom: 6px;
+}
+
+.muted {
+  color: rgba(255,255,255,0.68);
+}
+
+.customer-card .muted {
+  color: #526174;
+}
+
+.card-line {
+  font-size: 13px;
+  margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+
+.badge-row {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(79,120,168,0.16);
+  color: #24496f;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.badge-hot {
+  background: #ffd966;
+  color: #111;
+}
+
+.lead-form-card {
+  padding: 16px;
+  position: sticky;
+  top: 14px;
+}
+
+.lead-form-card h2,
+.detail-panel h2,
+.detail-section h3 {
+  margin: 0 0 12px;
+  color: var(--moon-primary);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.span-2 {
+  grid-column: 1 / -1;
+}
+
+.lead-form-card button,
+.detail-form button {
+  width: 100%;
+  margin-top: 10px;
+}
+
+.detail-panel {
+  display: none;
+  margin-top: 16px;
+  padding: 16px;
+}
+
+.detail-panel.open {
+  display: block;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.detail-section {
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(0,0,0,0.16);
+}
+
+.detail-item {
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  font-size: 14px;
+}
+
+.detail-item:last-child {
+  border-bottom: none;
+}
+
+.detail-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.status-line {
+  min-height: 20px;
+  margin: 0 0 12px;
+  color: rgba(255,255,255,0.75);
+}
+
+.error-text {
+  color: #ff8a8a;
+}
+
+#toast {
+  position: fixed;
+  top: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 999999;
+  max-width: min(420px, calc(100vw - 24px));
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(111,147,196,0.96);
+  color: white;
+  font-weight: 700;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+  display: none;
+}
+
+@media (max-width: 920px) {
+  body {
+    padding: 12px;
+  }
+
+  .topbar,
+  .crm-shell {
+    display: block;
+  }
+
+  .topbar-actions {
+    justify-content: flex-start;
+    margin-top: 12px;
+  }
+
+  .lead-form-card {
+    position: static;
+    margin-top: 16px;
+  }
+
+  .filters,
+  .detail-grid,
+  .detail-form,
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .span-2 {
+    grid-column: auto;
+  }
+}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div id="watermarkUnderlay"></div>
+<img src="/NewLogoColor.png" id="watermarkLogo" alt="Moon Auto Detailing Logo" />
+
+<div id="loginOverlay">
+  <form id="loginCard" autocomplete="off">
+    <img src="/NewLogoColor.png" id="loginLogo" alt="Moon Auto Detailing" />
+    <h2 class="loginTitle">Admin Access</h2>
+    <input type="text" style="display:none">
+    <input type="password" style="display:none">
+    <input
+      id="loginPassword"
+      type="password"
+      placeholder="Password"
+      autocomplete="new-password"
+      autocapitalize="off"
+      autocorrect="off"
+      spellcheck="false"
+    />
+    <button id="loginButton" type="submit">Unlock CRM</button>
+    <div id="loginError">Wrong password</div>
+  </form>
+</div>
+
+<div id="pageOverlay">
+  <header class="topbar">
+    <div>
+      <h1>Moon CRM</h1>
+      <p>Admin-only customer and lead follow-up board.</p>
+    </div>
+    <div class="topbar-actions">
+      <a class="secondary-btn" href="/admin.html?portal=1" style="text-decoration:none;">Back to Admin Portal</a>
+      <button id="refreshBtn" class="moon-tab" type="button">Refresh</button>
+      <button id="logoutBtn" class="danger-btn" type="button">Logout</button>
+    </div>
+  </header>
+
+  <main class="crm-shell">
+    <section>
+      <div class="panel">
+        <div id="listStatus" class="status-line">Loading CRM customers...</div>
+        <div class="filters">
+          <div class="field">
+            <label for="searchInput">Search</label>
+            <input id="searchInput" type="search" placeholder="Name, email, phone, address..." />
+          </div>
+          <div class="field">
+            <label for="lifecycleFilter">Stage</label>
+            <select id="lifecycleFilter">
+              <option value="">All</option>
+              <option value="lead">Lead</option>
+              <option value="prospect">Prospect</option>
+              <option value="customer">Customer</option>
+              <option value="inactive">Inactive</option>
+              <option value="do_not_contact">Do not contact</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="statusFilter">Status</label>
+            <select id="statusFilter">
+              <option value="">All</option>
+              <option value="active">Active</option>
+              <option value="new">New</option>
+              <option value="nurture">Nurture</option>
+              <option value="closed">Closed</option>
+              <option value="do_not_contact">Do not contact</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="priorityFilter">Priority</label>
+            <select id="priorityFilter">
+              <option value="">All</option>
+              <option value="urgent">Urgent</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="dueFilter">Due</label>
+            <select id="dueFilter">
+              <option value="">All</option>
+              <option value="today">Today</option>
+              <option value="overdue">Overdue</option>
+              <option value="open">Open</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>&nbsp;</label>
+            <button id="searchBtn" class="primary-btn" type="button">Apply</button>
+          </div>
+        </div>
+        <div id="customerGrid" class="customer-grid"></div>
+      </div>
+
+      <section id="detailPanel" class="detail-panel" aria-live="polite">
+        <div class="detail-header">
+          <div>
+            <h2 id="detailTitle">Customer Detail</h2>
+            <div id="detailSub" class="muted"></div>
+          </div>
+          <button id="closeDetailBtn" class="secondary-btn" type="button">Close</button>
+        </div>
+        <div id="detailBody"></div>
+      </section>
+    </section>
+
+    <aside class="lead-form-card">
+      <h2>Add Manual Lead</h2>
+      <form id="leadForm">
+        <div class="form-grid">
+          <div>
+            <label for="leadFirstName">First Name</label>
+            <input id="leadFirstName" name="first_name" />
+          </div>
+          <div>
+            <label for="leadLastName">Last Name</label>
+            <input id="leadLastName" name="last_name" />
+          </div>
+          <div class="span-2">
+            <label for="leadFullName">Full Name</label>
+            <input id="leadFullName" name="full_name" placeholder="Required if first/last not used" />
+          </div>
+          <div>
+            <label for="leadPhone">Phone</label>
+            <input id="leadPhone" name="phone" />
+          </div>
+          <div>
+            <label for="leadEmail">Email</label>
+            <input id="leadEmail" name="email" type="email" />
+          </div>
+          <div class="span-2">
+            <label for="leadAddress">Address</label>
+            <input id="leadAddress" name="address" />
+          </div>
+          <div class="span-2">
+            <label for="leadCompany">Company</label>
+            <input id="leadCompany" name="company_name" />
+          </div>
+          <div>
+            <label for="leadSource">Lead Source</label>
+            <input id="leadSource" name="lead_source" placeholder="facebook, referral..." />
+          </div>
+          <div>
+            <label for="leadPriority">Priority</label>
+            <select id="leadPriority" name="priority">
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div class="span-2">
+            <label for="leadNextFollowUp">Next Follow-Up</label>
+            <input id="leadNextFollowUp" name="next_follow_up_at" type="datetime-local" />
+          </div>
+          <div class="span-2">
+            <label for="leadNotes">CRM Notes</label>
+            <textarea id="leadNotes" name="crm_notes"></textarea>
+          </div>
+        </div>
+        <button class="primary-btn" type="submit">Create Lead</button>
+      </form>
+    </aside>
+  </main>
+</div>
+
+<script>
+let ADMIN_SESSION = sessionStorage.getItem("moon_admin_session");
+
+const state = {
+  customers: [],
+  selectedCustomerId: null,
+  detail: null,
+  tags: []
+};
+
+function isLoggedIn() {
+  return !!ADMIN_SESSION;
+}
+
+function showLoginOverlay() {
+  document.getElementById("loginOverlay").style.display = "flex";
+}
+
+function hideLoginOverlay() {
+  document.getElementById("loginOverlay").style.display = "none";
+}
+
+function clearAdminSession() {
+  ADMIN_SESSION = null;
+  sessionStorage.removeItem("moon_admin_session");
+}
+
+async function performLogin(password) {
+  const res = await fetch("/api/admin-login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error("Unauthorized");
+  ADMIN_SESSION = data.token;
+  sessionStorage.setItem("moon_admin_session", ADMIN_SESSION);
+}
+
+async function requireLoginUI() {
+  if (ADMIN_SESSION) return;
+
+  const oldForm = document.getElementById("loginCard");
+  const newForm = oldForm.cloneNode(true);
+  oldForm.parentNode.replaceChild(newForm, oldForm);
+
+  const input = document.getElementById("loginPassword");
+  const error = document.getElementById("loginError");
+
+  return new Promise(resolve => {
+    async function attemptLogin() {
+      error.style.display = "none";
+      try {
+        await performLogin(input.value);
+        resolve();
+      } catch {
+        error.style.display = "block";
+        input.value = "";
+      }
+    }
+
+    newForm.onsubmit = e => {
+      e.preventDefault();
+      attemptLogin();
+    };
+  });
+}
+
+async function adminFetch(url, options = {}, retry = true) {
+  options.headers = options.headers || {};
+  options.headers["x-admin-session"] = ADMIN_SESSION;
+
+  const res = await fetch(url, options);
+  if (res.status === 401 && retry) {
+    clearAdminSession();
+    showLoginOverlay();
+    await requireLoginUI();
+    if (!isLoggedIn()) throw new Error("Admin re-login required");
+    options.headers["x-admin-session"] = ADMIN_SESSION;
+    return adminFetch(url, options, false);
+  }
+  return res;
+}
+
+async function apiJson(url, options = {}) {
+  const res = await adminFetch(url, options);
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.ok === false) {
+    throw new Error(data.error || `Request failed: ${res.status}`);
+  }
+  return data;
+}
+
+function toast(message, isError = false) {
+  const el = document.getElementById("toast");
+  el.textContent = message;
+  el.style.background = isError ? "rgba(176,0,32,0.96)" : "rgba(111,147,196,0.96)";
+  el.style.display = "block";
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => {
+    el.style.display = "none";
+  }, 3500);
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, ch => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;"
+  }[ch]));
+}
+
+function cleanFormValue(value) {
+  const text = String(value || "").trim();
+  return text || null;
+}
+
+function dateTimeLocalToIso(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function formatDate(value) {
+  if (!value) return "Not set";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return date.toLocaleString();
+}
+
+function customerId(row) {
+  return row.customer_id || row.id;
+}
+
+function customerName(row) {
+  return row.full_name || row.name || "Unnamed customer";
+}
+
+function priorityValue(row) {
+  return row.crm_priority || row.priority || "medium";
+}
+
+function statusValue(row) {
+  return row.crm_status || row.status || "active";
+}
+
+function stageValue(row) {
+  return row.lifecycle_stage || "lead";
+}
+
+function setListStatus(message, isError = false) {
+  const el = document.getElementById("listStatus");
+  el.textContent = message;
+  el.className = isError ? "status-line error-text" : "status-line";
+}
+
+function buildCustomerQuery() {
+  const params = new URLSearchParams({ limit: "50" });
+  const q = document.getElementById("searchInput").value.trim();
+  const lifecycle = document.getElementById("lifecycleFilter").value;
+  const status = document.getElementById("statusFilter").value;
+  const priority = document.getElementById("priorityFilter").value;
+  const due = document.getElementById("dueFilter").value;
+
+  if (q) params.set("q", q);
+  if (lifecycle) params.set("lifecycle_stage", lifecycle);
+  if (status) params.set("crm_status", status);
+  if (priority) params.set("priority", priority);
+  if (due) params.set("due", due);
+
+  return params.toString();
+}
+
+async function loadCustomers() {
+  setListStatus("Loading CRM customers...");
+  try {
+    const data = await apiJson(`/api/admin-crm-customers?${buildCustomerQuery()}`);
+    state.customers = data.customers || [];
+    renderCustomers();
+    setListStatus(`${state.customers.length} shown${typeof data.count === "number" ? ` of ${data.count}` : ""}`);
+  } catch (err) {
+    setListStatus(err.message || "Failed to load CRM customers", true);
+  }
+}
+
+function renderCustomers() {
+  const grid = document.getElementById("customerGrid");
+  if (!state.customers.length) {
+    grid.innerHTML = `<div class="muted">No CRM customers found.</div>`;
+    return;
+  }
+
+  grid.innerHTML = state.customers.map(row => {
+    const id = customerId(row);
+    const priority = priorityValue(row);
+    const isHot = priority === "urgent" || priority === "high";
+    return `
+      <button class="customer-card ${id === state.selectedCustomerId ? "active" : ""}" type="button" data-customer-id="${escapeHtml(id)}">
+        <div class="customer-name">${escapeHtml(customerName(row))}</div>
+        <div class="card-line">${escapeHtml(row.email || "")}</div>
+        <div class="card-line">${escapeHtml(row.phone || "")}</div>
+        <div class="card-line">${escapeHtml(row.address || "")}</div>
+        <div class="badge-row">
+          <span class="badge">${escapeHtml(stageValue(row))}</span>
+          <span class="badge">${escapeHtml(statusValue(row))}</span>
+          <span class="badge ${isHot ? "badge-hot" : ""}">${escapeHtml(priority)}</span>
+        </div>
+        <div class="card-line"><strong>Next:</strong> ${escapeHtml(formatDate(row.next_follow_up_at))}</div>
+        <div class="card-line"><strong>Revenue:</strong> ${escapeHtml(row.total_revenue ?? 0)}</div>
+      </button>
+    `;
+  }).join("");
+
+  grid.querySelectorAll(".customer-card").forEach(card => {
+    card.addEventListener("click", () => openCustomerDetail(card.dataset.customerId));
+  });
+}
+
+async function openCustomerDetail(id) {
+  state.selectedCustomerId = id;
+  renderCustomers();
+  document.getElementById("detailPanel").classList.add("open");
+  document.getElementById("detailTitle").textContent = "Loading customer...";
+  document.getElementById("detailSub").textContent = "";
+  document.getElementById("detailBody").innerHTML = `<div class="muted">Loading detail...</div>`;
+
+  try {
+    const [detail, tags] = await Promise.all([
+      apiJson(`/api/admin-crm-customer-detail?customer_id=${encodeURIComponent(id)}`),
+      apiJson(`/api/admin-crm-tags?customer_id=${encodeURIComponent(id)}`)
+    ]);
+    state.detail = detail;
+    state.tags = tags.tags || [];
+    renderDetail(detail, tags.assigned_tags || []);
+  } catch (err) {
+    document.getElementById("detailTitle").textContent = "Customer Detail";
+    document.getElementById("detailBody").innerHTML = `<div class="error-text">${escapeHtml(err.message || "Failed to load detail")}</div>`;
+  }
+}
+
+function renderDetail(data, assignedTags) {
+  const customer = data.customer || {};
+  const profile = data.profile || {};
+  const tasks = data.follow_up_tasks || [];
+  const openTasks = tasks.filter(task => task.status !== "completed" && task.status !== "dismissed");
+
+  document.getElementById("detailTitle").textContent = customerName(customer);
+  document.getElementById("detailSub").textContent = [customer.email, customer.phone, customer.address].filter(Boolean).join(" | ");
+
+  document.getElementById("detailBody").innerHTML = `
+    <div class="detail-grid">
+      <section class="detail-section">
+        <h3>CRM Profile</h3>
+        <div class="detail-item"><strong>Stage:</strong> ${escapeHtml(profile.lifecycle_stage || customer.lifecycle_stage || "lead")}</div>
+        <div class="detail-item"><strong>Status:</strong> ${escapeHtml(profile.status || statusValue(customer))}</div>
+        <div class="detail-item"><strong>Priority:</strong> ${escapeHtml(profile.priority || priorityValue(customer))}</div>
+        <div class="detail-item"><strong>Company:</strong> ${escapeHtml(profile.company_name || customer.company_name || "")}</div>
+        <div class="detail-item"><strong>Notes:</strong> ${escapeHtml(profile.crm_notes || customer.crm_notes || "")}</div>
+      </section>
+
+      <section class="detail-section">
+        <h3>Tags</h3>
+        <div class="detail-item">
+          ${(assignedTags || []).length ? assignedTags.map(tag => `<span class="badge">${escapeHtml(tag.name)}</span>`).join(" ") : `<span class="muted">No tags assigned.</span>`}
+        </div>
+        <form id="tagAssignForm" class="detail-form">
+          <div>
+            <label for="tagSelect">Assign Tag</label>
+            <select id="tagSelect" name="tag_id">
+              <option value="">Select tag</option>
+              ${state.tags.map(tag => `<option value="${escapeHtml(tag.id)}">${escapeHtml(tag.name)}</option>`).join("")}
+            </select>
+          </div>
+          <div>
+            <label for="newTagName">New Tag</label>
+            <input id="newTagName" name="name" placeholder="optional" />
+          </div>
+          <button class="primary-btn span-2" type="submit">Create/Assign Tag</button>
+        </form>
+      </section>
+
+      <section class="detail-section">
+        <h3>Follow-Up Tasks</h3>
+        <div id="taskList">
+          ${tasks.length ? tasks.map(task => `
+            <div class="detail-item">
+              <strong>${escapeHtml(task.task_type || "follow_up")}</strong>
+              <div>Due: ${escapeHtml(formatDate(task.due_at))}</div>
+              <div>Status: ${escapeHtml(task.status || "")}</div>
+              <div>${escapeHtml(task.notes || "")}</div>
+              ${task.status !== "completed" ? `<button class="secondary-btn complete-task-btn" type="button" data-task-id="${escapeHtml(task.id)}">Complete</button>` : ""}
+            </div>
+          `).join("") : `<div class="muted">No follow-up tasks.</div>`}
+        </div>
+        <form id="taskCreateForm" class="detail-form">
+          <div>
+            <label for="taskType">Task Type</label>
+            <input id="taskType" name="task_type" value="general_follow_up" />
+          </div>
+          <div>
+            <label for="taskDue">Due At</label>
+            <input id="taskDue" name="due_at" type="datetime-local" required />
+          </div>
+          <div>
+            <label for="taskPriority">Priority</label>
+            <select id="taskPriority" name="priority">
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div>
+            <label for="taskNotes">Notes</label>
+            <input id="taskNotes" name="notes" />
+          </div>
+          <button class="primary-btn span-2" type="submit">Create Follow-Up Task</button>
+        </form>
+      </section>
+
+      <section class="detail-section">
+        <h3>Log Outreach</h3>
+        <form id="outreachForm" class="detail-form">
+          <div>
+            <label for="outreachMethod">Method</label>
+            <select id="outreachMethod" name="method" required>
+              <option value="sms">SMS</option>
+              <option value="phone">Phone</option>
+              <option value="email">Email</option>
+              <option value="in_person">In Person</option>
+            </select>
+          </div>
+          <div>
+            <label for="outreachType">Type</label>
+            <input id="outreachType" name="outreach_type" value="general_follow_up" />
+          </div>
+          <div>
+            <label for="responseStatus">Response</label>
+            <select id="responseStatus" name="response_status">
+              <option value="no_response">No Response</option>
+              <option value="responded">Responded</option>
+              <option value="booked">Booked</option>
+              <option value="do_not_contact">Do Not Contact</option>
+            </select>
+          </div>
+          <div>
+            <label for="nextFollowUp">Next Follow-Up</label>
+            <input id="nextFollowUp" name="next_follow_up_at" type="datetime-local" />
+          </div>
+          <div class="span-2">
+            <label for="messageSummary">Message Summary</label>
+            <textarea id="messageSummary" name="message_summary"></textarea>
+          </div>
+          <div class="span-2">
+            <label for="responseNotes">Response Notes</label>
+            <textarea id="responseNotes" name="response_notes"></textarea>
+          </div>
+          <button class="primary-btn span-2" type="submit">Log Outreach</button>
+        </form>
+      </section>
+
+      <section class="detail-section">
+        <h3>Recent Bookings</h3>
+        ${(data.bookings || []).slice(0, 6).map(booking => `
+          <div class="detail-item">
+            <strong>${escapeHtml(formatDate(booking.scheduled_start))}</strong>
+            <div>Status: ${escapeHtml(booking.status || "")}</div>
+            <div>Total: ${escapeHtml(booking.total_price ?? "")}</div>
+          </div>
+        `).join("") || `<div class="muted">No bookings yet.</div>`}
+      </section>
+
+      <section class="detail-section">
+        <h3>Outreach Logs</h3>
+        ${(data.outreach_logs || []).slice(0, 6).map(log => `
+          <div class="detail-item">
+            <strong>${escapeHtml(log.method || "")}</strong> - ${escapeHtml(formatDate(log.contacted_at))}
+            <div>${escapeHtml(log.message_summary || "")}</div>
+            <div>${escapeHtml(log.response_status || "")}</div>
+          </div>
+        `).join("") || `<div class="muted">No outreach logged.</div>`}
+      </section>
+    </div>
+  `;
+
+  wireDetailForms();
+  if (openTasks.length) {
+    document.getElementById("taskList").dataset.openCount = String(openTasks.length);
+  }
+}
+
+function formObject(form) {
+  const data = {};
+  const formData = new FormData(form);
+  for (const [key, value] of formData.entries()) {
+    data[key] = cleanFormValue(value);
+  }
+  return data;
+}
+
+async function submitLeadForm(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const body = formObject(form);
+  body.next_follow_up_at = dateTimeLocalToIso(body.next_follow_up_at);
+  body.lifecycle_stage = "lead";
+  body.status = "active";
+  body.customer_type = "residential";
+  body.preferred_contact_method = "sms";
+
+  try {
+    const data = await apiJson("/api/admin-crm-create-lead", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    toast("Lead created");
+    form.reset();
+    await loadCustomers();
+    await openCustomerDetail(data.customer_id);
+  } catch (err) {
+    toast(err.message || "Failed to create lead", true);
+  }
+}
+
+function wireDetailForms() {
+  const id = state.selectedCustomerId;
+
+  document.getElementById("outreachForm")?.addEventListener("submit", async event => {
+    event.preventDefault();
+    const body = formObject(event.currentTarget);
+    body.customer_id = id;
+    body.next_follow_up_at = dateTimeLocalToIso(body.next_follow_up_at);
+
+    try {
+      await apiJson("/api/admin-crm-log-outreach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      toast("Outreach logged");
+      await openCustomerDetail(id);
+      await loadCustomers();
+    } catch (err) {
+      toast(err.message || "Failed to log outreach", true);
+    }
+  });
+
+  document.getElementById("taskCreateForm")?.addEventListener("submit", async event => {
+    event.preventDefault();
+    const body = formObject(event.currentTarget);
+    body.action = "create";
+    body.customer_id = id;
+    body.due_at = dateTimeLocalToIso(body.due_at);
+
+    try {
+      await apiJson("/api/admin-crm-follow-up-task", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      toast("Follow-up task created");
+      await openCustomerDetail(id);
+      await loadCustomers();
+    } catch (err) {
+      toast(err.message || "Failed to create task", true);
+    }
+  });
+
+  document.querySelectorAll(".complete-task-btn").forEach(button => {
+    button.addEventListener("click", async () => {
+      try {
+        await apiJson("/api/admin-crm-follow-up-task", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "complete", task_id: button.dataset.taskId })
+        });
+        toast("Task completed");
+        await openCustomerDetail(id);
+        await loadCustomers();
+      } catch (err) {
+        toast(err.message || "Failed to complete task", true);
+      }
+    });
+  });
+
+  document.getElementById("tagAssignForm")?.addEventListener("submit", async event => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const selectedTagId = cleanFormValue(form.tag_id.value);
+    const newTagName = cleanFormValue(form.name.value);
+
+    try {
+      let tagId = selectedTagId;
+      if (newTagName) {
+        const tagData = await apiJson("/api/admin-crm-tags", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action: "create_tag", name: newTagName })
+        });
+        tagId = tagData.tag?.id;
+      }
+
+      if (!tagId) throw new Error("Select or create a tag");
+
+      await apiJson("/api/admin-crm-tags", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "assign_tag", customer_id: id, tag_id: tagId })
+      });
+      toast("Tag assigned");
+      await openCustomerDetail(id);
+    } catch (err) {
+      toast(err.message || "Failed to assign tag", true);
+    }
+  });
+}
+
+async function bootCrmApp() {
+  try {
+    showLoginOverlay();
+    await requireLoginUI();
+    hideLoginOverlay();
+    await loadCustomers();
+  } catch (err) {
+    toast(err.message || "CRM failed to load", true);
+  }
+}
+
+document.getElementById("leadForm").addEventListener("submit", submitLeadForm);
+document.getElementById("searchBtn").addEventListener("click", loadCustomers);
+document.getElementById("refreshBtn").addEventListener("click", loadCustomers);
+document.getElementById("searchInput").addEventListener("keydown", event => {
+  if (event.key === "Enter") loadCustomers();
+});
+["lifecycleFilter", "statusFilter", "priorityFilter", "dueFilter"].forEach(id => {
+  document.getElementById(id).addEventListener("change", loadCustomers);
+});
+document.getElementById("closeDetailBtn").addEventListener("click", () => {
+  state.selectedCustomerId = null;
+  state.detail = null;
+  document.getElementById("detailPanel").classList.remove("open");
+  renderCustomers();
+});
+document.getElementById("logoutBtn").addEventListener("click", async () => {
+  clearAdminSession();
+  state.customers = [];
+  state.selectedCustomerId = null;
+  document.getElementById("customerGrid").innerHTML = "";
+  document.getElementById("detailPanel").classList.remove("open");
+  showLoginOverlay();
+  await requireLoginUI();
+  hideLoginOverlay();
+  await loadCustomers();
+});
+
+bootCrmApp();
+</script>
+</body>
+</html>
