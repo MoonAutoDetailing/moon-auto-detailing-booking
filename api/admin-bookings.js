@@ -37,6 +37,7 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   scheduled_end,
   status,
   service_address,
+  service_variant_id,
   google_event_id,
   google_event_html_link,
   base_price,
@@ -61,6 +62,7 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   ),
 
   service_variants:service_variant_id (
+    duration_minutes,
     price,
     services:service_id (
       category,
