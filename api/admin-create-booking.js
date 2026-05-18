@@ -30,22 +30,24 @@ const FORBIDDEN_FIELDS = [
 function parseAdminPriceOverride(body) {
   const hasCustomEnabled = Object.prototype.hasOwnProperty.call(body || {}, "custom_price_enabled");
   const hasCustomBase = Object.prototype.hasOwnProperty.call(body || {}, "custom_base_price");
-  const enabled = body?.custom_price_enabled === true;
+  const enabledRaw = body?.custom_price_enabled;
+  const enabled = enabledRaw === true || enabledRaw === "true";
 
-  if (hasCustomEnabled && body.custom_price_enabled !== true && body.custom_price_enabled !== false) {
-    return { ok: false, error: "custom_price_enabled must be true or false" };
+  if (hasCustomEnabled && enabledRaw !== true && enabledRaw !== false && enabledRaw !== "true" && enabledRaw !== "false") {
+    return { ok: false, message: "Custom price enabled must be true or false." };
   }
 
   if (!enabled) {
     if (hasCustomBase) {
-      return { ok: false, error: "custom_base_price requires custom_price_enabled" };
+      return { ok: false, message: "Custom base price requires custom pricing to be enabled." };
     }
     return { ok: true, override: null };
   }
 
-  const customBasePrice = Number(body?.custom_base_price);
+  const rawCustomBasePrice = body?.custom_base_price;
+  const customBasePrice = Number(rawCustomBasePrice);
   if (!Number.isFinite(customBasePrice) || customBasePrice <= 0) {
-    return { ok: false, error: "custom_base_price must be a number greater than 0" };
+    return { ok: false, message: "Custom base price must be greater than 0." };
   }
 
   return {
@@ -76,7 +78,8 @@ export default async function handler(req, res) {
 
     const priceOverrideResult = parseAdminPriceOverride(req.body || {});
     if (!priceOverrideResult.ok) {
-      return res.status(400).json({ ok: false, error: priceOverrideResult.error });
+      console.warn("[ADMIN_CREATE_BOOKING] invalid_custom_price");
+      return res.status(400).json({ ok: false, message: priceOverrideResult.message });
     }
 
     const requestedStatus = req.body?.status || "confirmed";
