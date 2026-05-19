@@ -9,7 +9,9 @@ function requireEnv(name) {
 const RULE = {
   LEAD_FOLLOWUP: "lead_created_24h_followup",
   REVIEW_REQUEST: "completed_booking_review_request",
-  MAINTENANCE_REMINDER: "completed_booking_maintenance_30d"
+  MAINTENANCE_REMINDER: "completed_booking_maintenance_30d",
+  INACTIVE_90D: "inactive_customer_90d",
+  INACTIVE_180D: "inactive_customer_180d"
 };
 
 const MAX_PER_RULE = 50;
@@ -161,6 +163,133 @@ async function runCompletedBookingRule(supabase, {
   return created;
 }
 
+async function buildLastCompletedByCustomer(supabase) {
+  const byCustomer = new Map();
+  let from = 0;
+  const pageSize = 1000;
+
+  while (from < 20000) {
+    const { data, error } = await supabase
+      .from("bookings")
+      .select("customer_id, scheduled_start")
+      .eq("status", "completed")
+      .not("customer_id", "is", null)
+      .order("scheduled_start", { ascending: false })
+      .range(from, from + pageSize - 1);
+
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+
+    for (const row of data) {
+      if (!row.customer_id || byCustomer.has(row.customer_id)) continue;
+      byCustomer.set(row.customer_id, row.scheduled_start);
+    }
+
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return byCustomer;
+}
+
+function normalizeStatus(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function shouldSkipInactiveProfile(profile) {
+  if (!profile) return false;
+  if (profile.do_not_contact) return true;
+  const status = normalizeStatus(profile.status);
+  return status === "inactive" || status === "do_not_contact";
+}
+
+async function upsertCrmProfileStatus(supabase, customerId, status, nowIso, existingProfile) {
+  const payload = {
+    customer_id: customerId,
+    company_name: existingProfile?.company_name ?? null,
+    customer_type: existingProfile?.customer_type ?? "residential",
+    lifecycle_stage: existingProfile?.lifecycle_stage ?? "customer",
+    lead_source: existingProfile?.lead_source ?? null,
+    preferred_contact_method: existingProfile?.preferred_contact_method ?? "sms",
+    status,
+    priority: existingProfile?.priority ?? "medium",
+    do_not_contact: existingProfile?.do_not_contact ?? false,
+    crm_notes: existingProfile?.crm_notes ?? null,
+    updated_at: nowIso
+  };
+
+  const { error } = await supabase
+    .from("crm_profiles")
+    .upsert([payload], { onConflict: "customer_id" });
+
+  if (error) throw error;
+}
+
+async function runInactiveCustomerRule(supabase, {
+  ruleKey,
+  cutoffIso,
+  nowIso,
+  profileStatus,
+  taskType,
+  priority,
+  notes
+}) {
+  const lastByCustomer = await buildLastCompletedByCustomer(supabase);
+  const existing = await loadExistingSourceIds(supabase, ruleKey, "customer");
+
+  const candidates = [];
+  for (const [customerId, lastService] of lastByCustomer) {
+    if (!customerId || !lastService || existing.has(customerId)) continue;
+    if (lastService > cutoffIso) continue;
+    candidates.push({ customerId, lastService });
+  }
+
+  candidates.sort((a, b) => String(a.lastService).localeCompare(String(b.lastService)));
+  if (candidates.length === 0) return 0;
+
+  const prefetchIds = candidates.slice(0, 500).map((row) => row.customerId);
+  const { data: profiles, error: profileError } = await supabase
+    .from("crm_profiles")
+    .select("customer_id, status, do_not_contact, company_name, customer_type, lifecycle_stage, lead_source, preferred_contact_method, priority, crm_notes")
+    .in("customer_id", prefetchIds);
+
+  if (profileError) throw profileError;
+
+  const profileByCustomer = new Map((profiles || []).map((row) => [row.customer_id, row]));
+
+  let created = 0;
+  for (const { customerId } of candidates) {
+    if (created >= MAX_PER_RULE) break;
+
+    const profile = profileByCustomer.get(customerId);
+    if (shouldSkipInactiveProfile(profile)) continue;
+
+    await upsertCrmProfileStatus(supabase, customerId, profileStatus, nowIso, profile);
+
+    const task = await createTaskAndRun(supabase, {
+      ruleKey,
+      sourceType: "customer",
+      sourceId: customerId,
+      customerId,
+      taskPayload: {
+        customer_id: customerId,
+        task_type: taskType,
+        due_at: nowIso,
+        priority,
+        status: "open",
+        notes
+      }
+    });
+
+    if (task) {
+      existing.add(customerId);
+      created += 1;
+    }
+  }
+
+  return created;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "GET" && req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -184,6 +313,8 @@ export default async function handler(req, res) {
     const nowIso = new Date().toISOString();
     const cutoff24h = new Date(Date.now() - 24 * MS_HOUR).toISOString();
     const cutoff30d = new Date(Date.now() - 30 * MS_DAY).toISOString();
+    const cutoff90d = new Date(Date.now() - 90 * MS_DAY).toISOString();
+    const cutoff180d = new Date(Date.now() - 180 * MS_DAY).toISOString();
 
     const leadFollowups = await runLeadFollowupRule(supabase, cutoff24h, nowIso);
     const reviewRequests = await runCompletedBookingRule(supabase, {
@@ -202,11 +333,31 @@ export default async function handler(req, res) {
       priority: "medium",
       notes: "Automated task: check in for maintenance detail or wash."
     });
+    const coolingCustomers = await runInactiveCustomerRule(supabase, {
+      ruleKey: RULE.INACTIVE_90D,
+      cutoffIso: cutoff90d,
+      nowIso,
+      profileStatus: "cooling",
+      taskType: "reactivation_follow_up",
+      priority: "medium",
+      notes: "Automated task: inactive customer follow-up (90+ days)."
+    });
+    const inactiveCustomers = await runInactiveCustomerRule(supabase, {
+      ruleKey: RULE.INACTIVE_180D,
+      cutoffIso: cutoff180d,
+      nowIso,
+      profileStatus: "inactive",
+      taskType: "winback_follow_up",
+      priority: "high",
+      notes: "Automated task: win back inactive customer (180+ days)."
+    });
 
     console.log("[CRM_AUTOMATION] created", {
       lead_followups: leadFollowups,
       review_requests: reviewRequests,
-      maintenance_reminders: maintenanceReminders
+      maintenance_reminders: maintenanceReminders,
+      cooling_customers: coolingCustomers,
+      inactive_customers: inactiveCustomers
     });
 
     return res.status(200).json({
@@ -214,7 +365,9 @@ export default async function handler(req, res) {
       created: {
         lead_followups: leadFollowups,
         review_requests: reviewRequests,
-        maintenance_reminders: maintenanceReminders
+        maintenance_reminders: maintenanceReminders,
+        cooling_customers: coolingCustomers,
+        inactive_customers: inactiveCustomers
       }
     });
   } catch (err) {

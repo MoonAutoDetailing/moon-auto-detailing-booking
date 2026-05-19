@@ -418,7 +418,7 @@ button {
 
 .kpi-strip {
   display: grid;
-  grid-template-columns: repeat(4, minmax(150px, 1fr));
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
   gap: 12px;
   margin: 0 0 16px;
 }
@@ -872,6 +872,35 @@ body {
   background: #ffd966;
 }
 
+.badge-overdue {
+  border-color: rgba(255,120,120,0.7);
+  background: rgba(255,120,120,0.22);
+  color: #ffd4d4;
+}
+
+.badge-cooling {
+  border-color: rgba(127,184,230,0.55);
+  background: rgba(127,184,230,0.2);
+  color: #d8ecff;
+}
+
+.badge-inactive {
+  border-color: rgba(160,160,180,0.55);
+  background: rgba(120,120,140,0.28);
+  color: #e8e8f0;
+}
+
+.badge-reactivation {
+  border-color: rgba(120,220,160,0.55);
+  background: rgba(80,180,120,0.22);
+  color: #d8ffe8;
+}
+
+.smart-queue-section {
+  border-color: rgba(127,184,230,0.32);
+  background: rgba(13,22,34,0.78);
+}
+
 .notes-preview {
   border: 1px solid rgba(127,184,230,0.22);
 }
@@ -1027,6 +1056,8 @@ body {
               <option value="active">Active</option>
               <option value="new">New</option>
               <option value="nurture">Nurture</option>
+              <option value="cooling">Cooling</option>
+              <option value="inactive">Inactive</option>
               <option value="closed">Closed</option>
               <option value="do_not_contact">Do not contact</option>
             </select>
@@ -1132,6 +1163,8 @@ body {
 
 <script>
 let ADMIN_SESSION = sessionStorage.getItem("moon_admin_session");
+
+const MS_DAY = 24 * 60 * 60 * 1000;
 
 const state = {
   customers: [],
@@ -1328,6 +1361,44 @@ function isHighValue(row) {
   return Number(row.total_revenue || 0) >= 500 || priority === "high" || priority === "urgent";
 }
 
+function isOverdueFollowUp(row) {
+  if (!row.next_follow_up_at) return false;
+  const due = new Date(row.next_follow_up_at);
+  if (Number.isNaN(due.getTime())) return false;
+  return due.getTime() < Date.now();
+}
+
+function isCoolingCustomer(row) {
+  return normalize(statusValue(row)) === "cooling";
+}
+
+function isInactiveCustomer(row) {
+  return normalize(statusValue(row)) === "inactive";
+}
+
+function daysSinceLastService(row) {
+  if (!row.last_service_date) return null;
+  const date = new Date(row.last_service_date);
+  if (Number.isNaN(date.getTime())) return null;
+  return (Date.now() - date.getTime()) / MS_DAY;
+}
+
+function isReactivationOpportunity(row) {
+  if (Number(row.total_revenue || 0) < 300) return false;
+  const days = daysSinceLastService(row);
+  return days !== null && days >= 90;
+}
+
+function statusBadgeClass(row) {
+  const status = normalize(statusValue(row));
+  if (status === "cooling") return "badge-cooling";
+  if (status === "inactive") return "badge-inactive";
+  if (status === "do_not_contact") return "badge-inactive";
+  if (isOverdueFollowUp(row)) return "badge-overdue";
+  if (isReactivationOpportunity(row)) return "badge-reactivation";
+  return "";
+}
+
 function setListStatus(message, isError = false) {
   const el = document.getElementById("listStatus");
   el.textContent = message;
@@ -1335,7 +1406,7 @@ function setListStatus(message, isError = false) {
 }
 
 function buildCustomerQuery() {
-  const params = new URLSearchParams({ limit: "50" });
+  const params = new URLSearchParams({ limit: "100" });
   const q = document.getElementById("searchInput").value.trim();
   const lifecycle = document.getElementById("lifecycleFilter").value;
   const status = document.getElementById("statusFilter").value;
@@ -1367,14 +1438,18 @@ function renderCustomers() {
   renderKpis();
 
   const sections = [
-    ["Follow-Ups Due", state.customers.filter(isFollowUpDue)],
-    ["Leads / Prospects", state.customers.filter(isLeadOrProspect)],
-    ["Active Customers", state.customers.filter(isActiveCustomer)],
-    ["High-Value Customers", state.customers.filter(isHighValue)]
+    ["Overdue Follow-Ups", state.customers.filter(isOverdueFollowUp), { smart: true }],
+    ["Cooling Customers", state.customers.filter(isCoolingCustomer), { smart: true }],
+    ["Inactive Customers", state.customers.filter(isInactiveCustomer), { smart: true }],
+    ["Reactivation Opportunities", state.customers.filter(isReactivationOpportunity), { smart: true }],
+    ["Follow-Ups Due", state.customers.filter(isFollowUpDue), {}],
+    ["Leads / Prospects", state.customers.filter(isLeadOrProspect), {}],
+    ["Active Customers", state.customers.filter(isActiveCustomer), {}],
+    ["High-Value Customers", state.customers.filter(isHighValue), {}]
   ];
 
   const container = document.getElementById("crmSections");
-  container.innerHTML = sections.map(([title, rows]) => renderCustomerSection(title, rows)).join("");
+  container.innerHTML = sections.map(([title, rows, options]) => renderCustomerSection(title, rows, options)).join("");
 
   container.querySelectorAll(".customer-card").forEach(card => {
     card.addEventListener("click", () => openCustomerDetail(card.dataset.customerId));
@@ -1383,18 +1458,17 @@ function renderCustomers() {
 
 function renderKpis() {
   const total = state.customers.length;
-  const due = state.customers.filter(isFollowUpDue).length;
-  const leads = state.customers.filter(isLeadOrProspect).length;
-  const highPriority = state.customers.filter(row => {
-    const priority = normalize(priorityValue(row));
-    return priority === "high" || priority === "urgent";
-  }).length;
+  const overdue = state.customers.filter(isOverdueFollowUp).length;
+  const cooling = state.customers.filter(isCoolingCustomer).length;
+  const inactive = state.customers.filter(isInactiveCustomer).length;
+  const reactivation = state.customers.filter(isReactivationOpportunity).length;
 
   document.getElementById("kpiStrip").innerHTML = [
     ["Total Loaded", total],
-    ["Due / Overdue", due],
-    ["Leads", leads],
-    ["High Priority", highPriority]
+    ["Overdue", overdue],
+    ["Cooling", cooling],
+    ["Inactive", inactive],
+    ["Reactivation", reactivation]
   ].map(([label, value]) => `
     <div class="kpi-card">
       <div class="kpi-label">${escapeHtml(label)}</div>
@@ -1403,13 +1477,14 @@ function renderKpis() {
   `).join("");
 }
 
-function renderCustomerSection(title, rows) {
+function renderCustomerSection(title, rows, options = {}) {
   const cards = rows.length
     ? rows.map(renderCustomerCard).join("")
     : `<div class="muted">No customers in this section.</div>`;
+  const sectionClass = options.smart ? "crm-section smart-queue-section" : "crm-section";
 
   return `
-    <section class="crm-section">
+    <section class="${sectionClass}">
       <div class="crm-section-header">
         <h2>${escapeHtml(title)}</h2>
         <span class="section-count">${rows.length}</span>
@@ -1432,7 +1507,9 @@ function renderCustomerCard(row) {
       <div class="card-line">${escapeHtml(row.email || "No email")}</div>
       <div class="badge-row">
         <span class="badge">${escapeHtml(stageValue(row))}</span>
-        <span class="badge">${escapeHtml(statusValue(row))}</span>
+        <span class="badge ${statusBadgeClass(row)}">${escapeHtml(statusValue(row))}</span>
+        ${isOverdueFollowUp(row) ? `<span class="badge badge-overdue">overdue</span>` : ""}
+        ${isReactivationOpportunity(row) ? `<span class="badge badge-reactivation">reactivation</span>` : ""}
         <span class="badge ${isHot ? "badge-hot" : ""}">${escapeHtml(priority)}</span>
       </div>
       <div class="customer-meta-grid">
