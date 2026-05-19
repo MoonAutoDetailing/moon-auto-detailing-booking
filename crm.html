@@ -961,9 +961,164 @@ body {
   }
 }
 
+.crm-tab-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px 14px;
+  margin-bottom: 4px;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+}
+
+.crm-tab {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(127,184,230,0.28);
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.82);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.crm-tab.active {
+  background: var(--moon-primary);
+  border-color: var(--moon-primary);
+  color: #fff;
+}
+
+.crm-tab-panel {
+  display: none;
+}
+
+.crm-tab-panel.active {
+  display: block;
+}
+
+.pipeline-board {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(180px, 1fr));
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.pipeline-column {
+  min-width: 180px;
+  border: 1px solid rgba(127,184,230,0.2);
+  border-radius: 16px;
+  background: rgba(13,22,34,0.72);
+  padding: 10px;
+}
+
+.pipeline-column h3 {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--moon-primary);
+}
+
+.pipeline-cards {
+  display: grid;
+  gap: 8px;
+}
+
+.pipeline-card {
+  width: 100%;
+  text-align: left;
+  border-radius: 12px;
+  border: 1px solid rgba(127,184,230,0.18);
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  padding: 10px;
+}
+
+.analytics-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.analytics-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.analytics-card {
+  border: 1px solid rgba(127,184,230,0.2);
+  border-radius: 16px;
+  background: rgba(13,22,34,0.72);
+  padding: 14px;
+}
+
+.analytics-card h3 {
+  margin: 0 0 10px;
+  color: var(--moon-primary);
+  font-size: 16px;
+}
+
+.analytics-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.analytics-table th,
+.analytics-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  text-align: left;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) 1fr auto;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.bar-track {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--moon-primary-dark), var(--moon-primary));
+}
+
+.task-card {
+  border: 1px solid rgba(127,184,230,0.2);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.06);
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.task-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 920px) {
+  .pipeline-board {
+    grid-template-columns: repeat(5, minmax(160px, 1fr));
+  }
+}
+
 @media (max-width: 640px) {
   #loginCard {
     padding: 30px 22px;
+  }
+
+  .crm-tab {
+    min-height: 44px;
   }
 
   .topbar {
@@ -1020,7 +1175,7 @@ body {
   <header class="topbar">
     <div>
       <h1>Moon Auto Detailing CRM</h1>
-      <p>Daily follow-ups, leads, customers, and relationship notes.</p>
+      <p>Know who to contact today, track your pipeline, and see what drives revenue.</p>
     </div>
     <div class="topbar-actions">
       <a class="secondary-btn" href="/admin.html?portal=1" style="text-decoration:none;">Back to Admin Portal</a>
@@ -1028,11 +1183,27 @@ body {
     </div>
   </header>
 
+  <nav class="crm-tab-nav" id="crmTabNav" aria-label="CRM sections">
+    <button type="button" class="crm-tab active" data-tab="today">Today</button>
+    <button type="button" class="crm-tab" data-tab="customers">Customers</button>
+    <button type="button" class="crm-tab" data-tab="pipeline">Pipeline</button>
+    <button type="button" class="crm-tab" data-tab="analytics">Analytics</button>
+    <button type="button" class="crm-tab" data-tab="tasks">Tasks</button>
+  </nav>
+
+  <div id="tabToday" class="crm-tab-panel active">
+    <div class="panel">
+      <div id="todayStatus" class="status-line">Loading today&apos;s priorities...</div>
+      <div id="todayKpiStrip" class="kpi-strip" aria-label="Today KPIs"></div>
+      <div id="todaySections" class="crm-sections"></div>
+    </div>
+  </div>
+
+  <div id="tabCustomers" class="crm-tab-panel">
   <main class="crm-shell">
     <section>
       <div class="panel">
         <div id="listStatus" class="status-line">Loading CRM customers...</div>
-        <div id="kpiStrip" class="kpi-strip" aria-label="CRM KPIs"></div>
         <div class="filters">
           <div class="field">
             <label for="searchInput">Search</label>
@@ -1089,16 +1260,6 @@ body {
         <div id="crmSections" class="crm-sections"></div>
       </div>
 
-      <section id="detailPanel" class="detail-panel" aria-live="polite">
-        <div class="detail-header">
-          <div>
-            <h2 id="detailTitle">Customer Detail</h2>
-            <div id="detailSub" class="muted"></div>
-          </div>
-          <button id="closeDetailBtn" class="secondary-btn" type="button">Close</button>
-        </div>
-        <div id="detailBody"></div>
-      </section>
     </section>
 
     <aside class="lead-form-card">
@@ -1159,6 +1320,39 @@ body {
       </form>
     </aside>
   </main>
+  </div>
+
+  <div id="tabPipeline" class="crm-tab-panel">
+    <div class="panel">
+      <div id="pipelineStatus" class="status-line">Load customers to view pipeline.</div>
+      <div id="pipelineBoard" class="pipeline-board"></div>
+    </div>
+  </div>
+
+  <div id="tabAnalytics" class="crm-tab-panel">
+    <div class="panel">
+      <div id="analyticsStatus" class="status-line">Open this tab to load analytics.</div>
+      <div id="analyticsContent" class="analytics-grid"></div>
+    </div>
+  </div>
+
+  <div id="tabTasks" class="crm-tab-panel">
+    <div class="panel">
+      <div id="tasksStatus" class="status-line">Follow-up tasks from loaded customers.</div>
+      <div id="tasksSections" class="crm-sections"></div>
+    </div>
+  </div>
+
+      <section id="detailPanel" class="detail-panel" aria-live="polite">
+        <div class="detail-header">
+          <div>
+            <h2 id="detailTitle">Customer Detail</h2>
+            <div id="detailSub" class="muted"></div>
+          </div>
+          <button id="closeDetailBtn" class="secondary-btn" type="button">Close</button>
+        </div>
+        <div id="detailBody"></div>
+      </section>
 </div>
 
 <script>
@@ -1166,11 +1360,22 @@ let ADMIN_SESSION = sessionStorage.getItem("moon_admin_session");
 
 const MS_DAY = 24 * 60 * 60 * 1000;
 
+const TAB_PANEL_IDS = {
+  today: "tabToday",
+  customers: "tabCustomers",
+  pipeline: "tabPipeline",
+  analytics: "tabAnalytics",
+  tasks: "tabTasks"
+};
+
 const state = {
   customers: [],
   selectedCustomerId: null,
   detail: null,
-  tags: []
+  tags: [],
+  activeTab: "today",
+  analytics: null,
+  analyticsLoaded: false
 };
 
 function isLoggedIn() {
@@ -1406,7 +1611,7 @@ function setListStatus(message, isError = false) {
 }
 
 function buildCustomerQuery() {
-  const params = new URLSearchParams({ limit: "100" });
+  const params = new URLSearchParams({ limit: "200" });
   const q = document.getElementById("searchInput").value.trim();
   const lifecycle = document.getElementById("lifecycleFilter").value;
   const status = document.getElementById("statusFilter").value;
@@ -1422,59 +1627,350 @@ function buildCustomerQuery() {
   return params.toString();
 }
 
-async function loadCustomers() {
-  setListStatus("Loading CRM customers...");
-  try {
-    const data = await apiJson(`/api/admin-crm-customers?${buildCustomerQuery()}`);
-    state.customers = data.customers || [];
-    renderCustomers();
-    setListStatus(`${state.customers.length} shown${typeof data.count === "number" ? ` of ${data.count}` : ""}`);
-  } catch (err) {
-    setListStatus(err.message || "Failed to load CRM customers", true);
-  }
+function switchTab(tab) {
+  state.activeTab = tab;
+  document.querySelectorAll(".crm-tab").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.tab === tab);
+  });
+  Object.entries(TAB_PANEL_IDS).forEach(([key, panelId]) => {
+    const panel = document.getElementById(panelId);
+    if (panel) panel.classList.toggle("active", key === tab);
+  });
+  renderActiveTab();
+  if (tab === "analytics" && !state.analyticsLoaded) loadAnalytics();
 }
 
-function renderCustomers() {
-  renderKpis();
-
-  const sections = [
-    ["Overdue Follow-Ups", state.customers.filter(isOverdueFollowUp), { smart: true }],
-    ["Cooling Customers", state.customers.filter(isCoolingCustomer), { smart: true }],
-    ["Inactive Customers", state.customers.filter(isInactiveCustomer), { smart: true }],
-    ["Reactivation Opportunities", state.customers.filter(isReactivationOpportunity), { smart: true }],
-    ["Follow-Ups Due", state.customers.filter(isFollowUpDue), {}],
-    ["Leads / Prospects", state.customers.filter(isLeadOrProspect), {}],
-    ["Active Customers", state.customers.filter(isActiveCustomer), {}],
-    ["High-Value Customers", state.customers.filter(isHighValue), {}]
-  ];
-
-  const container = document.getElementById("crmSections");
-  container.innerHTML = sections.map(([title, rows, options]) => renderCustomerSection(title, rows, options)).join("");
-
-  container.querySelectorAll(".customer-card").forEach(card => {
+function bindCustomerCards(root) {
+  (root || document).querySelectorAll(".customer-card, .pipeline-card").forEach((card) => {
     card.addEventListener("click", () => openCustomerDetail(card.dataset.customerId));
   });
 }
 
-function renderKpis() {
-  const total = state.customers.length;
-  const overdue = state.customers.filter(isOverdueFollowUp).length;
-  const cooling = state.customers.filter(isCoolingCustomer).length;
-  const inactive = state.customers.filter(isInactiveCustomer).length;
-  const reactivation = state.customers.filter(isReactivationOpportunity).length;
+function isDueToday(row) {
+  if (!row.next_follow_up_at || isOverdueFollowUp(row)) return false;
+  const due = new Date(row.next_follow_up_at);
+  if (Number.isNaN(due.getTime())) return false;
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+  return due.getTime() >= start.getTime() && due.getTime() <= end.getTime();
+}
 
-  document.getElementById("kpiStrip").innerHTML = [
-    ["Total Loaded", total],
-    ["Overdue", overdue],
-    ["Cooling", cooling],
-    ["Inactive", inactive],
-    ["Reactivation", reactivation]
-  ].map(([label, value]) => `
+function isNewLeadNeedingContact(row) {
+  return normalize(stageValue(row)) === "lead" && !row.last_contacted_at;
+}
+
+function isHighValueReactivation(row) {
+  return isReactivationOpportunity(row) && Number(row.total_revenue || 0) >= 500;
+}
+
+function hasOpenFollowUp(row) {
+  return Boolean(row.next_follow_up_at);
+}
+
+function pipelineBucket(row) {
+  const stage = normalize(stageValue(row));
+  const status = normalize(statusValue(row));
+  if (["do_not_contact", "ghosted", "lost"].includes(stage) || ["do_not_contact", "ghosted", "lost", "inactive"].includes(status)) {
+    return "lost";
+  }
+  if (["booked", "confirmed", "customer"].includes(stage) || ["booked", "confirmed", "completed_customer", "repeat_customer"].includes(status)) {
+    return "booked";
+  }
+  if (stage === "quoted") return "quoted";
+  if (stage === "lead") return "lead";
+  return "active";
+}
+
+function renderKpiStrip(elementId, items) {
+  const el = document.getElementById(elementId);
+  if (!el) return;
+  el.innerHTML = items.map(([label, value]) => `
     <div class="kpi-card">
       <div class="kpi-label">${escapeHtml(label)}</div>
       <div class="kpi-value">${escapeHtml(value)}</div>
     </div>
   `).join("");
+}
+
+function renderToday() {
+  renderKpiStrip("todayKpiStrip", [
+    ["Overdue", state.customers.filter(isOverdueFollowUp).length],
+    ["Due Today", state.customers.filter(isDueToday).length],
+    ["High-Value Reactivation", state.customers.filter(isHighValueReactivation).length],
+    ["New Leads", state.customers.filter(isNewLeadNeedingContact).length]
+  ]);
+
+  const sections = [
+    ["Overdue Follow-Ups", state.customers.filter(isOverdueFollowUp), { smart: true }],
+    ["Due Today", state.customers.filter(isDueToday), { smart: true }],
+    ["High-Value Reactivation", state.customers.filter(isHighValueReactivation), { smart: true }],
+    ["New Leads Needing Contact", state.customers.filter(isNewLeadNeedingContact), { smart: true }]
+  ];
+
+  const container = document.getElementById("todaySections");
+  container.innerHTML = sections.map(([title, rows, options]) => renderCustomerSection(title, rows, options)).join("");
+  bindCustomerCards(container);
+  document.getElementById("todayStatus").textContent = `${state.customers.length} customers loaded for today's work`;
+}
+
+function renderCustomersTab() {
+  const rows = [...state.customers].sort((a, b) => customerName(a).localeCompare(customerName(b)));
+  const container = document.getElementById("crmSections");
+  container.innerHTML = renderCustomerSection("Customers & Leads", rows, {});
+  bindCustomerCards(container);
+}
+
+function renderPipelineCard(row) {
+  return `
+    <button class="pipeline-card" type="button" data-customer-id="${escapeHtml(customerId(row))}">
+      <strong>${escapeHtml(customerName(row))}</strong>
+      <div class="muted">${escapeHtml(stageValue(row))} · ${escapeHtml(statusValue(row))}</div>
+      <div class="muted">${escapeHtml(formatMoney(row.total_revenue))}</div>
+    </button>
+  `;
+}
+
+function renderPipeline() {
+  const labels = {
+    lead: "Lead",
+    quoted: "Quoted",
+    active: "Interested / Active",
+    booked: "Booked / Confirmed",
+    lost: "Lost / Ghosted / Do Not Contact"
+  };
+  const buckets = { lead: [], quoted: [], active: [], booked: [], lost: [] };
+
+  state.customers.forEach((row) => {
+    buckets[pipelineBucket(row)].push(row);
+  });
+
+  document.getElementById("pipelineBoard").innerHTML = Object.keys(labels).map((key) => {
+    const rows = buckets[key];
+    const cards = rows.length
+      ? rows.map(renderPipelineCard).join("")
+      : `<div class="muted">None</div>`;
+    return `
+      <div class="pipeline-column">
+        <h3>${escapeHtml(labels[key])} <span class="section-count">${rows.length}</span></h3>
+        <div class="pipeline-cards">${cards}</div>
+      </div>
+    `;
+  }).join("");
+
+  bindCustomerCards(document.getElementById("pipelineBoard"));
+  document.getElementById("pipelineStatus").textContent = `${state.customers.length} customers in pipeline view`;
+}
+
+function renderBarList(items, valueKey, labelKey, formatValue = (v) => v) {
+  if (!items || items.length === 0) return `<div class="muted">No data yet.</div>`;
+  const max = Math.max(...items.map((item) => Number(item[valueKey]) || 0), 1);
+  return items.map((item) => {
+    const value = Number(item[valueKey]) || 0;
+    const width = Math.max(4, Math.round((value / max) * 100));
+    return `
+      <div class="bar-row">
+        <span>${escapeHtml(item[labelKey])}</span>
+        <div class="bar-track"><div class="bar-fill" style="width:${width}%"></div></div>
+        <span>${escapeHtml(formatValue(value))}</span>
+      </div>
+    `;
+  }).join("");
+}
+
+function renderAnalyticsTable(rows, columns) {
+  if (!rows || rows.length === 0) return `<div class="muted">No data yet.</div>`;
+  const head = columns.map((col) => `<th>${escapeHtml(col.label)}</th>`).join("");
+  const body = rows.map((row) => `
+    <tr>
+      ${columns.map((col) => `<td>${escapeHtml(col.format ? col.format(row) : (row[col.key] ?? ""))}</td>`).join("")}
+    </tr>
+  `).join("");
+  return `<table class="analytics-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+function renderAnalytics() {
+  const data = state.analytics;
+  if (!data) return;
+
+  const k = data.kpis || {};
+  const content = document.getElementById("analyticsContent");
+  content.innerHTML = `
+    <div class="analytics-kpi-grid">
+      ${[
+        ["Total Customers", k.total_customers],
+        ["Leads", k.total_leads],
+        ["Active Customers", k.active_customers],
+        ["Repeat Customers", k.repeat_customers],
+        ["Completed Revenue", formatMoney(k.total_completed_revenue)],
+        ["Average Ticket", formatMoney(k.average_ticket)],
+        ["Overdue Follow-Ups", k.overdue_followups],
+        ["Open Follow-Ups", k.open_followups],
+        ["Cooling", k.cooling_customers],
+        ["Inactive", k.inactive_customers],
+        ["Completion Rate", `${data.operations?.completion_rate ?? 0}%`]
+      ].map(([label, value]) => `
+        <div class="kpi-card"><div class="kpi-label">${escapeHtml(label)}</div><div class="kpi-value">${escapeHtml(value)}</div></div>
+      `).join("")}
+    </div>
+
+    <div class="analytics-card">
+      <h3>Revenue by Month</h3>
+      ${renderBarList(data.revenue?.by_month || [], "revenue", "month", (v) => formatMoney(v))}
+    </div>
+
+    <div class="analytics-card">
+      <h3>Revenue by Service Category</h3>
+      ${renderBarList(data.revenue?.by_service_category || [], "revenue", "category", (v) => formatMoney(v))}
+    </div>
+
+    <div class="analytics-card">
+      <h3>Top Lifetime Value Customers</h3>
+      ${renderAnalyticsTable(data.customers?.top_lifetime_value || [], [
+        { label: "Customer", key: "full_name" },
+        { label: "Revenue", key: "total_revenue", format: (row) => formatMoney(row.total_revenue) },
+        { label: "Stage", key: "lifecycle_stage" }
+      ])}
+    </div>
+
+    <div class="analytics-card">
+      <h3>Reactivation Opportunities</h3>
+      ${renderAnalyticsTable(data.customers?.reactivation_opportunities || [], [
+        { label: "Customer", key: "full_name" },
+        { label: "Revenue", key: "total_revenue", format: (row) => formatMoney(row.total_revenue) },
+        { label: "Last Service", key: "last_service_date", format: (row) => formatShortDate(row.last_service_date) }
+      ])}
+    </div>
+
+    <div class="analytics-card">
+      <h3>Outreach Response Status</h3>
+      ${renderBarList(data.outreach?.by_response_status || [], "count", "status")}
+      <p class="muted">Response rate: ${escapeHtml(data.outreach?.response_rate ?? 0)}% · Booked from outreach: ${escapeHtml(data.outreach?.booked_from_outreach ?? 0)}</p>
+    </div>
+
+    <div class="analytics-card">
+      <h3>Follow-Up Health</h3>
+      <p>Open follow-ups: <strong>${escapeHtml(k.open_followups ?? 0)}</strong></p>
+      <p>Overdue follow-ups: <strong>${escapeHtml(k.overdue_followups ?? 0)}</strong></p>
+      <p>High-priority contacts: <strong>${escapeHtml(k.high_priority_contacts ?? 0)}</strong></p>
+    </div>
+
+    <div class="analytics-card">
+      <h3>Operations Snapshot</h3>
+      <p>Completed jobs: <strong>${escapeHtml(data.operations?.completed_jobs ?? 0)}</strong></p>
+      <p>Total bookings: <strong>${escapeHtml(data.operations?.total_bookings ?? 0)}</strong></p>
+      <p>Completion rate: <strong>${escapeHtml(data.operations?.completion_rate ?? 0)}%</strong></p>
+      <h4 style="margin:12px 0 8px;color:var(--moon-primary);">Most Common Services</h4>
+      ${renderBarList(data.operations?.most_common_services || [], "count", "service_category")}
+    </div>
+  `;
+
+  const warnings = data.warnings || [];
+  document.getElementById("analyticsStatus").textContent = warnings.length
+    ? `Loaded with ${warnings.length} partial data warning(s)`
+    : "Analytics loaded";
+}
+
+async function loadAnalytics() {
+  document.getElementById("analyticsStatus").textContent = "Loading analytics...";
+  try {
+    state.analytics = await apiJson("/api/admin-crm-analytics");
+    state.analyticsLoaded = true;
+    renderAnalytics();
+  } catch (err) {
+    document.getElementById("analyticsStatus").textContent = err.message || "Failed to load analytics";
+    document.getElementById("analyticsStatus").className = "status-line error-text";
+  }
+}
+
+function renderTaskCard(row, label) {
+  return `
+    <article class="task-card">
+      <div><strong>${escapeHtml(customerName(row))}</strong></div>
+      <div class="muted">${escapeHtml(label)} · Due ${escapeHtml(formatDate(row.next_follow_up_at))}</div>
+      <div class="task-card-actions">
+        <button class="secondary-btn" type="button" data-open-customer="${escapeHtml(customerId(row))}">Open</button>
+        <button class="primary-btn complete-followup-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
+      </div>
+    </article>
+  `;
+}
+
+function renderTasks() {
+  const overdue = state.customers.filter(isOverdueFollowUp);
+  const dueToday = state.customers.filter(isDueToday);
+  const openFuture = state.customers.filter((row) => hasOpenFollowUp(row) && !isOverdueFollowUp(row) && !isDueToday(row));
+
+  document.getElementById("tasksSections").innerHTML = [
+    ["Overdue Tasks", overdue],
+    ["Due Today", dueToday],
+    ["Open Upcoming", openFuture]
+  ].map(([title, rows]) => `
+    <section class="crm-section smart-queue-section">
+      <div class="crm-section-header"><h2>${escapeHtml(title)}</h2><span class="section-count">${rows.length}</span></div>
+      <div class="section-card-grid">${rows.length ? rows.map((row) => renderTaskCard(row, title)).join("") : `<div class="muted">No tasks here.</div>`}</div>
+    </section>
+  `).join("");
+
+  document.getElementById("tasksSections").querySelectorAll("[data-open-customer]").forEach((btn) => {
+    btn.addEventListener("click", () => openCustomerDetail(btn.dataset.openCustomer));
+  });
+  document.getElementById("tasksSections").querySelectorAll(".complete-followup-btn").forEach((btn) => {
+    btn.addEventListener("click", () => completeFollowUpForCustomer(btn.dataset.customerId));
+  });
+
+  document.getElementById("tasksStatus").textContent = `${overdue.length} overdue · ${dueToday.length} due today · ${openFuture.length} upcoming`;
+}
+
+async function completeFollowUpForCustomer(customerId) {
+  try {
+    const detail = await apiJson(`/api/admin-crm-customer-detail?customer_id=${encodeURIComponent(customerId)}`);
+    const openTask = (detail.follow_up_tasks || []).find((task) => task.status !== "completed" && task.status !== "dismissed");
+    if (!openTask) throw new Error("No open task found for this customer");
+    await apiJson("/api/admin-crm-follow-up-task", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "complete", task_id: openTask.id })
+    });
+    toast("Task completed");
+    await loadCustomers();
+  } catch (err) {
+    toast(err.message || "Failed to complete task", true);
+  }
+}
+
+function renderActiveTab() {
+  if (state.activeTab === "today") renderToday();
+  else if (state.activeTab === "customers") renderCustomersTab();
+  else if (state.activeTab === "pipeline") renderPipeline();
+  else if (state.activeTab === "analytics" && state.analyticsLoaded) renderAnalytics();
+  else if (state.activeTab === "tasks") renderTasks();
+
+  if (state.selectedCustomerId) {
+    document.querySelectorAll(".customer-card, .pipeline-card").forEach((card) => {
+      card.classList.toggle("active", card.dataset.customerId === state.selectedCustomerId);
+    });
+  }
+}
+
+async function loadCustomers() {
+  setListStatus("Loading CRM customers...");
+  document.getElementById("todayStatus").textContent = "Loading today's priorities...";
+  try {
+    const data = await apiJson(`/api/admin-crm-customers?${buildCustomerQuery()}`);
+    state.customers = data.customers || [];
+    renderActiveTab();
+    const countText = `${state.customers.length} shown${typeof data.count === "number" ? ` of ${data.count}` : ""}`;
+    setListStatus(countText);
+    document.getElementById("todayStatus").textContent = countText;
+    document.getElementById("pipelineStatus").textContent = countText;
+  } catch (err) {
+    const message = err.message || "Failed to load CRM customers";
+    setListStatus(message, true);
+    document.getElementById("todayStatus").textContent = message;
+    document.getElementById("todayStatus").className = "status-line error-text";
+  }
 }
 
 function renderCustomerSection(title, rows, options = {}) {
@@ -1525,7 +2021,7 @@ function renderCustomerCard(row) {
 
 async function openCustomerDetail(id) {
   state.selectedCustomerId = id;
-  renderCustomers();
+  renderActiveTab();
   document.getElementById("detailPanel").classList.add("open");
   document.getElementById("detailTitle").textContent = "Loading customer...";
   document.getElementById("detailSub").textContent = "";
@@ -1902,9 +2398,22 @@ async function bootCrmApp() {
   }
 }
 
+document.getElementById("crmTabNav").addEventListener("click", (event) => {
+  const button = event.target.closest(".crm-tab");
+  if (!button) return;
+  switchTab(button.dataset.tab);
+});
+
+document.getElementById("refreshBtn").addEventListener("click", () => {
+  if (state.activeTab === "analytics") {
+    state.analyticsLoaded = false;
+    loadAnalytics();
+  }
+  loadCustomers();
+});
+
 document.getElementById("leadForm").addEventListener("submit", submitLeadForm);
 document.getElementById("searchBtn").addEventListener("click", loadCustomers);
-document.getElementById("refreshBtn").addEventListener("click", loadCustomers);
 document.getElementById("searchInput").addEventListener("keydown", event => {
   if (event.key === "Enter") loadCustomers();
 });
@@ -1915,7 +2424,7 @@ document.getElementById("closeDetailBtn").addEventListener("click", () => {
   state.selectedCustomerId = null;
   state.detail = null;
   document.getElementById("detailPanel").classList.remove("open");
-  renderCustomers();
+  renderActiveTab();
 });
 document.getElementById("logoutBtn")?.addEventListener("click", async () => {
   clearAdminSession();
