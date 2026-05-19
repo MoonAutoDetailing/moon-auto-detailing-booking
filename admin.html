@@ -8,19 +8,20 @@
 
 <style>
      :root {
-  --moon-primary: #6f93c4;
-  --moon-primary-dark: #4f78a8;
+  --moon-primary: #7fb8e6;
+  --moon-primary-dark: #4f95cf;
   --moon-light-bg: #e9f1fb;
   --moon-soft: #9fb7d3;
   --moon-shadow: rgba(0,0,0,0.08);
 }
 body {
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
   margin: 0;
-  padding: 20px;
+  padding: 12px;
   background: #0e0e0e;
   min-height: 100vh;
   color: white;
+  overflow-x: hidden;
 }
 
 #pageOverlay {
@@ -1414,6 +1415,107 @@ body {
   }
 }
 
+.app-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid rgba(127, 184, 230, 0.22);
+  border-radius: 20px;
+  background: rgba(13, 22, 34, 0.82);
+}
+
+.app-eyebrow {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: clamp(22px, 3vw, 30px);
+  color: var(--moon-primary);
+  letter-spacing: -0.02em;
+}
+
+.app-header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.secondary-btn {
+  padding: 10px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+#portalLogoutBtn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+#refreshNow {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: white;
+}
+
+#refreshNow:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.booking-view-toolbar {
+  margin-bottom: 14px;
+}
+
+.actions button.confirm {
+  background: var(--moon-primary);
+  color: #07111d;
+  font-weight: 800;
+}
+
+.actions button.cancel {
+  background: #b00020;
+  color: #fff;
+}
+
+.actions button.delay,
+.actions button:not(.confirm):not(.cancel) {
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.card .booking-header {
+  display: grid;
+  gap: 6px;
+}
+
+.booking-summary-line {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.booking-meta-line {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.72);
+}
+
 </style>
 </head>
 
@@ -1480,8 +1582,9 @@ style="
   <section id="adminGatewaySection" aria-label="Admin Portal">
     <div class="admin-gateway-card">
       <img src="/NewLogoColor.png" class="admin-gateway-logo" alt="Moon Auto Detailing Logo" />
+      <p class="app-eyebrow" style="margin-bottom:8px;">Moon Auto Detailing Admin</p>
       <h1 class="admin-gateway-title">Admin Portal</h1>
-      <p class="admin-gateway-subtitle">Choose the workspace you need for bookings, operations, and customer follow-up.</p>
+      <p class="admin-gateway-subtitle">Choose Booking Operations or the CRM Dashboard to manage your business.</p>
       <div class="admin-gateway-grid">
         <button id="openBookingAdminBtn" class="admin-gateway-option" type="button">
           <span class="admin-gateway-pill">Operations</span>
@@ -1494,12 +1597,24 @@ style="
           <p>Track leads, outreach, follow-up tasks, tags, and customer relationship notes.</p>
         </a>
       </div>
-      <button id="portalLogoutBtn" class="moon-tab" type="button" style="margin-top:22px;">Logout</button>
+      <button id="portalLogoutBtn" class="secondary-btn" type="button" style="margin-top:22px;">Logout</button>
     </div>
   </section>
 
   <section id="bookingAdminSection" aria-label="Booking Admin">
-    <div id="topBar">
+    <header class="app-header booking-app-header">
+      <div class="app-header-brand">
+        <p class="app-eyebrow">Moon Auto Detailing Admin</p>
+        <h1>Booking Operations</h1>
+      </div>
+      <div class="app-header-actions">
+        <button id="backToPortalBtn" class="secondary-btn" type="button">Back to Portal</button>
+        <button id="logoutBtn" class="secondary-btn" type="button">Logout</button>
+        <button id="refreshNow" class="secondary-btn" type="button">Refresh</button>
+      </div>
+    </header>
+
+    <div id="topBar" class="booking-view-toolbar">
       <div id="topBarRow1" class="topBar-row1">
         <div id="topBarMenuWrap" class="topBar-menu-wrap">
           <button id="adminMenuBtn" type="button" class="admin-menu-btn" aria-label="Menu">
@@ -1511,12 +1626,6 @@ style="
       <div id="topBarPrimary" class="topBar-primary">
         <div id="viewButtons"></div>
       </div>
-    </div>
-
-    <div id="topBarUtility" class="admin-top-utility">
-      <button id="backToPortalBtn" type="button">Back to Admin Portal</button>
-      <button id="logoutBtn" type="button">Logout</button>
-      <button id="refreshNow" type="button" class="moon-tab">Refresh</button>
     </div>
 
     <div id="viewContainer"></div>

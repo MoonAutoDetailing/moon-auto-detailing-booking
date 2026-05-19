@@ -1106,6 +1106,55 @@ body {
   flex-wrap: wrap;
 }
 
+.duplicate-warning {
+  border: 1px solid rgba(255, 217, 102, 0.45);
+  border-radius: 14px;
+  background: rgba(255, 217, 102, 0.12);
+  color: #ffe9a8;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  line-height: 1.45;
+}
+
+.duplicate-groups {
+  display: grid;
+  gap: 14px;
+}
+
+.duplicate-group {
+  border: 1px solid rgba(127, 184, 230, 0.24);
+  border-radius: 16px;
+  background: rgba(13, 22, 34, 0.72);
+  padding: 14px;
+}
+
+.duplicate-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.duplicate-group-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.badge-confidence-high {
+  border-color: rgba(255, 120, 120, 0.55);
+  background: rgba(255, 120, 120, 0.2);
+  color: #ffd4d4;
+}
+
+.badge-confidence-medium {
+  border-color: rgba(255, 217, 102, 0.55);
+  background: rgba(255, 217, 102, 0.18);
+  color: #ffe9a8;
+}
+
 @media (max-width: 920px) {
   .pipeline-board {
     grid-template-columns: repeat(5, minmax(160px, 1fr));
@@ -1143,6 +1192,320 @@ body {
     padding: 14px;
   }
 }
+
+/* === Production dashboard layout (Phase UI) === */
+:root {
+  --moon-primary: #7fb8e6;
+  --moon-primary-dark: #4f95cf;
+  --moon-surface: rgba(13, 22, 34, 0.82);
+  --moon-border: rgba(127, 184, 230, 0.22);
+  --moon-radius: 16px;
+  --moon-radius-lg: 20px;
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 20px;
+}
+
+body {
+  font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  padding: 12px;
+}
+
+#pageOverlay {
+  max-width: 1440px;
+}
+
+.app-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--moon-border);
+  border-radius: var(--moon-radius-lg);
+  background: var(--moon-surface);
+}
+
+.app-eyebrow {
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.app-header h1 {
+  margin: 0;
+  font-size: clamp(22px, 3vw, 30px);
+  color: var(--moon-primary);
+  letter-spacing: -0.02em;
+}
+
+.app-header-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.crm-dashboard {
+  display: block;
+}
+
+.crm-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 390px);
+  gap: var(--space-3);
+  align-items: start;
+}
+
+.crm-main {
+  min-width: 0;
+}
+
+.crm-detail-column {
+  position: sticky;
+  top: 12px;
+  max-height: calc(100vh - 24px);
+}
+
+.crm-tab-nav {
+  margin-bottom: var(--space-2);
+  padding-bottom: 2px;
+}
+
+.crm-tab {
+  min-height: 40px;
+}
+
+.tab-page-header {
+  margin-bottom: var(--space-3);
+  padding: var(--space-3);
+  border: 1px solid var(--moon-border);
+  border-radius: var(--moon-radius);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.tab-page-header h2 {
+  margin: 0 0 6px;
+  color: var(--moon-primary);
+  font-size: 20px;
+}
+
+.tab-page-header p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.72);
+  line-height: 1.45;
+}
+
+.quiet-btn {
+  padding: 9px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(127, 184, 230, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 700;
+}
+
+.quiet-btn:hover {
+  background: rgba(127, 184, 230, 0.16);
+}
+
+.primary-btn,
+.secondary-btn,
+.danger-btn,
+.quiet-btn {
+  min-height: 42px;
+}
+
+#refreshBtn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: white;
+}
+
+#refreshBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lead-form-collapse {
+  margin-top: var(--space-3);
+  border: 1px solid var(--moon-border);
+  border-radius: var(--moon-radius);
+  background: var(--moon-surface);
+  overflow: hidden;
+}
+
+.lead-form-collapse summary {
+  cursor: pointer;
+  padding: 14px 16px;
+  font-weight: 700;
+  color: var(--moon-primary);
+  list-style: none;
+}
+
+.lead-form-collapse summary::-webkit-details-marker {
+  display: none;
+}
+
+.lead-form-collapse .lead-form-card {
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  position: static;
+  margin: 0;
+}
+
+#detailPanel.detail-panel {
+  display: flex;
+  flex-direction: column;
+  margin-top: 0;
+  min-height: 520px;
+  max-height: calc(100vh - 24px);
+  padding: 0;
+  overflow: hidden;
+}
+
+.detail-empty {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 28px 20px;
+  min-height: 320px;
+}
+
+.detail-empty h2 {
+  margin: 0;
+  color: var(--moon-primary);
+  font-size: 22px;
+}
+
+.detail-loaded {
+  display: none;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+#detailPanel.open .detail-empty {
+  display: none;
+}
+
+#detailPanel.open .detail-loaded {
+  display: flex;
+}
+
+#detailPanel.open {
+  display: flex;
+}
+
+.detail-header {
+  padding: 16px;
+  margin: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.detail-body-scroll {
+  overflow-y: auto;
+  padding: 16px;
+  flex: 1;
+}
+
+.detail-record-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 14px;
+}
+
+.quick-actions .primary-btn {
+  flex: 1 1 140px;
+}
+
+.customer-card {
+  padding: 12px;
+  text-align: left;
+}
+
+.customer-card .customer-meta-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.customer-card .card-focus {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #24496f;
+}
+
+.customer-card .card-secondary {
+  margin-top: 6px;
+  font-size: 12px;
+  color: #526174;
+}
+
+.customer-card .notes-preview,
+.customer-card .customer-meta-grid .meta-label:last-child,
+.customer-card .customer-meta-grid .meta-value:last-child {
+  display: none;
+}
+
+.customer-card .customer-meta-grid > div:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.task-card-actions .primary-btn {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 920px) {
+  .crm-workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .crm-detail-column {
+    position: static;
+    max-height: none;
+  }
+
+  #detailPanel.detail-panel {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    max-height: none;
+    min-height: 0;
+    border-radius: 0;
+    margin: 0;
+  }
+
+  #detailPanel.detail-panel.open {
+    display: flex;
+  }
+
+  .detail-empty {
+    display: none !important;
+  }
+
+  #closeDetailBtn {
+    min-height: 44px;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1172,187 +1535,207 @@ body {
 </div>
 
 <div id="pageOverlay">
-  <header class="topbar">
-    <div>
-      <h1>Moon Auto Detailing CRM</h1>
-      <p>Know who to contact today, track your pipeline, and see what drives revenue.</p>
-    </div>
-    <div class="topbar-actions">
-      <a class="secondary-btn" href="/admin.html?portal=1" style="text-decoration:none;">Back to Admin Portal</a>
-      <button id="refreshBtn" class="moon-tab" type="button">Refresh</button>
-    </div>
-  </header>
+  <div class="crm-dashboard">
+    <header class="app-header">
+      <div class="app-header-brand">
+        <p class="app-eyebrow">Moon Auto Detailing Admin</p>
+        <h1>CRM Dashboard</h1>
+      </div>
+      <div class="app-header-actions">
+        <a class="secondary-btn" href="/admin.html?portal=1" style="text-decoration:none;">Back to Portal</a>
+        <button id="refreshBtn" class="secondary-btn" type="button">Refresh</button>
+      </div>
+    </header>
 
-  <nav class="crm-tab-nav" id="crmTabNav" aria-label="CRM sections">
-    <button type="button" class="crm-tab active" data-tab="today">Today</button>
-    <button type="button" class="crm-tab" data-tab="customers">Customers</button>
-    <button type="button" class="crm-tab" data-tab="pipeline">Pipeline</button>
-    <button type="button" class="crm-tab" data-tab="analytics">Analytics</button>
-    <button type="button" class="crm-tab" data-tab="tasks">Tasks</button>
-  </nav>
+    <div class="crm-workspace">
+      <div class="crm-main">
+        <nav class="crm-tab-nav" id="crmTabNav" aria-label="CRM sections">
+          <button type="button" class="crm-tab active" data-tab="today">Today</button>
+          <button type="button" class="crm-tab" data-tab="customers">Customers</button>
+          <button type="button" class="crm-tab" data-tab="pipeline">Pipeline</button>
+          <button type="button" class="crm-tab" data-tab="analytics">Analytics</button>
+          <button type="button" class="crm-tab" data-tab="tasks">Tasks</button>
+          <button type="button" class="crm-tab" data-tab="cleanup">Data Cleanup</button>
+        </nav>
 
-  <div id="tabToday" class="crm-tab-panel active">
-    <div class="panel">
-      <div id="todayStatus" class="status-line">Loading today&apos;s priorities...</div>
-      <div id="todayKpiStrip" class="kpi-strip" aria-label="Today KPIs"></div>
-      <div id="todaySections" class="crm-sections"></div>
-    </div>
-  </div>
+        <div id="tabPageHeader" class="tab-page-header" aria-live="polite"></div>
 
-  <div id="tabCustomers" class="crm-tab-panel">
-  <main class="crm-shell">
-    <section>
-      <div class="panel">
-        <div id="listStatus" class="status-line">Loading CRM customers...</div>
-        <div class="filters">
-          <div class="field">
-            <label for="searchInput">Search</label>
-            <input id="searchInput" type="search" placeholder="Name, email, phone, address..." />
-          </div>
-          <div class="field">
-            <label for="lifecycleFilter">Stage</label>
-            <select id="lifecycleFilter">
-              <option value="">All</option>
-              <option value="lead">Lead</option>
-              <option value="prospect">Prospect</option>
-              <option value="customer">Customer</option>
-              <option value="inactive">Inactive</option>
-              <option value="do_not_contact">Do not contact</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="statusFilter">Status</label>
-            <select id="statusFilter">
-              <option value="">All</option>
-              <option value="active">Active</option>
-              <option value="new">New</option>
-              <option value="nurture">Nurture</option>
-              <option value="cooling">Cooling</option>
-              <option value="inactive">Inactive</option>
-              <option value="closed">Closed</option>
-              <option value="do_not_contact">Do not contact</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="priorityFilter">Priority</label>
-            <select id="priorityFilter">
-              <option value="">All</option>
-              <option value="urgent">Urgent</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="dueFilter">Due</label>
-            <select id="dueFilter">
-              <option value="">All</option>
-              <option value="today">Today</option>
-              <option value="overdue">Overdue</option>
-              <option value="open">Open</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>&nbsp;</label>
-            <button id="searchBtn" class="primary-btn" type="button">Apply</button>
+        <div id="tabToday" class="crm-tab-panel active">
+          <div class="panel">
+            <div id="todayStatus" class="status-line">Loading today&apos;s priorities...</div>
+            <div id="todayKpiStrip" class="kpi-strip" aria-label="Today KPIs"></div>
+            <div id="todaySections" class="crm-sections"></div>
           </div>
         </div>
-        <div id="crmSections" class="crm-sections"></div>
+
+        <div id="tabCustomers" class="crm-tab-panel">
+          <div class="panel">
+            <div id="listStatus" class="status-line">Loading CRM customers...</div>
+            <div class="filters">
+              <div class="field">
+                <label for="searchInput">Search</label>
+                <input id="searchInput" type="search" placeholder="Name, email, phone, address..." />
+              </div>
+              <div class="field">
+                <label for="lifecycleFilter">Stage</label>
+                <select id="lifecycleFilter">
+                  <option value="">All</option>
+                  <option value="lead">Lead</option>
+                  <option value="prospect">Prospect</option>
+                  <option value="customer">Customer</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="do_not_contact">Do not contact</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="statusFilter">Status</label>
+                <select id="statusFilter">
+                  <option value="">All</option>
+                  <option value="active">Active</option>
+                  <option value="new">New</option>
+                  <option value="nurture">Nurture</option>
+                  <option value="cooling">Cooling</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="closed">Closed</option>
+                  <option value="do_not_contact">Do not contact</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="priorityFilter">Priority</label>
+                <select id="priorityFilter">
+                  <option value="">All</option>
+                  <option value="urgent">Urgent</option>
+                  <option value="high">High</option>
+                  <option value="medium">Medium</option>
+                  <option value="low">Low</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="dueFilter">Due</label>
+                <select id="dueFilter">
+                  <option value="">All</option>
+                  <option value="today">Today</option>
+                  <option value="overdue">Overdue</option>
+                  <option value="open">Open</option>
+                </select>
+              </div>
+              <div class="field">
+                <label>&nbsp;</label>
+                <button id="searchBtn" class="quiet-btn" type="button">Apply Filters</button>
+              </div>
+            </div>
+            <div id="crmSections" class="crm-sections"></div>
+          </div>
+          <details class="lead-form-collapse">
+            <summary>Add Manual Lead</summary>
+            <aside class="lead-form-card">
+              <form id="leadForm">
+                <div class="form-grid">
+                  <div>
+                    <label for="leadFirstName">First Name</label>
+                    <input id="leadFirstName" name="first_name" />
+                  </div>
+                  <div>
+                    <label for="leadLastName">Last Name</label>
+                    <input id="leadLastName" name="last_name" />
+                  </div>
+                  <div class="span-2">
+                    <label for="leadFullName">Full Name</label>
+                    <input id="leadFullName" name="full_name" placeholder="Required if first/last not used" />
+                  </div>
+                  <div>
+                    <label for="leadPhone">Phone</label>
+                    <input id="leadPhone" name="phone" />
+                  </div>
+                  <div>
+                    <label for="leadEmail">Email</label>
+                    <input id="leadEmail" name="email" type="email" />
+                  </div>
+                  <div class="span-2">
+                    <label for="leadAddress">Address</label>
+                    <input id="leadAddress" name="address" />
+                  </div>
+                  <div class="span-2">
+                    <label for="leadCompany">Company</label>
+                    <input id="leadCompany" name="company_name" />
+                  </div>
+                  <div>
+                    <label for="leadSource">Lead Source</label>
+                    <input id="leadSource" name="lead_source" placeholder="facebook, referral..." />
+                  </div>
+                  <div>
+                    <label for="leadPriority">Priority</label>
+                    <select id="leadPriority" name="priority">
+                      <option value="medium">Medium</option>
+                      <option value="high">High</option>
+                      <option value="urgent">Urgent</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+                  <div class="span-2">
+                    <label for="leadNextFollowUp">Next Follow-Up</label>
+                    <input id="leadNextFollowUp" name="next_follow_up_at" type="datetime-local" />
+                  </div>
+                  <div class="span-2">
+                    <label for="leadNotes">CRM Notes</label>
+                    <textarea id="leadNotes" name="crm_notes"></textarea>
+                  </div>
+                </div>
+                <button class="primary-btn" type="submit">Create Lead</button>
+              </form>
+            </aside>
+          </details>
+        </div>
+
+        <div id="tabPipeline" class="crm-tab-panel">
+          <div class="panel">
+            <div id="pipelineStatus" class="status-line">Load customers to view pipeline.</div>
+            <div id="pipelineBoard" class="pipeline-board"></div>
+          </div>
+        </div>
+
+        <div id="tabAnalytics" class="crm-tab-panel">
+          <div class="panel">
+            <div id="analyticsStatus" class="status-line">Open this tab to load analytics.</div>
+            <div id="analyticsContent" class="analytics-grid"></div>
+          </div>
+        </div>
+
+        <div id="tabTasks" class="crm-tab-panel">
+          <div class="panel">
+            <div id="tasksStatus" class="status-line">Follow-up tasks from loaded customers.</div>
+            <div id="tasksSections" class="crm-sections"></div>
+          </div>
+        </div>
+
+        <div id="tabCleanup" class="crm-tab-panel">
+          <div class="panel">
+            <div id="cleanupStatus" class="status-line">Open this tab to scan for possible duplicates.</div>
+            <div id="cleanupContent"></div>
+          </div>
+        </div>
       </div>
 
-    </section>
-
-    <aside class="lead-form-card">
-      <h2>Add Manual Lead</h2>
-      <form id="leadForm">
-        <div class="form-grid">
-          <div>
-            <label for="leadFirstName">First Name</label>
-            <input id="leadFirstName" name="first_name" />
+      <aside class="crm-detail-column">
+        <section id="detailPanel" class="detail-panel" aria-live="polite">
+          <div id="detailEmptyState" class="detail-empty">
+            <h2>Select a customer to view details</h2>
+            <p class="muted">Review profile info, follow-up tasks, outreach history, bookings, tags, and notes here.</p>
           </div>
-          <div>
-            <label for="leadLastName">Last Name</label>
-            <input id="leadLastName" name="last_name" />
+          <div id="detailLoaded" class="detail-loaded">
+            <div class="detail-header">
+              <div>
+                <h2 id="detailTitle">Customer Detail</h2>
+                <div id="detailSub" class="muted"></div>
+              </div>
+              <button id="closeDetailBtn" class="secondary-btn" type="button">Close</button>
+            </div>
+            <div id="detailBody" class="detail-body-scroll"></div>
           </div>
-          <div class="span-2">
-            <label for="leadFullName">Full Name</label>
-            <input id="leadFullName" name="full_name" placeholder="Required if first/last not used" />
-          </div>
-          <div>
-            <label for="leadPhone">Phone</label>
-            <input id="leadPhone" name="phone" />
-          </div>
-          <div>
-            <label for="leadEmail">Email</label>
-            <input id="leadEmail" name="email" type="email" />
-          </div>
-          <div class="span-2">
-            <label for="leadAddress">Address</label>
-            <input id="leadAddress" name="address" />
-          </div>
-          <div class="span-2">
-            <label for="leadCompany">Company</label>
-            <input id="leadCompany" name="company_name" />
-          </div>
-          <div>
-            <label for="leadSource">Lead Source</label>
-            <input id="leadSource" name="lead_source" placeholder="facebook, referral..." />
-          </div>
-          <div>
-            <label for="leadPriority">Priority</label>
-            <select id="leadPriority" name="priority">
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-              <option value="low">Low</option>
-            </select>
-          </div>
-          <div class="span-2">
-            <label for="leadNextFollowUp">Next Follow-Up</label>
-            <input id="leadNextFollowUp" name="next_follow_up_at" type="datetime-local" />
-          </div>
-          <div class="span-2">
-            <label for="leadNotes">CRM Notes</label>
-            <textarea id="leadNotes" name="crm_notes"></textarea>
-          </div>
-        </div>
-        <button class="primary-btn" type="submit">Create Lead</button>
-      </form>
-    </aside>
-  </main>
-  </div>
-
-  <div id="tabPipeline" class="crm-tab-panel">
-    <div class="panel">
-      <div id="pipelineStatus" class="status-line">Load customers to view pipeline.</div>
-      <div id="pipelineBoard" class="pipeline-board"></div>
+        </section>
+      </aside>
     </div>
   </div>
-
-  <div id="tabAnalytics" class="crm-tab-panel">
-    <div class="panel">
-      <div id="analyticsStatus" class="status-line">Open this tab to load analytics.</div>
-      <div id="analyticsContent" class="analytics-grid"></div>
-    </div>
-  </div>
-
-  <div id="tabTasks" class="crm-tab-panel">
-    <div class="panel">
-      <div id="tasksStatus" class="status-line">Follow-up tasks from loaded customers.</div>
-      <div id="tasksSections" class="crm-sections"></div>
-    </div>
-  </div>
-
-      <section id="detailPanel" class="detail-panel" aria-live="polite">
-        <div class="detail-header">
-          <div>
-            <h2 id="detailTitle">Customer Detail</h2>
-            <div id="detailSub" class="muted"></div>
-          </div>
-          <button id="closeDetailBtn" class="secondary-btn" type="button">Close</button>
-        </div>
-        <div id="detailBody"></div>
-      </section>
 </div>
 
 <script>
@@ -1365,7 +1748,35 @@ const TAB_PANEL_IDS = {
   customers: "tabCustomers",
   pipeline: "tabPipeline",
   analytics: "tabAnalytics",
-  tasks: "tabTasks"
+  tasks: "tabTasks",
+  cleanup: "tabCleanup"
+};
+
+const TAB_COPY = {
+  today: {
+    title: "Today",
+    description: "See who needs a call or follow-up right now."
+  },
+  customers: {
+    title: "Customers",
+    description: "Search, filter, and manage leads and customers."
+  },
+  pipeline: {
+    title: "Pipeline",
+    description: "View where each lead or customer sits in your sales flow."
+  },
+  analytics: {
+    title: "Analytics",
+    description: "Revenue, follow-up health, and customer trends at a glance."
+  },
+  tasks: {
+    title: "Tasks",
+    description: "Work through overdue, due today, and upcoming follow-ups."
+  },
+  cleanup: {
+    title: "Data Cleanup",
+    description: "Review possible duplicate records. Nothing is changed automatically."
+  }
 };
 
 const state = {
@@ -1375,7 +1786,9 @@ const state = {
   tags: [],
   activeTab: "today",
   analytics: null,
-  analyticsLoaded: false
+  analyticsLoaded: false,
+  duplicates: null,
+  duplicatesLoaded: false
 };
 
 function isLoggedIn() {
@@ -1627,6 +2040,22 @@ function buildCustomerQuery() {
   return params.toString();
 }
 
+function renderTabHeader() {
+  const header = document.getElementById("tabPageHeader");
+  const copy = TAB_COPY[state.activeTab];
+  if (!header || !copy) return;
+  header.innerHTML = `
+    <h2>${escapeHtml(copy.title)}</h2>
+    <p>${escapeHtml(copy.description)}</p>
+  `;
+}
+
+function setDetailPanelOpen(isOpen) {
+  const panel = document.getElementById("detailPanel");
+  if (!panel) return;
+  panel.classList.toggle("open", isOpen);
+}
+
 function switchTab(tab) {
   state.activeTab = tab;
   document.querySelectorAll(".crm-tab").forEach((btn) => {
@@ -1636,12 +2065,14 @@ function switchTab(tab) {
     const panel = document.getElementById(panelId);
     if (panel) panel.classList.toggle("active", key === tab);
   });
+  renderTabHeader();
   renderActiveTab();
   if (tab === "analytics" && !state.analyticsLoaded) loadAnalytics();
+  if (tab === "cleanup" && !state.duplicatesLoaded) loadDuplicates();
 }
 
 function bindCustomerCards(root) {
-  (root || document).querySelectorAll(".customer-card, .pipeline-card").forEach((card) => {
+  (root || document).querySelectorAll(".customer-card, .pipeline-card, .duplicate-card").forEach((card) => {
     card.addEventListener("click", () => openCustomerDetail(card.dataset.customerId));
   });
 }
@@ -1889,9 +2320,8 @@ function renderTaskCard(row, label) {
     <article class="task-card">
       <div><strong>${escapeHtml(customerName(row))}</strong></div>
       <div class="muted">${escapeHtml(label)} · Due ${escapeHtml(formatDate(row.next_follow_up_at))}</div>
-      <div class="task-card-actions">
-        <button class="secondary-btn" type="button" data-open-customer="${escapeHtml(customerId(row))}">Open</button>
-        <button class="primary-btn complete-followup-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
+      <div class="task-card-actions"><button class="primary-btn complete-followup-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
+        <button class="secondary-btn" type="button" data-open-customer="${escapeHtml(customerId(row))}">Open Customer</button>
       </div>
     </article>
   `;
@@ -1940,15 +2370,97 @@ async function completeFollowUpForCustomer(customerId) {
   }
 }
 
+function duplicateReasonLabel(reason) {
+  const labels = {
+    same_phone: "Same phone number",
+    same_email: "Same email address",
+    same_name_partial_contact: "Same name + similar phone/email",
+    same_address_similar_name: "Same address + similar name"
+  };
+  return labels[reason] || reason;
+}
+
+function renderDuplicateCustomerCard(customer) {
+  return `
+    <button class="customer-card duplicate-card" type="button" data-customer-id="${escapeHtml(customer.customer_id)}">
+      <div class="customer-name">${escapeHtml(customer.full_name || "Unnamed customer")}</div>
+      <div class="card-line">${escapeHtml(customer.phone || "No phone")}</div>
+      <div class="card-line">${escapeHtml(customer.email || "No email")}</div>
+      <div class="badge-row">
+        <span class="badge">${escapeHtml(customer.lifecycle_stage || "unknown")}</span>
+        <span class="badge">${escapeHtml(customer.crm_status || "unknown")}</span>
+      </div>
+      <div class="customer-meta-grid">
+        <div><span class="meta-label">Bookings</span><span class="meta-value">${escapeHtml(customer.total_bookings ?? 0)}</span></div>
+        <div><span class="meta-label">Completed</span><span class="meta-value">${escapeHtml(customer.completed_bookings ?? 0)}</span></div>
+        <div><span class="meta-label">Revenue</span><span class="meta-value">${escapeHtml(formatMoney(customer.total_revenue))}</span></div>
+        <div><span class="meta-label">Last Service</span><span class="meta-value">${escapeHtml(formatShortDate(customer.last_service_date))}</span></div>
+      </div>
+    </button>
+  `;
+}
+
+function renderDuplicates() {
+  const content = document.getElementById("cleanupContent");
+  const groups = state.duplicates?.duplicate_groups || [];
+
+  if (!groups.length) {
+    content.innerHTML = `
+      <div class="duplicate-warning">Review only. No records are merged or deleted from this screen.</div>
+      <div class="muted">No possible duplicate groups found.</div>
+    `;
+    document.getElementById("cleanupStatus").textContent = "No duplicates detected";
+    return;
+  }
+
+  content.innerHTML = `
+    <div class="duplicate-warning">Review only. No records are merged or deleted from this screen.</div>
+    <div class="duplicate-groups">
+      ${groups.map((group) => `
+        <article class="duplicate-group">
+          <div class="duplicate-group-header">
+            <div>
+              <strong>${escapeHtml(duplicateReasonLabel(group.reason))}</strong>
+              <div class="muted">Match: ${escapeHtml(group.match_key || "")}</div>
+            </div>
+            <span class="badge ${group.confidence === "high" ? "badge-confidence-high" : "badge-confidence-medium"}">${escapeHtml(group.confidence)} confidence</span>
+          </div>
+          <div class="duplicate-group-cards">
+            ${(group.customers || []).map(renderDuplicateCustomerCard).join("")}
+          </div>
+        </article>
+      `).join("")}
+    </div>
+  `;
+
+  bindCustomerCards(content);
+  document.getElementById("cleanupStatus").textContent = `${groups.length} possible duplicate group(s) found`;
+}
+
+async function loadDuplicates() {
+  document.getElementById("cleanupStatus").textContent = "Scanning for possible duplicates...";
+  document.getElementById("cleanupStatus").className = "status-line";
+  try {
+    state.duplicates = await apiJson("/api/admin-crm-duplicates");
+    state.duplicatesLoaded = true;
+    renderDuplicates();
+  } catch (err) {
+    document.getElementById("cleanupStatus").textContent = err.message || "Failed to load duplicates";
+    document.getElementById("cleanupStatus").className = "status-line error-text";
+    document.getElementById("cleanupContent").innerHTML = "";
+  }
+}
+
 function renderActiveTab() {
   if (state.activeTab === "today") renderToday();
   else if (state.activeTab === "customers") renderCustomersTab();
   else if (state.activeTab === "pipeline") renderPipeline();
   else if (state.activeTab === "analytics" && state.analyticsLoaded) renderAnalytics();
   else if (state.activeTab === "tasks") renderTasks();
+  else if (state.activeTab === "cleanup" && state.duplicatesLoaded) renderDuplicates();
 
   if (state.selectedCustomerId) {
-    document.querySelectorAll(".customer-card, .pipeline-card").forEach((card) => {
+    document.querySelectorAll(".customer-card, .pipeline-card, .duplicate-card").forEach((card) => {
       card.classList.toggle("active", card.dataset.customerId === state.selectedCustomerId);
     });
   }
@@ -1994,27 +2506,23 @@ function renderCustomerCard(row) {
   const id = customerId(row);
   const priority = priorityValue(row);
   const isHot = normalize(priority) === "urgent" || normalize(priority) === "high";
-  const preview = notesPreview(row.crm_notes);
+  const followUpLabel = row.next_follow_up_at
+    ? (isOverdueFollowUp(row) ? `Overdue: ${formatShortDate(row.next_follow_up_at)}` : `Follow-up: ${formatShortDate(row.next_follow_up_at)}`)
+    : (row.last_service_date ? `Last service: ${formatShortDate(row.last_service_date)}` : "No follow-up scheduled");
+  const showRevenue = Number(row.total_revenue || 0) >= 300;
 
   return `
     <button class="customer-card ${id === state.selectedCustomerId ? "active" : ""}" type="button" data-customer-id="${escapeHtml(id)}">
       <div class="customer-name">${escapeHtml(customerName(row))}</div>
-      <div class="card-line">${escapeHtml(row.phone || "No phone")}</div>
-      <div class="card-line">${escapeHtml(row.email || "No email")}</div>
       <div class="badge-row">
         <span class="badge">${escapeHtml(stageValue(row))}</span>
         <span class="badge ${statusBadgeClass(row)}">${escapeHtml(statusValue(row))}</span>
         ${isOverdueFollowUp(row) ? `<span class="badge badge-overdue">overdue</span>` : ""}
-        ${isReactivationOpportunity(row) ? `<span class="badge badge-reactivation">reactivation</span>` : ""}
-        <span class="badge ${isHot ? "badge-hot" : ""}">${escapeHtml(priority)}</span>
+        ${isHot ? `<span class="badge badge-hot">${escapeHtml(priority)}</span>` : ""}
       </div>
-      <div class="customer-meta-grid">
-        <div><span class="meta-label">Last Service</span><span class="meta-value">${escapeHtml(formatShortDate(row.last_service_date))}</span></div>
-        <div><span class="meta-label">Last Contact</span><span class="meta-value">${escapeHtml(formatShortDate(row.last_contacted_at))}</span></div>
-        <div><span class="meta-label">Next Follow-Up</span><span class="meta-value">${escapeHtml(formatDate(row.next_follow_up_at))}</span></div>
-        <div><span class="meta-label">Revenue</span><span class="meta-value">${escapeHtml(formatMoney(row.total_revenue))}</span></div>
-      </div>
-      ${preview ? `<div class="notes-preview">${escapeHtml(preview)}</div>` : ""}
+      <div class="card-focus">${escapeHtml(followUpLabel)}</div>
+      <div class="card-secondary">${escapeHtml(row.phone || "No phone")} · ${escapeHtml(row.email || "No email")}</div>
+      ${showRevenue ? `<div class="card-secondary">Lifetime revenue: ${escapeHtml(formatMoney(row.total_revenue))}</div>` : ""}
     </button>
   `;
 }
@@ -2022,7 +2530,7 @@ function renderCustomerCard(row) {
 async function openCustomerDetail(id) {
   state.selectedCustomerId = id;
   renderActiveTab();
-  document.getElementById("detailPanel").classList.add("open");
+  setDetailPanelOpen(true);
   document.getElementById("detailTitle").textContent = "Loading customer...";
   document.getElementById("detailSub").textContent = "";
   document.getElementById("detailBody").innerHTML = `<div class="muted">Loading detail...</div>`;
@@ -2061,11 +2569,11 @@ function renderDetail(data, assignedTags) {
 
     <div class="quick-actions" aria-label="Quick actions">
       <button class="primary-btn quick-action-btn" type="button" data-action="log_outreach">Log Outreach</button>
-      <button class="primary-btn quick-action-btn" type="button" data-action="set_follow_up">Set Follow-Up</button>
+      <button class="secondary-btn quick-action-btn" type="button" data-action="set_follow_up">Set Follow-Up</button>
       <button class="secondary-btn quick-action-btn" type="button" data-action="mark_booked">Mark Booked</button>
-      <button class="secondary-btn quick-action-btn" type="button" data-action="mark_ghosted">Mark Ghosted</button>
-      <button class="danger-btn quick-action-btn" type="button" data-action="do_not_contact">Mark Do Not Contact</button>
-      <button class="secondary-btn quick-action-btn" type="button" data-action="complete_open_task" ${openTasks.length ? "" : "disabled"}>Complete Open Task</button>
+      <button class="quiet-btn quick-action-btn" type="button" data-action="mark_ghosted">Mark Ghosted</button>
+      <button class="danger-btn quick-action-btn" type="button" data-action="do_not_contact">Do Not Contact</button>
+      <button class="quiet-btn quick-action-btn" type="button" data-action="complete_open_task" ${openTasks.length ? "" : "disabled"}>Complete Open Task</button>
     </div>
 
     <div class="detail-grid">
@@ -2392,6 +2900,8 @@ async function bootCrmApp() {
     showLoginOverlay();
     await requireLoginUI();
     hideLoginOverlay();
+    setDetailPanelOpen(false);
+    renderTabHeader();
     await loadCustomers();
   } catch (err) {
     toast(err.message || "CRM failed to load", true);
@@ -2409,6 +2919,10 @@ document.getElementById("refreshBtn").addEventListener("click", () => {
     state.analyticsLoaded = false;
     loadAnalytics();
   }
+  if (state.activeTab === "cleanup") {
+    state.duplicatesLoaded = false;
+    loadDuplicates();
+  }
   loadCustomers();
 });
 
@@ -2423,7 +2937,7 @@ document.getElementById("searchInput").addEventListener("keydown", event => {
 document.getElementById("closeDetailBtn").addEventListener("click", () => {
   state.selectedCustomerId = null;
   state.detail = null;
-  document.getElementById("detailPanel").classList.remove("open");
+  setDetailPanelOpen(false);
   renderActiveTab();
 });
 document.getElementById("logoutBtn")?.addEventListener("click", async () => {
@@ -2431,7 +2945,7 @@ document.getElementById("logoutBtn")?.addEventListener("click", async () => {
   state.customers = [];
   state.selectedCustomerId = null;
   document.getElementById("crmSections").innerHTML = "";
-  document.getElementById("detailPanel").classList.remove("open");
+  setDetailPanelOpen(false);
   showLoginOverlay();
   await requireLoginUI();
   hideLoginOverlay();
