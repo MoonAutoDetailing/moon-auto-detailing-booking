@@ -1159,6 +1159,261 @@ cursor: pointer;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.25);
 }
 
+/* ================= PHASE 5 ADMIN POLISH ================= */
+:root {
+  --moon-primary: #7fb8e6;
+  --moon-primary-dark: #4f95cf;
+  --moon-card: #f4f8fd;
+  --moon-ink: #142033;
+  --moon-muted: #64748b;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  overflow-x: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(127,184,230,0.18), transparent 32rem),
+    radial-gradient(circle at bottom right, rgba(79,149,207,0.12), transparent 30rem),
+    #0b1018;
+}
+
+#pageOverlay {
+  max-width: 1180px;
+}
+
+#loginCard {
+  width: min(390px, calc(100vw - 28px));
+  padding: 36px 30px;
+  border-radius: 24px;
+  background: rgba(14, 24, 38, 0.88);
+  border: 1px solid rgba(127,184,230,0.28);
+  box-shadow: 0 28px 80px rgba(0,0,0,0.72);
+}
+
+#loginLogo {
+  width: 124px;
+  margin-bottom: 16px;
+}
+
+.loginTitle {
+  margin-bottom: 8px;
+  color: var(--moon-primary);
+  font-size: 28px;
+}
+
+.loginSubtitle {
+  margin: 0 0 22px;
+  color: rgba(255,255,255,0.68);
+  line-height: 1.45;
+}
+
+#loginPassword {
+  min-height: 48px;
+  border-radius: 14px;
+  border-color: rgba(127,184,230,0.36);
+  background: rgba(255,255,255,0.09);
+}
+
+#loginButton,
+.moon-tab,
+.primary-btn {
+  min-height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--moon-primary), var(--moon-primary-dark));
+  box-shadow: 0 10px 22px rgba(79,149,207,0.22);
+}
+
+.secondary-btn,
+.danger-btn,
+.actions button,
+.admin-top-utility button {
+  min-height: 44px;
+  border-radius: 12px;
+}
+
+#adminGatewaySection {
+  min-height: calc(100vh - 40px);
+}
+
+.admin-gateway-card {
+  max-width: 940px;
+  padding: 34px;
+  border: 1px solid rgba(127,184,230,0.22);
+  border-radius: 28px;
+  background: rgba(13, 22, 34, 0.74);
+  box-shadow: 0 30px 90px rgba(0,0,0,0.46);
+}
+
+.admin-gateway-logo {
+  width: 118px;
+  margin-bottom: 14px;
+}
+
+.admin-gateway-title {
+  color: var(--moon-primary);
+  letter-spacing: -0.04em;
+}
+
+.admin-gateway-subtitle {
+  color: rgba(255,255,255,0.72);
+}
+
+.admin-gateway-grid {
+  gap: 20px;
+}
+
+.admin-gateway-option {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 230px;
+  padding: 26px;
+  border-radius: 24px;
+  border-color: rgba(127,184,230,0.34);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.98), rgba(232,243,252,0.98));
+}
+
+.admin-gateway-option h2 {
+  margin-bottom: 12px;
+  color: #15324e;
+  letter-spacing: -0.02em;
+}
+
+.admin-gateway-option p {
+  color: #526174;
+}
+
+.admin-gateway-option::after {
+  content: "Open";
+  margin-top: auto;
+  align-self: flex-start;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: var(--moon-primary);
+  color: #07111d;
+  font-weight: 900;
+}
+
+#portalLogoutBtn {
+  min-width: 140px;
+}
+
+#bookingAdminSection.open {
+  padding-top: 18px;
+}
+
+#topBar {
+  padding: 12px;
+  border: 1px solid rgba(127,184,230,0.18);
+  border-radius: 20px;
+  background: rgba(13,22,34,0.72);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.28);
+}
+
+.admin-top-utility {
+  padding: 8px;
+  border: 1px solid rgba(127,184,230,0.18);
+  border-radius: 16px;
+  background: rgba(13,22,34,0.84);
+  box-shadow: 0 14px 34px rgba(0,0,0,0.32);
+}
+
+.admin-section {
+  border-radius: 20px;
+  border: 1px solid rgba(127,184,230,0.16);
+  background: rgba(13,22,34,0.56);
+  box-shadow: 0 18px 48px rgba(0,0,0,0.28);
+}
+
+.admin-section-header {
+  border-radius: 18px;
+  color: #eaf5ff;
+}
+
+.card {
+  border-radius: 18px;
+  border-color: rgba(127,184,230,0.18);
+  background: rgba(18,32,48,0.82);
+  box-shadow: 0 14px 34px rgba(0,0,0,0.28);
+}
+
+.card.expanded {
+  background: rgba(17,35,54,0.94);
+  border-color: rgba(127,184,230,0.34);
+}
+
+.status-badge {
+  border-radius: 999px;
+  letter-spacing: 0.04em;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.actions button {
+  margin-right: 0;
+  border: none;
+  padding: 10px 14px;
+}
+
+.admin-book-card,
+.payment-modal-card,
+.expense-modal-card {
+  border-radius: 20px;
+  border-color: rgba(127,184,230,0.2);
+  background: rgba(13,22,34,0.88);
+}
+
+.admin-book-field input,
+.admin-book-field select,
+.admin-book-field textarea,
+.payment-modal-card input,
+.payment-modal-card select,
+.payment-modal-card textarea,
+.expense-modal-card input,
+.expense-modal-card select,
+.expense-modal-card textarea,
+.admin-filters input,
+.admin-filters select {
+  min-height: 44px;
+  border-radius: 12px;
+  border-color: rgba(127,184,230,0.28);
+}
+
+@media (max-width: 640px) {
+  #loginCard {
+    padding: 30px 22px;
+  }
+
+  .admin-gateway-card {
+    padding: 22px;
+    border-radius: 22px;
+  }
+
+  .admin-gateway-option {
+    min-height: 190px;
+    padding: 22px;
+  }
+
+  .admin-top-utility {
+    position: static;
+    margin: 0 0 14px auto;
+    width: fit-content;
+  }
+
+  .card,
+  .card.expanded,
+  .admin-section,
+  .admin-book-card {
+    border-radius: 16px;
+  }
+}
+
 </style>
 </head>
 
@@ -1197,7 +1452,8 @@ style="
   <form id="loginCard" autocomplete="off">
     <img src="/NewLogoColor.png" id="loginLogo" />
 
-    <h2 class="loginTitle">Admin Access</h2>
+    <h2 class="loginTitle">Moon Auto Detailing</h2>
+    <p class="loginSubtitle">Secure admin workspace for bookings, operations, and CRM.</p>
 
     <!-- Fake fields to defeat Chrome autofill -->
 <input type="text" style="display:none">
@@ -1214,7 +1470,7 @@ style="
 />
 
 
-    <button id="loginButton" type="submit">Unlock Dashboard</button>
+    <button id="loginButton" type="submit">Unlock Admin Portal</button>
 
     <div id="loginError">Wrong password</div>
   </form>
@@ -1229,7 +1485,7 @@ style="
       <div class="admin-gateway-grid">
         <button id="openBookingAdminBtn" class="admin-gateway-option" type="button">
           <span class="admin-gateway-pill">Operations</span>
-          <h2>Booking Admin</h2>
+          <h2>Booking Operations</h2>
           <p>Manage bookings, approvals, reschedules, subscriptions, discounts, and admin-created appointments.</p>
         </button>
         <a class="admin-gateway-option" href="/crm.html">

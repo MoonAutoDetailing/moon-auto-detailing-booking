@@ -710,6 +710,255 @@ button {
     padding: 12px;
   }
 }
+
+/* ================= PHASE 5 CRM POLISH ================= */
+:root {
+  --moon-card: #f4f8fd;
+  --moon-ink: #142033;
+  --moon-muted: #64748b;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(127,184,230,0.18), transparent 32rem),
+    radial-gradient(circle at bottom right, rgba(79,149,207,0.12), transparent 30rem),
+    #0b1018;
+}
+
+#pageOverlay {
+  max-width: 1220px;
+}
+
+#loginCard {
+  width: min(390px, calc(100vw - 28px));
+  padding: 36px 30px;
+  border-radius: 24px;
+  background: rgba(14, 24, 38, 0.88);
+  border: 1px solid rgba(127,184,230,0.28);
+  box-shadow: 0 28px 80px rgba(0,0,0,0.72);
+}
+
+#loginLogo {
+  width: 124px;
+}
+
+.loginTitle {
+  margin-bottom: 8px;
+  font-size: 28px;
+  color: var(--moon-primary);
+}
+
+.loginSubtitle {
+  margin: 0 0 22px;
+  color: rgba(255,255,255,0.68);
+  line-height: 1.45;
+}
+
+#loginPassword,
+.field input,
+.field select,
+.lead-form-card input,
+.lead-form-card select,
+.lead-form-card textarea,
+.detail-form input,
+.detail-form select,
+.detail-form textarea {
+  min-height: 44px;
+  border-radius: 12px;
+  border-color: rgba(127,184,230,0.28);
+}
+
+#loginButton,
+.moon-tab,
+.primary-btn {
+  min-height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--moon-primary), var(--moon-primary-dark));
+  color: #07111d;
+  box-shadow: 0 10px 22px rgba(79,149,207,0.22);
+}
+
+.secondary-btn,
+.danger-btn {
+  min-height: 44px;
+  border-radius: 12px;
+}
+
+.topbar {
+  padding: 16px;
+  border: 1px solid rgba(127,184,230,0.18);
+  border-radius: 22px;
+  background: rgba(13,22,34,0.72);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.28);
+}
+
+.topbar h1 {
+  color: var(--moon-primary);
+  letter-spacing: -0.04em;
+}
+
+.panel,
+.lead-form-card,
+.detail-panel {
+  border-radius: 22px;
+  border-color: rgba(127,184,230,0.2);
+  background: rgba(13,22,34,0.72);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.28);
+}
+
+.filters {
+  padding: 12px;
+  border: 1px solid rgba(127,184,230,0.14);
+  border-radius: 18px;
+  background: rgba(255,255,255,0.04);
+}
+
+.kpi-card {
+  border: 1px solid rgba(127,184,230,0.18);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.98), rgba(232,243,252,0.98));
+}
+
+.kpi-value {
+  color: #15324e;
+  letter-spacing: -0.04em;
+}
+
+.crm-section {
+  border-radius: 22px;
+  border-color: rgba(127,184,230,0.18);
+  background: rgba(13,22,34,0.64);
+}
+
+.crm-section-header {
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.crm-section-header h2 {
+  letter-spacing: -0.02em;
+}
+
+.section-count {
+  min-width: 34px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(127,184,230,0.18);
+  color: var(--moon-primary);
+  text-align: center;
+}
+
+.customer-card {
+  border-radius: 20px;
+  border-color: rgba(127,184,230,0.2);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.99), rgba(235,245,253,0.99));
+  text-align: left;
+}
+
+.customer-name {
+  color: #15324e;
+  letter-spacing: -0.02em;
+}
+
+.badge {
+  border: 1px solid rgba(127,184,230,0.22);
+  background: rgba(127,184,230,0.16);
+}
+
+.badge-hot {
+  border-color: rgba(255,217,102,0.7);
+  background: #ffd966;
+}
+
+.notes-preview {
+  border: 1px solid rgba(127,184,230,0.22);
+}
+
+.lead-form-card {
+  background: rgba(13,22,34,0.82);
+}
+
+.lead-form-card h2,
+.detail-panel h2,
+.detail-section h3 {
+  letter-spacing: -0.02em;
+}
+
+.detail-panel.open {
+  border-color: rgba(127,184,230,0.28);
+}
+
+.detail-header {
+  align-items: center;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.detail-section {
+  border-radius: 18px;
+  border-color: rgba(127,184,230,0.16);
+  background: rgba(255,255,255,0.055);
+}
+
+.detail-contact-card {
+  border-radius: 16px;
+  border-color: rgba(127,184,230,0.18);
+}
+
+.quick-actions {
+  scrollbar-width: thin;
+}
+
+.quick-actions button {
+  border-radius: 999px;
+}
+
+.detail-item {
+  line-height: 1.45;
+}
+
+#toast {
+  border: 1px solid rgba(255,255,255,0.16);
+  border-radius: 14px;
+}
+
+@media (max-width: 920px) {
+  .topbar,
+  .panel,
+  .lead-form-card {
+    border-radius: 18px;
+  }
+}
+
+@media (max-width: 640px) {
+  #loginCard {
+    padding: 30px 22px;
+  }
+
+  .topbar {
+    padding: 14px;
+  }
+
+  .topbar h1 {
+    font-size: 24px;
+  }
+
+  .filters {
+    padding: 10px;
+  }
+
+  .detail-panel {
+    border: none;
+    box-shadow: none;
+  }
+
+  .detail-header {
+    margin: -14px -14px 14px;
+    padding: 14px;
+  }
+}
 </style>
 </head>
 <body>
@@ -720,7 +969,8 @@ button {
 <div id="loginOverlay">
   <form id="loginCard" autocomplete="off">
     <img src="/NewLogoColor.png" id="loginLogo" alt="Moon Auto Detailing" />
-    <h2 class="loginTitle">Admin Access</h2>
+    <h2 class="loginTitle">Moon Auto Detailing</h2>
+    <p class="loginSubtitle">Secure CRM workspace for leads, follow-ups, and customer relationships.</p>
     <input type="text" style="display:none">
     <input type="password" style="display:none">
     <input
@@ -732,7 +982,7 @@ button {
       autocorrect="off"
       spellcheck="false"
     />
-    <button id="loginButton" type="submit">Unlock CRM</button>
+    <button id="loginButton" type="submit">Unlock CRM Dashboard</button>
     <div id="loginError">Wrong password</div>
   </form>
 </div>
