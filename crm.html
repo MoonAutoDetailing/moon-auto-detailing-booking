@@ -21,7 +21,7 @@
 body {
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   margin: 0;
-  padding: 20px;
+  padding: 0;
   background: #0e0e0e;
   min-height: 100vh;
   color: white;
@@ -45,8 +45,8 @@ button {
   margin: auto;
   width: 1200px;
   max-width: 95vw;
-  opacity: 0.08;
-  z-index: 1;
+  opacity: 0.05;
+  z-index: 0;
   pointer-events: none;
 }
 
@@ -62,7 +62,7 @@ button {
 #pageOverlay {
   position: relative;
   z-index: 2;
-  max-width: 1180px;
+  max-width: none;
   margin: 0 auto;
 }
 
@@ -726,7 +726,7 @@ body {
 }
 
 #pageOverlay {
-  max-width: 1220px;
+  max-width: none;
 }
 
 #loginCard {
@@ -1193,112 +1193,257 @@ body {
   }
 }
 
-/* === Production dashboard layout (Phase UI) === */
+/* === Desktop CRM shell (3-column) === */
 :root {
   --moon-primary: #7fb8e6;
   --moon-primary-dark: #4f95cf;
-  --moon-surface: rgba(13, 22, 34, 0.82);
+  --moon-surface: rgba(13, 22, 34, 0.88);
   --moon-border: rgba(127, 184, 230, 0.22);
-  --moon-radius: 16px;
-  --moon-radius-lg: 20px;
-  --space-1: 8px;
-  --space-2: 12px;
-  --space-3: 16px;
-  --space-4: 20px;
+  --moon-radius: 12px;
+  --moon-radius-lg: 16px;
+  --nav-width: 220px;
+  --context-width: 390px;
+  --space-1: 6px;
+  --space-2: 10px;
+  --space-3: 14px;
+  --space-4: 18px;
 }
 
 body {
   font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  padding: 12px;
+  padding: 0;
+  margin: 0;
 }
 
 #pageOverlay {
-  max-width: 1440px;
+  max-width: none;
+  width: 100%;
+  margin: 0;
 }
 
-.app-header {
+.crm-app {
+  display: grid;
+  grid-template-columns: var(--nav-width) minmax(0, 1fr);
+  min-height: 100vh;
+  background: rgba(8, 12, 18, 0.55);
+}
+
+.crm-nav-rail {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  height: 100vh;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--space-3);
-  margin-bottom: var(--space-3);
-  padding: var(--space-3);
-  border: 1px solid var(--moon-border);
-  border-radius: var(--moon-radius-lg);
-  background: var(--moon-surface);
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-2);
+  border-right: 1px solid var(--moon-border);
+  background: rgba(8, 14, 22, 0.96);
+  z-index: 40;
+  overflow-y: auto;
 }
 
-.app-eyebrow {
-  margin: 0 0 4px;
-  font-size: 12px;
+.nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 4px;
+}
+
+.nav-brand img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  opacity: 0.95;
+}
+
+.nav-brand-text strong {
+  display: block;
+  font-size: 13px;
+  color: var(--moon-primary);
+  line-height: 1.25;
+}
+
+.nav-brand-text span {
+  display: block;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.crm-nav-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.crm-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 13px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  text-align: left;
+  min-height: 36px;
+}
+
+.crm-nav-item:hover {
+  background: rgba(127, 184, 230, 0.1);
+  border-color: rgba(127, 184, 230, 0.16);
+}
+
+.crm-nav-item.active {
+  background: rgba(127, 184, 230, 0.2);
+  border-color: rgba(127, 184, 230, 0.45);
+  color: #fff;
+}
+
+.nav-icon {
+  width: 18px;
+  text-align: center;
+  opacity: 0.85;
+  font-size: 14px;
+}
+
+.nav-kpis {
+  margin-top: auto;
+  padding: 10px;
+  border: 1px solid rgba(127, 184, 230, 0.16);
+  border-radius: var(--moon-radius);
+  background: rgba(255, 255, 255, 0.03);
+  display: grid;
+  gap: 8px;
+}
+
+.nav-kpi {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
   color: rgba(255, 255, 255, 0.62);
 }
 
-.app-header h1 {
+.nav-kpi strong {
+  color: var(--moon-primary);
+  font-size: 13px;
+}
+
+.nav-footer {
+  display: grid;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nav-footer a,
+.nav-footer button {
+  width: 100%;
+  min-height: 34px;
+  font-size: 12px;
+}
+
+.crm-body {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--moon-border);
+  background: rgba(10, 16, 26, 0.92);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+}
+
+.workspace-header h1 {
   margin: 0;
-  font-size: clamp(22px, 3vw, 30px);
+  font-size: 18px;
   color: var(--moon-primary);
   letter-spacing: -0.02em;
 }
 
-.app-header-actions {
-  display: flex;
-  gap: var(--space-2);
-  flex-wrap: wrap;
-  justify-content: flex-end;
+.workspace-header p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.62);
 }
 
-.crm-dashboard {
-  display: block;
+.workspace-header > div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.workspace-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+#navMenuBtn {
+  display: none;
+  min-height: 36px;
 }
 
 .crm-workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 390px);
-  gap: var(--space-3);
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) var(--context-width);
+  gap: 0;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
 }
 
 .crm-main {
   min-width: 0;
+  padding: var(--space-3);
+  overflow-y: auto;
+  max-height: calc(100vh - 52px);
 }
 
 .crm-detail-column {
+  border-left: 1px solid var(--moon-border);
+  background: rgba(8, 14, 22, 0.72);
+  min-height: calc(100vh - 52px);
+  max-height: calc(100vh - 52px);
   position: sticky;
-  top: 12px;
-  max-height: calc(100vh - 24px);
-}
-
-.crm-tab-nav {
-  margin-bottom: var(--space-2);
-  padding-bottom: 2px;
-}
-
-.crm-tab {
-  min-height: 40px;
+  top: 52px;
 }
 
 .tab-page-header {
-  margin-bottom: var(--space-3);
-  padding: var(--space-3);
-  border: 1px solid var(--moon-border);
-  border-radius: var(--moon-radius);
-  background: rgba(255, 255, 255, 0.04);
+  margin-bottom: var(--space-2);
 }
 
 .tab-page-header h2 {
-  margin: 0 0 6px;
+  margin: 0 0 4px;
   color: var(--moon-primary);
-  font-size: 20px;
+  font-size: 16px;
 }
 
 .tab-page-header p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.72);
-  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.crm-tab-nav {
+  display: none;
 }
 
 .quiet-btn {
@@ -1362,11 +1507,15 @@ body {
 #detailPanel.detail-panel {
   display: flex;
   flex-direction: column;
-  margin-top: 0;
-  min-height: 520px;
-  max-height: calc(100vh - 24px);
+  margin: 0;
+  min-height: 100%;
+  max-height: calc(100vh - 52px);
   padding: 0;
   overflow: hidden;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
 }
 
 .detail-empty {
@@ -1374,15 +1523,15 @@ body {
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
-  gap: 8px;
-  padding: 28px 20px;
-  min-height: 320px;
+  gap: 6px;
+  padding: 24px 16px;
+  flex: 1;
 }
 
 .detail-empty h2 {
   margin: 0;
   color: var(--moon-primary);
-  font-size: 22px;
+  font-size: 17px;
 }
 
 .detail-loaded {
@@ -1392,16 +1541,333 @@ body {
   flex: 1;
 }
 
-#detailPanel.open .detail-empty {
+#detailPanel.has-selection .detail-empty {
   display: none;
 }
 
-#detailPanel.open .detail-loaded {
+#detailPanel.has-selection .detail-loaded {
   display: flex;
 }
 
-#detailPanel.open {
+.panel {
+  padding: 12px;
+  border-radius: var(--moon-radius);
+}
+
+.kpi-strip {
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.kpi-card {
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+.kpi-value {
+  font-size: 22px;
+  margin-top: 4px;
+}
+
+.crm-section {
+  padding: 10px;
+  border-radius: var(--moon-radius);
+  margin-bottom: 10px;
+}
+
+.crm-section-header h2 {
+  font-size: 14px;
+}
+
+.section-card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.customer-list {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.customer-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.4fr) minmax(120px, 1fr) minmax(130px, 1fr) minmax(140px, 1.2fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid rgba(127, 184, 230, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  min-height: 52px;
+}
+
+.customer-row:hover {
+  background: rgba(127, 184, 230, 0.1);
+  border-color: rgba(127, 184, 230, 0.32);
+}
+
+.customer-row.active {
+  outline: 2px solid var(--moon-primary);
+  background: rgba(127, 184, 230, 0.14);
+}
+
+.customer-row .customer-name {
+  font-size: 14px;
+  margin: 0;
+  color: #e8f4ff;
+}
+
+.customer-row .badge-row {
+  margin: 0;
+}
+
+.customer-row .row-meta {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.62);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.customer-row .row-revenue {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--moon-primary);
+  text-align: right;
+}
+
+.filter-toolbar {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.filter-toolbar .filters {
+  margin-bottom: 0;
+  grid-template-columns: 2fr repeat(4, minmax(90px, 1fr)) auto;
+}
+
+.segment-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.segment-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(127, 184, 230, 0.28);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+  font-weight: 700;
+  min-height: 32px;
+}
+
+.segment-chip.active {
+  background: rgba(127, 184, 230, 0.22);
+  border-color: var(--moon-primary);
+  color: #fff;
+}
+
+.queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.queue-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px;
+  border: 1px solid rgba(127, 184, 230, 0.16);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.queue-row.overdue {
+  border-color: rgba(255, 120, 120, 0.45);
+  background: rgba(255, 80, 80, 0.08);
+}
+
+.queue-row-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.queue-row-actions button {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.activity-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+}
+
+.activity-row:last-child {
+  border-bottom: none;
+}
+
+.pipeline-board {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pipeline-column {
+  padding: 8px;
+  border-radius: 12px;
+  min-width: 0;
+}
+
+.pipeline-card {
+  padding: 8px 10px;
+  border-radius: 10px;
+  cursor: pointer;
+  border-left: 3px solid rgba(127, 184, 230, 0.5);
+}
+
+.pipeline-card strong {
+  display: block;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.pipeline-card .muted {
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.task-card {
+  padding: 10px;
+  border-radius: 10px;
+}
+
+.task-card.overdue {
+  border-color: rgba(255, 120, 120, 0.5);
+  background: rgba(255, 80, 80, 0.1);
+}
+
+.task-card.upcoming {
+  opacity: 0.82;
+}
+
+.task-queue-collapse {
+  margin-top: 10px;
+  border: 1px solid rgba(127, 184, 230, 0.16);
+  border-radius: var(--moon-radius);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.task-queue-collapse summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.72);
+  list-style: none;
+}
+
+.task-queue-collapse summary::-webkit-details-marker {
+  display: none;
+}
+
+.task-queue-collapse .section-card-grid {
+  padding: 0 10px 10px;
+}
+
+.detail-accordion {
+  border: 1px solid rgba(127, 184, 230, 0.16);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.14);
+  margin-bottom: 8px;
+  overflow: hidden;
+}
+
+.detail-accordion summary {
+  cursor: pointer;
+  padding: 10px 12px;
+  font-weight: 700;
+  color: var(--moon-primary);
+  list-style: none;
+}
+
+.detail-accordion summary::-webkit-details-marker {
+  display: none;
+}
+
+.detail-accordion .detail-accordion-body {
+  padding: 0 12px 12px;
+}
+
+.detail-record-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.detail-header h2 {
+  font-size: 17px;
+  margin: 0;
+}
+
+#closeDetailBtn {
+  min-height: 34px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.primary-btn,
+.secondary-btn,
+.danger-btn,
+.quiet-btn {
+  min-height: 34px;
+  padding: 7px 12px;
+  font-size: 12px;
+}
+
+.duplicate-group-cards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.analytics-kpi-grid {
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.analytics-card {
+  padding: 12px;
+  border-radius: 12px;
+}
+
+.analytics-card h3 {
+  font-size: 14px;
+}
+
+#navBackdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 35;
+}
+
+#navBackdrop.open {
+  display: block;
 }
 
 .detail-header {
@@ -1472,33 +1938,107 @@ body {
   flex: 0 0 auto;
 }
 
+@media (max-width: 1100px) {
+  .customer-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .customer-row .row-revenue {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
+  .pipeline-board {
+    grid-template-columns: repeat(5, minmax(150px, 1fr));
+    overflow-x: auto;
+  }
+}
+
+@media (min-width: 921px) {
+  .crm-detail-column {
+    display: block !important;
+  }
+
+  #detailPanel.detail-panel {
+    display: flex !important;
+    position: static;
+    max-height: calc(100vh - 52px);
+  }
+}
+
 @media (max-width: 920px) {
+  .crm-app {
+    grid-template-columns: 1fr;
+  }
+
+  #navMenuBtn {
+    display: inline-flex;
+  }
+
+  .crm-nav-rail {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: min(280px, 88vw);
+    transform: translateX(-105%);
+    transition: transform 0.2s ease;
+    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.45);
+  }
+
+  .crm-nav-rail.open {
+    transform: translateX(0);
+  }
+
   .crm-workspace {
     grid-template-columns: 1fr;
   }
 
+  .crm-main {
+    max-height: none;
+    padding: 12px;
+  }
+
   .crm-detail-column {
+    display: block;
     position: static;
     max-height: none;
+    min-height: 0;
+    border-left: none;
+  }
+
+  .crm-detail-column:not(.panel-visible) {
+    display: none;
   }
 
   #detailPanel.detail-panel {
-    display: none;
     position: fixed;
     inset: 0;
     z-index: 200;
     max-height: none;
     min-height: 0;
+    background: #0b1018;
     border-radius: 0;
-    margin: 0;
+    display: none;
   }
 
-  #detailPanel.detail-panel.open {
+  #detailPanel.detail-panel.has-selection {
     display: flex;
   }
 
-  .detail-empty {
+  #detailPanel.detail-panel.has-selection .detail-empty {
     display: none !important;
+  }
+
+  .customer-row {
+    grid-template-columns: 1fr;
+  }
+
+  .duplicate-group-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-toolbar .filters {
+    grid-template-columns: 1fr;
   }
 
   #closeDetailBtn {
@@ -1534,22 +2074,44 @@ body {
   </form>
 </div>
 
-<div id="pageOverlay">
-  <div class="crm-dashboard">
-    <header class="app-header">
-      <div class="app-header-brand">
-        <p class="app-eyebrow">Moon Auto Detailing Admin</p>
-        <h1>CRM Dashboard</h1>
+<div id="pageOverlay" class="crm-app">
+  <div id="navBackdrop" aria-hidden="true"></div>
+  <aside class="crm-nav-rail" id="crmNavRail" aria-label="CRM navigation">
+    <div class="nav-brand">
+      <img src="/NewLogoColor.png" alt="" />
+      <div class="nav-brand-text">
+        <strong>Moon Auto Detailing</strong>
+        <span>CRM Operations</span>
       </div>
-      <div class="app-header-actions">
-        <a class="secondary-btn" href="/admin.html?portal=1" style="text-decoration:none;">Back to Portal</a>
-        <button id="refreshBtn" class="secondary-btn" type="button">Refresh</button>
+    </div>
+    <nav class="crm-nav-list" id="crmNav">
+      <button type="button" class="crm-nav-item active" data-tab="today"><span class="nav-icon" aria-hidden="true">◎</span>Today</button>
+      <button type="button" class="crm-nav-item" data-tab="customers"><span class="nav-icon" aria-hidden="true">☰</span>Customers</button>
+      <button type="button" class="crm-nav-item" data-tab="pipeline"><span class="nav-icon" aria-hidden="true">▥</span>Pipeline</button>
+      <button type="button" class="crm-nav-item" data-tab="tasks"><span class="nav-icon" aria-hidden="true">✓</span>Tasks</button>
+      <button type="button" class="crm-nav-item" data-tab="analytics"><span class="nav-icon" aria-hidden="true">◫</span>Analytics</button>
+      <button type="button" class="crm-nav-item" data-tab="cleanup"><span class="nav-icon" aria-hidden="true">⚠</span>Data Cleanup</button>
+    </nav>
+    <div id="navKpis" class="nav-kpis" aria-label="Quick stats"></div>
+    <div class="nav-footer">
+      <a class="secondary-btn" href="/admin.html?portal=1" style="text-decoration:none;text-align:center;">Back to Admin Portal</a>
+      <button id="refreshBtn" class="quiet-btn" type="button">Refresh data</button>
+    </div>
+  </aside>
+  <div class="crm-body">
+    <header class="workspace-header">
+      <div>
+        <button id="navMenuBtn" class="quiet-btn" type="button" aria-label="Open menu">Menu</button>
+        <div id="tabPageHeader" class="tab-page-header" aria-live="polite">
+          <h2>Today</h2>
+          <p>What needs attention right now</p>
+        </div>
       </div>
     </header>
 
     <div class="crm-workspace">
-      <div class="crm-main">
-        <nav class="crm-tab-nav" id="crmTabNav" aria-label="CRM sections">
+      <main class="crm-main">
+        <nav class="crm-tab-nav" id="crmTabNav" aria-hidden="true">
           <button type="button" class="crm-tab active" data-tab="today">Today</button>
           <button type="button" class="crm-tab" data-tab="customers">Customers</button>
           <button type="button" class="crm-tab" data-tab="pipeline">Pipeline</button>
@@ -1557,8 +2119,6 @@ body {
           <button type="button" class="crm-tab" data-tab="tasks">Tasks</button>
           <button type="button" class="crm-tab" data-tab="cleanup">Data Cleanup</button>
         </nav>
-
-        <div id="tabPageHeader" class="tab-page-header" aria-live="polite"></div>
 
         <div id="tabToday" class="crm-tab-panel active">
           <div class="panel">
@@ -1571,6 +2131,8 @@ body {
         <div id="tabCustomers" class="crm-tab-panel">
           <div class="panel">
             <div id="listStatus" class="status-line">Loading CRM customers...</div>
+            <div class="filter-toolbar">
+            <div class="segment-chips" id="segmentChips" aria-label="Quick segments"></div>
             <div class="filters">
               <div class="field">
                 <label for="searchInput">Search</label>
@@ -1624,7 +2186,8 @@ body {
                 <button id="searchBtn" class="quiet-btn" type="button">Apply Filters</button>
               </div>
             </div>
-            <div id="crmSections" class="crm-sections"></div>
+            </div>
+            <div id="crmSections" class="customer-list"></div>
           </div>
           <details class="lead-form-collapse">
             <summary>Add Manual Lead</summary>
@@ -1714,7 +2277,7 @@ body {
             <div id="cleanupContent"></div>
           </div>
         </div>
-      </div>
+      </main>
 
       <aside class="crm-detail-column">
         <section id="detailPanel" class="detail-panel" aria-live="polite">
@@ -1788,7 +2351,8 @@ const state = {
   analytics: null,
   analyticsLoaded: false,
   duplicates: null,
-  duplicatesLoaded: false
+  duplicatesLoaded: false,
+  customerSegment: "all"
 };
 
 function isLoggedIn() {
@@ -2052,13 +2616,25 @@ function renderTabHeader() {
 
 function setDetailPanelOpen(isOpen) {
   const panel = document.getElementById("detailPanel");
+  const column = document.querySelector(".crm-detail-column");
   if (!panel) return;
-  panel.classList.toggle("open", isOpen);
+  panel.classList.toggle("has-selection", isOpen);
+  column?.classList.toggle("panel-visible", isOpen);
+}
+
+function closeNavDrawer() {
+  document.getElementById("crmNavRail")?.classList.remove("open");
+  document.getElementById("navBackdrop")?.classList.remove("open");
+}
+
+function openNavDrawer() {
+  document.getElementById("crmNavRail")?.classList.add("open");
+  document.getElementById("navBackdrop")?.classList.add("open");
 }
 
 function switchTab(tab) {
   state.activeTab = tab;
-  document.querySelectorAll(".crm-tab").forEach((btn) => {
+  document.querySelectorAll(".crm-tab, .crm-nav-item").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.tab === tab);
   });
   Object.entries(TAB_PANEL_IDS).forEach(([key, panelId]) => {
@@ -2067,13 +2643,33 @@ function switchTab(tab) {
   });
   renderTabHeader();
   renderActiveTab();
+  closeNavDrawer();
   if (tab === "analytics" && !state.analyticsLoaded) loadAnalytics();
   if (tab === "cleanup" && !state.duplicatesLoaded) loadDuplicates();
 }
 
 function bindCustomerCards(root) {
-  (root || document).querySelectorAll(".customer-card, .pipeline-card, .duplicate-card").forEach((card) => {
+  const scope = root || document;
+  scope.querySelectorAll(".customer-card, .customer-row, .pipeline-card, .duplicate-card").forEach((card) => {
+    if (card.dataset.bound === "1") return;
+    card.dataset.bound = "1";
     card.addEventListener("click", () => openCustomerDetail(card.dataset.customerId));
+  });
+  scope.querySelectorAll(".queue-open-btn").forEach((btn) => {
+    if (btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openCustomerDetail(btn.dataset.customerId);
+    });
+  });
+  scope.querySelectorAll(".queue-complete-btn").forEach((btn) => {
+    if (btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      completeFollowUpForCustomer(btn.dataset.customerId);
+    });
   });
 }
 
@@ -2103,15 +2699,88 @@ function hasOpenFollowUp(row) {
 function pipelineBucket(row) {
   const stage = normalize(stageValue(row));
   const status = normalize(statusValue(row));
-  if (["do_not_contact", "ghosted", "lost"].includes(stage) || ["do_not_contact", "ghosted", "lost", "inactive"].includes(status)) {
+  if (["do_not_contact", "ghosted", "lost"].includes(stage) || ["do_not_contact", "ghosted", "lost"].includes(status)) {
     return "lost";
   }
   if (["booked", "confirmed", "customer"].includes(stage) || ["booked", "confirmed", "completed_customer", "repeat_customer"].includes(status)) {
     return "booked";
   }
   if (stage === "quoted") return "quoted";
-  if (stage === "lead") return "lead";
-  return "active";
+  if (stage === "lead" && !row.last_contacted_at) return "lead";
+  return "contacted";
+}
+
+function isTodaysBookingCustomer(row) {
+  const status = normalize(statusValue(row));
+  const stage = normalize(stageValue(row));
+  if (!["booked", "confirmed", "completed_customer", "repeat_customer"].includes(status) && !["booked", "confirmed", "customer"].includes(stage)) {
+    return false;
+  }
+  return isDueToday(row) || isActiveCustomer(row);
+}
+
+function isRecentActivity(row) {
+  const stamp = row.last_contacted_at || row.last_service_date;
+  if (!stamp) return false;
+  const when = new Date(stamp);
+  if (Number.isNaN(when.getTime())) return false;
+  return (Date.now() - when.getTime()) / MS_DAY <= 14;
+}
+
+function isRecentlyHandled(row) {
+  if (hasOpenFollowUp(row) || isOverdueFollowUp(row) || isDueToday(row)) return false;
+  if (!row.last_contacted_at) return false;
+  const when = new Date(row.last_contacted_at);
+  if (Number.isNaN(when.getTime())) return false;
+  return (Date.now() - when.getTime()) / MS_DAY <= 30;
+}
+
+function serviceInterestLabel(row) {
+  return row.service_interest || row.lead_source || row.company_name || "";
+}
+
+function renderNavKpis() {
+  const el = document.getElementById("navKpis");
+  if (!el) return;
+  const overdue = state.customers.filter(isOverdueFollowUp).length;
+  const leads = state.customers.filter((row) => normalize(stageValue(row)) === "lead").length;
+  const bookingsToday = state.customers.filter(isTodaysBookingCustomer).length;
+  el.innerHTML = [
+    ["Overdue tasks", overdue],
+    ["Active leads", leads],
+    ["Today focus", bookingsToday]
+  ].map(([label, value]) => `<div class="nav-kpi"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("");
+}
+
+function renderSegmentChips() {
+  const el = document.getElementById("segmentChips");
+  if (!el) return;
+  const segments = [
+    { id: "all", label: "All" },
+    { id: "overdue", label: "Overdue" },
+    { id: "today", label: "Due today" },
+    { id: "leads", label: "Leads" },
+    { id: "high_value", label: "High value" }
+  ];
+  const active = state.customerSegment || "all";
+  el.innerHTML = segments.map((seg) => `
+    <button type="button" class="segment-chip ${seg.id === active ? "active" : ""}" data-segment="${escapeHtml(seg.id)}">${escapeHtml(seg.label)}</button>
+  `).join("");
+  el.querySelectorAll(".segment-chip").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      state.customerSegment = chip.dataset.segment;
+      renderCustomersTab();
+    });
+  });
+}
+
+function filterCustomersBySegment(rows) {
+  const segment = state.customerSegment || "all";
+  if (segment === "overdue") return rows.filter(isOverdueFollowUp);
+  if (segment === "today") return rows.filter(isDueToday);
+  if (segment === "leads") return rows.filter((row) => normalize(stageValue(row)) === "lead");
+  if (segment === "high_value") return rows.filter(isHighValue);
+  return rows;
 }
 
 function renderKpiStrip(elementId, items) {
@@ -2125,53 +2794,126 @@ function renderKpiStrip(elementId, items) {
   `).join("");
 }
 
-function renderToday() {
-  renderKpiStrip("todayKpiStrip", [
-    ["Overdue", state.customers.filter(isOverdueFollowUp).length],
-    ["Due Today", state.customers.filter(isDueToday).length],
-    ["High-Value Reactivation", state.customers.filter(isHighValueReactivation).length],
-    ["New Leads", state.customers.filter(isNewLeadNeedingContact).length]
-  ]);
+function renderQueueRow(row, options = {}) {
+  const overdue = options.overdue || isOverdueFollowUp(row);
+  return `
+    <article class="queue-row ${overdue ? "overdue" : ""}">
+      <div>
+        <strong>${escapeHtml(customerName(row))}</strong>
+        <div class="muted">${escapeHtml(stageValue(row))} · ${escapeHtml(statusValue(row))} · ${escapeHtml(formatShortDate(row.next_follow_up_at || row.last_contacted_at))}</div>
+      </div>
+      <div class="queue-row-actions">
+        <button class="primary-btn queue-complete-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
+        <button class="secondary-btn queue-open-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Open</button>
+      </div>
+    </article>
+  `;
+}
 
+function renderQueueSection(title, rows, options = {}) {
+  const body = rows.length
+    ? `<div class="queue-list">${rows.map((row) => renderQueueRow(row, options)).join("")}</div>`
+    : `<div class="muted">No items in this queue.</div>`;
+  return `
+    <section class="crm-section ${options.smart ? "smart-queue-section" : ""}">
+      <div class="crm-section-header"><h2>${escapeHtml(title)}</h2><span class="section-count">${rows.length}</span></div>
+      ${body}
+    </section>
+  `;
+}
+
+function renderActivitySection(rows) {
+  const sorted = [...rows].sort((a, b) => {
+    const aStamp = new Date(a.last_contacted_at || a.last_service_date || 0).getTime();
+    const bStamp = new Date(b.last_contacted_at || b.last_service_date || 0).getTime();
+    return bStamp - aStamp;
+  }).slice(0, 12);
+  const body = sorted.length
+    ? sorted.map((row) => `
+      <div class="activity-row">
+        <div><strong>${escapeHtml(customerName(row))}</strong><div class="muted">${escapeHtml(row.last_contacted_at ? "Contacted" : "Service")} · ${escapeHtml(formatShortDate(row.last_contacted_at || row.last_service_date))}</div></div>
+        <button class="quiet-btn queue-open-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Open</button>
+      </div>
+    `).join("")
+    : `<div class="muted">No recent activity in loaded customers.</div>`;
+  return `
+    <section class="crm-section">
+      <div class="crm-section-header"><h2>Recent Activity</h2><span class="section-count">${sorted.length}</span></div>
+      ${body}
+    </section>
+  `;
+}
+
+function renderToday() {
   const sections = [
-    ["Overdue Follow-Ups", state.customers.filter(isOverdueFollowUp), { smart: true }],
-    ["Due Today", state.customers.filter(isDueToday), { smart: true }],
-    ["High-Value Reactivation", state.customers.filter(isHighValueReactivation), { smart: true }],
-    ["New Leads Needing Contact", state.customers.filter(isNewLeadNeedingContact), { smart: true }]
+    renderQueueSection("Overdue Follow-Ups", state.customers.filter(isOverdueFollowUp), { smart: true, overdue: true }),
+    renderQueueSection("Due Today", state.customers.filter(isDueToday), { smart: true }),
+    renderQueueSection("New Leads Needing Response", state.customers.filter(isNewLeadNeedingContact), { smart: true }),
+    renderQueueSection("High-Value Reactivation Opportunities", state.customers.filter(isHighValueReactivation), { smart: true }),
+    renderQueueSection("Today's Bookings", state.customers.filter(isTodaysBookingCustomer), { smart: true }),
+    renderActivitySection(state.customers.filter(isRecentActivity))
   ];
 
   const container = document.getElementById("todaySections");
-  container.innerHTML = sections.map(([title, rows, options]) => renderCustomerSection(title, rows, options)).join("");
+  container.innerHTML = sections.join("");
   bindCustomerCards(container);
-  document.getElementById("todayStatus").textContent = `${state.customers.length} customers loaded for today's work`;
+  document.getElementById("todayStatus").textContent = `${state.customers.length} customers loaded · command center ready`;
+}
+
+function renderCustomerRow(row) {
+  const id = customerId(row);
+  const followUpLabel = row.next_follow_up_at
+    ? (isOverdueFollowUp(row) ? `Overdue ${formatShortDate(row.next_follow_up_at)}` : `Follow-up ${formatShortDate(row.next_follow_up_at)}`)
+    : (row.last_service_date ? `Last service ${formatShortDate(row.last_service_date)}` : "No follow-up");
+  const showRevenue = Number(row.total_revenue || 0) >= 300;
+  const revenueCell = showRevenue
+    ? `<div class="row-revenue">${escapeHtml(formatMoney(row.total_revenue))}</div>`
+    : `<div class="row-revenue muted">—</div>`;
+  return `
+    <button class="customer-row ${id === state.selectedCustomerId ? "active" : ""}" type="button" data-customer-id="${escapeHtml(id)}">
+      <div class="customer-name">${escapeHtml(customerName(row))}</div>
+      <div class="badge-row">
+        <span class="badge">${escapeHtml(stageValue(row))}</span>
+        <span class="badge ${statusBadgeClass(row)}">${escapeHtml(statusValue(row))}</span>
+      </div>
+      <div class="row-meta">${escapeHtml(followUpLabel)}</div>
+      <div class="row-meta">${escapeHtml(row.phone || "No phone")} · ${escapeHtml(row.email || "No email")}</div>
+      ${revenueCell}
+    </button>
+  `;
 }
 
 function renderCustomersTab() {
-  const rows = [...state.customers].sort((a, b) => customerName(a).localeCompare(customerName(b)));
+  renderSegmentChips();
+  const rows = filterCustomersBySegment([...state.customers]).sort((a, b) => customerName(a).localeCompare(customerName(b)));
   const container = document.getElementById("crmSections");
-  container.innerHTML = renderCustomerSection("Customers & Leads", rows, {});
+  container.innerHTML = rows.length
+    ? rows.map(renderCustomerRow).join("")
+    : `<div class="muted">No customers match this search or segment.</div>`;
   bindCustomerCards(container);
 }
 
 function renderPipelineCard(row) {
+  const interest = serviceInterestLabel(row);
+  const followUp = row.next_follow_up_at ? `Follow-up ${formatShortDate(row.next_follow_up_at)}` : "No follow-up set";
   return `
     <button class="pipeline-card" type="button" data-customer-id="${escapeHtml(customerId(row))}">
       <strong>${escapeHtml(customerName(row))}</strong>
-      <div class="muted">${escapeHtml(stageValue(row))} · ${escapeHtml(statusValue(row))}</div>
-      <div class="muted">${escapeHtml(formatMoney(row.total_revenue))}</div>
+      <div class="muted">${escapeHtml(statusValue(row))}${interest ? ` · ${escapeHtml(interest)}` : ""}</div>
+      <div class="muted">${escapeHtml(followUp)}</div>
     </button>
   `;
 }
 
 function renderPipeline() {
   const labels = {
-    lead: "Lead",
+    lead: "New Lead",
+    contacted: "Contacted",
     quoted: "Quoted",
-    active: "Interested / Active",
-    booked: "Booked / Confirmed",
-    lost: "Lost / Ghosted / Do Not Contact"
+    booked: "Booked",
+    lost: "Lost"
   };
-  const buckets = { lead: [], quoted: [], active: [], booked: [], lost: [] };
+  const buckets = { lead: [], contacted: [], quoted: [], booked: [], lost: [] };
 
   state.customers.forEach((row) => {
     buckets[pipelineBucket(row)].push(row);
@@ -2315,15 +3057,26 @@ async function loadAnalytics() {
   }
 }
 
-function renderTaskCard(row, label) {
+function renderTaskCard(row, options = {}) {
+  const tone = options.tone || "";
   return `
-    <article class="task-card">
-      <div><strong>${escapeHtml(customerName(row))}</strong></div>
-      <div class="muted">${escapeHtml(label)} · Due ${escapeHtml(formatDate(row.next_follow_up_at))}</div>
-      <div class="task-card-actions"><button class="primary-btn complete-followup-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
+    <article class="task-card ${tone}">
+      <div><strong>${escapeHtml(customerName(row))}</strong> <span class="badge">${escapeHtml(priorityValue(row))}</span></div>
+      <div class="muted">${escapeHtml(options.label || "Follow-up")} · Due ${escapeHtml(formatDate(row.next_follow_up_at))}</div>
+      <div class="task-card-actions">
+        <button class="primary-btn complete-followup-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
         <button class="secondary-btn" type="button" data-open-customer="${escapeHtml(customerId(row))}">Open Customer</button>
       </div>
     </article>
+  `;
+}
+
+function renderTaskSection(title, rows, options = {}) {
+  return `
+    <section class="crm-section ${options.smart ? "smart-queue-section" : ""}">
+      <div class="crm-section-header"><h2>${escapeHtml(title)}</h2><span class="section-count">${rows.length}</span></div>
+      <div class="section-card-grid">${rows.length ? rows.map((row) => renderTaskCard(row, { label: title, tone: options.tone })).join("") : `<div class="muted">No tasks here.</div>`}</div>
+    </section>
   `;
 }
 
@@ -2331,23 +3084,26 @@ function renderTasks() {
   const overdue = state.customers.filter(isOverdueFollowUp);
   const dueToday = state.customers.filter(isDueToday);
   const openFuture = state.customers.filter((row) => hasOpenFollowUp(row) && !isOverdueFollowUp(row) && !isDueToday(row));
+  const handled = state.customers.filter(isRecentlyHandled);
 
   document.getElementById("tasksSections").innerHTML = [
-    ["Overdue Tasks", overdue],
-    ["Due Today", dueToday],
-    ["Open Upcoming", openFuture]
-  ].map(([title, rows]) => `
-    <section class="crm-section smart-queue-section">
-      <div class="crm-section-header"><h2>${escapeHtml(title)}</h2><span class="section-count">${rows.length}</span></div>
-      <div class="section-card-grid">${rows.length ? rows.map((row) => renderTaskCard(row, title)).join("") : `<div class="muted">No tasks here.</div>`}</div>
-    </section>
-  `).join("");
+    renderTaskSection("Overdue", overdue, { smart: true, tone: "overdue" }),
+    renderTaskSection("Due Today", dueToday, { smart: true }),
+    renderTaskSection("Upcoming", openFuture, { tone: "upcoming" }),
+    `<details class="task-queue-collapse"><summary>Completed / Snoozed (${handled.length})</summary>${handled.length ? `<div class="section-card-grid">${handled.map((row) => renderTaskCard(row, { label: "Recently handled", tone: "upcoming" })).join("")}</div>` : `<div class="muted" style="padding:10px 12px;">No recently handled customers in this load.</div>`}</details>`
+  ].join("");
 
   document.getElementById("tasksSections").querySelectorAll("[data-open-customer]").forEach((btn) => {
-    btn.addEventListener("click", () => openCustomerDetail(btn.dataset.openCustomer));
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openCustomerDetail(btn.dataset.openCustomer);
+    });
   });
   document.getElementById("tasksSections").querySelectorAll(".complete-followup-btn").forEach((btn) => {
-    btn.addEventListener("click", () => completeFollowUpForCustomer(btn.dataset.customerId));
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      completeFollowUpForCustomer(btn.dataset.customerId);
+    });
   });
 
   document.getElementById("tasksStatus").textContent = `${overdue.length} overdue · ${dueToday.length} due today · ${openFuture.length} upcoming`;
@@ -2460,7 +3216,7 @@ function renderActiveTab() {
   else if (state.activeTab === "cleanup" && state.duplicatesLoaded) renderDuplicates();
 
   if (state.selectedCustomerId) {
-    document.querySelectorAll(".customer-card, .pipeline-card, .duplicate-card").forEach((card) => {
+    document.querySelectorAll(".customer-card, .customer-row, .pipeline-card, .duplicate-card").forEach((card) => {
       card.classList.toggle("active", card.dataset.customerId === state.selectedCustomerId);
     });
   }
@@ -2472,6 +3228,7 @@ async function loadCustomers() {
   try {
     const data = await apiJson(`/api/admin-crm-customers?${buildCustomerQuery()}`);
     state.customers = data.customers || [];
+    renderNavKpis();
     renderActiveTab();
     const countText = `${state.customers.length} shown${typeof data.count === "number" ? ` of ${data.count}` : ""}`;
     setListStatus(countText);
@@ -2556,15 +3313,16 @@ function renderDetail(data, assignedTags) {
   const openTasks = tasks.filter(task => task.status !== "completed" && task.status !== "dismissed");
   const bookings = data.bookings || [];
   const outreachLogs = data.outreach_logs || [];
+  const notes = profile.crm_notes || customer.crm_notes || "";
 
   document.getElementById("detailTitle").textContent = customerName(customer);
-  document.getElementById("detailSub").textContent = [customer.email, customer.phone, customer.address].filter(Boolean).join(" | ");
+  document.getElementById("detailSub").textContent = [customer.phone, customer.email].filter(Boolean).join(" · ");
 
   document.getElementById("detailBody").innerHTML = `
-    <div class="detail-contact-grid">
-      <div class="detail-contact-card"><strong>Phone</strong>${escapeHtml(customer.phone || "Not set")}</div>
-      <div class="detail-contact-card"><strong>Email</strong>${escapeHtml(customer.email || "Not set")}</div>
-      <div class="detail-contact-card"><strong>Address</strong>${escapeHtml(customer.address || "Not set")}</div>
+    <div class="detail-record-badges">
+      <span class="badge">${escapeHtml(stageValue(customer))}</span>
+      <span class="badge ${statusBadgeClass(customer)}">${escapeHtml(statusValue(customer))}</span>
+      <span class="badge">${escapeHtml(priorityValue(customer))}</span>
     </div>
 
     <div class="quick-actions" aria-label="Quick actions">
@@ -2573,12 +3331,11 @@ function renderDetail(data, assignedTags) {
       <button class="secondary-btn quick-action-btn" type="button" data-action="mark_booked">Mark Booked</button>
       <button class="quiet-btn quick-action-btn" type="button" data-action="mark_ghosted">Mark Ghosted</button>
       <button class="danger-btn quick-action-btn" type="button" data-action="do_not_contact">Do Not Contact</button>
-      <button class="quiet-btn quick-action-btn" type="button" data-action="complete_open_task" ${openTasks.length ? "" : "disabled"}>Complete Open Task</button>
     </div>
 
-    <div class="detail-grid">
-      <section class="detail-section">
-        <h3>CRM Profile</h3>
+    <details class="detail-accordion" open>
+      <summary>CRM Profile</summary>
+      <div class="detail-accordion-body">
         <div class="detail-item"><strong>Stage:</strong> ${escapeHtml(profile.lifecycle_stage || customer.lifecycle_stage || "lead")}</div>
         <div class="detail-item"><strong>Status:</strong> ${escapeHtml(profile.status || statusValue(customer))}</div>
         <div class="detail-item"><strong>Priority:</strong> ${escapeHtml(profile.priority || priorityValue(customer))}</div>
@@ -2587,32 +3344,13 @@ function renderDetail(data, assignedTags) {
         <div class="detail-item"><strong>Lead Source:</strong> ${escapeHtml(profile.lead_source || "")}</div>
         <div class="detail-item"><strong>Preferred Contact:</strong> ${escapeHtml(profile.preferred_contact_method || "")}</div>
         <div class="detail-item"><strong>Total Revenue:</strong> ${escapeHtml(formatMoney(customer.total_revenue))}</div>
-        <div class="detail-item"><strong>Notes:</strong> ${escapeHtml(profile.crm_notes || customer.crm_notes || "")}</div>
-      </section>
+        <div class="detail-item"><strong>Address:</strong> ${escapeHtml(customer.address || "Not set")}</div>
+      </div>
+    </details>
 
-      <section class="detail-section">
-        <h3>Tags</h3>
-        <div class="detail-item">
-          ${(assignedTags || []).length ? assignedTags.map(tag => `<span class="badge">${escapeHtml(tag.name)}</span>`).join(" ") : `<span class="muted">No tags assigned.</span>`}
-        </div>
-        <form id="tagAssignForm" class="detail-form">
-          <div>
-            <label for="tagSelect">Assign Tag</label>
-            <select id="tagSelect" name="tag_id">
-              <option value="">Select tag</option>
-              ${state.tags.map(tag => `<option value="${escapeHtml(tag.id)}">${escapeHtml(tag.name)}</option>`).join("")}
-            </select>
-          </div>
-          <div>
-            <label for="newTagName">New Tag</label>
-            <input id="newTagName" name="name" placeholder="optional" />
-          </div>
-          <button class="primary-btn span-2" type="submit">Create/Assign Tag</button>
-        </form>
-      </section>
-
-      <section class="detail-section">
-        <h3>Open Follow-Up Tasks</h3>
+    <details class="detail-accordion" id="accordionTasks" open>
+      <summary>Tasks (${openTasks.length} open)</summary>
+      <div class="detail-accordion-body">
         <div id="taskList">
           ${openTasks.length ? openTasks.map(task => `
             <div class="detail-item">
@@ -2648,10 +3386,19 @@ function renderDetail(data, assignedTags) {
           </div>
           <button class="primary-btn span-2" type="submit">Create Follow-Up Task</button>
         </form>
-      </section>
+      </div>
+    </details>
 
-      <section class="detail-section">
-        <h3>Log Outreach</h3>
+    <details class="detail-accordion" id="accordionOutreach">
+      <summary>Outreach History</summary>
+      <div class="detail-accordion-body">
+        ${outreachLogs.slice(0, 8).map(log => `
+          <div class="detail-item">
+            <strong>${escapeHtml(log.method || "")}</strong> - ${escapeHtml(formatDate(log.contacted_at))}
+            <div>${escapeHtml(log.message_summary || "")}</div>
+            <div>${escapeHtml(log.response_status || "")}</div>
+          </div>
+        `).join("") || `<div class="muted">No outreach logged.</div>`}
         <form id="outreachForm" class="detail-form compact-form">
           <div>
             <label for="outreachMethod">Method</label>
@@ -2689,10 +3436,12 @@ function renderDetail(data, assignedTags) {
           </div>
           <button class="primary-btn span-2" type="submit">Log Outreach</button>
         </form>
-      </section>
+      </div>
+    </details>
 
-      <section class="detail-section">
-        <h3>Booking History</h3>
+    <details class="detail-accordion">
+      <summary>Booking History</summary>
+      <div class="detail-accordion-body">
         ${bookings.slice(0, 8).map(booking => `
           <div class="detail-item">
             <strong>${escapeHtml(formatDate(booking.scheduled_start))}</strong>
@@ -2700,19 +3449,38 @@ function renderDetail(data, assignedTags) {
             <div>Total: ${escapeHtml(booking.total_price ?? "")}</div>
           </div>
         `).join("") || `<div class="muted">No bookings yet.</div>`}
-      </section>
+      </div>
+    </details>
 
-      <section class="detail-section">
-        <h3>Outreach History</h3>
-        ${outreachLogs.slice(0, 8).map(log => `
-          <div class="detail-item">
-            <strong>${escapeHtml(log.method || "")}</strong> - ${escapeHtml(formatDate(log.contacted_at))}
-            <div>${escapeHtml(log.message_summary || "")}</div>
-            <div>${escapeHtml(log.response_status || "")}</div>
+    <details class="detail-accordion">
+      <summary>Tags</summary>
+      <div class="detail-accordion-body">
+        <div class="detail-item">
+          ${(assignedTags || []).length ? assignedTags.map(tag => `<span class="badge">${escapeHtml(tag.name)}</span>`).join(" ") : `<span class="muted">No tags assigned.</span>`}
+        </div>
+        <form id="tagAssignForm" class="detail-form">
+          <div>
+            <label for="tagSelect">Assign Tag</label>
+            <select id="tagSelect" name="tag_id">
+              <option value="">Select tag</option>
+              ${state.tags.map(tag => `<option value="${escapeHtml(tag.id)}">${escapeHtml(tag.name)}</option>`).join("")}
+            </select>
           </div>
-        `).join("") || `<div class="muted">No outreach logged.</div>`}
-      </section>
-    </div>
+          <div>
+            <label for="newTagName">New Tag</label>
+            <input id="newTagName" name="name" placeholder="optional" />
+          </div>
+          <button class="primary-btn span-2" type="submit">Create/Assign Tag</button>
+        </form>
+      </div>
+    </details>
+
+    <details class="detail-accordion" ${notes ? "open" : ""}>
+      <summary>Notes</summary>
+      <div class="detail-accordion-body">
+        <div class="detail-item">${notes ? escapeHtml(notes) : `<span class="muted">No CRM notes yet.</span>`}</div>
+      </div>
+    </details>
   `;
 
   wireDetailForms();
@@ -2767,12 +3535,16 @@ function wireDetailForms() {
     button.addEventListener("click", async () => {
       const action = button.dataset.action;
       if (action === "log_outreach") {
-        document.getElementById("outreachForm")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        const outreach = document.getElementById("accordionOutreach");
+        outreach?.setAttribute("open", "");
+        outreach?.scrollIntoView({ behavior: "smooth", block: "start" });
         document.getElementById("messageSummary")?.focus();
         return;
       }
       if (action === "set_follow_up") {
-        document.getElementById("taskCreateForm")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        const tasks = document.getElementById("accordionTasks");
+        tasks?.setAttribute("open", "");
+        tasks?.scrollIntoView({ behavior: "smooth", block: "start" });
         document.getElementById("taskDue")?.focus();
         return;
       }
@@ -2913,6 +3685,15 @@ document.getElementById("crmTabNav").addEventListener("click", (event) => {
   if (!button) return;
   switchTab(button.dataset.tab);
 });
+
+document.getElementById("crmNav").addEventListener("click", (event) => {
+  const button = event.target.closest(".crm-nav-item");
+  if (!button) return;
+  switchTab(button.dataset.tab);
+});
+
+document.getElementById("navMenuBtn")?.addEventListener("click", openNavDrawer);
+document.getElementById("navBackdrop")?.addEventListener("click", closeNavDrawer);
 
 document.getElementById("refreshBtn").addEventListener("click", () => {
   if (state.activeTab === "analytics") {
