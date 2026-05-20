@@ -1870,6 +1870,101 @@ body {
   display: block;
 }
 
+.template-library-hint {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(127, 184, 230, 0.22);
+  border-radius: 10px;
+  background: rgba(127, 184, 230, 0.08);
+  font-size: 12px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.template-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(127, 184, 230, 0.2);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  min-width: 0;
+}
+
+.template-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.template-card-header h3 {
+  margin: 0;
+  font-size: 14px;
+  color: var(--moon-primary);
+}
+
+.template-purpose {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.4;
+}
+
+.template-channel {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(127, 184, 230, 0.28);
+  background: rgba(127, 184, 230, 0.12);
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.82);
+  white-space: nowrap;
+}
+
+.template-preview-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(127, 184, 230, 0.95);
+}
+
+.template-body {
+  margin: 0;
+  padding: 10px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.template-card-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+}
+
+@media (max-width: 920px) {
+  .template-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 .detail-header {
   padding: 16px;
   margin: 0;
@@ -2089,6 +2184,7 @@ body {
       <button type="button" class="crm-nav-item" data-tab="customers"><span class="nav-icon" aria-hidden="true">☰</span>Customers</button>
       <button type="button" class="crm-nav-item" data-tab="pipeline"><span class="nav-icon" aria-hidden="true">▥</span>Pipeline</button>
       <button type="button" class="crm-nav-item" data-tab="tasks"><span class="nav-icon" aria-hidden="true">✓</span>Tasks</button>
+      <button type="button" class="crm-nav-item" data-tab="templates"><span class="nav-icon" aria-hidden="true">✉</span>Templates</button>
       <button type="button" class="crm-nav-item" data-tab="analytics"><span class="nav-icon" aria-hidden="true">◫</span>Analytics</button>
       <button type="button" class="crm-nav-item" data-tab="cleanup"><span class="nav-icon" aria-hidden="true">⚠</span>Data Cleanup</button>
     </nav>
@@ -2117,6 +2213,7 @@ body {
           <button type="button" class="crm-tab" data-tab="pipeline">Pipeline</button>
           <button type="button" class="crm-tab" data-tab="analytics">Analytics</button>
           <button type="button" class="crm-tab" data-tab="tasks">Tasks</button>
+          <button type="button" class="crm-tab" data-tab="templates">Templates</button>
           <button type="button" class="crm-tab" data-tab="cleanup">Data Cleanup</button>
         </nav>
 
@@ -2271,6 +2368,15 @@ body {
           </div>
         </div>
 
+
+        <div id="tabTemplates" class="crm-tab-panel">
+          <div class="panel">
+            <div id="templatesStatus" class="status-line">Reusable outreach copy for follow-ups. Copy only — nothing is sent from here.</div>
+            <div id="templatesHint" class="template-library-hint"></div>
+            <div id="templatesGrid" class="template-grid"></div>
+          </div>
+        </div>
+
         <div id="tabCleanup" class="crm-tab-panel">
           <div class="panel">
             <div id="cleanupStatus" class="status-line">Open this tab to scan for possible duplicates.</div>
@@ -2312,6 +2418,7 @@ const TAB_PANEL_IDS = {
   pipeline: "tabPipeline",
   analytics: "tabAnalytics",
   tasks: "tabTasks",
+  templates: "tabTemplates",
   cleanup: "tabCleanup"
 };
 
@@ -2336,11 +2443,212 @@ const TAB_COPY = {
     title: "Tasks",
     description: "Work through overdue, due today, and upcoming follow-ups."
   },
+  templates: {
+    title: "Templates",
+    description: "Copy-ready outreach messages for follow-ups, reviews, and reactivation."
+  },
   cleanup: {
     title: "Data Cleanup",
     description: "Review possible duplicate records. Nothing is changed automatically."
   }
 };
+
+
+const MESSAGE_TEMPLATES = [
+  {
+    id: "review_request",
+    name: "Review Request",
+    purpose: "Ask a happy customer for a quick Google review after a great detail.",
+    channel: "Text",
+    body: "Hey {{first_name}}, this is Darren from Moon Auto Detailing. Thanks again for trusting me with your {{vehicle}}. If you were happy with the detail, would you mind leaving a quick Google review? It helps a lot."
+  },
+  {
+    id: "maintenance_reminder",
+    name: "Maintenance Reminder",
+    purpose: "Check in when it has been a while since their last detail.",
+    channel: "Text",
+    body: "Hey {{first_name}}, this is Darren from Moon Auto Detailing. It's been a little while since your last detail, so I wanted to check if you wanted to get your {{vehicle}} back on the schedule."
+  },
+  {
+    id: "quote_follow_up",
+    name: "Quote Follow-Up",
+    purpose: "Follow up on a quote without pressure.",
+    channel: "Text",
+    body: "Hey {{first_name}}, just following up on the detail quote I sent over. No pressure either way — I just wanted to see if you had any questions or wanted help picking the best package."
+  },
+  {
+    id: "lead_follow_up",
+    name: "Lead Follow-Up",
+    purpose: "Follow up with a new lead who reached out about detailing.",
+    channel: "Text",
+    body: "Hey {{first_name}}, this is Darren from {{business_name}}. I wanted to follow up on your mobile detail inquiry and see if you had any questions about getting {{vehicle}} taken care of."
+  },
+  {
+    id: "winback",
+    name: "Winback / Reactivation",
+    purpose: "Reconnect with a past customer who has not booked in a while.",
+    channel: "Text",
+    body: "Hey {{first_name}}, this is Darren from Moon Auto Detailing. I was checking in with past customers and wanted to see if your vehicle could use a refresh soon."
+  },
+  {
+    id: "referral_ask",
+    name: "Referral Ask",
+    purpose: "Ask a trusted customer for a referral in a natural way.",
+    channel: "Text",
+    body: "Hey {{first_name}}, I appreciate you using Moon Auto Detailing. If you know anyone who needs a reliable mobile detailer, referrals always help a lot."
+  },
+  {
+    id: "ceramic_checkup",
+    name: "Ceramic Coating Checkup",
+    purpose: "Check in on ceramic coating maintenance or upkeep questions.",
+    channel: "Text",
+    body: "Hey {{first_name}}, this is Darren from {{business_name}}. I wanted to check in on your ceramic coating and see if you needed a maintenance wash or any upkeep advice for your {{vehicle}}."
+  },
+  {
+    id: "no_response",
+    name: "No Response Follow-Up",
+    purpose: "One last friendly follow-up when someone has gone quiet.",
+    channel: "Text",
+    body: "Hey {{first_name}}, just wanted to follow up one more time. If now is not a good time, no worries — I can check back later."
+  }
+];
+
+function selectedCustomerRow() {
+  if (!state.selectedCustomerId) return null;
+  if (state.detail?.customer && customerId(state.detail.customer) === state.selectedCustomerId) {
+    return state.detail.customer;
+  }
+  return state.customers.find((row) => customerId(row) === state.selectedCustomerId) || null;
+}
+
+function customerFirstName(row) {
+  if (!row) return "";
+  const direct = String(row.first_name || "").trim();
+  if (direct) return direct;
+  const full = customerName(row);
+  const part = full.split(/\s+/).filter(Boolean)[0];
+  return part && part !== "Unnamed" ? part : "";
+}
+
+function customerVehicleLabel(row) {
+  if (!row) return "";
+  const fromRow = String(row.vehicle || row.vehicle_description || row.vehicle_size || "").trim();
+  if (fromRow) return fromRow;
+  const bookings = state.detail?.bookings || [];
+  const latest = bookings[0];
+  if (latest?.service_variants?.services) {
+    const svc = latest.service_variants.services;
+    const bits = [svc.category, svc.level].filter(Boolean);
+    if (bits.length) return bits.join(" ");
+  }
+  return "";
+}
+
+function customerServiceLabel(row) {
+  if (!row) return "";
+  const interest = serviceInterestLabel(row);
+  if (interest) return interest;
+  const profile = state.detail?.profile || {};
+  if (profile.lead_source) return profile.lead_source;
+  const bookings = state.detail?.bookings || [];
+  const latest = bookings[0];
+  if (latest?.service_variants?.services?.category) {
+    return latest.service_variants.services.category;
+  }
+  return "";
+}
+
+function getTemplateContext() {
+  const row = selectedCustomerRow();
+  const profile = state.detail?.profile || {};
+  const lastService = row?.last_service_date || profile.last_service_date || null;
+  return {
+    first_name: customerFirstName(row) || "{{first_name}}",
+    service: customerServiceLabel(row) || "{{service}}",
+    vehicle: customerVehicleLabel(row) || "{{vehicle}}",
+    last_service_date: lastService ? formatShortDate(lastService) : "{{last_service_date}}",
+    business_name: "Moon Auto Detailing"
+  };
+}
+
+function personalizeTemplate(body, context) {
+  return String(body || "").replace(/\{\{(\w+)\}\}/g, (match, key) => {
+    if (Object.prototype.hasOwnProperty.call(context, key) && context[key]) {
+      return String(context[key]);
+    }
+    return match;
+  });
+}
+
+async function copyTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const area = document.createElement("textarea");
+  area.value = text;
+  area.setAttribute("readonly", "");
+  area.style.position = "fixed";
+  area.style.left = "-9999px";
+  document.body.appendChild(area);
+  area.select();
+  document.execCommand("copy");
+  document.body.removeChild(area);
+}
+
+function renderTemplates() {
+  const grid = document.getElementById("templatesGrid");
+  const hint = document.getElementById("templatesHint");
+  if (!grid) return;
+
+  const row = selectedCustomerRow();
+  const context = getTemplateContext();
+  const hasPreview = Boolean(row);
+
+  if (hint) {
+    hint.innerHTML = hasPreview
+      ? `Previewing messages for <strong>${escapeHtml(customerName(row))}</strong>. Unknown fields stay as placeholders until you have the info.`
+      : "Select a customer in the right panel to preview personalized copy. You can still copy any template as-is.";
+  }
+
+  grid.innerHTML = MESSAGE_TEMPLATES.map((template) => {
+    const message = personalizeTemplate(template.body, context);
+    const previewLabel = hasPreview
+      ? `Preview for ${customerName(row)}`
+      : "Template with placeholders";
+    return `
+      <article class="template-card" data-template-id="${escapeHtml(template.id)}">
+        <div class="template-card-header">
+          <div>
+            <h3>${escapeHtml(template.name)}</h3>
+            <p class="template-purpose">${escapeHtml(template.purpose)}</p>
+          </div>
+          <span class="template-channel">${escapeHtml(template.channel)}</span>
+        </div>
+        <div class="template-preview-label">${escapeHtml(previewLabel)}</div>
+        <p class="template-body">${escapeHtml(message)}</p>
+        <div class="template-card-actions">
+          <button class="secondary-btn copy-template-btn" type="button" data-template-id="${escapeHtml(template.id)}">Copy</button>
+        </div>
+      </article>
+    `;
+  }).join("");
+
+  grid.querySelectorAll(".copy-template-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      try {
+        const template = MESSAGE_TEMPLATES.find((item) => item.id === btn.dataset.templateId);
+        if (!template) throw new Error("Template not found");
+        const message = personalizeTemplate(template.body, getTemplateContext());
+        await copyTextToClipboard(message);
+        toast("Message copied to clipboard");
+      } catch (err) {
+        toast(err.message || "Could not copy message", true);
+      }
+    });
+  });
+}
+
 
 const state = {
   customers: [],
@@ -3213,6 +3521,7 @@ function renderActiveTab() {
   else if (state.activeTab === "pipeline") renderPipeline();
   else if (state.activeTab === "analytics" && state.analyticsLoaded) renderAnalytics();
   else if (state.activeTab === "tasks") renderTasks();
+  else if (state.activeTab === "templates") renderTemplates();
   else if (state.activeTab === "cleanup" && state.duplicatesLoaded) renderDuplicates();
 
   if (state.selectedCustomerId) {
@@ -3287,6 +3596,7 @@ function renderCustomerCard(row) {
 async function openCustomerDetail(id) {
   state.selectedCustomerId = id;
   renderActiveTab();
+  if (state.activeTab === "templates") renderTemplates();
   setDetailPanelOpen(true);
   document.getElementById("detailTitle").textContent = "Loading customer...";
   document.getElementById("detailSub").textContent = "";
@@ -3331,6 +3641,7 @@ function renderDetail(data, assignedTags) {
       <button class="secondary-btn quick-action-btn" type="button" data-action="mark_booked">Mark Booked</button>
       <button class="quiet-btn quick-action-btn" type="button" data-action="mark_ghosted">Mark Ghosted</button>
       <button class="danger-btn quick-action-btn" type="button" data-action="do_not_contact">Do Not Contact</button>
+      <button class="secondary-btn quick-action-btn" type="button" data-action="open_templates">Templates</button>
     </div>
 
     <details class="detail-accordion" open>
@@ -3487,6 +3798,7 @@ function renderDetail(data, assignedTags) {
   if (openTasks.length) {
     document.getElementById("taskList").dataset.openCount = String(openTasks.length);
   }
+  if (state.activeTab === "templates") renderTemplates();
 }
 
 function formObject(form) {
@@ -3539,6 +3851,10 @@ function wireDetailForms() {
         outreach?.setAttribute("open", "");
         outreach?.scrollIntoView({ behavior: "smooth", block: "start" });
         document.getElementById("messageSummary")?.focus();
+        return;
+      }
+      if (action === "open_templates") {
+        switchTab("templates");
         return;
       }
       if (action === "set_follow_up") {
