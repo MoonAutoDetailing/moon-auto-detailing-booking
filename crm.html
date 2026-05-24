@@ -78,14 +78,20 @@ button {
 }
 
 #loginCard {
-  width: 360px;
-  padding: 40px 34px;
-  border-radius: 18px;
-  background: rgba(111,147,196,0.12);
-  backdrop-filter: blur(14px);
-  border: 1px solid rgba(255,255,255,0.15);
+  width: min(360px, calc(100vw - 36px));
+  padding: 32px 28px;
+  border-radius: 16px;
+  background: rgba(13, 22, 34, 0.92);
+  border: 1px solid rgba(127, 184, 230, 0.22);
   box-shadow: 0 20px 60px rgba(0,0,0,0.6);
   text-align: center;
+}
+
+#loginCard .act-primary,
+#loginCard #loginButton {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 6px;
 }
 
 #loginLogo {
@@ -1202,11 +1208,129 @@ body {
   --moon-radius: 12px;
   --moon-radius-lg: 16px;
   --nav-width: 220px;
-  --context-width: 390px;
+  --context-width: 400px;
   --space-1: 6px;
   --space-2: 10px;
   --space-3: 14px;
   --space-4: 18px;
+  --act-h: 32px;
+  --act-h-mobile: 44px;
+  --act-radius: 8px;
+  --text-strong: rgba(255, 255, 255, 0.96);
+  --text-body: rgba(255, 255, 255, 0.82);
+  --text-meta: rgba(255, 255, 255, 0.52);
+  --text-muted: rgba(255, 255, 255, 0.42);
+  --sep: rgba(255, 255, 255, 0.06);
+}
+
+/* === Action hierarchy (global) === */
+.act-primary,
+.primary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--act-h);
+  padding: 5px 11px;
+  border: none;
+  border-radius: var(--act-radius);
+  background: var(--moon-primary);
+  color: #07111d;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.act-primary:hover,
+.primary-btn:hover {
+  background: var(--moon-primary-dark);
+  color: #fff;
+}
+
+.act-secondary,
+.secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--act-h);
+  padding: 5px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--act-radius);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-body);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.act-secondary:hover,
+.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(127, 184, 230, 0.28);
+}
+
+.act-quiet,
+.quiet-btn,
+.segment-chip,
+.queue-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--act-h);
+  padding: 5px 11px;
+  border: 1px solid rgba(127, 184, 230, 0.18);
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.act-quiet:hover,
+.quiet-btn:hover {
+  background: rgba(127, 184, 230, 0.1);
+  border-color: rgba(127, 184, 230, 0.32);
+}
+
+.act-danger,
+.danger-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--act-h);
+  padding: 5px 11px;
+  border: 1px solid rgba(176, 0, 32, 0.45);
+  border-radius: var(--act-radius);
+  background: rgba(176, 0, 32, 0.14);
+  color: #ff9a9a;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.act-danger:hover,
+.danger-btn:hover {
+  background: rgba(176, 0, 32, 0.28);
+  color: #fff;
+}
+
+.meta-text {
+  font-size: 11px;
+  color: var(--text-meta);
+  line-height: 1.35;
+}
+
+.text-strong {
+  font-weight: 600;
+  color: var(--text-strong);
 }
 
 body {
@@ -1430,16 +1554,23 @@ body {
 }
 
 .tab-page-header h2 {
-  margin: 0 0 4px;
+  margin: 0 0 2px;
   color: var(--moon-primary);
-  font-size: 16px;
+  font-size: 15px;
+  font-weight: 700;
 }
 
 .tab-page-header p {
   margin: 0;
-  color: rgba(255, 255, 255, 0.65);
-  font-size: 12px;
-  line-height: 1.4;
+  color: var(--text-meta);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.status-line {
+  font-size: 11px;
+  color: var(--text-meta);
+  margin-bottom: 6px;
 }
 
 .crm-tab-nav {
@@ -1550,8 +1681,11 @@ body {
 }
 
 .panel {
-  padding: 12px;
-  border-radius: var(--moon-radius);
+  padding: 8px 2px;
+  border-radius: 0;
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }
 
 .kpi-strip {
@@ -1571,9 +1705,11 @@ body {
 }
 
 .crm-section {
-  padding: 10px;
-  border-radius: var(--moon-radius);
-  margin-bottom: 10px;
+  padding: 0;
+  border-radius: 0;
+  margin-bottom: 8px;
+  border: none;
+  background: transparent;
 }
 
 .crm-section-header h2 {
@@ -1598,22 +1734,23 @@ body {
   align-items: center;
   width: 100%;
   text-align: left;
-  padding: 7px 10px;
-  border: 1px solid rgba(127, 184, 230, 0.16);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  padding: 6px 8px;
+  border: none;
+  border-bottom: 1px solid var(--sep);
+  border-radius: 0;
+  background: transparent;
   color: #fff;
-  min-height: 44px;
+  min-height: 40px;
 }
 
 .customer-row:hover {
-  background: rgba(127, 184, 230, 0.1);
-  border-color: rgba(127, 184, 230, 0.32);
+  background: rgba(127, 184, 230, 0.08);
 }
 
 .customer-row.active {
-  outline: 2px solid var(--moon-primary);
-  background: rgba(127, 184, 230, 0.14);
+  background: rgba(127, 184, 230, 0.12);
+  box-shadow: inset 3px 0 0 var(--moon-primary);
+  outline: none;
 }
 
 .customer-row .customer-name {
@@ -1748,9 +1885,10 @@ body {
 
 .operational-feed {
   margin-top: 10px;
-  border: 1px solid rgba(127, 184, 230, 0.16);
-  border-radius: var(--moon-radius);
-  background: rgba(255, 255, 255, 0.02);
+  border: none;
+  border-top: 1px solid var(--sep);
+  border-radius: 0;
+  background: transparent;
   overflow: hidden;
 }
 
@@ -1770,9 +1908,10 @@ body {
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
-  padding: 7px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--sep);
   font-size: 12px;
+  background: transparent;
 }
 
 .feed-row:last-child {
@@ -1801,21 +1940,23 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0;
-  margin-bottom: 10px;
-  border: 1px solid rgba(127, 184, 230, 0.16);
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.12);
-  overflow: hidden;
+  margin-bottom: 6px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  max-height: min(50vh, 440px);
+  overflow-y: auto;
 }
 
 .timeline-row {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-columns: 68px minmax(0, 1fr) auto;
   gap: 8px;
-  align-items: start;
-  padding: 8px 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  align-items: baseline;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--sep);
   font-size: 12px;
+  background: transparent;
 }
 
 .timeline-row:last-child {
@@ -1824,26 +1965,105 @@ body {
 
 .timeline-badge {
   display: inline-block;
-  padding: 2px 7px;
-  border-radius: 999px;
+  padding: 1px 0;
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
-  background: rgba(127, 184, 230, 0.16);
-  color: rgba(255, 255, 255, 0.88);
+  letter-spacing: 0.04em;
+  color: var(--moon-primary);
   white-space: nowrap;
 }
 
 .timeline-desc {
   line-height: 1.35;
-  color: rgba(255, 255, 255, 0.82);
+  color: var(--text-body);
 }
 
 .timeline-time {
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.52);
+  color: var(--text-muted);
   white-space: nowrap;
+}
+
+.detail-timeline-section {
+  margin-bottom: 8px;
+}
+
+.detail-timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.detail-timeline-header h3 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-meta);
+}
+
+.detail-action-primary,
+.detail-action-secondary,
+.detail-action-danger {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.detail-action-primary {
+  margin-bottom: 6px;
+}
+
+.detail-action-primary .act-primary {
+  flex: 1 1 0;
+  min-width: 72px;
+}
+
+.detail-action-secondary {
+  margin-bottom: 6px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--sep);
+}
+
+.detail-action-danger {
+  margin-bottom: 10px;
+  padding-top: 2px;
+}
+
+.detail-action-danger .act-danger {
+  margin-left: auto;
+}
+
+.detail-header-main h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-strong);
+  line-height: 1.25;
+}
+
+.detail-meta-line {
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-meta);
+  line-height: 1.35;
+}
+
+.detail-header .detail-record-badges {
+  margin-top: 6px;
+}
+
+.detail-accordion {
+  border: none;
+  border-top: 1px solid var(--sep);
+  border-radius: 0;
+  background: transparent;
+  margin-bottom: 0;
+  overflow: hidden;
 }
 
 .queue-row-main {
@@ -1873,39 +2093,25 @@ body {
   padding: 2px 6px;
 }
 
-.btn-action-primary {
-  min-height: 32px;
-  padding: 6px 10px;
+.btn-action-primary,
+.queue-row-actions .act-primary {
+  min-height: var(--act-h);
+  padding: 5px 10px;
   font-size: 12px;
-  font-weight: 700;
 }
 
-.btn-action-secondary {
-  min-height: 32px;
-  padding: 6px 10px;
-  font-size: 12px;
-  font-weight: 600;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.9);
-}
-
-.btn-action-quiet {
-  min-height: 32px;
-  padding: 6px 10px;
+.btn-action-secondary,
+.queue-row-actions .act-secondary {
+  min-height: var(--act-h);
+  padding: 5px 10px;
   font-size: 11px;
-  font-weight: 600;
-  border: 1px solid rgba(127, 184, 230, 0.2);
-  border-radius: 8px;
-  background: transparent;
-  color: rgba(255, 255, 255, 0.72);
 }
 
-.btn-action-danger {
-  min-height: 32px;
-  padding: 6px 10px;
-  font-size: 12px;
+.btn-action-quiet,
+.queue-row-actions .act-quiet {
+  min-height: 30px;
+  padding: 4px 8px;
+  font-size: 11px;
 }
 
 .queue-list {
@@ -1919,15 +2125,23 @@ body {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
-  padding: 8px 10px;
-  border: 1px solid rgba(127, 184, 230, 0.16);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.04);
+  padding: 7px 0;
+  border: none;
+  border-bottom: 1px solid var(--sep);
+  border-radius: 0;
+  background: transparent;
+}
+
+.queue-row:last-child {
+  border-bottom: none;
 }
 
 .queue-row.overdue {
-  border-color: rgba(255, 120, 120, 0.45);
-  background: rgba(255, 80, 80, 0.08);
+  background: rgba(255, 80, 80, 0.06);
+  padding-left: 6px;
+  padding-right: 6px;
+  margin: 0 -6px;
+  border-bottom-color: rgba(255, 120, 120, 0.2);
 }
 
 .queue-row-actions {
@@ -2022,21 +2236,15 @@ body {
   padding: 0 10px 10px;
 }
 
-.detail-accordion {
-  border: 1px solid rgba(127, 184, 230, 0.16);
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.14);
-  margin-bottom: 8px;
-  overflow: hidden;
-}
-
 .detail-accordion summary {
   cursor: pointer;
-  padding: 8px 10px;
-  font-weight: 700;
-  font-size: 12px;
-  color: var(--moon-primary);
+  padding: 7px 0;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--text-meta);
   list-style: none;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .detail-accordion summary::-webkit-details-marker {
@@ -2044,34 +2252,25 @@ body {
 }
 
 .detail-accordion .detail-accordion-body {
-  padding: 0 10px 10px;
+  padding: 0 0 8px;
 }
 
 .detail-record-badges {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 4px;
+  margin-top: 4px;
 }
 
-.detail-header h2 {
-  font-size: 17px;
-  margin: 0;
+.detail-record-badges .badge {
+  font-size: 10px;
+  padding: 2px 6px;
 }
 
 #closeDetailBtn {
-  min-height: 34px;
-  padding: 6px 12px;
-  font-size: 12px;
-}
-
-.primary-btn,
-.secondary-btn,
-.danger-btn,
-.quiet-btn {
-  min-height: 34px;
-  padding: 7px 12px;
-  font-size: 12px;
+  min-height: var(--act-h);
+  padding: 5px 10px;
+  font-size: 11px;
 }
 
 .duplicate-group-cards {
@@ -2233,15 +2432,28 @@ body {
 }
 
 .detail-header {
-  padding: 10px 12px;
+  padding: 8px 10px;
   margin: 0;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid var(--sep);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .detail-body-scroll {
   overflow-y: auto;
-  padding: 10px 12px;
+  padding: 8px 10px;
   flex: 1;
+}
+
+.detail-header-main {
+  min-width: 0;
+  flex: 1;
+}
+
+#closeDetailBtn {
+  flex-shrink: 0;
 }
 
 .detail-record-header {
@@ -2252,32 +2464,11 @@ body {
 }
 
 .quick-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 0 0 10px;
-}
-
-.quick-actions .primary-btn {
-  flex: 1 1 120px;
-  min-height: 34px;
-}
-
-.quick-actions .secondary-btn,
-.quick-actions .quiet-btn,
-.quick-actions .danger-btn {
-  min-height: 32px;
-  padding: 6px 10px;
-  font-size: 11px;
+  display: none;
 }
 
 .detail-section-label {
-  margin: 0 0 6px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: rgba(255, 255, 255, 0.52);
+  display: none;
 }
 
 .customer-card {
@@ -2347,12 +2538,28 @@ body {
 }
 
 @media (max-width: 920px) {
+  .detail-action-secondary-desktop {
+    display: none;
+  }
+
   .crm-app {
     grid-template-columns: 1fr;
   }
 
+  body {
+    overflow-x: hidden;
+  }
+
+  .crm-body {
+    padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  }
+
   #navMenuBtn {
-    display: inline-flex;
+    display: none;
+  }
+
+  .crm-mobile-nav {
+    display: flex;
   }
 
   .crm-nav-rail {
@@ -2360,13 +2567,75 @@ body {
     left: 0;
     top: 0;
     width: min(280px, 88vw);
+    height: 100vh;
     transform: translateX(-105%);
     transition: transform 0.2s ease;
     box-shadow: 12px 0 40px rgba(0, 0, 0, 0.45);
+    z-index: 45;
   }
 
   .crm-nav-rail.open {
     transform: translateX(0);
+  }
+
+  .crm-nav-item.crm-nav-more-item {
+    display: flex;
+  }
+
+  .crm-nav-group-more {
+    display: block;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid var(--sep);
+  }
+
+  .crm-nav-group-label {
+    padding: 4px 12px 6px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .nav-kpis,
+  .nav-footer {
+    display: none;
+  }
+
+  .crm-nav-item.crm-nav-primary {
+    display: flex;
+  }
+
+  .workspace-header {
+    padding: 8px 10px;
+  }
+
+  .workspace-header h1,
+  .tab-page-header h2 {
+    font-size: 16px;
+  }
+
+  .act-primary,
+  .act-secondary,
+  .act-quiet,
+  .act-danger,
+  .primary-btn,
+  .secondary-btn,
+  .quiet-btn,
+  .danger-btn {
+    min-height: var(--act-h-mobile);
+  }
+
+  .detail-action-primary .act-primary {
+    min-height: var(--act-h-mobile);
+    flex: 1 1 calc(50% - 4px);
+  }
+
+  .queue-row-actions .act-primary,
+  .queue-row-actions .act-secondary,
+  .queue-row-actions .act-quiet {
+    min-height: 40px;
   }
 
   .crm-workspace {
@@ -2375,7 +2644,8 @@ body {
 
   .crm-main {
     max-height: none;
-    padding: 12px;
+    padding: 8px 10px;
+    overflow-x: hidden;
   }
 
   .crm-detail-column {
@@ -2399,6 +2669,7 @@ body {
     background: #0b1018;
     border-radius: 0;
     display: none;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   #detailPanel.detail-panel.has-selection {
@@ -2409,20 +2680,108 @@ body {
     display: none !important;
   }
 
+  .detail-timeline-section .timeline-feed {
+    max-height: 160px;
+  }
+
+  .detail-timeline-section {
+    margin-bottom: 6px;
+  }
+
+  .customers-toolbar-row .filters {
+    display: none;
+  }
+
+  .customers-toolbar-row {
+    grid-template-columns: 1fr auto;
+  }
+
+  .sticky-customer-toolbar {
+    position: sticky;
+    top: 0;
+  }
+
   .customer-row {
     grid-template-columns: 1fr;
+    gap: 4px;
+    min-height: 44px;
+    padding: 8px 6px;
+  }
+
+  .customer-row .row-revenue {
+    text-align: left;
   }
 
   .duplicate-group-cards {
     grid-template-columns: 1fr;
   }
 
-  .filter-toolbar .filters {
-    grid-template-columns: 1fr;
+  #closeDetailBtn {
+    min-height: var(--act-h-mobile);
   }
 
-  #closeDetailBtn {
-    min-height: 44px;
+  .crm-tab-panel[data-mobile-secondary="true"]:not(.active) {
+    display: none;
+  }
+}
+
+.crm-mobile-nav {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid var(--sep);
+  background: rgba(8, 14, 22, 0.96);
+  backdrop-filter: blur(10px);
+  gap: 4px;
+}
+
+.crm-mobile-nav-item {
+  flex: 1 1 0;
+  min-height: 44px;
+  padding: 6px 4px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+}
+
+.crm-mobile-nav-item.active {
+  background: rgba(127, 184, 230, 0.18);
+  border-color: rgba(127, 184, 230, 0.32);
+  color: #fff;
+}
+
+@media (min-width: 921px) {
+  .crm-nav-item.crm-nav-more-item {
+    display: flex;
+  }
+
+  .crm-nav-group-more .crm-nav-group-label {
+    display: none;
+  }
+
+  .crm-nav-group-more {
+    border-top: none;
+    margin-top: 0;
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 920px) {
+  .crm-nav-list .crm-nav-more-item {
+    display: none;
+  }
+
+  .crm-nav-rail.show-more .crm-nav-list .crm-nav-more-item {
+    display: flex;
   }
 }
 
@@ -2449,7 +2808,7 @@ body {
       autocorrect="off"
       spellcheck="false"
     />
-    <button id="loginButton" type="submit">Unlock CRM Dashboard</button>
+    <button id="loginButton" class="act-primary" type="submit">Unlock CRM Dashboard</button>
     <div id="loginError">Wrong password</div>
   </form>
 </div>
@@ -2465,30 +2824,40 @@ body {
       </div>
     </div>
     <nav class="crm-nav-list" id="crmNav">
-      <button type="button" class="crm-nav-item active" data-tab="today"><span class="nav-icon" aria-hidden="true">◎</span>Today</button>
-      <button type="button" class="crm-nav-item" data-tab="customers"><span class="nav-icon" aria-hidden="true">☰</span>Customers</button>
-      <button type="button" class="crm-nav-item" data-tab="pipeline"><span class="nav-icon" aria-hidden="true">▥</span>Pipeline</button>
-      <button type="button" class="crm-nav-item" data-tab="tasks"><span class="nav-icon" aria-hidden="true">✓</span>Tasks</button>
-      <button type="button" class="crm-nav-item" data-tab="templates"><span class="nav-icon" aria-hidden="true">✉</span>Templates</button>
-      <button type="button" class="crm-nav-item" data-tab="analytics"><span class="nav-icon" aria-hidden="true">◫</span>Analytics</button>
-      <button type="button" class="crm-nav-item" data-tab="cleanup"><span class="nav-icon" aria-hidden="true">⚠</span>Data Cleanup</button>
+      <button type="button" class="crm-nav-item crm-nav-primary active" data-tab="today"><span class="nav-icon" aria-hidden="true">◎</span>Today</button>
+      <button type="button" class="crm-nav-item crm-nav-primary" data-tab="customers"><span class="nav-icon" aria-hidden="true">☰</span>Customers</button>
+      <button type="button" class="crm-nav-item crm-nav-primary" data-tab="tasks"><span class="nav-icon" aria-hidden="true">✓</span>Tasks</button>
+      <div class="crm-nav-group-more" id="crmNavMore">
+        <div class="crm-nav-group-label">More</div>
+        <button type="button" class="crm-nav-item crm-nav-more-item" data-tab="pipeline"><span class="nav-icon" aria-hidden="true">▥</span>Pipeline</button>
+        <button type="button" class="crm-nav-item crm-nav-more-item" data-tab="templates"><span class="nav-icon" aria-hidden="true">✉</span>Templates</button>
+        <button type="button" class="crm-nav-item crm-nav-more-item" data-tab="analytics"><span class="nav-icon" aria-hidden="true">◫</span>Analytics</button>
+        <button type="button" class="crm-nav-item crm-nav-more-item" data-tab="cleanup"><span class="nav-icon" aria-hidden="true">⚠</span>Data Cleanup</button>
+      </div>
     </nav>
     <div id="navKpis" class="nav-kpis" aria-label="Quick stats"></div>
     <div class="nav-footer">
-      <a class="secondary-btn" href="/admin.html?portal=1" style="text-decoration:none;text-align:center;">Back to Admin Portal</a>
-      <button id="refreshBtn" class="quiet-btn" type="button">Refresh data</button>
+      <a class="act-secondary" href="/admin.html?portal=1" style="text-decoration:none;text-align:center;display:flex;align-items:center;justify-content:center;">Back to Admin Portal</a>
+      <button id="refreshBtn" class="act-quiet" type="button">Refresh data</button>
     </div>
   </aside>
   <div class="crm-body">
     <header class="workspace-header">
       <div>
-        <button id="navMenuBtn" class="quiet-btn" type="button" aria-label="Open menu">Menu</button>
         <div id="tabPageHeader" class="tab-page-header" aria-live="polite">
           <h2>Today</h2>
           <p>What needs attention right now</p>
         </div>
       </div>
     </header>
+
+    <nav class="crm-mobile-nav" id="crmMobileNav" aria-label="Mobile CRM navigation">
+      <button type="button" class="crm-mobile-nav-item active" data-mobile-tab="today">Today</button>
+      <button type="button" class="crm-mobile-nav-item" data-mobile-tab="customers">Search</button>
+      <button type="button" class="crm-mobile-nav-item" data-mobile-tab="add-lead">Add Lead</button>
+      <button type="button" class="crm-mobile-nav-item" data-mobile-tab="tasks">Tasks</button>
+      <button type="button" class="crm-mobile-nav-item" data-mobile-tab="more">More</button>
+    </nav>
 
     <div class="crm-workspace">
       <main class="crm-main">
@@ -2567,7 +2936,7 @@ body {
                 </div>
                 <div class="field">
                   <label>&nbsp;</label>
-                  <button id="toggleLeadFormBtn" class="primary-btn" type="button">Add Lead</button>
+                  <button id="toggleLeadFormBtn" class="act-primary" type="button">Add Lead</button>
                 </div>
               </div>
               <div class="segment-chips" id="segmentChips" aria-label="Quick segments"></div>
@@ -2682,11 +3051,13 @@ body {
           </div>
           <div id="detailLoaded" class="detail-loaded">
             <div class="detail-header">
-              <div>
+              <div class="detail-header-main">
                 <h2 id="detailTitle">Customer Detail</h2>
-                <div id="detailSub" class="muted"></div>
+                <div id="detailSub" class="detail-meta-line"></div>
+                <div id="detailMeta" class="detail-meta-line"></div>
+                <div id="detailHeaderBadges" class="detail-record-badges"></div>
               </div>
-              <button id="closeDetailBtn" class="secondary-btn" type="button">Close</button>
+              <button id="closeDetailBtn" class="act-quiet" type="button">Close</button>
             </div>
             <div id="detailBody" class="detail-body-scroll"></div>
           </div>
@@ -3327,13 +3698,40 @@ function setDetailPanelOpen(isOpen) {
 }
 
 function closeNavDrawer() {
-  document.getElementById("crmNavRail")?.classList.remove("open");
+  document.getElementById("crmNavRail")?.classList.remove("open", "show-more");
   document.getElementById("navBackdrop")?.classList.remove("open");
 }
 
-function openNavDrawer() {
-  document.getElementById("crmNavRail")?.classList.add("open");
+function openNavDrawer(showMore = false) {
+  const rail = document.getElementById("crmNavRail");
+  rail?.classList.add("open");
+  if (showMore) rail?.classList.add("show-more");
   document.getElementById("navBackdrop")?.classList.add("open");
+}
+
+function isMobileCrmView() {
+  return window.matchMedia("(max-width: 920px)").matches;
+}
+
+function syncMobileNav(tab) {
+  const el = document.getElementById("crmMobileNav");
+  if (!el) return;
+  const moreTabs = ["pipeline", "templates", "analytics", "cleanup"];
+  el.querySelectorAll(".crm-mobile-nav-item").forEach((btn) => {
+    const key = btn.dataset.mobileTab;
+    if (key === "more") btn.classList.toggle("active", moreTabs.includes(tab));
+    else if (key === "add-lead") btn.classList.remove("active");
+    else btn.classList.toggle("active", key === tab);
+  });
+}
+
+function mobileAddLead() {
+  switchTab("customers");
+  const leadForm = document.getElementById("leadFormCollapse");
+  if (leadForm) {
+    leadForm.open = true;
+    leadForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
 }
 
 function switchTab(tab) {
@@ -3347,6 +3745,7 @@ function switchTab(tab) {
   });
   renderTabHeader();
   renderActiveTab();
+  syncMobileNav(tab);
   closeNavDrawer();
   if (tab === "analytics" && !state.analyticsLoaded) loadAnalytics();
   if (tab === "cleanup" && !state.duplicatesLoaded) loadDuplicates();
@@ -3731,19 +4130,47 @@ function buildTimelineEvents(data, assignedTags) {
     .slice(0, 40);
 }
 
+function timelineTypeLabel(type) {
+  const labels = {
+    "Lead created": "Lead",
+    "Outreach logged": "Outreach",
+    "CRM email sent": "Email",
+    "Booking created": "Booking",
+    "Booking completed": "Booking",
+    "Follow-up created": "Task",
+    "Follow-up completed": "Task",
+    "Follow-up snoozed": "Task",
+    "Status change": "Status",
+    "Tag added": "Tag",
+    "Note added": "Note"
+  };
+  return labels[type] || type;
+}
+
 function renderTimelineFeed(events) {
-  if (!events.length) return `<div class="muted">No timeline events yet.</div>`;
+  if (!events.length) return `<div class="meta-text" style="padding:4px 0;">No activity yet.</div>`;
   return `
     <div class="timeline-feed">
       ${events.map((event) => `
         <div class="timeline-row">
-          <span class="timeline-badge">${escapeHtml(event.type)}</span>
-          <div class="timeline-desc">${escapeHtml(event.description || "")}</div>
+          <span class="timeline-badge">${escapeHtml(timelineTypeLabel(event.type))}</span>
+          <span class="timeline-desc">${escapeHtml(event.description || event.type)}</span>
           <span class="timeline-time">${escapeHtml(formatShortDate(event.at))}</span>
         </div>
       `).join("")}
     </div>
   `;
+}
+
+function customerDetailMetaLine(customer) {
+  const parts = [];
+  if (customer.next_follow_up_at) {
+    parts.push(isOverdueFollowUp(customer) ? `Overdue ${formatShortDate(customer.next_follow_up_at)}` : `Next follow-up ${formatShortDate(customer.next_follow_up_at)}`);
+  }
+  if (customer.last_service_date) {
+    parts.push(`Last service ${formatShortDate(customer.last_service_date)}`);
+  }
+  return parts.join(" · ") || "No follow-up or service on record";
 }
 
 function renderSegmentChips() {
@@ -3809,10 +4236,10 @@ function renderQueueRow(row, options = {}) {
         <div class="queue-row-meta">${escapeHtml(followUpTimingLabel(row))}</div>
       </div>
       <div class="queue-row-actions">
-        <button class="primary-btn btn-action-primary queue-complete-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
-        <button class="btn-action-secondary queue-open-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Open Customer</button>
-        ${showSnooze ? `<button class="btn-action-quiet queue-snooze-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Snooze</button>` : ""}
-        <button class="btn-action-quiet queue-log-outreach-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Log Outreach</button>
+        <button class="act-primary queue-complete-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
+        <button class="act-secondary queue-open-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Open</button>
+        ${showSnooze ? `<button class="act-quiet queue-snooze-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Snooze</button>` : ""}
+        <button class="act-quiet queue-log-outreach-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Outreach</button>
       </div>
     </article>
   `;
@@ -4357,7 +4784,9 @@ async function openCustomerDetail(id, options = {}) {
   setDetailPanelOpen(true);
   document.getElementById("detailTitle").textContent = "Loading customer...";
   document.getElementById("detailSub").textContent = "";
-  document.getElementById("detailBody").innerHTML = `<div class="muted">Loading detail...</div>`;
+  document.getElementById("detailMeta").textContent = "";
+  document.getElementById("detailHeaderBadges").innerHTML = "";
+  document.getElementById("detailBody").innerHTML = `<div class="meta-text">Loading detail...</div>`;
 
   try {
     const [detail, tags] = await Promise.all([
@@ -4392,43 +4821,62 @@ function renderDetail(data, assignedTags) {
   const outreachLogs = data.outreach_logs || [];
   const notes = profile.crm_notes || customer.crm_notes || "";
   const timelineEvents = buildTimelineEvents(data, assignedTags);
+  const mobileView = isMobileCrmView();
+  const fourthPrimaryAction = mobileView
+    ? `<button class="act-primary quick-action-btn" type="button" data-action="open_templates">Template</button>`
+    : `<button class="act-primary quick-action-btn" type="button" data-action="send_email">Email</button>`;
+  const timelineBlock = mobileView
+    ? `<details class="detail-accordion detail-timeline-mobile">
+        <summary>Activity (${timelineEvents.length})</summary>
+        <div class="detail-accordion-body">${renderTimelineFeed(timelineEvents)}</div>
+      </details>`
+    : `<section class="detail-timeline-section" aria-label="Activity timeline">
+        <div class="detail-timeline-header">
+          <h3>Activity</h3>
+          <span class="meta-text">${timelineEvents.length} events</span>
+        </div>
+        ${renderTimelineFeed(timelineEvents)}
+      </section>`;
 
   document.getElementById("detailTitle").textContent = customerName(customer);
   document.getElementById("detailSub").textContent = [customer.phone, customer.email].filter(Boolean).join(" · ");
+  document.getElementById("detailMeta").textContent = customerDetailMetaLine(customer);
+  document.getElementById("detailHeaderBadges").innerHTML = `
+    <span class="badge">${escapeHtml(stageValue(customer))}</span>
+    <span class="badge ${statusBadgeClass(customer)}">${escapeHtml(statusValue(customer))}</span>
+    <span class="badge">${escapeHtml(priorityValue(customer))}</span>
+  `;
 
   document.getElementById("detailBody").innerHTML = `
-    <div class="detail-record-badges">
-      <span class="badge">${escapeHtml(stageValue(customer))}</span>
-      <span class="badge ${statusBadgeClass(customer)}">${escapeHtml(statusValue(customer))}</span>
-      <span class="badge">${escapeHtml(priorityValue(customer))}</span>
+    <div class="detail-action-primary" aria-label="Primary actions">
+      <button class="act-primary quick-action-btn" type="button" data-action="log_outreach">Outreach</button>
+      <button class="act-primary quick-action-btn" type="button" data-action="set_follow_up">Follow-Up</button>
+      ${fourthPrimaryAction}
+      <button class="act-primary quick-action-btn" type="button" data-action="add_note">Note</button>
+    </div>
+    <div class="detail-action-secondary detail-action-secondary-desktop" aria-label="Secondary actions">
+      <button class="act-secondary quick-action-btn" type="button" data-action="open_templates">Templates</button>
+      <button class="act-secondary quick-action-btn" type="button" data-action="mark_booked">Booked</button>
+    </div>
+    <div class="detail-action-danger" aria-label="Status actions">
+      <button class="act-quiet quick-action-btn" type="button" data-action="mark_ghosted">Ghosted</button>
+      <button class="act-danger quick-action-btn" type="button" data-action="do_not_contact">DNC</button>
     </div>
 
-    <div class="quick-actions" aria-label="Quick actions">
-      <button class="primary-btn quick-action-btn" type="button" data-action="log_outreach">Log Outreach</button>
-      <button class="primary-btn quick-action-btn" type="button" data-action="add_note">Add Note</button>
-      <button class="secondary-btn quick-action-btn" type="button" data-action="set_follow_up">Set Follow-Up</button>
-      <button class="secondary-btn quick-action-btn" type="button" data-action="open_templates">Templates</button>
-      <button class="secondary-btn quick-action-btn" type="button" data-action="mark_booked">Mark Booked</button>
-      <button class="quiet-btn quick-action-btn" type="button" data-action="mark_ghosted">Mark Ghosted</button>
-      <button class="danger-btn quick-action-btn" type="button" data-action="do_not_contact">Do Not Contact</button>
-    </div>
+    ${timelineBlock}
 
-    <p class="detail-section-label">Activity Timeline</p>
-    ${renderTimelineFeed(timelineEvents)}
-
-    <details class="detail-accordion" id="accordionTasks" open>
+    <details class="detail-accordion" id="accordionTasks" ${openTasks.length ? "open" : ""}>
       <summary>Tasks (${openTasks.length} open)</summary>
       <div class="detail-accordion-body">
         <div id="taskList">
           ${openTasks.length ? openTasks.map(task => `
             <div class="detail-item">
               <strong>${escapeHtml(task.task_type || "follow_up")}</strong>
-              <div>Due: ${escapeHtml(formatDate(task.due_at))}</div>
-              <div>Status: ${escapeHtml(task.status || "")}</div>
+              <div class="meta-text">Due ${escapeHtml(formatDate(task.due_at))} · ${escapeHtml(task.status || "")}</div>
               <div>${escapeHtml(task.notes || "")}</div>
-              <button class="primary-btn btn-action-primary complete-task-btn" type="button" data-task-id="${escapeHtml(task.id)}">Complete</button>
+              <button class="act-primary complete-task-btn" type="button" data-task-id="${escapeHtml(task.id)}">Complete</button>
             </div>
-          `).join("") : `<div class="muted">No open follow-up tasks.</div>`}
+          `).join("") : `<div class="meta-text">No open follow-up tasks.</div>`}
         </div>
         <form id="taskCreateForm" class="detail-form compact-form">
           <div>
@@ -4452,7 +4900,7 @@ function renderDetail(data, assignedTags) {
             <label for="taskNotes">Notes</label>
             <input id="taskNotes" name="notes" />
           </div>
-          <button class="primary-btn span-2" type="submit">Create Follow-Up Task</button>
+          <button class="act-primary span-2" type="submit">Create Task</button>
         </form>
       </div>
     </details>
@@ -4460,42 +4908,40 @@ function renderDetail(data, assignedTags) {
     <details class="detail-accordion" id="accordionNotes" ${notes ? "open" : ""}>
       <summary>Notes</summary>
       <div class="detail-accordion-body">
-        <div class="detail-item">${notes ? escapeHtml(notes) : `<span class="muted">No CRM notes yet.</span>`}</div>
+        <div class="detail-item">${notes ? escapeHtml(notes) : `<span class="meta-text">No CRM notes yet.</span>`}</div>
         <form id="notesForm" class="detail-form compact-form">
           <div class="span-2">
             <label for="detailNotesInput">Update Notes</label>
             <textarea id="detailNotesInput" name="crm_notes">${escapeHtml(notes)}</textarea>
           </div>
-          <button class="primary-btn span-2" type="submit">Save Notes</button>
+          <button class="act-primary span-2" type="submit">Save Notes</button>
         </form>
       </div>
     </details>
 
     <details class="detail-accordion">
-      <summary>CRM Profile</summary>
+      <summary>Profile</summary>
       <div class="detail-accordion-body">
-        <div class="detail-item"><strong>Stage:</strong> ${escapeHtml(profile.lifecycle_stage || customer.lifecycle_stage || "lead")}</div>
-        <div class="detail-item"><strong>Status:</strong> ${escapeHtml(profile.status || statusValue(customer))}</div>
-        <div class="detail-item"><strong>Priority:</strong> ${escapeHtml(profile.priority || priorityValue(customer))}</div>
-        <div class="detail-item"><strong>Company:</strong> ${escapeHtml(profile.company_name || customer.company_name || "")}</div>
-        <div class="detail-item"><strong>Customer Type:</strong> ${escapeHtml(profile.customer_type || "")}</div>
-        <div class="detail-item"><strong>Lead Source:</strong> ${escapeHtml(profile.lead_source || "")}</div>
-        <div class="detail-item"><strong>Preferred Contact:</strong> ${escapeHtml(profile.preferred_contact_method || "")}</div>
-        <div class="detail-item"><strong>Total Revenue:</strong> ${escapeHtml(formatMoney(customer.total_revenue))}</div>
-        <div class="detail-item"><strong>Address:</strong> ${escapeHtml(customer.address || "Not set")}</div>
+        <div class="detail-item"><span class="meta-text">Stage</span> ${escapeHtml(profile.lifecycle_stage || customer.lifecycle_stage || "lead")}</div>
+        <div class="detail-item"><span class="meta-text">Status</span> ${escapeHtml(profile.status || statusValue(customer))}</div>
+        <div class="detail-item"><span class="meta-text">Priority</span> ${escapeHtml(profile.priority || priorityValue(customer))}</div>
+        <div class="detail-item"><span class="meta-text">Company</span> ${escapeHtml(profile.company_name || customer.company_name || "—")}</div>
+        <div class="detail-item"><span class="meta-text">Source</span> ${escapeHtml(profile.lead_source || "—")}</div>
+        <div class="detail-item"><span class="meta-text">Revenue</span> ${escapeHtml(formatMoney(customer.total_revenue))}</div>
+        <div class="detail-item"><span class="meta-text">Address</span> ${escapeHtml(customer.address || "Not set")}</div>
       </div>
     </details>
 
     <details class="detail-accordion" id="accordionOutreach">
-      <summary>Outreach History</summary>
+      <summary>Outreach Log</summary>
       <div class="detail-accordion-body">
         ${outreachLogs.slice(0, 8).map(log => `
           <div class="detail-item">
-            <strong>${escapeHtml(log.method || "")}</strong> - ${escapeHtml(formatDate(log.contacted_at))}
+            <strong>${escapeHtml(log.method || "")}</strong>
+            <div class="meta-text">${escapeHtml(formatDate(log.contacted_at))}</div>
             <div>${escapeHtml(log.message_summary || "")}</div>
-            <div>${escapeHtml(log.response_status || "")}</div>
           </div>
-        `).join("") || `<div class="muted">No outreach logged.</div>`}
+        `).join("") || `<div class="meta-text">No outreach logged.</div>`}
         <form id="outreachForm" class="detail-form compact-form">
           <div>
             <label for="outreachMethod">Method</label>
@@ -4531,21 +4977,20 @@ function renderDetail(data, assignedTags) {
             <label for="responseNotes">Response Notes</label>
             <textarea id="responseNotes" name="response_notes"></textarea>
           </div>
-          <button class="primary-btn span-2" type="submit">Log Outreach</button>
+          <button class="act-primary span-2" type="submit">Log Outreach</button>
         </form>
       </div>
     </details>
 
     <details class="detail-accordion">
-      <summary>Booking History</summary>
+      <summary>Bookings (${bookings.length})</summary>
       <div class="detail-accordion-body">
         ${bookings.slice(0, 8).map(booking => `
           <div class="detail-item">
             <strong>${escapeHtml(formatDate(booking.scheduled_start))}</strong>
-            <div>Status: ${escapeHtml(booking.status || "")}</div>
-            <div>Total: ${escapeHtml(booking.total_price ?? "")}</div>
+            <div class="meta-text">${escapeHtml(booking.status || "")}${booking.total_price != null ? ` · ${escapeHtml(formatMoney(booking.total_price))}` : ""}</div>
           </div>
-        `).join("") || `<div class="muted">No bookings yet.</div>`}
+        `).join("") || `<div class="meta-text">No bookings yet.</div>`}
       </div>
     </details>
 
@@ -4553,7 +4998,7 @@ function renderDetail(data, assignedTags) {
       <summary>Tags</summary>
       <div class="detail-accordion-body">
         <div class="detail-item">
-          ${(assignedTags || []).length ? assignedTags.map(tag => `<span class="badge">${escapeHtml(tag.name)}</span>`).join(" ") : `<span class="muted">No tags assigned.</span>`}
+          ${(assignedTags || []).length ? assignedTags.map(tag => `<span class="badge">${escapeHtml(tag.name)}</span>`).join(" ") : `<span class="meta-text">No tags assigned.</span>`}
         </div>
         <form id="tagAssignForm" class="detail-form">
           <div>
@@ -4567,7 +5012,7 @@ function renderDetail(data, assignedTags) {
             <label for="newTagName">New Tag</label>
             <input id="newTagName" name="name" placeholder="optional" />
           </div>
-          <button class="secondary-btn span-2" type="submit">Create/Assign Tag</button>
+          <button class="act-secondary span-2" type="submit">Assign Tag</button>
         </form>
       </div>
     </details>
@@ -4635,6 +5080,10 @@ function wireDetailForms() {
         const notes = document.getElementById("accordionNotes");
         notes?.setAttribute("open", "");
         document.getElementById("detailNotesInput")?.focus();
+        return;
+      }
+      if (action === "send_email") {
+        switchTab("templates");
         return;
       }
       if (action === "open_templates") {
@@ -4790,6 +5239,7 @@ async function bootCrmApp() {
     setDetailPanelOpen(false);
     renderTabHeader();
     await loadCustomers();
+    syncMobileNav(state.activeTab);
   } catch (err) {
     toast(err.message || "CRM failed to load", true);
   }
@@ -4807,7 +5257,21 @@ document.getElementById("crmNav").addEventListener("click", (event) => {
   switchTab(button.dataset.tab);
 });
 
-document.getElementById("navMenuBtn")?.addEventListener("click", openNavDrawer);
+document.getElementById("crmMobileNav")?.addEventListener("click", (event) => {
+  const button = event.target.closest(".crm-mobile-nav-item");
+  if (!button) return;
+  const key = button.dataset.mobileTab;
+  if (key === "add-lead") {
+    mobileAddLead();
+    return;
+  }
+  if (key === "more") {
+    openNavDrawer(true);
+    return;
+  }
+  switchTab(key);
+});
+
 document.getElementById("navBackdrop")?.addEventListener("click", closeNavDrawer);
 
 document.getElementById("refreshBtn").addEventListener("click", () => {

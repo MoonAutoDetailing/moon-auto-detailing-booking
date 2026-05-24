@@ -72,9 +72,12 @@ h1 { margin-bottom: 10px; }
 .label { font-weight: 600; }
 .actions button {
 margin-right: 8px;
-padding: 8px 12px;
-font-weight: 700;
+padding: 5px 12px;
+font-weight: 600;
 cursor: pointer;
+min-height: 32px;
+font-size: 12px;
+border-radius: 8px;
 }
 .admin-reschedule-panel {
   margin-top: 12px;
@@ -120,9 +123,9 @@ cursor: pointer;
 .admin-reschedule-panel .admin-reschedule-actions button {
   min-height: 42px;
 }
-.confirm { background: #0a7a2f; color: white; border: none; }
-.cancel { background: #b00020; color: white; border: none; }
-.delay { background: #666; color: white; border: none; }
+.confirm { background: var(--moon-primary); color: #07111d; border: none; font-weight: 700; }
+.cancel { background: transparent; color: #ff9a9a; border: 1px solid rgba(176,0,32,0.5); }
+.delay { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.88); border: 1px solid rgba(255,255,255,0.14); }
      
      #watermarkLogo {
   position: fixed;
@@ -239,20 +242,20 @@ cursor: pointer;
      #viewButtons {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 14px;
-  margin-top: 70px; /* pushes below toggle button */
-  margin-bottom: 30px;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-top: 0;
+  margin-bottom: 0;
 }
 /* ===== TOP BAR ===== */
 #topBar {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 56px;
-  margin-bottom: 24px;
+  gap: 10px;
+  margin-top: 0;
+  margin-bottom: 12px;
 }
 
 #viewButtons {
@@ -315,43 +318,10 @@ cursor: pointer;
 .admin-menu-icon::before { top: -5px; }
 .admin-menu-icon::after { top: 5px; }
 
-/* Fixed top-right utility stack: Logout on top, Refresh below */
+/* Fixed top-right utility stack — legacy; header actions used instead */
 .admin-top-utility {
-  position: fixed;
-  top: 16px;
-  right: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  z-index: 100;
-}
-.admin-top-utility #backToPortalBtn,
-.admin-top-utility #logoutBtn,
-.admin-top-utility #refreshNow {
-  padding: 6px 12px;
-  font-size: 13px;
-  min-height: 36px;
-  border-radius: 8px;
-  font-weight: 600;
-  cursor: pointer;
-}
-.admin-top-utility #backToPortalBtn,
-.admin-top-utility #logoutBtn {
-  background: transparent;
-  border: 1px solid rgba(255,255,255,0.25);
-  color: white;
-}
-.admin-top-utility #backToPortalBtn:hover,
-.admin-top-utility #logoutBtn:hover {
-  background: rgba(255,255,255,0.08);
-}
-.admin-top-utility #refreshNow {
-  background: var(--moon-primary);
-  color: white;
-  border: none;
-}
-.admin-top-utility #refreshNow:hover {
-  background: var(--moon-primary-dark);
+  position: static;
+  display: none;
 }
 
 /* Dropdown (menu content): hidden by default, shown when .open */
@@ -1076,19 +1046,46 @@ cursor: pointer;
 }
 
 @media (max-width: 640px) {
-  body { padding: 12px; }
-  #topBar {
-    display: flex;
+  body { padding: 10px; overflow-x: hidden; }
+  #pageOverlay { padding: 0; }
+  #bookingAdminSection.open { padding-top: 0; }
+  .booking-app-header {
     flex-direction: column;
     align-items: stretch;
-    gap: 12px;
-    margin-top: 20px;
-    margin-bottom: 16px;
+    gap: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+  .app-header-brand h1 {
+    font-size: 18px;
+  }
+  .app-header-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    width: 100%;
+  }
+  .app-header-actions button {
+    min-height: 44px;
+    padding: 8px 6px;
+    font-size: 11px;
+    width: 100%;
+  }
+  #topBar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-top: 0;
+    margin-bottom: 10px;
+    padding: 8px 10px;
   }
   #topBarRow1 {
     display: flex;
     justify-content: flex-start;
     align-items: center;
+    flex-shrink: 0;
   }
   .admin-menu-btn {
     min-width: 44px;
@@ -1100,21 +1097,19 @@ cursor: pointer;
   .admin-gateway-option { min-height: 150px; }
   #topBarPrimary {
     display: flex;
-    justify-content: center;
+    justify-content: flex-end;
+    flex: 1;
+    min-width: 0;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
   }
   #topBarPrimary #viewButtons {
     display: flex;
-    justify-content: center;
+    justify-content: flex-end;
     flex-wrap: wrap;
-    gap: 8px;
+    gap: 6px;
   }
-  #topBarPrimary #viewButtons .moon-tab { min-height: 44px; padding: 8px 12px; font-size: 13px; }
-  .admin-top-utility { top: 12px; right: 12px; gap: 6px; }
-  .admin-top-utility #backToPortalBtn,
-  .admin-top-utility #logoutBtn,
-  .admin-top-utility #refreshNow { min-height: 44px; }
+  #topBarPrimary #viewButtons .moon-tab { min-height: 40px; padding: 6px 10px; font-size: 12px; }
   .moon-tab { margin-bottom: 0; }
   .card { padding: 10px 12px; margin-top: 8px; }
   .card.expanded { padding: 12px 14px; }
@@ -1480,40 +1475,332 @@ body {
 }
 
 .booking-view-toolbar {
-  margin-bottom: 14px;
+  margin-bottom: 10px;
+}
+
+.card .booking-header {
+  display: grid;
+  gap: 4px;
+}
+
+/* === Interaction hierarchy (desktop admin) === */
+:root {
+  --act-h: 32px;
+  --act-radius: 8px;
+  --text-meta: rgba(255, 255, 255, 0.58);
+  --sep: rgba(255, 255, 255, 0.08);
+}
+
+#viewButtons .moon-tab {
+  min-height: var(--act-h);
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.82);
+  box-shadow: none;
+  margin-right: 0;
+}
+
+#viewButtons .moon-tab.active,
+#viewButtons .moon-tab[data-view="pending"].active {
+  background: var(--moon-primary);
+  color: #07111d;
+  font-weight: 700;
+  box-shadow: none;
+}
+
+#viewButtons .moon-tab:hover {
+  background: rgba(127, 184, 230, 0.18);
+}
+
+#viewButtons .moon-tab.active:hover {
+  background: var(--moon-primary-dark);
+  color: #fff;
+}
+
+.secondary-btn,
+#refreshNow,
+#backToPortalBtn,
+#logoutBtn,
+#portalLogoutBtn {
+  min-height: var(--act-h);
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--act-radius);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.88);
+  box-shadow: none;
+}
+
+.card {
+  padding: 8px 12px;
+  margin-top: 6px;
+  border-radius: 10px;
+  border-color: rgba(127, 184, 230, 0.14);
+  background: rgba(18, 32, 48, 0.72);
+  box-shadow: none;
+}
+
+.card:hover {
+  background: rgba(22, 38, 56, 0.82);
+  transform: none;
+}
+
+.card.expanded {
+  padding: 10px 12px;
+  background: rgba(17, 35, 54, 0.88);
+  border-color: rgba(127, 184, 230, 0.22);
+  box-shadow: none;
+}
+
+.card.expanded .booking-content {
+  padding-top: 8px;
+  margin-top: 8px;
+}
+
+.booking-summary-line {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.booking-meta-line {
+  font-size: 12px;
+  color: var(--text-meta);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--sep);
+}
+
+.actions button {
+  margin-right: 0;
+  min-height: var(--act-h);
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--act-radius);
 }
 
 .actions button.confirm {
   background: var(--moon-primary);
   color: #07111d;
-  font-weight: 800;
+  font-weight: 700;
+  border: none;
+}
+
+.actions button.confirm:hover {
+  background: var(--moon-primary-dark);
+  color: #fff;
 }
 
 .actions button.cancel {
-  background: #b00020;
-  color: #fff;
+  background: transparent;
+  border: 1px solid rgba(176, 0, 32, 0.5);
+  color: #ff9a9a;
+  margin-left: auto;
+}
+
+.actions button.cancel:hover {
+  background: rgba(176, 0, 32, 0.18);
 }
 
 .actions button.delay,
 .actions button:not(.confirm):not(.cancel) {
-  background: rgba(255, 255, 255, 0.08);
-  color: white;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
-.card .booking-header {
-  display: grid;
-  gap: 6px;
+.admin-top-utility button,
+.admin-reschedule-panel .admin-reschedule-actions button {
+  min-height: var(--act-h);
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: var(--act-radius);
 }
 
-.booking-summary-line {
+.admin-reschedule-panel {
+  margin-top: 8px;
+  padding: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+#topBar {
+  padding: 8px 10px;
+  border-radius: 12px;
+}
+
+.app-header {
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+}
+
+.app-header h1 {
+  font-size: 20px;
+}
+
+.day h2 {
   font-size: 15px;
-  font-weight: 700;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
 }
 
-.booking-meta-line {
+/* === Shared action hierarchy (admin + CRM language) === */
+:root {
+  --act-h: 32px;
+  --act-h-mobile: 44px;
+  --act-radius: 8px;
+  --text-meta: rgba(255, 255, 255, 0.58);
+  --sep: rgba(255, 255, 255, 0.08);
+}
+
+.act-primary,
+#loginButton,
+.admin-gateway-option::after {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--act-h);
+  padding: 5px 14px;
+  border: none;
+  border-radius: var(--act-radius);
+  background: var(--moon-primary);
+  color: #07111d;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.72);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  box-shadow: none;
+}
+
+.act-primary:hover,
+#loginButton:hover {
+  background: var(--moon-primary-dark);
+  color: #fff;
+}
+
+.act-secondary,
+.secondary-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--act-h);
+  padding: 5px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--act-radius);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.88);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.act-secondary:hover,
+.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.act-quiet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--act-h);
+  padding: 5px 12px;
+  border: 1px solid rgba(127, 184, 230, 0.18);
+  border-radius: 999px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.act-quiet:hover {
+  background: rgba(127, 184, 230, 0.1);
+}
+
+.act-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--act-h);
+  padding: 5px 12px;
+  border: 1px solid rgba(176, 0, 32, 0.45);
+  border-radius: var(--act-radius);
+  background: rgba(176, 0, 32, 0.12);
+  color: #ff9a9a;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: none;
+}
+
+.act-danger:hover {
+  background: rgba(176, 0, 32, 0.24);
+  color: #fff;
+}
+
+#loginButton.act-primary {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 4px;
+  box-shadow: none;
+}
+
+#loginPassword {
+  min-height: 44px;
+  margin-bottom: 10px;
+}
+
+#portalLogoutBtn.act-danger {
+  margin-top: 18px;
+}
+
+.admin-gateway-card {
+  padding: 28px 24px;
+}
+
+.admin-gateway-option {
+  min-height: 200px;
+  padding: 22px;
+  border-radius: 16px;
+}
+
+.booking-app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+@media (max-width: 640px) {
+  .act-primary,
+  .act-secondary,
+  .act-quiet,
+  .act-danger,
+  #loginButton {
+    min-height: var(--act-h-mobile);
+  }
+  .app-header-actions .act-secondary,
+  .app-header-actions .act-quiet,
+  .app-header-actions .act-danger {
+    min-height: var(--act-h-mobile);
+  }
 }
 
 </style>
@@ -1572,7 +1859,7 @@ style="
 />
 
 
-    <button id="loginButton" type="submit">Unlock Admin Portal</button>
+    <button id="loginButton" class="act-primary" type="submit">Unlock Admin Portal</button>
 
     <div id="loginError">Wrong password</div>
   </form>
@@ -1597,7 +1884,7 @@ style="
           <p>Desktop workspace for today&apos;s queue, customers, pipeline, tasks, and follow-ups.</p>
         </a>
       </div>
-      <button id="portalLogoutBtn" class="secondary-btn" type="button" style="margin-top:22px;">Logout</button>
+      <button id="portalLogoutBtn" class="act-danger" type="button">Logout</button>
     </div>
   </section>
 
@@ -1608,9 +1895,9 @@ style="
         <h1>Booking Operations</h1>
       </div>
       <div class="app-header-actions">
-        <button id="backToPortalBtn" class="secondary-btn" type="button">Back to Portal</button>
-        <button id="logoutBtn" class="secondary-btn" type="button">Logout</button>
-        <button id="refreshNow" class="secondary-btn" type="button">Refresh</button>
+        <button id="backToPortalBtn" class="act-secondary" type="button">Back to Portal</button>
+        <button id="refreshNow" class="act-quiet" type="button">Refresh</button>
+        <button id="logoutBtn" class="act-danger" type="button">Logout</button>
       </div>
     </header>
 
