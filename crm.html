@@ -2609,6 +2609,7 @@ a.mobile-top-chip {
   }
 
   .crm-app {
+    display: block;
     grid-template-columns: 1fr;
   }
 
@@ -2618,6 +2619,7 @@ a.mobile-top-chip {
 
   .crm-body {
     padding-bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    min-height: 100vh;
   }
 
   #navMenuBtn {
@@ -2703,25 +2705,37 @@ a.mobile-top-chip {
   }
 
   .crm-workspace {
-    grid-template-columns: 1fr;
+    display: block;
+    flex: 1;
+    min-height: 0;
   }
 
   .crm-main {
     max-height: none;
-    padding: 8px 10px;
+    min-height: calc(100vh - 44px - 56px - env(safe-area-inset-bottom, 0px));
+    padding: 8px 10px 12px;
     overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .crm-tab-panel.active {
+    display: block;
   }
 
   .crm-detail-column {
     display: block;
     position: static;
+    height: 0;
+    overflow: visible;
     max-height: none;
     min-height: 0;
     border-left: none;
+    background: transparent;
   }
 
-  .crm-detail-column:not(.panel-visible) {
-    display: none;
+  .crm-detail-column:not(.panel-visible) #detailPanel {
+    display: none !important;
   }
 
   #detailPanel.detail-panel {
@@ -2763,6 +2777,33 @@ a.mobile-top-chip {
   .sticky-customer-toolbar {
     position: sticky;
     top: 0;
+    z-index: 5;
+    background: rgba(11, 16, 24, 0.96);
+    padding-bottom: 4px;
+  }
+
+  body.crm-mobile-lead-mode #tabCustomers.active .sticky-customer-toolbar,
+  body.crm-mobile-lead-mode #tabCustomers.active #crmSections,
+  body.crm-mobile-lead-mode #tabCustomers.active #listStatus,
+  body.crm-mobile-lead-mode #tabCustomers.active .segment-chips {
+    display: none !important;
+  }
+
+  body.crm-mobile-lead-mode #tabCustomers.active #leadFormCollapse {
+    display: block;
+    margin-top: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  body.crm-mobile-lead-mode #leadFormCollapse summary {
+    display: none;
+  }
+
+  body.crm-mobile-lead-mode #leadFormCollapse .lead-form-card {
+    display: block;
+    padding: 0;
   }
 
   .customer-row {
@@ -2770,6 +2811,13 @@ a.mobile-top-chip {
     gap: 4px;
     min-height: 44px;
     padding: 8px 6px;
+  }
+
+  .customer-row .row-contact-phone,
+  .customer-row .row-contact-email {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.72);
+    line-height: 1.35;
   }
 
   .customer-row .row-revenue {
@@ -2782,6 +2830,17 @@ a.mobile-top-chip {
 
   #closeDetailBtn {
     min-height: var(--act-h-mobile);
+  }
+
+  .mobile-today-block {
+    margin-bottom: 12px;
+  }
+
+  .mobile-today-block h3 {
+    margin: 0 0 6px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--moon-primary);
   }
 
   .crm-tab-panel[data-mobile-secondary="true"]:not(.active) {
@@ -2823,6 +2882,66 @@ a.mobile-top-chip {
   color: #fff;
 }
 
+.crm-mobile-more-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 70;
+}
+
+.crm-mobile-more-backdrop.open {
+  display: block;
+}
+
+.crm-mobile-more-menu {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+  z-index: 75;
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--sep);
+  border-radius: 16px 16px 0 0;
+  background: rgba(8, 14, 22, 0.98);
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
+}
+
+.crm-mobile-more-menu.open {
+  display: block;
+}
+
+.crm-mobile-more-header {
+  padding: 4px 4px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.crm-mobile-more-item {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  border: 1px solid rgba(127, 184, 230, 0.18);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.crm-mobile-more-item:last-child {
+  margin-bottom: 0;
+}
+
 @media (min-width: 921px) {
   .crm-nav-item.crm-nav-more-item {
     display: flex;
@@ -2840,6 +2959,10 @@ a.mobile-top-chip {
 }
 
 @media (max-width: 920px) {
+  #toggleLeadFormBtn {
+    display: none;
+  }
+
   .crm-nav-list .crm-nav-more-item {
     display: none;
   }
@@ -2922,14 +3045,6 @@ a.mobile-top-chip {
         </div>
       </div>
     </header>
-
-    <nav class="crm-mobile-nav" id="crmMobileNav" aria-label="Mobile CRM navigation">
-      <button type="button" class="crm-mobile-nav-item active" data-mobile-tab="today">Today</button>
-      <button type="button" class="crm-mobile-nav-item" data-mobile-tab="customers">Search</button>
-      <button type="button" class="crm-mobile-nav-item" data-mobile-tab="add-lead">Add Lead</button>
-      <button type="button" class="crm-mobile-nav-item" data-mobile-tab="tasks">Tasks</button>
-      <button type="button" class="crm-mobile-nav-item" data-mobile-tab="more">More</button>
-    </nav>
 
     <div class="crm-workspace">
       <main class="crm-main">
@@ -3135,6 +3250,23 @@ a.mobile-top-chip {
           </div>
         </section>
       </aside>
+    </div>
+
+    <nav class="crm-mobile-nav" id="crmMobileNav" aria-label="Mobile CRM navigation">
+      <button type="button" class="crm-mobile-nav-item active" data-mobile-tab="today">Today</button>
+      <button type="button" class="crm-mobile-nav-item" data-mobile-tab="customers">Search</button>
+      <button type="button" class="crm-mobile-nav-item" data-mobile-tab="add-lead">Add Lead</button>
+      <button type="button" class="crm-mobile-nav-item" data-mobile-tab="tasks">Tasks</button>
+      <button type="button" class="crm-mobile-nav-item" data-mobile-tab="more">More</button>
+    </nav>
+
+    <div id="crmMobileMoreBackdrop" class="crm-mobile-more-backdrop" aria-hidden="true"></div>
+    <div id="crmMobileMoreMenu" class="crm-mobile-more-menu" aria-hidden="true" role="dialog" aria-label="More CRM tools">
+      <div class="crm-mobile-more-header">More</div>
+      <button type="button" class="crm-mobile-more-item" data-mobile-more-tab="templates">Templates</button>
+      <button type="button" class="crm-mobile-more-item" data-mobile-more-tab="pipeline">Pipeline</button>
+      <button type="button" class="crm-mobile-more-item" data-mobile-more-tab="analytics">Analytics</button>
+      <button type="button" class="crm-mobile-more-item" data-mobile-more-tab="cleanup">Data Cleanup</button>
     </div>
   </div>
 </div>
@@ -3421,11 +3553,14 @@ function renderTemplates() {
   const canSendEmail = hasPreview && email && !customerBlocksEmail();
 
   if (hint) {
+    const mobileHint = isMobileCrmView()
+      ? "Search or open a customer to preview personalized copy."
+      : "Select a customer in the right panel to preview personalized copy and send one email at a time.";
     hint.innerHTML = hasPreview
       ? (email
         ? `Previewing messages for <strong>${escapeHtml(customerName(row))}</strong> (${escapeHtml(email)}). Edit the subject before sending if needed.`
-        : `Previewing for <strong>${escapeHtml(customerName(row))}</strong>, but no email is on file — copy only.`)
-      : "Select a customer in the right panel to preview personalized copy and send one email at a time.";
+        : `Previewing for <strong>${escapeHtml(customerName(row))}</strong> — <strong>No email on file</strong> (copy only).`)
+      : mobileHint;
   }
 
   grid.innerHTML = MESSAGE_TEMPLATES.map((template) => {
@@ -3440,7 +3575,7 @@ function renderTemplates() {
         </div>
       ` : "";
     const sendNote = hasPreview && !email
-      ? `<p class="template-send-note">Add an email to this customer to send from CRM.</p>`
+      ? `<p class="template-send-note">No email on file — copy only.</p>`
       : (hasPreview && customerBlocksEmail()
         ? `<p class="template-send-note">Do not contact — email sending disabled.</p>`
         : "");
@@ -3497,7 +3632,8 @@ const state = {
   duplicatesLoaded: false,
   customerSegment: "all",
   todayQueue: null,
-  tasksQueue: null
+  tasksQueue: null,
+  mobileLeadMode: false
 };
 
 let searchDebounceTimer = null;
@@ -3781,8 +3917,55 @@ function openNavDrawer(showMore = false) {
   document.getElementById("navBackdrop")?.classList.add("open");
 }
 
+function closeMobileMore() {
+  document.getElementById("crmMobileMoreBackdrop")?.classList.remove("open");
+  document.getElementById("crmMobileMoreMenu")?.classList.remove("open");
+  document.getElementById("crmMobileMoreBackdrop")?.setAttribute("aria-hidden", "true");
+  document.getElementById("crmMobileMoreMenu")?.setAttribute("aria-hidden", "true");
+}
+
+function openMobileMore() {
+  document.getElementById("crmMobileMoreBackdrop")?.classList.add("open");
+  document.getElementById("crmMobileMoreMenu")?.classList.add("open");
+  document.getElementById("crmMobileMoreBackdrop")?.setAttribute("aria-hidden", "false");
+  document.getElementById("crmMobileMoreMenu")?.setAttribute("aria-hidden", "false");
+}
+
 function isMobileCrmView() {
   return window.matchMedia("(max-width: 920px)").matches;
+}
+
+function scrollCrmMainToTop() {
+  const mainEl = document.querySelector(".crm-main");
+  if (mainEl) mainEl.scrollTop = 0;
+}
+
+function setMobileLeadMode(enabled) {
+  state.mobileLeadMode = enabled;
+  document.body.classList.toggle("crm-mobile-lead-mode", enabled);
+  if (enabled) {
+    const leadForm = document.getElementById("leadFormCollapse");
+    if (leadForm) leadForm.open = true;
+  }
+}
+
+function assertMobileView(viewKey) {
+  if (!isMobileCrmView() || !window.__crmMobileDebug) return;
+  const checks = {
+    today: () => document.getElementById("tabToday")?.classList.contains("active"),
+    customers: () => document.getElementById("tabCustomers")?.classList.contains("active") && !state.mobileLeadMode,
+    "add-lead": () => document.getElementById("tabCustomers")?.classList.contains("active") && state.mobileLeadMode,
+    tasks: () => document.getElementById("tabTasks")?.classList.contains("active"),
+    templates: () => document.getElementById("tabTemplates")?.classList.contains("active"),
+    pipeline: () => document.getElementById("tabPipeline")?.classList.contains("active"),
+    analytics: () => document.getElementById("tabAnalytics")?.classList.contains("active"),
+    cleanup: () => document.getElementById("tabCleanup")?.classList.contains("active"),
+    more: () => document.getElementById("crmMobileMoreMenu")?.classList.contains("open")
+  };
+  const ok = checks[viewKey]?.();
+  if (ok === false) {
+    console.warn("[CRM mobile] view check failed:", viewKey);
+  }
 }
 
 function syncMobileNav(tab) {
@@ -3791,22 +3974,60 @@ function syncMobileNav(tab) {
   const moreTabs = ["pipeline", "templates", "analytics", "cleanup"];
   el.querySelectorAll(".crm-mobile-nav-item").forEach((btn) => {
     const key = btn.dataset.mobileTab;
-    if (key === "more") btn.classList.toggle("active", moreTabs.includes(tab));
-    else if (key === "add-lead") btn.classList.remove("active");
-    else btn.classList.toggle("active", key === tab);
+    if (key === "more") {
+      btn.classList.toggle("active", moreTabs.includes(tab) || document.getElementById("crmMobileMoreMenu")?.classList.contains("open"));
+    } else if (key === "add-lead") {
+      btn.classList.toggle("active", state.mobileLeadMode);
+    } else if (key === "customers") {
+      btn.classList.toggle("active", tab === "customers" && !state.mobileLeadMode);
+    } else {
+      btn.classList.toggle("active", key === tab && !state.mobileLeadMode);
+    }
   });
 }
 
-function mobileAddLead() {
-  switchTab("customers");
-  const leadForm = document.getElementById("leadFormCollapse");
-  if (leadForm) {
-    leadForm.open = true;
-    leadForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
+function switchMobileSection(key) {
+  if (!isMobileCrmView()) {
+    if (key === "add-lead") mobileAddLead();
+    else if (key === "more") openNavDrawer(true);
+    else switchTab(key);
+    return;
   }
+
+  closeMobileMore();
+  closeNavDrawer();
+
+  if (key === "more") {
+    openMobileMore();
+    syncMobileNav(state.activeTab);
+    assertMobileView("more");
+    return;
+  }
+
+  if (key === "add-lead") {
+    setMobileLeadMode(true);
+    switchTab("customers");
+    syncMobileNav("add-lead");
+    scrollCrmMainToTop();
+    assertMobileView("add-lead");
+    return;
+  }
+
+  setMobileLeadMode(false);
+  switchTab(key === "customers" ? "customers" : key);
+  syncMobileNav(state.activeTab);
+  scrollCrmMainToTop();
+  assertMobileView(key);
+}
+
+function mobileAddLead() {
+  switchMobileSection("add-lead");
 }
 
 function switchTab(tab) {
+  if (tab !== "customers") {
+    setMobileLeadMode(false);
+  }
   state.activeTab = tab;
   document.querySelectorAll(".crm-tab, .crm-nav-item").forEach((btn) => {
     btn.classList.toggle("active", btn.dataset.tab === tab);
@@ -3819,6 +4040,7 @@ function switchTab(tab) {
   renderActiveTab();
   syncMobileNav(tab);
   closeNavDrawer();
+  closeMobileMore();
   if (tab === "analytics" && !state.analyticsLoaded) loadAnalytics();
   if (tab === "cleanup" && !state.duplicatesLoaded) loadDuplicates();
 }
@@ -4296,6 +4518,7 @@ function renderQueueRow(row, options = {}) {
   const overdue = options.overdue || isOverdueFollowUp(row);
   const priority = priorityValue(row);
   const showSnooze = options.showSnooze !== false && hasOpenFollowUp(row);
+  const openLabel = isMobileCrmView() ? "Open Customer" : "Open";
   return `
     <article class="queue-row ${overdue ? "overdue" : ""}">
       <div class="queue-row-main">
@@ -4309,7 +4532,7 @@ function renderQueueRow(row, options = {}) {
       </div>
       <div class="queue-row-actions">
         <button class="act-primary queue-complete-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
-        <button class="act-secondary queue-open-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Open</button>
+        <button class="act-secondary queue-open-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">${escapeHtml(openLabel)}</button>
         ${showSnooze ? `<button class="act-quiet queue-snooze-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Snooze</button>` : ""}
         <button class="act-quiet queue-log-outreach-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Outreach</button>
       </div>
@@ -4359,30 +4582,84 @@ function renderActivitySection(rows) {
 function renderToday() {
   if (!state.todayQueue) state.todayQueue = resolveDefaultTodayQueue();
 
-  const queues = [
-    { id: "today", label: "Today" },
-    { id: "overdue", label: "Overdue" },
-    { id: "due_today", label: "Due Today" },
-    { id: "upcoming", label: "Upcoming" },
-    { id: "done", label: "Done" }
-  ];
-
-  renderQueuePills("todayQueuePills", queues, state.todayQueue, (queueId) => {
-    state.todayQueue = queueId;
-    renderToday();
-  }, (queueId) => getTodayQueueRows(queueId).length);
-
-  const rows = getTodayQueueRows(state.todayQueue).sort((a, b) => {
-    const aDue = new Date(a.next_follow_up_at || 0).getTime();
-    const bDue = new Date(b.next_follow_up_at || 0).getTime();
-    if (state.todayQueue === "overdue" || state.todayQueue === "due_today") return aDue - bDue;
-    return customerName(a).localeCompare(customerName(b));
-  });
-
   const container = document.getElementById("todaySections");
-  container.innerHTML = renderActiveQueueList(rows, { overdue: state.todayQueue === "overdue", showSnooze: state.todayQueue !== "done" });
-  bindCustomerCards(container);
-  renderOperationalActivityFeed();
+  const pillsEl = document.getElementById("todayQueuePills");
+
+  if (isMobileCrmView()) {
+    const sortByDue = (a, b) => new Date(a.next_follow_up_at || 0).getTime() - new Date(b.next_follow_up_at || 0).getTime();
+    const overdueRows = getTodayQueueRows("overdue").sort(sortByDue);
+    const dueTodayRows = getTodayQueueRows("due_today").sort(sortByDue);
+    const blocks = [];
+
+    if (overdueRows.length) {
+      blocks.push(`
+        <section class="mobile-today-block">
+          <h3>Overdue (${overdueRows.length})</h3>
+          ${renderActiveQueueList(overdueRows, { overdue: true })}
+        </section>
+      `);
+    }
+    if (dueTodayRows.length) {
+      blocks.push(`
+        <section class="mobile-today-block">
+          <h3>Due Today (${dueTodayRows.length})</h3>
+          ${renderActiveQueueList(dueTodayRows, { overdue: false })}
+        </section>
+      `);
+    }
+    if (!blocks.length) {
+      blocks.push(`<div class="muted" style="padding:8px 2px;">No overdue or due-today follow-ups.</div>`);
+    }
+
+    const extraQueues = [
+      { id: "upcoming", label: "Upcoming" },
+      { id: "done", label: "Done" }
+    ];
+    renderQueuePills("todayQueuePills", extraQueues, state.todayQueue, (queueId) => {
+      state.todayQueue = queueId;
+      renderToday();
+    }, (queueId) => getTodayQueueRows(queueId).length);
+
+    if (state.todayQueue === "upcoming" || state.todayQueue === "done") {
+      const extraRows = getTodayQueueRows(state.todayQueue).sort((a, b) => customerName(a).localeCompare(customerName(b)));
+      blocks.push(`
+        <section class="mobile-today-block">
+          <h3>${state.todayQueue === "upcoming" ? "Upcoming" : "Done"} (${extraRows.length})</h3>
+          ${renderActiveQueueList(extraRows, { overdue: false, showSnooze: state.todayQueue !== "done" })}
+        </section>
+      `);
+    } else if (pillsEl) {
+      pillsEl.querySelectorAll(".queue-pill").forEach((pill) => pill.classList.remove("active"));
+    }
+
+    container.innerHTML = blocks.join("");
+    bindCustomerCards(container);
+    renderOperationalActivityFeed();
+  } else {
+    const queues = [
+      { id: "today", label: "Today" },
+      { id: "overdue", label: "Overdue" },
+      { id: "due_today", label: "Due Today" },
+      { id: "upcoming", label: "Upcoming" },
+      { id: "done", label: "Done" }
+    ];
+
+    renderQueuePills("todayQueuePills", queues, state.todayQueue, (queueId) => {
+      state.todayQueue = queueId;
+      renderToday();
+    }, (queueId) => getTodayQueueRows(queueId).length);
+
+    const rows = getTodayQueueRows(state.todayQueue).sort((a, b) => {
+      const aDue = new Date(a.next_follow_up_at || 0).getTime();
+      const bDue = new Date(b.next_follow_up_at || 0).getTime();
+      if (state.todayQueue === "overdue" || state.todayQueue === "due_today") return aDue - bDue;
+      return customerName(a).localeCompare(customerName(b));
+    });
+
+    container.innerHTML = renderActiveQueueList(rows, { overdue: state.todayQueue === "overdue", showSnooze: state.todayQueue !== "done" });
+    bindCustomerCards(container);
+    renderOperationalActivityFeed();
+  }
 
   const overdueCount = state.customers.filter(isOverdueFollowUp).length;
   const dueTodayCount = state.customers.filter(isDueToday).length;
@@ -4408,7 +4685,8 @@ function renderCustomerRow(row) {
         <span class="badge">${escapeHtml(priority)}</span>
       </div>
       <div class="row-meta">${escapeHtml(followUpLabel)}</div>
-      <div class="row-meta">${escapeHtml(row.phone || "No phone")} · ${escapeHtml(row.email || "No email")}</div>
+      <div class="row-meta row-contact-phone">${escapeHtml(row.phone || "No phone")}</div>
+      <div class="row-meta row-contact-email">${escapeHtml(row.email || "No email")}</div>
       ${revenueCell}
     </button>
   `;
@@ -5156,12 +5434,12 @@ function wireDetailForms() {
         document.getElementById("detailNotesInput")?.focus();
         return;
       }
-      if (action === "send_email") {
+      if (action === "send_email" || action === "open_templates") {
         switchTab("templates");
-        return;
-      }
-      if (action === "open_templates") {
-        switchTab("templates");
+        if (isMobileCrmView()) {
+          setDetailPanelOpen(false);
+          scrollCrmMainToTop();
+        }
         return;
       }
       if (action === "set_follow_up") {
@@ -5339,16 +5617,26 @@ document.getElementById("crmNav").addEventListener("click", (event) => {
 document.getElementById("crmMobileNav")?.addEventListener("click", (event) => {
   const button = event.target.closest(".crm-mobile-nav-item");
   if (!button) return;
-  const key = button.dataset.mobileTab;
-  if (key === "add-lead") {
-    mobileAddLead();
-    return;
+  switchMobileSection(button.dataset.mobileTab);
+});
+
+document.getElementById("crmMobileMoreBackdrop")?.addEventListener("click", closeMobileMore);
+
+document.getElementById("crmMobileMoreMenu")?.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-mobile-more-tab]");
+  if (!button) return;
+  setMobileLeadMode(false);
+  switchTab(button.dataset.mobileMoreTab);
+  closeMobileMore();
+  scrollCrmMainToTop();
+  assertMobileView(button.dataset.mobileMoreTab);
+});
+
+window.addEventListener("resize", () => {
+  if (!isMobileCrmView()) {
+    setMobileLeadMode(false);
+    closeMobileMore();
   }
-  if (key === "more") {
-    openNavDrawer(true);
-    return;
-  }
-  switchTab(key);
 });
 
 document.getElementById("navBackdrop")?.addEventListener("click", closeNavDrawer);
@@ -5377,6 +5665,10 @@ document.getElementById("searchInput").addEventListener("keydown", event => {
   }
 });
 document.getElementById("toggleLeadFormBtn")?.addEventListener("click", () => {
+  if (isMobileCrmView()) {
+    switchMobileSection("add-lead");
+    return;
+  }
   const leadForm = document.getElementById("leadFormCollapse");
   if (!leadForm) return;
   leadForm.open = !leadForm.open;
