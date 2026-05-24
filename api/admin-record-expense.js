@@ -37,6 +37,27 @@ const ALLOWED_PAYMENT_METHODS = [
   "Cash","PayPal","Venmo","Check","Credit Card","Bank Transfer","Other"
 ];
 
+function publicDbError(error) {
+  if (!error) return "Database insert failed";
+  const msg = String(error.message || "").trim();
+  if (!msg) return "Database insert failed";
+
+  // Postgres / PostgREST codes useful for admin debugging (no secrets).
+  if (error.code === "23514") {
+    return `Database insert failed: ${msg}`;
+  }
+  if (error.code === "23502") {
+    return `Database insert failed: required field missing (${msg})`;
+  }
+  if (error.code === "42501") {
+    return "Database insert failed: permission denied by database policy";
+  }
+  if (msg.length <= 180) {
+    return `Database insert failed: ${msg}`;
+  }
+  return `Database insert failed: ${msg.slice(0, 177)}...`;
+}
+
 /** POST: record an expense.
  *  Body: expense_date (YYYY-MM-DD), vendor, category, expense_type,
  *        description?, amount, payment_method, receipt_saved?, notes?
@@ -105,6 +126,19 @@ export default async function handler(req, res) {
       insertPayload.created_by = adminInfo.admin.id;
     }
 
+    console.log("admin-record-expense payload", {
+      expense_date,
+      vendor,
+      category,
+      expense_type,
+      amount: insertPayload.amount,
+      payment_method,
+      receipt_saved,
+      has_description: Boolean(description),
+      has_notes: Boolean(notes)
+    });
+    console.log("admin-record-expense insert", insertPayload);
+
     const { data: row, error } = await supabase
       .from("expenses")
       .insert(insertPayload)
@@ -112,8 +146,14 @@ export default async function handler(req, res) {
       .single();
 
     if (error) {
-      console.error("admin-record-expense insert failed", error);
-      return res.status(500).json({ error: "Database insert failed" });
+      console.error("admin-record-expense insert failed", {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        insert: insertPayload
+      });
+      return res.status(500).json({ error: publicDbError(error) });
     }
 
     console.log("EXPENSE_RECORDED", {
