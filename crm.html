@@ -1411,7 +1411,7 @@ body {
 
 .crm-main {
   min-width: 0;
-  padding: var(--space-3);
+  padding: var(--space-2) var(--space-3);
   overflow-y: auto;
   max-height: calc(100vh - 52px);
 }
@@ -1594,16 +1594,16 @@ body {
 .customer-row {
   display: grid;
   grid-template-columns: minmax(140px, 1.4fr) minmax(120px, 1fr) minmax(130px, 1fr) minmax(140px, 1.2fr) auto;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
   width: 100%;
   text-align: left;
-  padding: 10px 12px;
+  padding: 7px 10px;
   border: 1px solid rgba(127, 184, 230, 0.16);
-  border-radius: 10px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
   color: #fff;
-  min-height: 52px;
+  min-height: 44px;
 }
 
 .customer-row:hover {
@@ -1675,6 +1675,239 @@ body {
   color: #fff;
 }
 
+.queue-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.queue-pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(127, 184, 230, 0.28);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+  font-weight: 700;
+  min-height: 32px;
+  cursor: pointer;
+}
+
+.queue-pill.active {
+  background: rgba(127, 184, 230, 0.22);
+  border-color: var(--moon-primary);
+  color: #fff;
+}
+
+.queue-pill-count {
+  opacity: 0.75;
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+.sticky-customer-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  padding: 8px 0 10px;
+  margin: -4px 0 8px;
+  background: linear-gradient(to bottom, rgba(8, 12, 18, 0.98) 80%, rgba(8, 12, 18, 0));
+}
+
+.customers-toolbar-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 2fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.customers-toolbar-row .filters {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(72px, 1fr));
+  gap: 6px;
+  margin-bottom: 0;
+}
+
+.customers-toolbar-row .field label {
+  font-size: 10px;
+  margin-bottom: 2px;
+}
+
+.customers-toolbar-row .field input,
+.customers-toolbar-row .field select {
+  min-height: 32px;
+  padding: 5px 8px;
+  font-size: 12px;
+}
+
+.customers-search-hero input {
+  min-height: 36px;
+  font-size: 14px;
+}
+
+.operational-feed {
+  margin-top: 10px;
+  border: 1px solid rgba(127, 184, 230, 0.16);
+  border-radius: var(--moon-radius);
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.operational-feed-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--moon-primary);
+}
+
+.feed-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: center;
+  padding: 7px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 12px;
+}
+
+.feed-row:last-child {
+  border-bottom: none;
+}
+
+.feed-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: rgba(127, 184, 230, 0.16);
+  color: rgba(255, 255, 255, 0.88);
+  white-space: nowrap;
+}
+
+.feed-badge.booking { background: rgba(80, 200, 120, 0.18); }
+.feed-badge.outreach { background: rgba(127, 184, 230, 0.2); }
+.feed-badge.lead { background: rgba(255, 200, 80, 0.18); }
+.feed-badge.task { background: rgba(180, 140, 255, 0.18); }
+
+.timeline-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 10px;
+  border: 1px solid rgba(127, 184, 230, 0.16);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+}
+
+.timeline-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: start;
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+}
+
+.timeline-row:last-child {
+  border-bottom: none;
+}
+
+.timeline-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background: rgba(127, 184, 230, 0.16);
+  color: rgba(255, 255, 255, 0.88);
+  white-space: nowrap;
+}
+
+.timeline-desc {
+  line-height: 1.35;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.timeline-time {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.52);
+  white-space: nowrap;
+}
+
+.queue-row-main {
+  min-width: 0;
+}
+
+.queue-row-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 3px;
+}
+
+.queue-row-title strong {
+  font-size: 13px;
+}
+
+.queue-row-meta {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.62);
+  line-height: 1.35;
+}
+
+.queue-row .badge {
+  font-size: 10px;
+  padding: 2px 6px;
+}
+
+.btn-action-primary {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.btn-action-secondary {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.btn-action-quiet {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid rgba(127, 184, 230, 0.2);
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.btn-action-danger {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
 .queue-list {
   display: flex;
   flex-direction: column;
@@ -1684,11 +1917,11 @@ body {
 .queue-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 1px solid rgba(127, 184, 230, 0.16);
-  border-radius: 10px;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.04);
 }
 
@@ -1799,8 +2032,9 @@ body {
 
 .detail-accordion summary {
   cursor: pointer;
-  padding: 10px 12px;
+  padding: 8px 10px;
   font-weight: 700;
+  font-size: 12px;
   color: var(--moon-primary);
   list-style: none;
 }
@@ -1810,7 +2044,7 @@ body {
 }
 
 .detail-accordion .detail-accordion-body {
-  padding: 0 12px 12px;
+  padding: 0 10px 10px;
 }
 
 .detail-record-badges {
@@ -1999,14 +2233,14 @@ body {
 }
 
 .detail-header {
-  padding: 16px;
+  padding: 10px 12px;
   margin: 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .detail-body-scroll {
   overflow-y: auto;
-  padding: 16px;
+  padding: 10px 12px;
   flex: 1;
 }
 
@@ -2020,12 +2254,30 @@ body {
 .quick-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin: 0 0 14px;
+  gap: 6px;
+  margin: 0 0 10px;
 }
 
 .quick-actions .primary-btn {
-  flex: 1 1 140px;
+  flex: 1 1 120px;
+  min-height: 34px;
+}
+
+.quick-actions .secondary-btn,
+.quick-actions .quiet-btn,
+.quick-actions .danger-btn {
+  min-height: 32px;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.detail-section-label {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.52);
 }
 
 .customer-card {
@@ -2253,73 +2505,76 @@ body {
         <div id="tabToday" class="crm-tab-panel active">
           <div class="panel">
             <div id="todayStatus" class="status-line">Loading today&apos;s priorities...</div>
-            <div id="todayKpiStrip" class="kpi-strip" aria-label="Today KPIs"></div>
+            <div id="todayQueuePills" class="queue-pills" aria-label="Today queues"></div>
             <div id="todaySections" class="crm-sections"></div>
+            <div id="todayActivityFeed" class="operational-feed" aria-label="Recent activity"></div>
           </div>
         </div>
 
         <div id="tabCustomers" class="crm-tab-panel">
           <div class="panel">
             <div id="listStatus" class="status-line">Loading CRM customers...</div>
-            <div class="filter-toolbar">
-            <div class="segment-chips" id="segmentChips" aria-label="Quick segments"></div>
-            <div class="filters">
-              <div class="field">
-                <label for="searchInput">Search</label>
-                <input id="searchInput" type="search" placeholder="Name, email, phone, address..." />
+            <div class="sticky-customer-toolbar">
+              <div class="customers-toolbar-row">
+                <div class="field customers-search-hero">
+                  <label for="searchInput">Search customers</label>
+                  <input id="searchInput" type="search" placeholder="Name, email, phone, address..." autocomplete="off" />
+                </div>
+                <div class="filters">
+                  <div class="field">
+                    <label for="lifecycleFilter">Stage</label>
+                    <select id="lifecycleFilter">
+                      <option value="">All</option>
+                      <option value="lead">Lead</option>
+                      <option value="prospect">Prospect</option>
+                      <option value="customer">Customer</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="do_not_contact">Do not contact</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="statusFilter">Status</label>
+                    <select id="statusFilter">
+                      <option value="">All</option>
+                      <option value="active">Active</option>
+                      <option value="new">New</option>
+                      <option value="nurture">Nurture</option>
+                      <option value="cooling">Cooling</option>
+                      <option value="inactive">Inactive</option>
+                      <option value="closed">Closed</option>
+                      <option value="do_not_contact">Do not contact</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="priorityFilter">Priority</label>
+                    <select id="priorityFilter">
+                      <option value="">All</option>
+                      <option value="urgent">Urgent</option>
+                      <option value="high">High</option>
+                      <option value="medium">Medium</option>
+                      <option value="low">Low</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="dueFilter">Due</label>
+                    <select id="dueFilter">
+                      <option value="">All</option>
+                      <option value="today">Today</option>
+                      <option value="overdue">Overdue</option>
+                      <option value="open">Open</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>&nbsp;</label>
+                  <button id="toggleLeadFormBtn" class="primary-btn" type="button">Add Lead</button>
+                </div>
               </div>
-              <div class="field">
-                <label for="lifecycleFilter">Stage</label>
-                <select id="lifecycleFilter">
-                  <option value="">All</option>
-                  <option value="lead">Lead</option>
-                  <option value="prospect">Prospect</option>
-                  <option value="customer">Customer</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="do_not_contact">Do not contact</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="statusFilter">Status</label>
-                <select id="statusFilter">
-                  <option value="">All</option>
-                  <option value="active">Active</option>
-                  <option value="new">New</option>
-                  <option value="nurture">Nurture</option>
-                  <option value="cooling">Cooling</option>
-                  <option value="inactive">Inactive</option>
-                  <option value="closed">Closed</option>
-                  <option value="do_not_contact">Do not contact</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="priorityFilter">Priority</label>
-                <select id="priorityFilter">
-                  <option value="">All</option>
-                  <option value="urgent">Urgent</option>
-                  <option value="high">High</option>
-                  <option value="medium">Medium</option>
-                  <option value="low">Low</option>
-                </select>
-              </div>
-              <div class="field">
-                <label for="dueFilter">Due</label>
-                <select id="dueFilter">
-                  <option value="">All</option>
-                  <option value="today">Today</option>
-                  <option value="overdue">Overdue</option>
-                  <option value="open">Open</option>
-                </select>
-              </div>
-              <div class="field">
-                <label>&nbsp;</label>
-                <button id="searchBtn" class="quiet-btn" type="button">Apply Filters</button>
-              </div>
-            </div>
+              <div class="segment-chips" id="segmentChips" aria-label="Quick segments"></div>
             </div>
             <div id="crmSections" class="customer-list"></div>
           </div>
-          <details class="lead-form-collapse">
+          <details class="lead-form-collapse" id="leadFormCollapse">
             <summary>Add Manual Lead</summary>
             <aside class="lead-form-card">
               <form id="leadForm">
@@ -2397,6 +2652,7 @@ body {
         <div id="tabTasks" class="crm-tab-panel">
           <div class="panel">
             <div id="tasksStatus" class="status-line">Follow-up tasks from loaded customers.</div>
+            <div id="tasksQueuePills" class="queue-pills" aria-label="Task queues"></div>
             <div id="tasksSections" class="crm-sections"></div>
           </div>
         </div>
@@ -2421,8 +2677,8 @@ body {
       <aside class="crm-detail-column">
         <section id="detailPanel" class="detail-panel" aria-live="polite">
           <div id="detailEmptyState" class="detail-empty">
-            <h2>Select a customer to view details</h2>
-            <p class="muted">Review profile info, follow-up tasks, outreach history, bookings, tags, and notes here.</p>
+            <h2>Select a customer</h2>
+            <p class="muted">Identity, timeline, tasks, and notes appear here — your operational cockpit.</p>
           </div>
           <div id="detailLoaded" class="detail-loaded">
             <div class="detail-header">
@@ -2458,11 +2714,11 @@ const TAB_PANEL_IDS = {
 const TAB_COPY = {
   today: {
     title: "Today",
-    description: "See who needs a call or follow-up right now."
+    description: "Process one queue at a time — overdue, due today, upcoming, and done."
   },
   customers: {
     title: "Customers",
-    description: "Search, filter, and manage leads and customers."
+    description: "Search-first lookup with quick segments and instant context panel."
   },
   pipeline: {
     title: "Pipeline",
@@ -2474,7 +2730,7 @@ const TAB_COPY = {
   },
   tasks: {
     title: "Tasks",
-    description: "Work through overdue, due today, and upcoming follow-ups."
+    description: "Inbox-style follow-up queues — switch, complete, and move on."
   },
   templates: {
     title: "Templates",
@@ -2796,8 +3052,12 @@ const state = {
   analyticsLoaded: false,
   duplicates: null,
   duplicatesLoaded: false,
-  customerSegment: "all"
+  customerSegment: "all",
+  todayQueue: null,
+  tasksQueue: null
 };
+
+let searchDebounceTimer = null;
 
 function isLoggedIn() {
   return !!ADMIN_SESSION;
@@ -3115,6 +3375,22 @@ function bindCustomerCards(root) {
       completeFollowUpForCustomer(btn.dataset.customerId);
     });
   });
+  scope.querySelectorAll(".queue-snooze-btn").forEach((btn) => {
+    if (btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      snoozeFollowUpForCustomer(btn.dataset.customerId);
+    });
+  });
+  scope.querySelectorAll(".queue-log-outreach-btn").forEach((btn) => {
+    if (btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openCustomerDetail(btn.dataset.customerId, { focusOutreach: true });
+    });
+  });
 }
 
 function isDueToday(row) {
@@ -3196,15 +3472,291 @@ function renderNavKpis() {
   ].map(([label, value]) => `<div class="nav-kpi"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("");
 }
 
+function isActiveSegmentCustomer(row) {
+  const stage = normalize(stageValue(row));
+  const status = normalize(statusValue(row));
+  if (stage === "do_not_contact" || status === "do_not_contact") return false;
+  return ["customer", "booked", "confirmed", "prospect", "quoted"].includes(stage)
+    || ["active", "new", "nurture", "booked", "confirmed", "completed_customer", "repeat_customer"].includes(status);
+}
+
+function followUpTimingLabel(row) {
+  if (isOverdueFollowUp(row)) return `Overdue · ${formatShortDate(row.next_follow_up_at)}`;
+  if (isDueToday(row)) return `Due today · ${formatShortDate(row.next_follow_up_at)}`;
+  if (row.next_follow_up_at) return `Due ${formatShortDate(row.next_follow_up_at)}`;
+  return "No follow-up scheduled";
+}
+
+function taskTitleForRow(row) {
+  if (isNewLeadNeedingContact(row)) return "New lead — first contact";
+  if (isHighValueReactivation(row)) return "Reactivation follow-up";
+  if (isTodaysBookingCustomer(row) && !row.next_follow_up_at) return "Today's booking";
+  return "Follow-up task";
+}
+
+function getTodayQueueRows(queueId) {
+  const overdue = state.customers.filter(isOverdueFollowUp);
+  const dueToday = state.customers.filter(isDueToday);
+  const upcoming = state.customers.filter((row) => hasOpenFollowUp(row) && !isOverdueFollowUp(row) && !isDueToday(row));
+  const done = state.customers.filter(isRecentlyHandled);
+  const todayFocus = state.customers.filter((row) =>
+    isNewLeadNeedingContact(row) || isTodaysBookingCustomer(row) || isHighValueReactivation(row)
+  );
+
+  if (queueId === "overdue") return overdue;
+  if (queueId === "due_today") return dueToday;
+  if (queueId === "upcoming") return upcoming;
+  if (queueId === "done") return done;
+  if (queueId === "today") return todayFocus;
+  return overdue.length ? overdue : dueToday;
+}
+
+function getTasksQueueRows(queueId) {
+  const overdue = state.customers.filter(isOverdueFollowUp);
+  const dueToday = state.customers.filter(isDueToday);
+  const upcoming = state.customers.filter((row) => hasOpenFollowUp(row) && !isOverdueFollowUp(row) && !isDueToday(row));
+  const completed = state.customers.filter(isRecentlyHandled);
+
+  if (queueId === "overdue") return overdue;
+  if (queueId === "today") return dueToday;
+  if (queueId === "upcoming") return upcoming;
+  if (queueId === "completed") return completed;
+  return overdue.length ? overdue : dueToday;
+}
+
+function resolveDefaultTodayQueue() {
+  const overdue = state.customers.filter(isOverdueFollowUp).length;
+  return overdue > 0 ? "overdue" : "due_today";
+}
+
+function resolveDefaultTasksQueue() {
+  const overdue = state.customers.filter(isOverdueFollowUp).length;
+  return overdue > 0 ? "overdue" : "today";
+}
+
+function renderQueuePills(containerId, queues, activeId, onSelect, getCount) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = queues.map((queue) => {
+    const displayCount = getCount(queue.id);
+    return `
+      <button type="button" class="queue-pill ${queue.id === activeId ? "active" : ""}" data-queue="${escapeHtml(queue.id)}">
+        ${escapeHtml(queue.label)}<span class="queue-pill-count">(${displayCount})</span>
+      </button>
+    `;
+  }).join("");
+  el.querySelectorAll(".queue-pill").forEach((pill) => {
+    pill.addEventListener("click", () => onSelect(pill.dataset.queue));
+  });
+}
+
+function buildGlobalActivityEvents() {
+  const events = [];
+  state.customers.forEach((row) => {
+    const id = customerId(row);
+    const name = customerName(row);
+    if (row.last_contacted_at) {
+      events.push({
+        type: "outreach",
+        label: "Outreach logged",
+        customerId: id,
+        customerName: name,
+        at: row.last_contacted_at,
+        detail: `${statusValue(row)} · ${stageValue(row)}`
+      });
+    }
+    if (row.last_service_date) {
+      events.push({
+        type: "booking",
+        label: "Service completed",
+        customerId: id,
+        customerName: name,
+        at: row.last_service_date,
+        detail: formatMoney(row.total_revenue)
+      });
+    }
+    if (normalize(stageValue(row)) === "lead" && isNewLeadNeedingContact(row)) {
+      events.push({
+        type: "lead",
+        label: "New lead",
+        customerId: id,
+        customerName: name,
+        at: row.created_at || row.last_contacted_at || row.last_service_date,
+        detail: row.lead_source || "Needs first contact"
+      });
+    }
+    if (isRecentlyHandled(row)) {
+      events.push({
+        type: "task",
+        label: "Recently handled",
+        customerId: id,
+        customerName: name,
+        at: row.last_contacted_at,
+        detail: "Follow-up cleared"
+      });
+    }
+  });
+  return events
+    .filter((event) => event.at && !Number.isNaN(new Date(event.at).getTime()))
+    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+    .slice(0, 14);
+}
+
+function renderOperationalActivityFeed() {
+  const el = document.getElementById("todayActivityFeed");
+  if (!el) return;
+  const events = buildGlobalActivityEvents();
+  el.innerHTML = `
+    <div class="operational-feed-header">
+      <span>Recent Activity</span>
+      <span class="muted">${events.length} events</span>
+    </div>
+    ${events.length ? events.map((event) => `
+      <div class="feed-row">
+        <span class="feed-badge ${escapeHtml(event.type)}">${escapeHtml(event.label)}</span>
+        <div>
+          <strong>${escapeHtml(event.customerName)}</strong>
+          <div class="muted">${escapeHtml(event.detail || "")}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <span class="timeline-time">${escapeHtml(formatShortDate(event.at))}</span>
+          <button class="btn-action-quiet queue-open-btn" type="button" data-customer-id="${escapeHtml(event.customerId)}">Open</button>
+        </div>
+      </div>
+    `).join("") : `<div class="muted" style="padding:10px;">No recent activity in loaded customers.</div>`}
+  `;
+  bindCustomerCards(el);
+}
+
+function buildTimelineEvents(data, assignedTags) {
+  const customer = data.customer || {};
+  const profile = data.profile || {};
+  const events = [];
+
+  if (profile.created_at || customer.created_at) {
+    events.push({
+      type: "Lead created",
+      badgeClass: "lead",
+      at: profile.created_at || customer.created_at,
+      description: `Lead added · ${profile.lead_source || customer.lead_source || "manual"}`
+    });
+  }
+
+  (data.outreach_logs || []).forEach((log) => {
+    if (normalize(log.method) === "email") return;
+    events.push({
+      type: "Outreach logged",
+      badgeClass: "outreach",
+      at: log.contacted_at || log.created_at,
+      description: `${log.method || "contact"} · ${log.message_summary || log.outreach_type || "logged"}${log.response_status ? ` · ${log.response_status}` : ""}`
+    });
+  });
+
+  (data.outbound_messages || []).forEach((msg) => {
+    events.push({
+      type: "CRM email sent",
+      badgeClass: "outreach",
+      at: msg.sent_at || msg.created_at,
+      description: `${msg.template_key || msg.subject || "Email"} · ${msg.status || "sent"}`
+    });
+  });
+
+  (data.bookings || []).forEach((booking) => {
+    const isComplete = ["completed", "complete", "done"].includes(normalize(booking.status));
+    events.push({
+      type: isComplete ? "Booking completed" : "Booking created",
+      badgeClass: "booking",
+      at: isComplete ? (booking.completed_at || booking.scheduled_start || booking.created_at) : (booking.created_at || booking.scheduled_start),
+      description: `${booking.status || "booking"} · ${formatDate(booking.scheduled_start)}${booking.total_price != null ? ` · ${formatMoney(booking.total_price)}` : ""}`
+    });
+  });
+
+  (data.follow_up_tasks || []).forEach((task) => {
+    events.push({
+      type: "Follow-up created",
+      badgeClass: "task",
+      at: task.created_at || task.due_at,
+      description: `${task.task_type || "follow_up"} · due ${formatDate(task.due_at)}`
+    });
+    if (task.status === "completed" && task.completed_at) {
+      events.push({
+        type: "Follow-up completed",
+        badgeClass: "task",
+        at: task.completed_at,
+        description: `${task.task_type || "follow_up"} marked complete`
+      });
+    }
+    if (task.status === "snoozed" && task.updated_at) {
+      events.push({
+        type: "Follow-up snoozed",
+        badgeClass: "task",
+        at: task.updated_at,
+        description: `Snoozed until ${formatDate(task.due_at)}`
+      });
+    }
+  });
+
+  const notes = profile.crm_notes || customer.crm_notes;
+  if (notes) {
+    events.push({
+      type: "Note added",
+      badgeClass: "note",
+      at: profile.updated_at || customer.updated_at || profile.created_at || customer.created_at,
+      description: notesPreview(notes)
+    });
+  }
+
+  (assignedTags || []).forEach((tag) => {
+    events.push({
+      type: "Tag added",
+      badgeClass: "tag",
+      at: tag.created_at || profile.updated_at,
+      description: tag.name || "Tag assigned"
+    });
+  });
+
+  const statusStamp = profile.updated_at || customer.updated_at;
+  if (statusStamp && (profile.status || customer.crm_status)) {
+    events.push({
+      type: "Status change",
+      badgeClass: "status",
+      at: statusStamp,
+      description: `${stageValue(customer)} · ${statusValue(customer)} · ${priorityValue(customer)} priority`
+    });
+  }
+
+  return events
+    .filter((event) => event.at && !Number.isNaN(new Date(event.at).getTime()))
+    .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+    .slice(0, 40);
+}
+
+function renderTimelineFeed(events) {
+  if (!events.length) return `<div class="muted">No timeline events yet.</div>`;
+  return `
+    <div class="timeline-feed">
+      ${events.map((event) => `
+        <div class="timeline-row">
+          <span class="timeline-badge">${escapeHtml(event.type)}</span>
+          <div class="timeline-desc">${escapeHtml(event.description || "")}</div>
+          <span class="timeline-time">${escapeHtml(formatShortDate(event.at))}</span>
+        </div>
+      `).join("")}
+    </div>
+  `;
+}
+
 function renderSegmentChips() {
   const el = document.getElementById("segmentChips");
   if (!el) return;
   const segments = [
     { id: "all", label: "All" },
-    { id: "overdue", label: "Overdue" },
-    { id: "today", label: "Due today" },
     { id: "leads", label: "Leads" },
-    { id: "high_value", label: "High value" }
+    { id: "active", label: "Active" },
+    { id: "high_value", label: "High Value" },
+    { id: "overdue", label: "Overdue" },
+    { id: "cooling", label: "Cooling" },
+    { id: "inactive", label: "Inactive" }
   ];
   const active = state.customerSegment || "all";
   el.innerHTML = segments.map((seg) => `
@@ -3223,7 +3775,10 @@ function filterCustomersBySegment(rows) {
   if (segment === "overdue") return rows.filter(isOverdueFollowUp);
   if (segment === "today") return rows.filter(isDueToday);
   if (segment === "leads") return rows.filter((row) => normalize(stageValue(row)) === "lead");
+  if (segment === "active") return rows.filter(isActiveSegmentCustomer);
   if (segment === "high_value") return rows.filter(isHighValue);
+  if (segment === "cooling") return rows.filter(isCoolingCustomer);
+  if (segment === "inactive") return rows.filter(isInactiveCustomer);
   return rows;
 }
 
@@ -3240,18 +3795,32 @@ function renderKpiStrip(elementId, items) {
 
 function renderQueueRow(row, options = {}) {
   const overdue = options.overdue || isOverdueFollowUp(row);
+  const priority = priorityValue(row);
+  const showSnooze = options.showSnooze !== false && hasOpenFollowUp(row);
   return `
     <article class="queue-row ${overdue ? "overdue" : ""}">
-      <div>
-        <strong>${escapeHtml(customerName(row))}</strong>
-        <div class="muted">${escapeHtml(stageValue(row))} · ${escapeHtml(statusValue(row))} · ${escapeHtml(formatShortDate(row.next_follow_up_at || row.last_contacted_at))}</div>
+      <div class="queue-row-main">
+        <div class="queue-row-title">
+          <strong>${escapeHtml(customerName(row))}</strong>
+          <span class="badge">${escapeHtml(priority)}</span>
+          <span class="badge ${statusBadgeClass(row)}">${escapeHtml(statusValue(row))}</span>
+        </div>
+        <div class="queue-row-meta">${escapeHtml(taskTitleForRow(row))}</div>
+        <div class="queue-row-meta">${escapeHtml(followUpTimingLabel(row))}</div>
       </div>
       <div class="queue-row-actions">
-        <button class="primary-btn queue-complete-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
-        <button class="secondary-btn queue-open-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Open</button>
+        <button class="primary-btn btn-action-primary queue-complete-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
+        <button class="btn-action-secondary queue-open-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Open Customer</button>
+        ${showSnooze ? `<button class="btn-action-quiet queue-snooze-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Snooze</button>` : ""}
+        <button class="btn-action-quiet queue-log-outreach-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Log Outreach</button>
       </div>
     </article>
   `;
+}
+
+function renderActiveQueueList(rows, options = {}) {
+  if (!rows.length) return `<div class="muted" style="padding:8px 2px;">No items in this queue.</div>`;
+  return `<div class="queue-list">${rows.map((row) => renderQueueRow(row, options)).join("")}</div>`;
 }
 
 function renderQueueSection(title, rows, options = {}) {
@@ -3289,19 +3858,36 @@ function renderActivitySection(rows) {
 }
 
 function renderToday() {
-  const sections = [
-    renderQueueSection("Overdue Follow-Ups", state.customers.filter(isOverdueFollowUp), { smart: true, overdue: true }),
-    renderQueueSection("Due Today", state.customers.filter(isDueToday), { smart: true }),
-    renderQueueSection("New Leads Needing Response", state.customers.filter(isNewLeadNeedingContact), { smart: true }),
-    renderQueueSection("High-Value Reactivation Opportunities", state.customers.filter(isHighValueReactivation), { smart: true }),
-    renderQueueSection("Today's Bookings", state.customers.filter(isTodaysBookingCustomer), { smart: true }),
-    renderActivitySection(state.customers.filter(isRecentActivity))
+  if (!state.todayQueue) state.todayQueue = resolveDefaultTodayQueue();
+
+  const queues = [
+    { id: "today", label: "Today" },
+    { id: "overdue", label: "Overdue" },
+    { id: "due_today", label: "Due Today" },
+    { id: "upcoming", label: "Upcoming" },
+    { id: "done", label: "Done" }
   ];
 
+  renderQueuePills("todayQueuePills", queues, state.todayQueue, (queueId) => {
+    state.todayQueue = queueId;
+    renderToday();
+  }, (queueId) => getTodayQueueRows(queueId).length);
+
+  const rows = getTodayQueueRows(state.todayQueue).sort((a, b) => {
+    const aDue = new Date(a.next_follow_up_at || 0).getTime();
+    const bDue = new Date(b.next_follow_up_at || 0).getTime();
+    if (state.todayQueue === "overdue" || state.todayQueue === "due_today") return aDue - bDue;
+    return customerName(a).localeCompare(customerName(b));
+  });
+
   const container = document.getElementById("todaySections");
-  container.innerHTML = sections.join("");
+  container.innerHTML = renderActiveQueueList(rows, { overdue: state.todayQueue === "overdue", showSnooze: state.todayQueue !== "done" });
   bindCustomerCards(container);
-  document.getElementById("todayStatus").textContent = `${state.customers.length} customers loaded · command center ready`;
+  renderOperationalActivityFeed();
+
+  const overdueCount = state.customers.filter(isOverdueFollowUp).length;
+  const dueTodayCount = state.customers.filter(isDueToday).length;
+  document.getElementById("todayStatus").textContent = `${state.customers.length} customers loaded · ${overdueCount} overdue · ${dueTodayCount} due today`;
 }
 
 function renderCustomerRow(row) {
@@ -3313,12 +3899,14 @@ function renderCustomerRow(row) {
   const revenueCell = showRevenue
     ? `<div class="row-revenue">${escapeHtml(formatMoney(row.total_revenue))}</div>`
     : `<div class="row-revenue muted">—</div>`;
+  const priority = priorityValue(row);
   return `
     <button class="customer-row ${id === state.selectedCustomerId ? "active" : ""}" type="button" data-customer-id="${escapeHtml(id)}">
       <div class="customer-name">${escapeHtml(customerName(row))}</div>
       <div class="badge-row">
         <span class="badge">${escapeHtml(stageValue(row))}</span>
         <span class="badge ${statusBadgeClass(row)}">${escapeHtml(statusValue(row))}</span>
+        <span class="badge">${escapeHtml(priority)}</span>
       </div>
       <div class="row-meta">${escapeHtml(followUpLabel)}</div>
       <div class="row-meta">${escapeHtml(row.phone || "No phone")} · ${escapeHtml(row.email || "No email")}</div>
@@ -3525,32 +4113,61 @@ function renderTaskSection(title, rows, options = {}) {
 }
 
 function renderTasks() {
-  const overdue = state.customers.filter(isOverdueFollowUp);
-  const dueToday = state.customers.filter(isDueToday);
-  const openFuture = state.customers.filter((row) => hasOpenFollowUp(row) && !isOverdueFollowUp(row) && !isDueToday(row));
-  const handled = state.customers.filter(isRecentlyHandled);
+  if (!state.tasksQueue) state.tasksQueue = resolveDefaultTasksQueue();
 
-  document.getElementById("tasksSections").innerHTML = [
-    renderTaskSection("Overdue", overdue, { smart: true, tone: "overdue" }),
-    renderTaskSection("Due Today", dueToday, { smart: true }),
-    renderTaskSection("Upcoming", openFuture, { tone: "upcoming" }),
-    `<details class="task-queue-collapse"><summary>Completed / Snoozed (${handled.length})</summary>${handled.length ? `<div class="section-card-grid">${handled.map((row) => renderTaskCard(row, { label: "Recently handled", tone: "upcoming" })).join("")}</div>` : `<div class="muted" style="padding:10px 12px;">No recently handled customers in this load.</div>`}</details>`
-  ].join("");
+  const queues = [
+    { id: "overdue", label: "Overdue" },
+    { id: "today", label: "Today" },
+    { id: "upcoming", label: "Upcoming" },
+    { id: "completed", label: "Completed" }
+  ];
 
-  document.getElementById("tasksSections").querySelectorAll("[data-open-customer]").forEach((btn) => {
-    btn.addEventListener("click", (event) => {
-      event.stopPropagation();
-      openCustomerDetail(btn.dataset.openCustomer);
-    });
+  renderQueuePills("tasksQueuePills", queues, state.tasksQueue, (queueId) => {
+    state.tasksQueue = queueId;
+    renderTasks();
+  }, (queueId) => getTasksQueueRows(queueId).length);
+
+  const rows = getTasksQueueRows(state.tasksQueue).sort((a, b) => {
+    const aDue = new Date(a.next_follow_up_at || 0).getTime();
+    const bDue = new Date(b.next_follow_up_at || 0).getTime();
+    if (state.tasksQueue === "overdue" || state.tasksQueue === "today") return aDue - bDue;
+    if (state.tasksQueue === "completed") {
+      return new Date(b.last_contacted_at || 0).getTime() - new Date(a.last_contacted_at || 0).getTime();
+    }
+    return aDue - bDue;
   });
-  document.getElementById("tasksSections").querySelectorAll(".complete-followup-btn").forEach((btn) => {
-    btn.addEventListener("click", (event) => {
-      event.stopPropagation();
-      completeFollowUpForCustomer(btn.dataset.customerId);
-    });
-  });
 
-  document.getElementById("tasksStatus").textContent = `${overdue.length} overdue · ${dueToday.length} due today · ${openFuture.length} upcoming`;
+  const container = document.getElementById("tasksSections");
+  container.innerHTML = renderActiveQueueList(rows, {
+    overdue: state.tasksQueue === "overdue",
+    showSnooze: state.tasksQueue !== "completed"
+  });
+  bindCustomerCards(container);
+
+  const overdue = state.customers.filter(isOverdueFollowUp).length;
+  const dueToday = state.customers.filter(isDueToday).length;
+  const openFuture = state.customers.filter((row) => hasOpenFollowUp(row) && !isOverdueFollowUp(row) && !isDueToday(row)).length;
+  document.getElementById("tasksStatus").textContent = `${overdue} overdue · ${dueToday} due today · ${openFuture} upcoming`;
+}
+
+async function snoozeFollowUpForCustomer(customerId, days = 1) {
+  try {
+    const detail = await apiJson(`/api/admin-crm-customer-detail?customer_id=${encodeURIComponent(customerId)}`);
+    const openTask = (detail.follow_up_tasks || []).find((task) => task.status !== "completed" && task.status !== "dismissed");
+    if (!openTask) throw new Error("No open task found for this customer");
+    const snoozeUntil = new Date();
+    snoozeUntil.setDate(snoozeUntil.getDate() + days);
+    snoozeUntil.setHours(9, 0, 0, 0);
+    await apiJson("/api/admin-crm-follow-up-task", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "snooze", task_id: openTask.id, snooze_until: snoozeUntil.toISOString() })
+    });
+    toast(`Snoozed ${days} day${days === 1 ? "" : "s"}`);
+    await loadCustomers();
+  } catch (err) {
+    toast(err.message || "Failed to snooze task", true);
+  }
 }
 
 async function completeFollowUpForCustomer(customerId) {
@@ -3729,9 +4346,13 @@ function renderCustomerCard(row) {
   `;
 }
 
-async function openCustomerDetail(id) {
+async function openCustomerDetail(id, options = {}) {
+  const mainEl = document.querySelector(".crm-main");
+  const scrollTop = mainEl ? mainEl.scrollTop : 0;
+
   state.selectedCustomerId = id;
   renderActiveTab();
+  if (mainEl) mainEl.scrollTop = scrollTop;
   if (state.activeTab === "templates") renderTemplates();
   setDetailPanelOpen(true);
   document.getElementById("detailTitle").textContent = "Loading customer...";
@@ -3746,6 +4367,16 @@ async function openCustomerDetail(id) {
     state.detail = detail;
     state.tags = tags.tags || [];
     renderDetail(detail, tags.assigned_tags || []);
+    if (options.focusOutreach) {
+      const outreach = document.getElementById("accordionOutreach");
+      outreach?.setAttribute("open", "");
+      document.getElementById("messageSummary")?.focus();
+    }
+    if (options.focusNotes) {
+      const notes = document.getElementById("accordionNotes");
+      notes?.setAttribute("open", "");
+      document.getElementById("detailNotesInput")?.focus();
+    }
   } catch (err) {
     document.getElementById("detailTitle").textContent = "Customer Detail";
     document.getElementById("detailBody").innerHTML = `<div class="error-text">${escapeHtml(err.message || "Failed to load detail")}</div>`;
@@ -3760,6 +4391,7 @@ function renderDetail(data, assignedTags) {
   const bookings = data.bookings || [];
   const outreachLogs = data.outreach_logs || [];
   const notes = profile.crm_notes || customer.crm_notes || "";
+  const timelineEvents = buildTimelineEvents(data, assignedTags);
 
   document.getElementById("detailTitle").textContent = customerName(customer);
   document.getElementById("detailSub").textContent = [customer.phone, customer.email].filter(Boolean).join(" · ");
@@ -3773,27 +4405,16 @@ function renderDetail(data, assignedTags) {
 
     <div class="quick-actions" aria-label="Quick actions">
       <button class="primary-btn quick-action-btn" type="button" data-action="log_outreach">Log Outreach</button>
+      <button class="primary-btn quick-action-btn" type="button" data-action="add_note">Add Note</button>
       <button class="secondary-btn quick-action-btn" type="button" data-action="set_follow_up">Set Follow-Up</button>
+      <button class="secondary-btn quick-action-btn" type="button" data-action="open_templates">Templates</button>
       <button class="secondary-btn quick-action-btn" type="button" data-action="mark_booked">Mark Booked</button>
       <button class="quiet-btn quick-action-btn" type="button" data-action="mark_ghosted">Mark Ghosted</button>
       <button class="danger-btn quick-action-btn" type="button" data-action="do_not_contact">Do Not Contact</button>
-      <button class="secondary-btn quick-action-btn" type="button" data-action="open_templates">Templates</button>
     </div>
 
-    <details class="detail-accordion" open>
-      <summary>CRM Profile</summary>
-      <div class="detail-accordion-body">
-        <div class="detail-item"><strong>Stage:</strong> ${escapeHtml(profile.lifecycle_stage || customer.lifecycle_stage || "lead")}</div>
-        <div class="detail-item"><strong>Status:</strong> ${escapeHtml(profile.status || statusValue(customer))}</div>
-        <div class="detail-item"><strong>Priority:</strong> ${escapeHtml(profile.priority || priorityValue(customer))}</div>
-        <div class="detail-item"><strong>Company:</strong> ${escapeHtml(profile.company_name || customer.company_name || "")}</div>
-        <div class="detail-item"><strong>Customer Type:</strong> ${escapeHtml(profile.customer_type || "")}</div>
-        <div class="detail-item"><strong>Lead Source:</strong> ${escapeHtml(profile.lead_source || "")}</div>
-        <div class="detail-item"><strong>Preferred Contact:</strong> ${escapeHtml(profile.preferred_contact_method || "")}</div>
-        <div class="detail-item"><strong>Total Revenue:</strong> ${escapeHtml(formatMoney(customer.total_revenue))}</div>
-        <div class="detail-item"><strong>Address:</strong> ${escapeHtml(customer.address || "Not set")}</div>
-      </div>
-    </details>
+    <p class="detail-section-label">Activity Timeline</p>
+    ${renderTimelineFeed(timelineEvents)}
 
     <details class="detail-accordion" id="accordionTasks" open>
       <summary>Tasks (${openTasks.length} open)</summary>
@@ -3805,7 +4426,7 @@ function renderDetail(data, assignedTags) {
               <div>Due: ${escapeHtml(formatDate(task.due_at))}</div>
               <div>Status: ${escapeHtml(task.status || "")}</div>
               <div>${escapeHtml(task.notes || "")}</div>
-              <button class="secondary-btn complete-task-btn" type="button" data-task-id="${escapeHtml(task.id)}">Complete</button>
+              <button class="primary-btn btn-action-primary complete-task-btn" type="button" data-task-id="${escapeHtml(task.id)}">Complete</button>
             </div>
           `).join("") : `<div class="muted">No open follow-up tasks.</div>`}
         </div>
@@ -3833,6 +4454,35 @@ function renderDetail(data, assignedTags) {
           </div>
           <button class="primary-btn span-2" type="submit">Create Follow-Up Task</button>
         </form>
+      </div>
+    </details>
+
+    <details class="detail-accordion" id="accordionNotes" ${notes ? "open" : ""}>
+      <summary>Notes</summary>
+      <div class="detail-accordion-body">
+        <div class="detail-item">${notes ? escapeHtml(notes) : `<span class="muted">No CRM notes yet.</span>`}</div>
+        <form id="notesForm" class="detail-form compact-form">
+          <div class="span-2">
+            <label for="detailNotesInput">Update Notes</label>
+            <textarea id="detailNotesInput" name="crm_notes">${escapeHtml(notes)}</textarea>
+          </div>
+          <button class="primary-btn span-2" type="submit">Save Notes</button>
+        </form>
+      </div>
+    </details>
+
+    <details class="detail-accordion">
+      <summary>CRM Profile</summary>
+      <div class="detail-accordion-body">
+        <div class="detail-item"><strong>Stage:</strong> ${escapeHtml(profile.lifecycle_stage || customer.lifecycle_stage || "lead")}</div>
+        <div class="detail-item"><strong>Status:</strong> ${escapeHtml(profile.status || statusValue(customer))}</div>
+        <div class="detail-item"><strong>Priority:</strong> ${escapeHtml(profile.priority || priorityValue(customer))}</div>
+        <div class="detail-item"><strong>Company:</strong> ${escapeHtml(profile.company_name || customer.company_name || "")}</div>
+        <div class="detail-item"><strong>Customer Type:</strong> ${escapeHtml(profile.customer_type || "")}</div>
+        <div class="detail-item"><strong>Lead Source:</strong> ${escapeHtml(profile.lead_source || "")}</div>
+        <div class="detail-item"><strong>Preferred Contact:</strong> ${escapeHtml(profile.preferred_contact_method || "")}</div>
+        <div class="detail-item"><strong>Total Revenue:</strong> ${escapeHtml(formatMoney(customer.total_revenue))}</div>
+        <div class="detail-item"><strong>Address:</strong> ${escapeHtml(customer.address || "Not set")}</div>
       </div>
     </details>
 
@@ -3917,15 +4567,8 @@ function renderDetail(data, assignedTags) {
             <label for="newTagName">New Tag</label>
             <input id="newTagName" name="name" placeholder="optional" />
           </div>
-          <button class="primary-btn span-2" type="submit">Create/Assign Tag</button>
+          <button class="secondary-btn span-2" type="submit">Create/Assign Tag</button>
         </form>
-      </div>
-    </details>
-
-    <details class="detail-accordion" ${notes ? "open" : ""}>
-      <summary>Notes</summary>
-      <div class="detail-accordion-body">
-        <div class="detail-item">${notes ? escapeHtml(notes) : `<span class="muted">No CRM notes yet.</span>`}</div>
       </div>
     </details>
   `;
@@ -3985,8 +4628,13 @@ function wireDetailForms() {
       if (action === "log_outreach") {
         const outreach = document.getElementById("accordionOutreach");
         outreach?.setAttribute("open", "");
-        outreach?.scrollIntoView({ behavior: "smooth", block: "start" });
         document.getElementById("messageSummary")?.focus();
+        return;
+      }
+      if (action === "add_note") {
+        const notes = document.getElementById("accordionNotes");
+        notes?.setAttribute("open", "");
+        document.getElementById("detailNotesInput")?.focus();
         return;
       }
       if (action === "open_templates") {
@@ -3996,7 +4644,6 @@ function wireDetailForms() {
       if (action === "set_follow_up") {
         const tasks = document.getElementById("accordionTasks");
         tasks?.setAttribute("open", "");
-        tasks?.scrollIntoView({ behavior: "smooth", block: "start" });
         document.getElementById("taskDue")?.focus();
         return;
       }
@@ -4030,6 +4677,22 @@ function wireDetailForms() {
         toast(err.message || "Quick action failed", true);
       }
     });
+  });
+
+  document.getElementById("notesForm")?.addEventListener("submit", async event => {
+    event.preventDefault();
+    const notes = cleanFormValue(document.getElementById("detailNotesInput")?.value);
+    try {
+      await apiJson("/api/admin-crm-update-profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customer_id: id, crm_notes: notes })
+      });
+      toast("Notes saved");
+      await refreshCurrentCustomer(id);
+    } catch (err) {
+      toast(err.message || "Failed to save notes", true);
+    }
   });
 
   document.getElementById("outreachForm")?.addEventListener("submit", async event => {
@@ -4160,9 +4823,21 @@ document.getElementById("refreshBtn").addEventListener("click", () => {
 });
 
 document.getElementById("leadForm").addEventListener("submit", submitLeadForm);
-document.getElementById("searchBtn").addEventListener("click", loadCustomers);
+document.getElementById("searchInput").addEventListener("input", () => {
+  clearTimeout(searchDebounceTimer);
+  searchDebounceTimer = setTimeout(loadCustomers, 300);
+});
 document.getElementById("searchInput").addEventListener("keydown", event => {
-  if (event.key === "Enter") loadCustomers();
+  if (event.key === "Enter") {
+    clearTimeout(searchDebounceTimer);
+    loadCustomers();
+  }
+});
+document.getElementById("toggleLeadFormBtn")?.addEventListener("click", () => {
+  const leadForm = document.getElementById("leadFormCollapse");
+  if (!leadForm) return;
+  leadForm.open = !leadForm.open;
+  if (leadForm.open) leadForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
 });
 ["lifecycleFilter", "statusFilter", "priorityFilter", "dueFilter"].forEach(id => {
   document.getElementById(id).addEventListener("change", loadCustomers);
