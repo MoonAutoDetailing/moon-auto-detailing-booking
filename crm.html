@@ -2537,8 +2537,74 @@ body {
   }
 }
 
+.mobile-top-chip {
+  min-height: 34px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  width: auto;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 1px solid rgba(127, 184, 230, 0.2);
+  background: transparent;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+a.mobile-top-chip {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.mobile-top-chip-danger {
+  border: 1px solid rgba(176, 0, 32, 0.45);
+  background: rgba(176, 0, 32, 0.12);
+  color: #ff9a9a;
+}
+
+.crm-mobile-topbar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--sep);
+  background: rgba(10, 16, 26, 0.96);
+  position: sticky;
+  top: 0;
+  z-index: 30;
+}
+
+.crm-mobile-topbar-brand {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--moon-primary);
+  letter-spacing: 0.02em;
+}
+
+.crm-mobile-topbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
 @media (max-width: 920px) {
   .detail-action-secondary-desktop {
+    display: none;
+  }
+
+  .crm-mobile-topbar {
+    display: flex;
+  }
+
+  .workspace-header {
     display: none;
   }
 
@@ -2607,15 +2673,6 @@ body {
     display: flex;
   }
 
-  .workspace-header {
-    padding: 8px 10px;
-  }
-
-  .workspace-header h1,
-  .tab-page-header h2 {
-    font-size: 16px;
-  }
-
   .act-primary,
   .act-secondary,
   .act-quiet,
@@ -2628,8 +2685,15 @@ body {
   }
 
   .detail-action-primary .act-primary {
-    min-height: var(--act-h-mobile);
+    min-height: 40px;
     flex: 1 1 calc(50% - 4px);
+    min-width: calc(50% - 4px);
+  }
+
+  .mobile-top-chip {
+    min-height: 34px;
+    padding: 4px 9px;
+    font-size: 11px;
   }
 
   .queue-row-actions .act-primary,
@@ -2842,6 +2906,14 @@ body {
     </div>
   </aside>
   <div class="crm-body">
+    <header class="crm-mobile-topbar" id="crmMobileTopbar" aria-label="CRM mobile header">
+      <span class="crm-mobile-topbar-brand">CRM</span>
+      <div class="crm-mobile-topbar-actions">
+        <a class="mobile-top-chip" href="/admin.html?portal=1">Portal</a>
+        <a class="mobile-top-chip" href="/admin.html?booking=1">Booking</a>
+        <button type="button" class="mobile-top-chip mobile-top-chip-danger" id="crmMobileLogoutBtn">Logout</button>
+      </div>
+    </header>
     <header class="workspace-header">
       <div>
         <div id="tabPageHeader" class="tab-page-header" aria-live="polite">
@@ -4822,9 +4894,10 @@ function renderDetail(data, assignedTags) {
   const notes = profile.crm_notes || customer.crm_notes || "";
   const timelineEvents = buildTimelineEvents(data, assignedTags);
   const mobileView = isMobileCrmView();
-  const fourthPrimaryAction = mobileView
+  const fourthPrimaryAction = `<button class="act-primary quick-action-btn" type="button" data-action="send_email">Email</button>`;
+  const fifthPrimaryAction = mobileView
     ? `<button class="act-primary quick-action-btn" type="button" data-action="open_templates">Template</button>`
-    : `<button class="act-primary quick-action-btn" type="button" data-action="send_email">Email</button>`;
+    : "";
   const timelineBlock = mobileView
     ? `<details class="detail-accordion detail-timeline-mobile">
         <summary>Activity (${timelineEvents.length})</summary>
@@ -4852,6 +4925,7 @@ function renderDetail(data, assignedTags) {
       <button class="act-primary quick-action-btn" type="button" data-action="log_outreach">Outreach</button>
       <button class="act-primary quick-action-btn" type="button" data-action="set_follow_up">Follow-Up</button>
       ${fourthPrimaryAction}
+      ${fifthPrimaryAction}
       <button class="act-primary quick-action-btn" type="button" data-action="add_note">Note</button>
     </div>
     <div class="detail-action-secondary detail-action-secondary-desktop" aria-label="Secondary actions">
@@ -5231,6 +5305,11 @@ function wireDetailForms() {
   });
 }
 
+function crmLogoutToAdmin() {
+  clearAdminSession();
+  window.location.href = "/admin.html";
+}
+
 async function bootCrmApp() {
   try {
     showLoginOverlay();
@@ -5306,22 +5385,12 @@ document.getElementById("toggleLeadFormBtn")?.addEventListener("click", () => {
 ["lifecycleFilter", "statusFilter", "priorityFilter", "dueFilter"].forEach(id => {
   document.getElementById(id).addEventListener("change", loadCustomers);
 });
+document.getElementById("crmMobileLogoutBtn")?.addEventListener("click", crmLogoutToAdmin);
 document.getElementById("closeDetailBtn").addEventListener("click", () => {
   state.selectedCustomerId = null;
   state.detail = null;
   setDetailPanelOpen(false);
   renderActiveTab();
-});
-document.getElementById("logoutBtn")?.addEventListener("click", async () => {
-  clearAdminSession();
-  state.customers = [];
-  state.selectedCustomerId = null;
-  document.getElementById("crmSections").innerHTML = "";
-  setDetailPanelOpen(false);
-  showLoginOverlay();
-  await requireLoginUI();
-  hideLoginOverlay();
-  await loadCustomers();
 });
 
 bootCrmApp();
