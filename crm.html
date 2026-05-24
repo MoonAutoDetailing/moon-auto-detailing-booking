@@ -1955,8 +1955,41 @@ body {
 
 .template-card-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
+  gap: 8px;
   margin-top: auto;
+}
+
+.template-subject-field {
+  display: grid;
+  gap: 4px;
+}
+
+.template-subject-field label {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.62);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.template-subject-field input {
+  width: 100%;
+  min-height: 34px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(127, 184, 230, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  font-size: 13px;
+}
+
+.template-send-note {
+  margin: 0;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.4;
 }
 
 @media (max-width: 920px) {
@@ -2459,56 +2492,64 @@ const MESSAGE_TEMPLATES = [
     id: "review_request",
     name: "Review Request",
     purpose: "Ask a happy customer for a quick Google review after a great detail.",
-    channel: "Text",
+    channel: "Text / Email",
+    defaultSubject: "Quick favor?",
     body: "Hey {{first_name}}, this is Darren from Moon Auto Detailing. Thanks again for trusting me with your {{vehicle}}. If you were happy with the detail, would you mind leaving a quick Google review? It helps a lot."
   },
   {
     id: "maintenance_reminder",
     name: "Maintenance Reminder",
     purpose: "Check in when it has been a while since their last detail.",
-    channel: "Text",
+    channel: "Text / Email",
+    defaultSubject: "Time for a maintenance detail?",
     body: "Hey {{first_name}}, this is Darren from Moon Auto Detailing. It's been a little while since your last detail, so I wanted to check if you wanted to get your {{vehicle}} back on the schedule."
   },
   {
     id: "quote_follow_up",
     name: "Quote Follow-Up",
     purpose: "Follow up on a quote without pressure.",
-    channel: "Text",
+    channel: "Text / Email",
+    defaultSubject: "Following up on your detail quote",
     body: "Hey {{first_name}}, just following up on the detail quote I sent over. No pressure either way — I just wanted to see if you had any questions or wanted help picking the best package."
   },
   {
     id: "lead_follow_up",
     name: "Lead Follow-Up",
     purpose: "Follow up with a new lead who reached out about detailing.",
-    channel: "Text",
+    channel: "Text / Email",
+    defaultSubject: "Following up from Moon Auto Detailing",
     body: "Hey {{first_name}}, this is Darren from {{business_name}}. I wanted to follow up on your mobile detail inquiry and see if you had any questions about getting {{vehicle}} taken care of."
   },
   {
     id: "winback",
     name: "Winback / Reactivation",
     purpose: "Reconnect with a past customer who has not booked in a while.",
-    channel: "Text",
+    channel: "Text / Email",
+    defaultSubject: "Checking in from Moon Auto Detailing",
     body: "Hey {{first_name}}, this is Darren from Moon Auto Detailing. I was checking in with past customers and wanted to see if your vehicle could use a refresh soon."
   },
   {
     id: "referral_ask",
     name: "Referral Ask",
     purpose: "Ask a trusted customer for a referral in a natural way.",
-    channel: "Text",
+    channel: "Text / Email",
+    defaultSubject: "Quick referral question",
     body: "Hey {{first_name}}, I appreciate you using Moon Auto Detailing. If you know anyone who needs a reliable mobile detailer, referrals always help a lot."
   },
   {
     id: "ceramic_checkup",
     name: "Ceramic Coating Checkup",
     purpose: "Check in on ceramic coating maintenance or upkeep questions.",
-    channel: "Text",
+    channel: "Text / Email",
+    defaultSubject: "Ceramic coating checkup",
     body: "Hey {{first_name}}, this is Darren from {{business_name}}. I wanted to check in on your ceramic coating and see if you needed a maintenance wash or any upkeep advice for your {{vehicle}}."
   },
   {
     id: "no_response",
     name: "No Response Follow-Up",
     purpose: "One last friendly follow-up when someone has gone quiet.",
-    channel: "Text",
+    channel: "Text / Email",
+    defaultSubject: "Just following up",
     body: "Hey {{first_name}}, just wanted to follow up one more time. If now is not a good time, no worries — I can check back later."
   }
 ];
@@ -2596,6 +2637,79 @@ async function copyTextToClipboard(text) {
   document.body.removeChild(area);
 }
 
+function selectedCustomerEmail() {
+  const row = selectedCustomerRow();
+  return cleanFormValue(row?.email) || cleanFormValue(state.detail?.customer?.email) || "";
+}
+
+function customerBlocksEmail() {
+  const profile = state.detail?.profile || {};
+  const row = selectedCustomerRow() || {};
+  if (profile.do_not_contact === true) return true;
+  if (normalize(profile.status || "") === "do_not_contact") return true;
+  if (normalize(statusValue(row)) === "do_not_contact") return true;
+  return false;
+}
+
+async function sendTemplateEmail(templateId) {
+  if (!state.selectedCustomerId) {
+    toast("Select a customer first", true);
+    return;
+  }
+  if (customerBlocksEmail()) {
+    toast("This customer is marked do not contact", true);
+    return;
+  }
+
+  const template = MESSAGE_TEMPLATES.find((item) => item.id === templateId);
+  if (!template) {
+    toast("Template not found", true);
+    return;
+  }
+
+  const email = selectedCustomerEmail();
+  if (!email) {
+    toast("This customer has no email on file", true);
+    return;
+  }
+
+  const subjectInput = document.querySelector(`[data-template-subject="${templateId}"]`);
+  const subject = cleanFormValue(subjectInput?.value) || template.defaultSubject || template.name;
+  const message = personalizeTemplate(template.body, getTemplateContext());
+
+  if (!window.confirm(`Send this email to ${email}?`)) return;
+
+  const sendBtn = document.querySelector(`.send-template-btn[data-template-id="${templateId}"]`);
+  if (sendBtn) {
+    sendBtn.disabled = true;
+    sendBtn.textContent = "Sending...";
+  }
+
+  try {
+    await apiJson("/api/admin-crm-send-email", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        customer_id: state.selectedCustomerId,
+        booking_id: null,
+        template_key: template.id,
+        subject,
+        body: message
+      })
+    });
+    toast("Email sent");
+    await refreshCurrentCustomer(state.selectedCustomerId);
+    if (state.activeTab === "templates") renderTemplates();
+  } catch (err) {
+    toast(err.message || "Failed to send email", true);
+  } finally {
+    if (sendBtn) {
+      sendBtn.disabled = false;
+      sendBtn.textContent = "Send Email";
+    }
+  }
+}
+
 function renderTemplates() {
   const grid = document.getElementById("templatesGrid");
   const hint = document.getElementById("templatesHint");
@@ -2604,11 +2718,15 @@ function renderTemplates() {
   const row = selectedCustomerRow();
   const context = getTemplateContext();
   const hasPreview = Boolean(row);
+  const email = selectedCustomerEmail();
+  const canSendEmail = hasPreview && email && !customerBlocksEmail();
 
   if (hint) {
     hint.innerHTML = hasPreview
-      ? `Previewing messages for <strong>${escapeHtml(customerName(row))}</strong>. Unknown fields stay as placeholders until you have the info.`
-      : "Select a customer in the right panel to preview personalized copy. You can still copy any template as-is.";
+      ? (email
+        ? `Previewing messages for <strong>${escapeHtml(customerName(row))}</strong> (${escapeHtml(email)}). Edit the subject before sending if needed.`
+        : `Previewing for <strong>${escapeHtml(customerName(row))}</strong>, but no email is on file — copy only.`)
+      : "Select a customer in the right panel to preview personalized copy and send one email at a time.";
   }
 
   grid.innerHTML = MESSAGE_TEMPLATES.map((template) => {
@@ -2616,6 +2734,17 @@ function renderTemplates() {
     const previewLabel = hasPreview
       ? `Preview for ${customerName(row)}`
       : "Template with placeholders";
+    const subjectField = hasPreview ? `
+        <div class="template-subject-field">
+          <label for="templateSubject-${escapeHtml(template.id)}">Email subject</label>
+          <input id="templateSubject-${escapeHtml(template.id)}" type="text" data-template-subject="${escapeHtml(template.id)}" value="${escapeHtml(template.defaultSubject || template.name)}" />
+        </div>
+      ` : "";
+    const sendNote = hasPreview && !email
+      ? `<p class="template-send-note">Add an email to this customer to send from CRM.</p>`
+      : (hasPreview && customerBlocksEmail()
+        ? `<p class="template-send-note">Do not contact — email sending disabled.</p>`
+        : "");
     return `
       <article class="template-card" data-template-id="${escapeHtml(template.id)}">
         <div class="template-card-header">
@@ -2627,8 +2756,11 @@ function renderTemplates() {
         </div>
         <div class="template-preview-label">${escapeHtml(previewLabel)}</div>
         <p class="template-body">${escapeHtml(message)}</p>
+        ${subjectField}
+        ${sendNote}
         <div class="template-card-actions">
           <button class="secondary-btn copy-template-btn" type="button" data-template-id="${escapeHtml(template.id)}">Copy</button>
+          ${canSendEmail ? `<button class="secondary-btn send-template-btn" type="button" data-template-id="${escapeHtml(template.id)}">Send Email</button>` : ""}
         </div>
       </article>
     `;
@@ -2646,6 +2778,10 @@ function renderTemplates() {
         toast(err.message || "Could not copy message", true);
       }
     });
+  });
+
+  grid.querySelectorAll(".send-template-btn").forEach((btn) => {
+    btn.addEventListener("click", () => sendTemplateEmail(btn.dataset.templateId));
   });
 }
 
