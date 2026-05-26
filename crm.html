@@ -591,7 +591,7 @@ button {
 
 @media (max-width: 920px) {
   body {
-    padding: 12px;
+    padding: 0;
   }
 
   .topbar,
@@ -657,7 +657,7 @@ button {
 
 @media (max-width: 640px) {
   body {
-    padding: 10px;
+    padding: 0;
   }
 
   #pageOverlay {
@@ -2626,10 +2626,6 @@ a.mobile-top-chip {
     display: none;
   }
 
-  .crm-mobile-nav {
-    display: flex;
-  }
-
   .crm-nav-rail {
     position: fixed;
     left: 0;
@@ -2860,6 +2856,12 @@ a.mobile-top-chip {
   background: rgba(8, 14, 22, 0.96);
   backdrop-filter: blur(10px);
   gap: 4px;
+}
+
+@media (max-width: 920px) {
+  .crm-mobile-nav {
+    display: flex;
+  }
 }
 
 .crm-mobile-nav-item {
@@ -4892,34 +4894,94 @@ function renderTaskSection(title, rows, options = {}) {
 function renderTasks() {
   if (!state.tasksQueue) state.tasksQueue = resolveDefaultTasksQueue();
 
-  const queues = [
-    { id: "overdue", label: "Overdue" },
-    { id: "today", label: "Today" },
-    { id: "upcoming", label: "Upcoming" },
-    { id: "completed", label: "Completed" }
-  ];
-
-  renderQueuePills("tasksQueuePills", queues, state.tasksQueue, (queueId) => {
-    state.tasksQueue = queueId;
-    renderTasks();
-  }, (queueId) => getTasksQueueRows(queueId).length);
-
-  const rows = getTasksQueueRows(state.tasksQueue).sort((a, b) => {
-    const aDue = new Date(a.next_follow_up_at || 0).getTime();
-    const bDue = new Date(b.next_follow_up_at || 0).getTime();
-    if (state.tasksQueue === "overdue" || state.tasksQueue === "today") return aDue - bDue;
-    if (state.tasksQueue === "completed") {
-      return new Date(b.last_contacted_at || 0).getTime() - new Date(a.last_contacted_at || 0).getTime();
-    }
-    return aDue - bDue;
-  });
-
   const container = document.getElementById("tasksSections");
-  container.innerHTML = renderActiveQueueList(rows, {
-    overdue: state.tasksQueue === "overdue",
-    showSnooze: state.tasksQueue !== "completed"
-  });
-  bindCustomerCards(container);
+
+  if (isMobileCrmView()) {
+    const sortByDue = (a, b) => new Date(a.next_follow_up_at || 0).getTime() - new Date(b.next_follow_up_at || 0).getTime();
+    const overdueRows = getTasksQueueRows("overdue").sort(sortByDue);
+    const todayRows = getTasksQueueRows("today").sort(sortByDue);
+    const upcomingRows = getTasksQueueRows("upcoming").sort(sortByDue);
+    const blocks = [];
+
+    if (overdueRows.length) {
+      blocks.push(`
+        <section class="mobile-today-block">
+          <h3>Overdue (${overdueRows.length})</h3>
+          ${renderActiveQueueList(overdueRows, { overdue: true })}
+        </section>
+      `);
+    }
+    if (todayRows.length) {
+      blocks.push(`
+        <section class="mobile-today-block">
+          <h3>Due Today (${todayRows.length})</h3>
+          ${renderActiveQueueList(todayRows, { overdue: false })}
+        </section>
+      `);
+    }
+    if (upcomingRows.length) {
+      blocks.push(`
+        <section class="mobile-today-block">
+          <h3>Upcoming (${upcomingRows.length})</h3>
+          ${renderActiveQueueList(upcomingRows, { overdue: false })}
+        </section>
+      `);
+    }
+    if (!blocks.length) {
+      blocks.push(`<div class="muted" style="padding:8px 2px;">No open follow-up tasks.</div>`);
+    }
+
+    const extraQueues = [{ id: "completed", label: "Completed" }];
+    renderQueuePills("tasksQueuePills", extraQueues, state.tasksQueue, (queueId) => {
+      state.tasksQueue = queueId;
+      renderTasks();
+    }, (queueId) => getTasksQueueRows(queueId).length);
+
+    if (state.tasksQueue === "completed") {
+      const completedRows = getTasksQueueRows("completed").sort((a, b) =>
+        new Date(b.last_contacted_at || 0).getTime() - new Date(a.last_contacted_at || 0).getTime()
+      );
+      blocks.push(`
+        <section class="mobile-today-block">
+          <h3>Completed (${completedRows.length})</h3>
+          ${renderActiveQueueList(completedRows, { overdue: false, showSnooze: false })}
+        </section>
+      `);
+    } else {
+      document.getElementById("tasksQueuePills")?.querySelectorAll(".queue-pill").forEach((pill) => pill.classList.remove("active"));
+    }
+
+    container.innerHTML = blocks.join("");
+    bindCustomerCards(container);
+  } else {
+    const queues = [
+      { id: "overdue", label: "Overdue" },
+      { id: "today", label: "Today" },
+      { id: "upcoming", label: "Upcoming" },
+      { id: "completed", label: "Completed" }
+    ];
+
+    renderQueuePills("tasksQueuePills", queues, state.tasksQueue, (queueId) => {
+      state.tasksQueue = queueId;
+      renderTasks();
+    }, (queueId) => getTasksQueueRows(queueId).length);
+
+    const rows = getTasksQueueRows(state.tasksQueue).sort((a, b) => {
+      const aDue = new Date(a.next_follow_up_at || 0).getTime();
+      const bDue = new Date(b.next_follow_up_at || 0).getTime();
+      if (state.tasksQueue === "overdue" || state.tasksQueue === "today") return aDue - bDue;
+      if (state.tasksQueue === "completed") {
+        return new Date(b.last_contacted_at || 0).getTime() - new Date(a.last_contacted_at || 0).getTime();
+      }
+      return aDue - bDue;
+    });
+
+    container.innerHTML = renderActiveQueueList(rows, {
+      overdue: state.tasksQueue === "overdue",
+      showSnooze: state.tasksQueue !== "completed"
+    });
+    bindCustomerCards(container);
+  }
 
   const overdue = state.customers.filter(isOverdueFollowUp).length;
   const dueToday = state.customers.filter(isDueToday).length;
