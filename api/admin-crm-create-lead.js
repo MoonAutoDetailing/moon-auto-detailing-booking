@@ -13,6 +13,25 @@ function clean(value) {
   return text || null;
 }
 
+const PLACEHOLDER_EMAILS = new Set([
+  "n/a",
+  "na",
+  "none",
+  "null",
+  "no email",
+  "noemail",
+  "-",
+  "—"
+]);
+
+function normalizeCustomerEmail(value) {
+  const text = clean(value);
+  if (!text) return null;
+  const lower = text.toLowerCase();
+  if (PLACEHOLDER_EMAILS.has(lower)) return null;
+  return lower;
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -34,14 +53,14 @@ export default async function handler(req, res) {
     const firstName = clean(body.first_name);
     const lastName = clean(body.last_name);
     const fullName = clean(body.full_name) || (firstName && lastName ? `${firstName} ${lastName}` : null);
-    const email = clean(body.email)?.toLowerCase() || null;
+    const email = normalizeCustomerEmail(body.email);
     const phone = clean(body.phone);
 
     if (!fullName) {
       return res.status(400).json({ ok: false, error: "full_name or first_name and last_name are required" });
     }
     if (!phone && !email) {
-      return res.status(400).json({ ok: false, error: "phone or email is required" });
+      return res.status(400).json({ ok: false, error: "Phone or email is required (phone-only leads are allowed)" });
     }
 
     const supabase = createClient(

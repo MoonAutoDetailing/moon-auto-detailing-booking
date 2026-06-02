@@ -15,8 +15,21 @@ function normalizePhone(phone) {
   return digits.slice(-10);
 }
 
+const PLACEHOLDER_EMAILS = new Set([
+  "n/a",
+  "na",
+  "none",
+  "null",
+  "no email",
+  "noemail",
+  "-",
+  "—"
+]);
+
 function normalizeEmail(email) {
-  return String(email || "").trim().toLowerCase();
+  const text = String(email || "").trim().toLowerCase();
+  if (!text || PLACEHOLDER_EMAILS.has(text)) return "";
+  return text;
 }
 
 function normalizeName(name) {

@@ -2057,6 +2057,77 @@ body {
   margin-top: 6px;
 }
 
+.detail-header-actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: flex-start;
+}
+
+.detail-nba-card {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(127, 184, 230, 0.28);
+  border-radius: 10px;
+  background: rgba(127, 184, 230, 0.1);
+}
+
+.detail-nba-card strong {
+  display: block;
+  font-size: 14px;
+  color: var(--moon-primary);
+  margin-bottom: 4px;
+}
+
+.detail-nba-card p {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.78);
+  line-height: 1.4;
+}
+
+.detail-edit-panel {
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid var(--sep);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.detail-edit-panel[hidden] {
+  display: none !important;
+}
+
+.detail-guided-actions {
+  margin-bottom: 10px;
+}
+
+.detail-section-heading {
+  margin: 0 0 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-meta);
+}
+
+.detail-open-tasks-section {
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--sep);
+}
+
+.detail-timeline-section .timeline-feed {
+  max-height: 220px;
+}
+
+.field-optional {
+  font-weight: 500;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
 .detail-accordion {
   border: none;
   border-top: 1px solid var(--sep);
@@ -3065,7 +3136,6 @@ a.mobile-top-chip {
             <div id="todayStatus" class="status-line">Loading today&apos;s priorities...</div>
             <div id="todayQueuePills" class="queue-pills" aria-label="Today queues"></div>
             <div id="todaySections" class="crm-sections"></div>
-            <div id="todayActivityFeed" class="operational-feed" aria-label="Recent activity"></div>
           </div>
         </div>
 
@@ -3151,11 +3221,11 @@ a.mobile-top-chip {
                   </div>
                   <div>
                     <label for="leadPhone">Phone</label>
-                    <input id="leadPhone" name="phone" />
+                    <input id="leadPhone" name="phone" placeholder="Required if no email" />
                   </div>
                   <div>
-                    <label for="leadEmail">Email</label>
-                    <input id="leadEmail" name="email" type="email" />
+                    <label for="leadEmail">Email <span class="field-optional">(optional)</span></label>
+                    <input id="leadEmail" name="email" type="text" inputmode="email" autocomplete="email" placeholder="Leave blank if unknown" />
                   </div>
                   <div class="span-2">
                     <label for="leadAddress">Address</label>
@@ -3246,7 +3316,10 @@ a.mobile-top-chip {
                 <div id="detailMeta" class="detail-meta-line"></div>
                 <div id="detailHeaderBadges" class="detail-record-badges"></div>
               </div>
-              <button id="closeDetailBtn" class="act-quiet" type="button">Close</button>
+              <div class="detail-header-actions">
+                <button id="editProfileBtn" class="act-secondary" type="button">Edit Profile</button>
+                <button id="closeDetailBtn" class="act-quiet" type="button">Close</button>
+              </div>
             </div>
             <div id="detailBody" class="detail-body-scroll"></div>
           </div>
@@ -3291,31 +3364,31 @@ const TAB_PANEL_IDS = {
 const TAB_COPY = {
   today: {
     title: "Today",
-    description: "Process one queue at a time — overdue, due today, upcoming, and done."
+    description: "Action queue only — overdue and due-today follow-ups to work now."
   },
   customers: {
     title: "Customers",
-    description: "Search-first lookup with quick segments and instant context panel."
+    description: "Search and browse your customer database. Select a row for the context panel."
   },
   pipeline: {
     title: "Pipeline",
-    description: "View where each lead or customer sits in your sales flow."
+    description: "Lead stages and pipeline position only."
   },
   analytics: {
     title: "Analytics",
-    description: "Revenue, follow-up health, and customer trends at a glance."
+    description: "Reporting and trends only."
   },
   tasks: {
     title: "Tasks",
-    description: "Inbox-style follow-up queues — switch, complete, and move on."
+    description: "Task inbox only — overdue, today, upcoming, and completed follow-ups."
   },
   templates: {
     title: "Templates",
-    description: "Copy-ready outreach messages for follow-ups, reviews, and reactivation."
+    description: "Message library — copy or send email when a customer is selected."
   },
   cleanup: {
     title: "Data Cleanup",
-    description: "Review possible duplicate records. Nothing is changed automatically."
+    description: "Duplicate review only. Nothing is merged or deleted automatically."
   }
 };
 
@@ -3472,7 +3545,7 @@ async function copyTextToClipboard(text) {
 
 function selectedCustomerEmail() {
   const row = selectedCustomerRow();
-  return cleanFormValue(row?.email) || cleanFormValue(state.detail?.customer?.email) || "";
+  return normalizeCustomerEmail(row?.email) || normalizeCustomerEmail(state.detail?.customer?.email) || "";
 }
 
 function customerBlocksEmail() {
@@ -3747,6 +3820,86 @@ function escapeHtml(value) {
 function cleanFormValue(value) {
   const text = String(value || "").trim();
   return text || null;
+}
+
+const PLACEHOLDER_EMAILS = new Set([
+  "n/a",
+  "na",
+  "none",
+  "null",
+  "no email",
+  "noemail",
+  "-",
+  "—"
+]);
+
+function normalizeCustomerEmail(value) {
+  const text = cleanFormValue(value);
+  if (!text) return null;
+  const lower = text.toLowerCase();
+  if (PLACEHOLDER_EMAILS.has(lower)) return null;
+  return lower;
+}
+
+function displayCustomerEmail(value) {
+  const email = normalizeCustomerEmail(value);
+  return email || "No email on file";
+}
+
+function formatCustomerContactLine(customer) {
+  const phone = customer?.phone ? escapeHtml(customer.phone) : "No phone on file";
+  const email = escapeHtml(displayCustomerEmail(customer?.email));
+  return `${phone} · ${email}`;
+}
+
+function taskIsOverdue(task) {
+  if (!task?.due_at || task.status === "completed" || task.status === "dismissed") return false;
+  const due = new Date(task.due_at);
+  return !Number.isNaN(due.getTime()) && due.getTime() < Date.now();
+}
+
+function determineNextBestAction(customer, profile, tasks, outreachLogs) {
+  const openTasks = (tasks || []).filter((task) => task.status !== "completed" && task.status !== "dismissed");
+  const row = {
+    ...customer,
+    lifecycle_stage: profile?.lifecycle_stage || customer?.lifecycle_stage,
+    status: profile?.status || customer?.crm_status || customer?.status,
+    priority: profile?.priority || customer?.priority
+  };
+
+  if (isOverdueFollowUp(row) || openTasks.some(taskIsOverdue)) {
+    return { title: "Follow up overdue", detail: "Complete or reschedule the overdue follow-up." };
+  }
+  if (!normalizeCustomerEmail(customer?.email)) {
+    return { title: "Collect email", detail: "Add an email address to send templates from CRM." };
+  }
+  if (normalize(stageValue(row)) === "lead" && !customer?.last_contacted_at && !(outreachLogs || []).length) {
+    return { title: "First contact needed", detail: "Log the first outreach for this lead." };
+  }
+  const reviewTask = openTasks.find((task) => String(task.task_type || "").toLowerCase().includes("review"));
+  if (reviewTask) {
+    return { title: "Ask for review", detail: "Open task suggests requesting a review." };
+  }
+  const maintTask = openTasks.find((task) => {
+    const type = String(task.task_type || "").toLowerCase();
+    return type.includes("maintenance") || type.includes("reminder");
+  });
+  if (maintTask) {
+    return { title: "Send maintenance reminder", detail: "Follow up on maintenance or rebooking." };
+  }
+  if (isCoolingCustomer(row) || isInactiveCustomer(row)) {
+    return { title: "Reactivation follow-up", detail: "Customer is cooling or inactive — check in." };
+  }
+  if (!customer?.next_follow_up_at && !openTasks.length) {
+    return { title: "Set next follow-up", detail: "No follow-up date or open task on record." };
+  }
+  return { title: "Customer up to date", detail: "No urgent action right now." };
+}
+
+function toggleEditProfilePanel(show) {
+  const panel = document.getElementById("detailEditPanel");
+  if (!panel) return;
+  panel.hidden = show === undefined ? !panel.hidden : !show;
 }
 
 function dateTimeLocalToIso(value) {
@@ -4443,11 +4596,12 @@ function timelineTypeLabel(type) {
   return labels[type] || type;
 }
 
-function renderTimelineFeed(events) {
-  if (!events.length) return `<div class="meta-text" style="padding:4px 0;">No activity yet.</div>`;
+function renderTimelineFeed(events, limit = 8) {
+  const rows = (events || []).slice(0, limit);
+  if (!rows.length) return `<div class="meta-text" style="padding:4px 0;">No activity yet.</div>`;
   return `
     <div class="timeline-feed">
-      ${events.map((event) => `
+      ${rows.map((event) => `
         <div class="timeline-row">
           <span class="timeline-badge">${escapeHtml(timelineTypeLabel(event.type))}</span>
           <span class="timeline-desc">${escapeHtml(event.description || event.type)}</span>
@@ -4636,7 +4790,6 @@ function renderToday() {
 
     container.innerHTML = blocks.join("");
     bindCustomerCards(container);
-    renderOperationalActivityFeed();
   } else {
     const queues = [
       { id: "today", label: "Today" },
@@ -4660,7 +4813,6 @@ function renderToday() {
 
     container.innerHTML = renderActiveQueueList(rows, { overdue: state.todayQueue === "overdue", showSnooze: state.todayQueue !== "done" });
     bindCustomerCards(container);
-    renderOperationalActivityFeed();
   }
 
   const overdueCount = state.customers.filter(isOverdueFollowUp).length;
@@ -4688,7 +4840,7 @@ function renderCustomerRow(row) {
       </div>
       <div class="row-meta">${escapeHtml(followUpLabel)}</div>
       <div class="row-meta row-contact-phone">${escapeHtml(row.phone || "No phone")}</div>
-      <div class="row-meta row-contact-email">${escapeHtml(row.email || "No email")}</div>
+      <div class="row-meta row-contact-email">${escapeHtml(displayCustomerEmail(row.email))}</div>
       ${revenueCell}
     </button>
   `;
@@ -5179,7 +5331,7 @@ function renderCustomerCard(row) {
         ${isHot ? `<span class="badge badge-hot">${escapeHtml(priority)}</span>` : ""}
       </div>
       <div class="card-focus">${escapeHtml(followUpLabel)}</div>
-      <div class="card-secondary">${escapeHtml(row.phone || "No phone")} · ${escapeHtml(row.email || "No email")}</div>
+      <div class="card-secondary">${escapeHtml(row.phone || "No phone")} · ${escapeHtml(displayCustomerEmail(row.email))}</div>
       ${showRevenue ? `<div class="card-secondary">Lifetime revenue: ${escapeHtml(formatMoney(row.total_revenue))}</div>` : ""}
     </button>
   `;
@@ -5209,14 +5361,13 @@ async function openCustomerDetail(id, options = {}) {
     state.tags = tags.tags || [];
     renderDetail(detail, tags.assigned_tags || []);
     if (options.focusOutreach) {
-      const outreach = document.getElementById("accordionOutreach");
+      const outreach = document.getElementById("refOutreach");
       outreach?.setAttribute("open", "");
       document.getElementById("messageSummary")?.focus();
     }
     if (options.focusNotes) {
-      const notes = document.getElementById("accordionNotes");
-      notes?.setAttribute("open", "");
-      document.getElementById("detailNotesInput")?.focus();
+      toggleEditProfilePanel(true);
+      document.getElementById("editCrmNotes")?.focus();
     }
   } catch (err) {
     document.getElementById("detailTitle").textContent = "Customer Detail";
@@ -5228,31 +5379,24 @@ function renderDetail(data, assignedTags) {
   const customer = data.customer || {};
   const profile = data.profile || {};
   const tasks = data.follow_up_tasks || [];
-  const openTasks = tasks.filter(task => task.status !== "completed" && task.status !== "dismissed");
+  const openTasks = tasks.filter((task) => task.status !== "completed" && task.status !== "dismissed");
   const bookings = data.bookings || [];
   const outreachLogs = data.outreach_logs || [];
   const notes = profile.crm_notes || customer.crm_notes || "";
   const timelineEvents = buildTimelineEvents(data, assignedTags);
-  const mobileView = isMobileCrmView();
-  const fourthPrimaryAction = `<button class="act-primary quick-action-btn" type="button" data-action="send_email">Email</button>`;
-  const fifthPrimaryAction = mobileView
-    ? `<button class="act-primary quick-action-btn" type="button" data-action="open_templates">Template</button>`
-    : "";
-  const timelineBlock = mobileView
-    ? `<details class="detail-accordion detail-timeline-mobile">
-        <summary>Activity (${timelineEvents.length})</summary>
-        <div class="detail-accordion-body">${renderTimelineFeed(timelineEvents)}</div>
-      </details>`
-    : `<section class="detail-timeline-section" aria-label="Activity timeline">
-        <div class="detail-timeline-header">
-          <h3>Activity</h3>
-          <span class="meta-text">${timelineEvents.length} events</span>
-        </div>
-        ${renderTimelineFeed(timelineEvents)}
-      </section>`;
+  const nba = determineNextBestAction(customer, profile, tasks, outreachLogs);
+  const hasEmail = Boolean(normalizeCustomerEmail(customer.email));
+  const stage = profile.lifecycle_stage || customer.lifecycle_stage || "lead";
+  const status = profile.status || statusValue(customer);
+  const priority = profile.priority || priorityValue(customer);
+  const contactMethod = profile.preferred_contact_method || "sms";
+  const emailBtn = hasEmail
+    ? `<button class="act-primary quick-action-btn" type="button" data-action="send_email">Send Email</button>`
+    : `<button class="act-primary" type="button" disabled title="No email on file">Send Email</button>`;
+  const templatesBtn = `<button class="act-primary quick-action-btn" type="button" data-action="open_templates">Templates</button>`;
 
   document.getElementById("detailTitle").textContent = customerName(customer);
-  document.getElementById("detailSub").textContent = [customer.phone, customer.email].filter(Boolean).join(" · ");
+  document.getElementById("detailSub").innerHTML = formatCustomerContactLine(customer);
   document.getElementById("detailMeta").textContent = customerDetailMetaLine(customer);
   document.getElementById("detailHeaderBadges").innerHTML = `
     <span class="badge">${escapeHtml(stageValue(customer))}</span>
@@ -5261,95 +5405,210 @@ function renderDetail(data, assignedTags) {
   `;
 
   document.getElementById("detailBody").innerHTML = `
-    <div class="detail-action-primary" aria-label="Primary actions">
-      <button class="act-primary quick-action-btn" type="button" data-action="log_outreach">Outreach</button>
-      <button class="act-primary quick-action-btn" type="button" data-action="set_follow_up">Follow-Up</button>
-      ${fourthPrimaryAction}
-      ${fifthPrimaryAction}
-      <button class="act-primary quick-action-btn" type="button" data-action="add_note">Note</button>
-    </div>
-    <div class="detail-action-secondary detail-action-secondary-desktop" aria-label="Secondary actions">
-      <button class="act-secondary quick-action-btn" type="button" data-action="open_templates">Templates</button>
-      <button class="act-secondary quick-action-btn" type="button" data-action="mark_booked">Booked</button>
-    </div>
-    <div class="detail-action-danger" aria-label="Status actions">
-      <button class="act-quiet quick-action-btn" type="button" data-action="mark_ghosted">Ghosted</button>
-      <button class="act-danger quick-action-btn" type="button" data-action="do_not_contact">DNC</button>
-    </div>
-
-    ${timelineBlock}
-
-    <details class="detail-accordion" id="accordionTasks" ${openTasks.length ? "open" : ""}>
-      <summary>Tasks (${openTasks.length} open)</summary>
-      <div class="detail-accordion-body">
-        <div id="taskList">
-          ${openTasks.length ? openTasks.map(task => `
-            <div class="detail-item">
-              <strong>${escapeHtml(task.task_type || "follow_up")}</strong>
-              <div class="meta-text">Due ${escapeHtml(formatDate(task.due_at))} · ${escapeHtml(task.status || "")}</div>
-              <div>${escapeHtml(task.notes || "")}</div>
-              <button class="act-primary complete-task-btn" type="button" data-task-id="${escapeHtml(task.id)}">Complete</button>
-            </div>
-          `).join("") : `<div class="meta-text">No open follow-up tasks.</div>`}
+    <div id="detailEditPanel" class="detail-edit-panel" hidden>
+      <form id="profileEditForm" class="detail-form compact-form">
+        <div class="span-2">
+          <label for="editFullName">Full Name</label>
+          <input id="editFullName" name="full_name" value="${escapeHtml(customer.full_name || "")}" required />
         </div>
-        <form id="taskCreateForm" class="detail-form compact-form">
-          <div>
-            <label for="taskType">Task Type</label>
-            <input id="taskType" name="task_type" value="general_follow_up" />
+        <div>
+          <label for="editPhone">Phone</label>
+          <input id="editPhone" name="phone" value="${escapeHtml(customer.phone || "")}" />
+        </div>
+        <div>
+          <label for="editEmail">Email <span class="field-optional">(optional)</span></label>
+          <input id="editEmail" name="email" type="text" value="${escapeHtml(normalizeCustomerEmail(customer.email) || "")}" placeholder="Leave blank if none" />
+        </div>
+        <div class="span-2">
+          <label for="editAddress">Address</label>
+          <input id="editAddress" name="address" value="${escapeHtml(customer.address || "")}" />
+        </div>
+        <div class="span-2">
+          <label for="editCompany">Company</label>
+          <input id="editCompany" name="company_name" value="${escapeHtml(profile.company_name || "")}" />
+        </div>
+        <div>
+          <label for="editContactMethod">Preferred Contact</label>
+          <select id="editContactMethod" name="preferred_contact_method">
+            <option value="sms" ${contactMethod === "sms" ? "selected" : ""}>SMS</option>
+            <option value="phone" ${contactMethod === "phone" ? "selected" : ""}>Phone</option>
+            <option value="email" ${contactMethod === "email" ? "selected" : ""}>Email</option>
+            <option value="in_person" ${contactMethod === "in_person" ? "selected" : ""}>In Person</option>
+          </select>
+        </div>
+        <div>
+          <label for="editLeadSource">Lead Source</label>
+          <input id="editLeadSource" name="lead_source" value="${escapeHtml(profile.lead_source || "")}" />
+        </div>
+        <div>
+          <label for="editStatus">Status</label>
+          <select id="editStatus" name="status">
+            <option value="active" ${status === "active" ? "selected" : ""}>Active</option>
+            <option value="new" ${status === "new" ? "selected" : ""}>New</option>
+            <option value="nurture" ${status === "nurture" ? "selected" : ""}>Nurture</option>
+            <option value="cooling" ${status === "cooling" ? "selected" : ""}>Cooling</option>
+            <option value="inactive" ${status === "inactive" ? "selected" : ""}>Inactive</option>
+            <option value="closed" ${status === "closed" ? "selected" : ""}>Closed</option>
+            <option value="booked" ${status === "booked" ? "selected" : ""}>Booked</option>
+            <option value="ghosted" ${status === "ghosted" ? "selected" : ""}>Ghosted</option>
+            <option value="do_not_contact" ${status === "do_not_contact" ? "selected" : ""}>Do not contact</option>
+          </select>
+        </div>
+        <div>
+          <label for="editLifecycle">Lifecycle Stage</label>
+          <select id="editLifecycle" name="lifecycle_stage">
+            <option value="lead" ${stage === "lead" ? "selected" : ""}>Lead</option>
+            <option value="prospect" ${stage === "prospect" ? "selected" : ""}>Prospect</option>
+            <option value="customer" ${stage === "customer" ? "selected" : ""}>Customer</option>
+            <option value="booked" ${stage === "booked" ? "selected" : ""}>Booked</option>
+            <option value="inactive" ${stage === "inactive" ? "selected" : ""}>Inactive</option>
+            <option value="do_not_contact" ${stage === "do_not_contact" ? "selected" : ""}>Do not contact</option>
+          </select>
+        </div>
+        <div>
+          <label for="editPriority">Priority</label>
+          <select id="editPriority" name="priority">
+            <option value="urgent" ${priority === "urgent" ? "selected" : ""}>Urgent</option>
+            <option value="high" ${priority === "high" ? "selected" : ""}>High</option>
+            <option value="medium" ${priority === "medium" ? "selected" : ""}>Medium</option>
+            <option value="low" ${priority === "low" ? "selected" : ""}>Low</option>
+          </select>
+        </div>
+        <div class="span-2">
+          <label for="editCrmNotes">Notes</label>
+          <textarea id="editCrmNotes" name="crm_notes">${escapeHtml(notes)}</textarea>
+        </div>
+        <button class="act-primary span-2" type="submit">Save Profile</button>
+        <button class="act-quiet span-2" type="button" id="cancelEditProfileBtn">Cancel</button>
+      </form>
+    </div>
+
+    <div class="detail-nba-card" aria-label="Next best action">
+      <strong>${escapeHtml(nba.title)}</strong>
+      <p>${escapeHtml(nba.detail)}</p>
+    </div>
+
+    <div class="detail-guided-actions" aria-label="Guided actions">
+      <p class="detail-section-heading">Actions</p>
+      <div class="detail-action-primary">
+        <button class="act-primary quick-action-btn" type="button" data-action="log_outreach">Log Outreach</button>
+        <button class="act-primary quick-action-btn" type="button" data-action="set_follow_up">Set Follow-Up</button>
+        ${emailBtn}
+        ${templatesBtn}
+        <button class="act-primary quick-action-btn" type="button" data-action="add_note">Add Note</button>
+      </div>
+      <div class="detail-action-secondary">
+        <button class="act-secondary quick-action-btn" type="button" data-action="mark_booked">Mark Booked</button>
+        <button class="act-secondary quick-action-btn" type="button" data-action="mark_ghosted">Mark Ghosted</button>
+      </div>
+      <div class="detail-action-danger">
+        <button class="act-danger quick-action-btn" type="button" data-action="do_not_contact">Do Not Contact</button>
+      </div>
+    </div>
+
+    <section class="detail-timeline-section" aria-label="Recent activity">
+      <div class="detail-timeline-header">
+        <h3>Recent Activity</h3>
+        <span class="meta-text">${Math.min(timelineEvents.length, 8)} shown</span>
+      </div>
+      ${renderTimelineFeed(timelineEvents, 8)}
+    </section>
+
+    <section class="detail-open-tasks-section" id="detailOpenTasks" aria-label="Open tasks">
+      <p class="detail-section-heading">Open Tasks (${openTasks.length})</p>
+      <div id="taskList">
+        ${openTasks.length ? openTasks.map((task) => `
+          <div class="detail-item">
+            <strong>${escapeHtml(task.task_type || "follow_up")}</strong>
+            <div class="meta-text">Due ${escapeHtml(formatDate(task.due_at))} · ${escapeHtml(task.status || "")}</div>
+            <div>${escapeHtml(task.notes || "")}</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+              <button class="act-primary complete-task-btn" type="button" data-task-id="${escapeHtml(task.id)}">Complete</button>
+              <button class="act-quiet detail-snooze-btn" type="button">Snooze 1d</button>
+            </div>
           </div>
-          <div>
-            <label for="taskDue">Due At</label>
-            <input id="taskDue" name="due_at" type="datetime-local" required />
-          </div>
-          <div>
-            <label for="taskPriority">Priority</label>
-            <select id="taskPriority" name="priority">
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-              <option value="low">Low</option>
-            </select>
-          </div>
-          <div>
-            <label for="taskNotes">Notes</label>
-            <input id="taskNotes" name="notes" />
-          </div>
-          <button class="act-primary span-2" type="submit">Create Task</button>
-        </form>
+        `).join("") : `<div class="meta-text">No open follow-up tasks.</div>`}
+      </div>
+      <form id="taskCreateForm" class="detail-form compact-form">
+        <div>
+          <label for="taskType">Task Type</label>
+          <input id="taskType" name="task_type" value="general_follow_up" />
+        </div>
+        <div>
+          <label for="taskDue">Due At</label>
+          <input id="taskDue" name="due_at" type="datetime-local" required />
+        </div>
+        <div>
+          <label for="taskPriority">Priority</label>
+          <select id="taskPriority" name="priority">
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+            <option value="urgent">Urgent</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div>
+          <label for="taskNotes">Notes</label>
+          <input id="taskNotes" name="notes" />
+        </div>
+        <button class="act-primary span-2" type="submit">Create Task</button>
+      </form>
+    </section>
+
+    <details class="detail-accordion">
+      <summary>Profile</summary>
+      <div class="detail-accordion-body">
+        <div class="detail-item"><span class="meta-text">Stage</span> ${escapeHtml(stage)}</div>
+        <div class="detail-item"><span class="meta-text">Status</span> ${escapeHtml(status)}</div>
+        <div class="detail-item"><span class="meta-text">Priority</span> ${escapeHtml(priority)}</div>
+        <div class="detail-item"><span class="meta-text">Company</span> ${escapeHtml(profile.company_name || "—")}</div>
+        <div class="detail-item"><span class="meta-text">Source</span> ${escapeHtml(profile.lead_source || "—")}</div>
+        <div class="detail-item"><span class="meta-text">Contact</span> ${escapeHtml(contactMethod)}</div>
+        <div class="detail-item"><span class="meta-text">Revenue</span> ${escapeHtml(formatMoney(customer.total_revenue))}</div>
+        <div class="detail-item"><span class="meta-text">Address</span> ${escapeHtml(customer.address || "Not set")}</div>
+        <div class="detail-item"><span class="meta-text">Notes</span> ${notes ? escapeHtml(notes) : `<span class="meta-text">None</span>`}</div>
       </div>
     </details>
 
-    <details class="detail-accordion" id="accordionNotes" ${notes ? "open" : ""}>
-      <summary>Notes</summary>
+    <details class="detail-accordion">
+      <summary>Tags</summary>
       <div class="detail-accordion-body">
-        <div class="detail-item">${notes ? escapeHtml(notes) : `<span class="meta-text">No CRM notes yet.</span>`}</div>
-        <form id="notesForm" class="detail-form compact-form">
-          <div class="span-2">
-            <label for="detailNotesInput">Update Notes</label>
-            <textarea id="detailNotesInput" name="crm_notes">${escapeHtml(notes)}</textarea>
+        <div class="detail-item">
+          ${(assignedTags || []).length ? assignedTags.map((tag) => `<span class="badge">${escapeHtml(tag.name)}</span>`).join(" ") : `<span class="meta-text">No tags assigned.</span>`}
+        </div>
+        <form id="tagAssignForm" class="detail-form">
+          <div>
+            <label for="tagSelect">Assign Tag</label>
+            <select id="tagSelect" name="tag_id">
+              <option value="">Select tag</option>
+              ${state.tags.map((tag) => `<option value="${escapeHtml(tag.id)}">${escapeHtml(tag.name)}</option>`).join("")}
+            </select>
           </div>
-          <button class="act-primary span-2" type="submit">Save Notes</button>
+          <div>
+            <label for="newTagName">New Tag</label>
+            <input id="newTagName" name="name" placeholder="optional" />
+          </div>
+          <button class="act-secondary span-2" type="submit">Assign Tag</button>
         </form>
       </div>
     </details>
 
     <details class="detail-accordion">
-      <summary>Profile</summary>
+      <summary>Booking History (${bookings.length})</summary>
       <div class="detail-accordion-body">
-        <div class="detail-item"><span class="meta-text">Stage</span> ${escapeHtml(profile.lifecycle_stage || customer.lifecycle_stage || "lead")}</div>
-        <div class="detail-item"><span class="meta-text">Status</span> ${escapeHtml(profile.status || statusValue(customer))}</div>
-        <div class="detail-item"><span class="meta-text">Priority</span> ${escapeHtml(profile.priority || priorityValue(customer))}</div>
-        <div class="detail-item"><span class="meta-text">Company</span> ${escapeHtml(profile.company_name || customer.company_name || "—")}</div>
-        <div class="detail-item"><span class="meta-text">Source</span> ${escapeHtml(profile.lead_source || "—")}</div>
-        <div class="detail-item"><span class="meta-text">Revenue</span> ${escapeHtml(formatMoney(customer.total_revenue))}</div>
-        <div class="detail-item"><span class="meta-text">Address</span> ${escapeHtml(customer.address || "Not set")}</div>
+        ${bookings.slice(0, 12).map((booking) => `
+          <div class="detail-item">
+            <strong>${escapeHtml(formatDate(booking.scheduled_start))}</strong>
+            <div class="meta-text">${escapeHtml(booking.status || "")}${booking.total_price != null ? ` · ${escapeHtml(formatMoney(booking.total_price))}` : ""}</div>
+          </div>
+        `).join("") || `<div class="meta-text">No bookings yet.</div>`}
       </div>
     </details>
 
-    <details class="detail-accordion" id="accordionOutreach">
-      <summary>Outreach Log</summary>
+    <details class="detail-accordion" id="refOutreach">
+      <summary>Full Outreach Log</summary>
       <div class="detail-accordion-body">
-        ${outreachLogs.slice(0, 8).map(log => `
+        ${outreachLogs.slice(0, 20).map((log) => `
           <div class="detail-item">
             <strong>${escapeHtml(log.method || "")}</strong>
             <div class="meta-text">${escapeHtml(formatDate(log.contacted_at))}</div>
@@ -5395,47 +5654,9 @@ function renderDetail(data, assignedTags) {
         </form>
       </div>
     </details>
-
-    <details class="detail-accordion">
-      <summary>Bookings (${bookings.length})</summary>
-      <div class="detail-accordion-body">
-        ${bookings.slice(0, 8).map(booking => `
-          <div class="detail-item">
-            <strong>${escapeHtml(formatDate(booking.scheduled_start))}</strong>
-            <div class="meta-text">${escapeHtml(booking.status || "")}${booking.total_price != null ? ` · ${escapeHtml(formatMoney(booking.total_price))}` : ""}</div>
-          </div>
-        `).join("") || `<div class="meta-text">No bookings yet.</div>`}
-      </div>
-    </details>
-
-    <details class="detail-accordion">
-      <summary>Tags</summary>
-      <div class="detail-accordion-body">
-        <div class="detail-item">
-          ${(assignedTags || []).length ? assignedTags.map(tag => `<span class="badge">${escapeHtml(tag.name)}</span>`).join(" ") : `<span class="meta-text">No tags assigned.</span>`}
-        </div>
-        <form id="tagAssignForm" class="detail-form">
-          <div>
-            <label for="tagSelect">Assign Tag</label>
-            <select id="tagSelect" name="tag_id">
-              <option value="">Select tag</option>
-              ${state.tags.map(tag => `<option value="${escapeHtml(tag.id)}">${escapeHtml(tag.name)}</option>`).join("")}
-            </select>
-          </div>
-          <div>
-            <label for="newTagName">New Tag</label>
-            <input id="newTagName" name="name" placeholder="optional" />
-          </div>
-          <button class="act-secondary span-2" type="submit">Assign Tag</button>
-        </form>
-      </div>
-    </details>
   `;
 
   wireDetailForms();
-  if (openTasks.length) {
-    document.getElementById("taskList").dataset.openCount = String(openTasks.length);
-  }
   if (state.activeTab === "templates") renderTemplates();
 }
 
@@ -5457,11 +5678,23 @@ async function submitLeadForm(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const body = formObject(form);
+  body.email = normalizeCustomerEmail(body.email);
   body.next_follow_up_at = dateTimeLocalToIso(body.next_follow_up_at);
   body.lifecycle_stage = "lead";
   body.status = "active";
   body.customer_type = "residential";
   body.preferred_contact_method = "sms";
+
+  const fullName = body.full_name || [body.first_name, body.last_name].filter(Boolean).join(" ").trim();
+  if (!fullName) {
+    toast("Full name is required", true);
+    return;
+  }
+  body.full_name = fullName;
+  if (!body.phone && !body.email) {
+    toast("Phone or email is required (phone-only leads are allowed)", true);
+    return;
+  }
 
   try {
     const data = await apiJson("/api/admin-crm-create-lead", {
@@ -5481,19 +5714,70 @@ async function submitLeadForm(event) {
 function wireDetailForms() {
   const id = state.selectedCustomerId;
 
+  const editBtn = document.getElementById("editProfileBtn");
+  if (editBtn && editBtn.dataset.bound !== "1") {
+    editBtn.dataset.bound = "1";
+    editBtn.addEventListener("click", () => toggleEditProfilePanel());
+  }
+
+  document.getElementById("cancelEditProfileBtn")?.addEventListener("click", () => toggleEditProfilePanel(false));
+
+  document.getElementById("profileEditForm")?.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!id) return;
+    const form = event.currentTarget;
+    const body = formObject(form);
+    const customerPayload = {
+      customer_id: id,
+      full_name: body.full_name,
+      phone: body.phone,
+      email: body.email || "",
+      address: body.address
+    };
+    const profilePayload = {
+      customer_id: id,
+      company_name: body.company_name,
+      preferred_contact_method: body.preferred_contact_method,
+      lead_source: body.lead_source,
+      status: body.status,
+      lifecycle_stage: body.lifecycle_stage,
+      priority: body.priority,
+      crm_notes: body.crm_notes
+    };
+
+    try {
+      await Promise.all([
+        apiJson("/api/admin-crm-update-customer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(customerPayload)
+        }),
+        apiJson("/api/admin-crm-update-profile", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(profilePayload)
+        })
+      ]);
+      toast("Profile saved");
+      toggleEditProfilePanel(false);
+      await refreshCurrentCustomer(id);
+    } catch (err) {
+      toast(err.message || "Failed to save profile", true);
+    }
+  });
+
   document.querySelectorAll(".quick-action-btn").forEach(button => {
     button.addEventListener("click", async () => {
       const action = button.dataset.action;
       if (action === "log_outreach") {
-        const outreach = document.getElementById("accordionOutreach");
+        const outreach = document.getElementById("refOutreach");
         outreach?.setAttribute("open", "");
         document.getElementById("messageSummary")?.focus();
         return;
       }
       if (action === "add_note") {
-        const notes = document.getElementById("accordionNotes");
-        notes?.setAttribute("open", "");
-        document.getElementById("detailNotesInput")?.focus();
+        toggleEditProfilePanel(true);
+        document.getElementById("editCrmNotes")?.focus();
         return;
       }
       if (action === "send_email" || action === "open_templates") {
@@ -5505,8 +5789,7 @@ function wireDetailForms() {
         return;
       }
       if (action === "set_follow_up") {
-        const tasks = document.getElementById("accordionTasks");
-        tasks?.setAttribute("open", "");
+        document.getElementById("detailOpenTasks")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
         document.getElementById("taskDue")?.focus();
         return;
       }
@@ -5542,20 +5825,17 @@ function wireDetailForms() {
     });
   });
 
-  document.getElementById("notesForm")?.addEventListener("submit", async event => {
-    event.preventDefault();
-    const notes = cleanFormValue(document.getElementById("detailNotesInput")?.value);
-    try {
-      await apiJson("/api/admin-crm-update-profile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customer_id: id, crm_notes: notes })
-      });
-      toast("Notes saved");
-      await refreshCurrentCustomer(id);
-    } catch (err) {
-      toast(err.message || "Failed to save notes", true);
-    }
+  document.querySelectorAll(".detail-snooze-btn").forEach((btn) => {
+    if (btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", async () => {
+      if (!id) return;
+      try {
+        await snoozeFollowUpForCustomer(id, 1);
+      } catch (err) {
+        toast(err.message || "Failed to snooze", true);
+      }
+    });
   });
 
   document.getElementById("outreachForm")?.addEventListener("submit", async event => {
