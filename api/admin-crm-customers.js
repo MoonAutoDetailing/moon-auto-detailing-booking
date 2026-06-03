@@ -23,6 +23,58 @@ function parseOffset(value) {
   return n;
 }
 
+const COMPLETED_BOOKING_STATUSES = ["completed", "complete", "done"];
+
+async function loadCompletedBookingSummary(supabase, customerIds) {
+  const ids = [...new Set((customerIds || []).filter(Boolean))];
+  if (!ids.length) return new Map();
+
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("customer_id, total_price, scheduled_start, status")
+    .in("customer_id", ids)
+    .in("status", COMPLETED_BOOKING_STATUSES);
+
+  if (error) throw error;
+
+  const byCustomer = new Map();
+  for (const booking of data || []) {
+    const customerId = booking.customer_id;
+    if (!customerId) continue;
+    const current = byCustomer.get(customerId) || {
+      total_revenue: 0,
+      completed_bookings: 0,
+      last_service_date: null
+    };
+    current.total_revenue += Number(booking.total_price) || 0;
+    current.completed_bookings += 1;
+    const serviceDate = booking.completed_at || booking.scheduled_start;
+    if (serviceDate && (!current.last_service_date || new Date(serviceDate).getTime() > new Date(current.last_service_date).getTime())) {
+      current.last_service_date = serviceDate;
+    }
+    byCustomer.set(customerId, current);
+  }
+  return byCustomer;
+}
+
+function applyBookingSummary(row, bookingSummary) {
+  const customerId = row.customer_id || row.id;
+  const summary = bookingSummary.get(customerId);
+  if (!summary) {
+    return {
+      ...row,
+      total_revenue: 0,
+      completed_bookings: 0
+    };
+  }
+  return {
+    ...row,
+    total_revenue: Math.round(summary.total_revenue * 100) / 100,
+    completed_bookings: summary.completed_bookings,
+    last_service_date: summary.last_service_date || row.last_service_date
+  };
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
@@ -88,10 +140,14 @@ export default async function handler(req, res) {
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
+    const bookingSummary = await loadCompletedBookingSummary(
+      supabase,
+      (data || []).map((row) => row.customer_id || row.id)
+    );
 
     return res.status(200).json({
       ok: true,
-      customers: data || [],
+      customers: (data || []).map((row) => applyBookingSummary(row, bookingSummary)),
       count: count || 0
     });
   } catch (err) {

@@ -18,6 +18,7 @@ const POSITIVE_RESPONSES = new Set([
   "yes"
 ]);
 const BOOKED_RESPONSES = new Set(["booked", "scheduled"]);
+const COMPLETED_BOOKING_STATUSES = new Set(["completed", "complete", "done"]);
 
 function normalize(value) {
   return String(value || "").trim().toLowerCase();
@@ -114,7 +115,7 @@ export default async function handler(req, res) {
     const contactCutoff = new Date(now - 30 * MS_DAY).toISOString();
     const reactivationCutoff = new Date(now - 90 * MS_DAY).toISOString();
 
-    const summaryRows = await safeSection(
+    let summaryRows = await safeSection(
       warnings,
       "crm_customer_summary",
       () => fetchAllRows(supabase, "crm_customer_summary", "*"),
@@ -173,7 +174,7 @@ export default async function handler(req, res) {
       variantCategoryById.set(variant.id, category);
     }
 
-    const completedBookings = bookings.filter((row) => normalize(row.status) === "completed");
+    const completedBookings = bookings.filter((row) => COMPLETED_BOOKING_STATUSES.has(normalize(row.status)));
     const completedCount = completedBookings.length;
     const totalCompletedRevenue = completedBookings.reduce(
       (sum, row) => sum + (Number(row.total_price) || 0),
@@ -181,13 +182,33 @@ export default async function handler(req, res) {
     );
 
     const completedByCustomer = new Map();
+    const completedRevenueByCustomer = new Map();
+    const lastCompletedByCustomer = new Map();
     for (const booking of completedBookings) {
       if (!booking.customer_id) continue;
       completedByCustomer.set(
         booking.customer_id,
         (completedByCustomer.get(booking.customer_id) || 0) + 1
       );
+      completedRevenueByCustomer.set(
+        booking.customer_id,
+        (completedRevenueByCustomer.get(booking.customer_id) || 0) + (Number(booking.total_price) || 0)
+      );
+      const serviceDate = booking.completed_at || booking.scheduled_start;
+      if (serviceDate && (!lastCompletedByCustomer.get(booking.customer_id) || new Date(serviceDate).getTime() > new Date(lastCompletedByCustomer.get(booking.customer_id)).getTime())) {
+        lastCompletedByCustomer.set(booking.customer_id, serviceDate);
+      }
     }
+
+    summaryRows = summaryRows.map((row) => {
+      const customerId = row.customer_id || row.id;
+      return {
+        ...row,
+        total_revenue: roundMoney(completedRevenueByCustomer.get(customerId) || 0),
+        completed_bookings: completedByCustomer.get(customerId) || 0,
+        last_service_date: lastCompletedByCustomer.get(customerId) || row.last_service_date
+      };
+    });
 
     const revenueByMonth = new Map();
     const revenueByCategory = new Map();

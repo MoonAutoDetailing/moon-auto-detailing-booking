@@ -36,12 +36,15 @@ function startOfTomorrow() {
   return date;
 }
 
+const COMPLETED_BOOKING_STATUSES = ["completed", "complete", "done"];
+
 function isOpenTask(status) {
-  return status === "open" || status === "snoozed";
+  const value = String(clean(status) || "").toLowerCase();
+  return value === "open" || value === "snoozed" || value === "pending_response";
 }
 
 function taskBucket(task) {
-  const status = clean(task.status) || "open";
+  const status = String(clean(task.status) || "open").toLowerCase();
   if (status === "completed") return "completed";
   if (!isOpenTask(status)) return null;
 
@@ -74,6 +77,49 @@ function toTaskRow(task, customer) {
     lifecycle_stage: customer?.lifecycle_stage || null,
     total_revenue: Number(customer?.total_revenue) || 0,
     last_service_date: customer?.last_service_date || null
+  };
+}
+
+async function loadCompletedBookingSummary(supabase, customerIds) {
+  const ids = [...new Set((customerIds || []).filter(Boolean))];
+  if (!ids.length) return new Map();
+
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("customer_id, total_price, scheduled_start, status")
+    .in("customer_id", ids)
+    .in("status", COMPLETED_BOOKING_STATUSES);
+
+  if (error) throw error;
+
+  const byCustomer = new Map();
+  for (const booking of data || []) {
+    const customerId = booking.customer_id;
+    if (!customerId) continue;
+    const current = byCustomer.get(customerId) || {
+      total_revenue: 0,
+      completed_bookings: 0,
+      last_service_date: null
+    };
+    current.total_revenue += Number(booking.total_price) || 0;
+    current.completed_bookings += 1;
+    const serviceDate = booking.completed_at || booking.scheduled_start;
+    if (serviceDate && (!current.last_service_date || new Date(serviceDate).getTime() > new Date(current.last_service_date).getTime())) {
+      current.last_service_date = serviceDate;
+    }
+    byCustomer.set(customerId, current);
+  }
+  return byCustomer;
+}
+
+function applyBookingSummary(row, bookingSummary) {
+  const customerId = row.customer_id || row.id;
+  const summary = bookingSummary.get(customerId);
+  return {
+    ...row,
+    total_revenue: summary ? Math.round(summary.total_revenue * 100) / 100 : 0,
+    completed_bookings: summary ? summary.completed_bookings : 0,
+    last_service_date: summary?.last_service_date || row.last_service_date || null
   };
 }
 
@@ -116,7 +162,7 @@ export default async function handler(req, res) {
     let query = supabase
       .from("crm_follow_up_tasks")
       .select("id, customer_id, booking_id, task_type, due_at, priority, status, notes, completed_at, created_at, updated_at")
-      .in("status", status ? [status] : ["open", "snoozed", "completed"])
+      .in("status", status ? [status] : ["open", "snoozed", "pending_response", "completed"])
       .limit(5000);
 
     const { data: rawTasks, error: tasksError } = await query;
@@ -136,6 +182,28 @@ export default async function handler(req, res) {
     const summaryByCustomerId = new Map();
     summaries.forEach((row) => {
       summaryByCustomerId.set(row.customer_id || row.id, row);
+    });
+
+    const missingCustomerIds = customerIds.filter((id) => !summaryByCustomerId.has(id));
+    if (missingCustomerIds.length) {
+      const { data, error } = await supabase
+        .from("customers")
+        .select("id, full_name, phone, email, address")
+        .in("id", missingCustomerIds);
+      if (error) throw error;
+      (data || []).forEach((row) => {
+        summaryByCustomerId.set(row.id, {
+          customer_id: row.id,
+          ...row,
+          total_revenue: 0,
+          completed_bookings: 0
+        });
+      });
+    }
+
+    const bookingSummary = await loadCompletedBookingSummary(supabase, customerIds);
+    summaryByCustomerId.forEach((row, id) => {
+      summaryByCustomerId.set(id, applyBookingSummary(row, bookingSummary));
     });
 
     const grouped = {

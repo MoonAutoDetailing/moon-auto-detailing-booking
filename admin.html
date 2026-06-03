@@ -3512,6 +3512,18 @@ function adminBookEscapeHtml(value) {
   return String(value == null ? "" : value).replace(/[&<>"']/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[ch]));
 }
 
+function adminNormalizeOptionalEmail(value) {
+  const text = String(value || "").trim();
+  const normalized = text.toLowerCase();
+  if (!normalized || ["n/a", "na", "none", "no email", "unknown", "null", "nil", "-"].includes(normalized)) return "";
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) return "";
+  return normalized;
+}
+
+function adminDisplayEmail(value) {
+  return adminNormalizeOptionalEmail(value) || "—";
+}
+
 function renderBookCustomerView() {
   const state = {
     customer: null,
@@ -3554,7 +3566,7 @@ function renderBookCustomerView() {
         <div class="admin-book-grid">
           <div class="admin-book-field"><label>First name</label><input id="bookNewCustomerFirstName" type="text" autocomplete="given-name" /></div>
           <div class="admin-book-field"><label>Last name</label><input id="bookNewCustomerLastName" type="text" autocomplete="family-name" /></div>
-          <div class="admin-book-field"><label>Email</label><input id="bookNewCustomerEmail" type="email" autocomplete="email" /></div>
+          <div class="admin-book-field"><label>Email</label><input id="bookNewCustomerEmail" type="text" inputmode="email" autocomplete="email" placeholder="Email optional" /></div>
           <div class="admin-book-field"><label>Phone</label><input id="bookNewCustomerPhone" type="tel" autocomplete="tel" /></div>
           <div class="admin-book-field" style="justify-content:end;"><button id="bookCreateCustomerBtn" type="button" class="moon-tab">Create / Reuse Customer</button></div>
         </div>
@@ -3763,7 +3775,7 @@ function renderBookCustomerView() {
       ? (customBasePrice != null ? "$" + customBasePrice.toFixed(2) : "enabled, price required")
       : "standard service price";
     $("bookSelectedCustomer").innerHTML = state.customer
-      ? `<strong>Selected customer:</strong> ${adminBookEscapeHtml(state.customer.full_name || "—")}<br><span class="admin-book-muted">${adminBookEscapeHtml(state.customer.email || "—")} · ${adminBookEscapeHtml(state.customer.phone || "—")}</span>`
+      ? `<strong>Selected customer:</strong> ${adminBookEscapeHtml(state.customer.full_name || "—")}<br><span class="admin-book-muted">${adminBookEscapeHtml(adminDisplayEmail(state.customer.email))} · ${adminBookEscapeHtml(state.customer.phone || "—")}</span>`
       : "No customer selected.";
     $("bookSelectedVehicle").innerHTML = state.vehicle
       ? `<strong>Selected vehicle:</strong> ${adminBookEscapeHtml(vehicleLabel(state.vehicle))}`
@@ -3815,7 +3827,7 @@ function renderBookCustomerView() {
     el.innerHTML = state.customers.map((c, idx) => `
       <button type="button" class="admin-book-option${state.customer?.id === c.id ? " selected" : ""}" data-customer-idx="${idx}">
         <strong>${adminBookEscapeHtml(c.full_name || "Unnamed customer")}</strong>
-        <span class="admin-book-muted">${adminBookEscapeHtml(c.email || "—")} · ${adminBookEscapeHtml(c.phone || "—")}</span>
+        <span class="admin-book-muted">${adminBookEscapeHtml(adminDisplayEmail(c.email))} · ${adminBookEscapeHtml(c.phone || "—")}</span>
       </button>
     `).join("");
     el.querySelectorAll("[data-customer-idx]").forEach(btn => {
@@ -3990,7 +4002,7 @@ function renderBookCustomerView() {
       const body = {
         first_name: firstName,
         last_name: lastName,
-        email: $("bookNewCustomerEmail").value.trim(),
+        email: adminNormalizeOptionalEmail($("bookNewCustomerEmail").value),
         phone: $("bookNewCustomerPhone").value.trim()
       };
       const res = await adminFetch("/api/admin-create-customer", {

@@ -8,8 +8,23 @@ function requireEnv(name) {
   return v;
 }
 
+const PLACEHOLDER_EMAILS = new Set([
+  "n/a",
+  "na",
+  "none",
+  "no email",
+  "unknown",
+  "null",
+  "nil",
+  "nill",
+  "-"
+]);
+
 function normalizeEmail(value) {
-  return String(value || "").trim().toLowerCase();
+  const text = String(value || "").trim().toLowerCase();
+  if (!text || PLACEHOLDER_EMAILS.has(text)) return null;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)) return null;
+  return text;
 }
 
 function normalizePhone(value) {
@@ -42,8 +57,8 @@ export default async function handler(req, res) {
     const phone = normalizePhone(req.body?.phone);
     const address = normalizeAddress(req.body?.address || req.body?.customer_address || req.body?.service_address);
 
-    if (!fullName || !email) {
-      return res.status(400).json({ ok: false, error: "full_name and email are required" });
+    if (!fullName) {
+      return res.status(400).json({ ok: false, error: "full_name is required" });
     }
 
     const supabase = createClient(
@@ -51,12 +66,28 @@ export default async function handler(req, res) {
       requireEnv("SUPABASE_SERVICE_ROLE_KEY")
     );
 
-    const { data: existing, error: existingErr } = await supabase
-      .from("customers")
-      .select("id, full_name, email, phone")
-      .ilike("email", email)
-      .limit(1)
-      .maybeSingle();
+    let existing = null;
+    let existingErr = null;
+
+    if (email) {
+      const result = await supabase
+        .from("customers")
+        .select("id, full_name, email, phone")
+        .ilike("email", email)
+        .limit(1)
+        .maybeSingle();
+      existing = result.data;
+      existingErr = result.error;
+    } else if (phone) {
+      const result = await supabase
+        .from("customers")
+        .select("id, full_name, email, phone")
+        .eq("phone", phone)
+        .limit(1)
+        .maybeSingle();
+      existing = result.data;
+      existingErr = result.error;
+    }
 
     if (existingErr) throw existingErr;
 

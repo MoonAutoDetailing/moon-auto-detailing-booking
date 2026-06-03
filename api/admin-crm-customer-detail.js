@@ -9,14 +9,37 @@ function requireEnv(name) {
 
 function sortFollowUpTasks(tasks) {
   return [...(tasks || [])].sort((a, b) => {
-    const aOpen = a.status === "open" ? 0 : 1;
-    const bOpen = b.status === "open" ? 0 : 1;
+    const openStatuses = new Set(["open", "snoozed", "pending_response"]);
+    const aOpen = openStatuses.has(normalize(a.status)) ? 0 : 1;
+    const bOpen = openStatuses.has(normalize(b.status)) ? 0 : 1;
     if (aOpen !== bOpen) return aOpen - bOpen;
     if (!a.due_at && !b.due_at) return 0;
     if (!a.due_at) return 1;
     if (!b.due_at) return -1;
     return new Date(a.due_at).getTime() - new Date(b.due_at).getTime();
   });
+}
+
+function normalize(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function applyBookingSummary(customer, bookings) {
+  const completed = (bookings || []).filter((booking) =>
+    ["completed", "complete", "done"].includes(normalize(booking.status))
+  );
+  const totalRevenue = completed.reduce((sum, booking) => sum + (Number(booking.total_price) || 0), 0);
+  const lastServiceDate = completed
+    .map((booking) => booking.completed_at || booking.scheduled_start)
+    .filter(Boolean)
+    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0];
+
+  return {
+    ...customer,
+    total_revenue: Math.round(totalRevenue * 100) / 100,
+    completed_bookings: completed.length,
+    last_service_date: lastServiceDate || customer.last_service_date
+  };
 }
 
 async function loadBookings(supabase, customerId) {
@@ -169,7 +192,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
-      customer,
+      customer: applyBookingSummary(customer, bookings),
       profile: profileResult.data || null,
       vehicles: vehiclesResult.data || [],
       bookings,

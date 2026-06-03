@@ -869,8 +869,10 @@ body {
 }
 
 .badge {
-  border: 1px solid rgba(127,184,230,0.22);
-  background: rgba(127,184,230,0.16);
+  border: 1px solid rgba(127,184,230,0.14);
+  background: rgba(127,184,230,0.08);
+  color: rgba(255,255,255,0.66);
+  font-weight: 700;
 }
 
 .badge-hot {
@@ -1729,18 +1731,18 @@ body {
 
 .customer-row {
   display: grid;
-  grid-template-columns: minmax(140px, 1.4fr) minmax(120px, 1fr) minmax(130px, 1fr) minmax(140px, 1.2fr) auto;
-  gap: 8px;
+  grid-template-columns: minmax(170px, 1.6fr) minmax(130px, 0.9fr) minmax(130px, 1fr) minmax(110px, 0.8fr) minmax(150px, 1fr) minmax(68px, 0.5fr);
+  gap: 6px;
   align-items: center;
   width: 100%;
   text-align: left;
-  padding: 6px 8px;
+  padding: 5px 8px;
   border: none;
-  border-bottom: 1px solid var(--sep);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
   border-radius: 0;
   background: transparent;
   color: #fff;
-  min-height: 40px;
+  min-height: 36px;
 }
 
 .customer-row:hover {
@@ -1755,6 +1757,7 @@ body {
 
 .customer-row .customer-name {
   font-size: 14px;
+  font-weight: 800;
   margin: 0;
   color: #e8f4ff;
 }
@@ -1764,17 +1767,17 @@ body {
 }
 
 .customer-row .row-meta {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.62);
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.52);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .customer-row .row-revenue {
-  font-size: 12px;
-  font-weight: 700;
-  color: var(--moon-primary);
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.58);
   text-align: right;
 }
 
@@ -1950,12 +1953,12 @@ body {
 
 .timeline-row {
   display: grid;
-  grid-template-columns: 68px minmax(0, 1fr) auto;
-  gap: 8px;
+  grid-template-columns: 54px minmax(0, 1fr) auto;
+  gap: 7px;
   align-items: baseline;
-  padding: 5px 0;
-  border-bottom: 1px solid var(--sep);
-  font-size: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 11px;
   background: transparent;
 }
 
@@ -1967,21 +1970,21 @@ body {
   display: inline-block;
   padding: 1px 0;
   font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--moon-primary);
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
+  color: rgba(127, 184, 230, 0.72);
   white-space: nowrap;
 }
 
 .timeline-desc {
-  line-height: 1.35;
-  color: var(--text-body);
+  line-height: 1.3;
+  color: rgba(255, 255, 255, 0.74);
 }
 
 .timeline-time {
-  font-size: 11px;
-  color: var(--text-muted);
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.42);
   white-space: nowrap;
 }
 
@@ -1999,10 +2002,10 @@ body {
 .detail-timeline-header h3 {
   margin: 0;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-meta);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .detail-action-primary,
@@ -2015,18 +2018,27 @@ body {
 }
 
 .detail-action-primary {
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .detail-action-primary .act-primary {
   flex: 1 1 0;
   min-width: 72px;
+  min-height: 32px;
+  padding: 5px 9px;
+  font-size: 11px;
 }
 
 .detail-action-secondary {
-  margin-bottom: 6px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--sep);
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+}
+
+.detail-action-secondary .act-secondary {
+  min-height: 30px;
+  padding: 4px 9px;
+  font-size: 11px;
 }
 
 .detail-action-danger {
@@ -2066,16 +2078,17 @@ body {
 }
 
 .detail-nba-card {
-  margin-bottom: 10px;
-  padding: 10px 12px;
-  border: 1px solid rgba(127, 184, 230, 0.28);
-  border-radius: 10px;
-  background: rgba(127, 184, 230, 0.1);
+  margin-bottom: 12px;
+  padding: 12px 13px;
+  border: 1px solid rgba(127, 184, 230, 0.38);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(127, 184, 230, 0.18), rgba(127, 184, 230, 0.08));
+  box-shadow: inset 3px 0 0 rgba(127, 184, 230, 0.85);
 }
 
 .detail-nba-card strong {
   display: block;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--moon-primary);
   margin-bottom: 4px;
 }
@@ -2106,16 +2119,66 @@ body {
 .detail-section-heading {
   margin: 0 0 6px;
   font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-meta);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: rgba(255, 255, 255, 0.62);
 }
 
 .detail-open-tasks-section {
   margin-bottom: 10px;
   padding-bottom: 8px;
-  border-bottom: 1px solid var(--sep);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+}
+
+.detail-open-tasks-heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.detail-open-tasks-heading .detail-section-heading {
+  margin-bottom: 0;
+}
+
+.detail-new-task-btn {
+  min-height: 28px;
+  padding: 4px 9px;
+  font-size: 11px;
+}
+
+.detail-task-create-panel {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.045);
+}
+
+.detail-task-create-panel[hidden] {
+  display: none !important;
+}
+
+.detail-open-tasks-section .detail-item {
+  padding: 6px 0;
+  border-bottom-color: rgba(255, 255, 255, 0.045);
+  font-size: 12px;
+}
+
+.detail-open-tasks-section .detail-item strong {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.detail-open-tasks-section .meta-text {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.46);
+}
+
+.detail-open-tasks-section .detail-item button {
+  min-height: 28px;
+  padding: 4px 8px;
+  font-size: 11px;
 }
 
 .detail-timeline-section .timeline-feed {
@@ -2145,12 +2208,13 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 3px;
+  gap: 5px;
+  margin-bottom: 2px;
 }
 
 .queue-row-title strong {
   font-size: 13px;
+  color: rgba(255, 255, 255, 0.88);
 }
 
 .queue-row-meta {
@@ -2188,7 +2252,7 @@ body {
 .queue-list {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 2px;
 }
 
 .queue-row {
@@ -2196,9 +2260,9 @@ body {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
-  padding: 7px 0;
+  padding: 6px 0;
   border: none;
-  border-bottom: 1px solid var(--sep);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
   border-radius: 0;
   background: transparent;
 }
@@ -2217,15 +2281,15 @@ body {
 
 .queue-row-actions {
   display: flex;
-  gap: 6px;
+  gap: 5px;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
 
 .queue-row-actions button {
-  min-height: 32px;
-  padding: 6px 10px;
-  font-size: 12px;
+  min-height: 29px;
+  padding: 5px 9px;
+  font-size: 11px;
 }
 
 .activity-row {
@@ -4445,6 +4509,18 @@ function getTasksQueueRows(queueId) {
   return overdue.length ? overdue : dueToday;
 }
 
+function taskBucketFromDueAt(value) {
+  const due = value ? new Date(value) : null;
+  if (!due || Number.isNaN(due.getTime())) return "upcoming";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (due.getTime() < today.getTime()) return "overdue";
+  if (due.getTime() < tomorrow.getTime()) return "today";
+  return "upcoming";
+}
+
 function resolveDefaultTodayQueue() {
   const overdue = state.taskCounts?.overdue || 0;
   return overdue > 0 ? "overdue" : "due_today";
@@ -4759,7 +4835,9 @@ function renderQueueRow(row, options = {}) {
   const taskId = row.task_id || row.id || "";
   const overdue = options.overdue || isOverdueFollowUp(row) || isTaskRowOverdue(row);
   const priority = priorityValue(row);
-  const showSnooze = options.showSnooze !== false && (taskId || hasOpenFollowUp(row));
+  const isCompleted = normalize(row.status) === "completed";
+  const showComplete = options.showComplete !== false && !isCompleted;
+  const showSnooze = options.showSnooze !== false && !isCompleted && (taskId || hasOpenFollowUp(row));
   const openLabel = isMobileCrmView() ? "Open Customer" : "Open";
   return `
     <article class="queue-row ${overdue ? "overdue" : ""}">
@@ -4773,7 +4851,7 @@ function renderQueueRow(row, options = {}) {
         <div class="queue-row-meta">${escapeHtml(followUpTimingLabel(row))}</div>
       </div>
       <div class="queue-row-actions">
-        <button class="act-primary queue-complete-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}" data-task-id="${escapeHtml(taskId)}">Complete</button>
+        ${showComplete ? `<button class="act-primary queue-complete-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}" data-task-id="${escapeHtml(taskId)}">Complete</button>` : ""}
         <button class="act-secondary queue-open-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">${escapeHtml(openLabel)}</button>
         ${showSnooze ? `<button class="act-quiet queue-snooze-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}" data-task-id="${escapeHtml(taskId)}">Snooze</button>` : ""}
         <button class="act-quiet queue-log-outreach-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Outreach</button>
@@ -4911,10 +4989,7 @@ function renderCustomerRow(row) {
   const followUpLabel = row.next_follow_up_at
     ? (isOverdueFollowUp(row) ? `Overdue ${formatShortDate(row.next_follow_up_at)}` : `Follow-up ${formatShortDate(row.next_follow_up_at)}`)
     : (row.last_service_date ? `Last service ${formatShortDate(row.last_service_date)}` : "No follow-up");
-  const showRevenue = Number(row.total_revenue || 0) >= 300;
-  const revenueCell = showRevenue
-    ? `<div class="row-revenue">${escapeHtml(formatMoney(row.total_revenue))}</div>`
-    : `<div class="row-revenue muted">—</div>`;
+  const revenueCell = `<div class="row-revenue">${escapeHtml(formatMoney(row.total_revenue || 0))}</div>`;
   const priority = priorityValue(row);
   return `
     <button class="customer-row ${id === state.selectedCustomerId ? "active" : ""}" type="button" data-customer-id="${escapeHtml(id)}">
@@ -5535,7 +5610,7 @@ function renderDetail(data, assignedTags) {
   const emailBtn = hasEmail
     ? `<button class="act-primary quick-action-btn" type="button" data-action="send_email">Send Email</button>`
     : `<button class="act-primary" type="button" disabled title="No email on file">Send Email</button>`;
-  const templatesBtn = `<button class="act-primary quick-action-btn" type="button" data-action="open_templates">Templates</button>`;
+  const templatesBtn = `<button class="act-secondary quick-action-btn" type="button" data-action="open_templates">Templates</button>`;
 
   document.getElementById("detailTitle").textContent = customerName(customer);
   document.getElementById("detailSub").innerHTML = formatCustomerContactLine(customer);
@@ -5637,10 +5712,10 @@ function renderDetail(data, assignedTags) {
         <button class="act-primary quick-action-btn" type="button" data-action="log_outreach">Log Outreach</button>
         <button class="act-primary quick-action-btn" type="button" data-action="set_follow_up">Set Follow-Up</button>
         ${emailBtn}
-        ${templatesBtn}
         <button class="act-primary quick-action-btn" type="button" data-action="add_note">Add Note</button>
       </div>
       <div class="detail-action-secondary">
+        ${templatesBtn}
         <button class="act-secondary quick-action-btn" type="button" data-action="mark_booked">Mark Booked</button>
         <button class="act-secondary quick-action-btn" type="button" data-action="mark_ghosted">Mark Ghosted</button>
       </div>
@@ -5676,7 +5751,10 @@ function renderDetail(data, assignedTags) {
     </section>
 
     <section class="detail-open-tasks-section" id="detailOpenTasks" aria-label="Open tasks">
-      <p class="detail-section-heading">Open Tasks (${openTasks.length})</p>
+      <div class="detail-open-tasks-heading">
+        <p class="detail-section-heading">Open Tasks (${openTasks.length})</p>
+        <button class="act-secondary detail-new-task-btn" id="showTaskCreateBtn" type="button">+ New Task</button>
+      </div>
       <div id="taskList">
         ${openTasks.length ? openTasks.map((task) => `
           <div class="detail-item">
@@ -5690,30 +5768,33 @@ function renderDetail(data, assignedTags) {
           </div>
         `).join("") : `<div class="meta-text">No open follow-up tasks.</div>`}
       </div>
-      <form id="taskCreateForm" class="detail-form compact-form">
-        <div>
-          <label for="taskType">Task Type</label>
-          <input id="taskType" name="task_type" value="general_follow_up" />
-        </div>
-        <div>
-          <label for="taskDue">Due At</label>
-          <input id="taskDue" name="due_at" type="datetime-local" required />
-        </div>
-        <div>
-          <label for="taskPriority">Priority</label>
-          <select id="taskPriority" name="priority">
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-        <div>
-          <label for="taskNotes">Notes</label>
-          <input id="taskNotes" name="notes" />
-        </div>
-        <button class="act-primary span-2" type="submit">Create Task</button>
-      </form>
+      <div id="taskCreatePanel" class="detail-task-create-panel" hidden>
+        <form id="taskCreateForm" class="detail-form compact-form">
+          <div>
+            <label for="taskType">Task Type</label>
+            <input id="taskType" name="task_type" value="general_follow_up" />
+          </div>
+          <div>
+            <label for="taskDue">Due At</label>
+            <input id="taskDue" name="due_at" type="datetime-local" required />
+          </div>
+          <div>
+            <label for="taskPriority">Priority</label>
+            <select id="taskPriority" name="priority">
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div>
+            <label for="taskNotes">Notes</label>
+            <input id="taskNotes" name="notes" />
+          </div>
+          <button class="act-primary span-2" type="submit">Create Task</button>
+          <button class="act-quiet span-2" id="cancelTaskCreateBtn" type="button">Cancel</button>
+        </form>
+      </div>
     </section>
 
     <details class="detail-accordion">
@@ -5973,6 +6054,8 @@ function wireDetailForms() {
       }
       if (action === "set_follow_up") {
         document.getElementById("detailOpenTasks")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        const panel = document.getElementById("taskCreatePanel");
+        if (panel) panel.hidden = false;
         document.getElementById("taskDue")?.focus();
         return;
       }
@@ -6045,6 +6128,18 @@ function wireDetailForms() {
     }
   });
 
+  document.getElementById("showTaskCreateBtn")?.addEventListener("click", () => {
+    const panel = document.getElementById("taskCreatePanel");
+    if (panel) panel.hidden = false;
+    document.getElementById("taskDue")?.focus();
+  });
+
+  document.getElementById("cancelTaskCreateBtn")?.addEventListener("click", () => {
+    const panel = document.getElementById("taskCreatePanel");
+    if (panel) panel.hidden = true;
+    document.getElementById("taskCreateForm")?.reset();
+  });
+
   const responseStatusEl = document.getElementById("responseStatus");
   const pendingHelpEl = document.getElementById("pendingResponseHelp");
   const nextFollowUpEl = document.getElementById("nextFollowUp");
@@ -6082,6 +6177,7 @@ function wireDetailForms() {
     body.action = "create";
     body.customer_id = id;
     body.due_at = dateTimeLocalToIso(body.due_at);
+    const createdTaskBucket = taskBucketFromDueAt(body.due_at);
 
     try {
       await apiJson("/api/admin-crm-follow-up-task", {
@@ -6090,7 +6186,11 @@ function wireDetailForms() {
         body: JSON.stringify(body)
       });
       toast("Follow-up task created");
+      event.currentTarget.reset();
+      const panel = document.getElementById("taskCreatePanel");
+      if (panel) panel.hidden = true;
       await loadTaskInbox();
+      state.tasksQueue = createdTaskBucket;
       await refreshCurrentCustomer(id);
     } catch (err) {
       toast(err.message || "Failed to create task", true);

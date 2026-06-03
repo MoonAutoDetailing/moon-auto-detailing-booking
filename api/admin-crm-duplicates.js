@@ -21,6 +21,7 @@ const PLACEHOLDER_EMAILS = new Set([
   "none",
   "null",
   "no email",
+  "unknown",
   "noemail",
   "-",
   "—"
