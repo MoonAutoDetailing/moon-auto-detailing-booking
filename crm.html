@@ -3452,6 +3452,7 @@ const CRM_TASK_TYPES = [
   { value: "maintenance_reminder", label: "Maintenance Reminder" },
   { value: "reactivation_follow_up", label: "Reactivation Follow-Up" },
   { value: "winback_follow_up", label: "Winback Follow-Up" },
+  { value: "cancellation_follow_up", label: "Cancellation Follow-Up" },
   { value: "ceramic_checkup", label: "Ceramic Checkup" },
   { value: "referral_ask", label: "Referral Ask" }
 ];
@@ -4187,6 +4188,7 @@ function taskIsOverdue(task) {
 
 function determineNextBestAction(customer, profile, tasks, outreachLogs) {
   const openTasks = (tasks || []).filter((task) => task.status !== "completed" && task.status !== "dismissed");
+  const cancellationTask = openTasks.find((task) => normalize(task.task_type) === "cancellation_follow_up");
   const responseTask = openTasks.find((task) => normalize(task.task_type) === "check_response");
   const row = {
     ...customer,
@@ -4202,6 +4204,9 @@ function determineNextBestAction(customer, profile, tasks, outreachLogs) {
   }
   if (stage === "booked" || stage === "confirmed" || status === "booked" || status === "confirmed") {
     return { title: "Booking in progress", detail: "Customer is booked or confirmed. Work the booking workflow next.", action: "", cta: "" };
+  }
+  if (cancellationTask) {
+    return { title: "Follow up on cancellation", detail: "Ask why they cancelled and whether they want to reschedule.", action: "log_outreach", cta: "Log Outreach" };
   }
   if (stage === "completed_customer" || stage === "repeat_customer") {
     const reviewTask = openTasks.find((task) => String(task.task_type || "").toLowerCase().includes("review"));
@@ -5757,6 +5762,13 @@ function promptTaskOutcome(task) {
     if (choice === "3") return "response_booked";
     if (choice === "4") return "response_declined";
   }
+  if (type === "cancellation_follow_up") {
+    const choice = window.prompt("Did customer want to reschedule?\n1. Yes, wants to reschedule\n2. No, not right now\n3. No response", "1");
+    if (choice === null) return null;
+    if (choice === "1") return "cancel_reschedule_yes";
+    if (choice === "2") return "cancel_reschedule_no";
+    if (choice === "3") return "cancel_no_response";
+  }
   return "";
 }
 
@@ -5827,6 +5839,32 @@ async function applyTaskOutcome(task, outcome) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ customer_id: customerIdForTask, lifecycle_stage: "lost", status: "cooling" })
+    });
+  } else if (outcome === "cancel_reschedule_yes") {
+    await apiJson("/api/admin-crm-notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customer_id: customerIdForTask, note: "Cancellation follow-up completed; customer wants to reschedule." })
+    });
+  } else if (outcome === "cancel_reschedule_no") {
+    await apiJson("/api/admin-crm-notes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ customer_id: customerIdForTask, note: "Cancellation follow-up completed; not rescheduling now." })
+    });
+  } else if (outcome === "cancel_no_response") {
+    const dueAt = new Date(Date.now() + 3 * MS_DAY).toISOString();
+    await apiJson("/api/admin-crm-follow-up-task", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        action: "create",
+        customer_id: customerIdForTask,
+        task_type: "check_response",
+        due_at: dueAt,
+        priority: task.priority || "high",
+        notes: "No response to cancellation follow-up; check again in 3 days."
+      })
     });
   }
 }

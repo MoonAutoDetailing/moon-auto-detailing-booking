@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
 import verifyAdmin from "./_verifyAdmin.js";
-import { reconcileCustomerLifecycle } from "./_crmWorkflow.js";
+import { ensureCancellationFollowUpTask, reconcileCustomerLifecycle } from "./_crmWorkflow.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -69,6 +69,7 @@ export default async function handler(req, res) {
     }
 
     if (booking.status === "cancelled") {
+      await ensureCancellationFollowUpTask(supabase, booking.customer_id, booking.id);
       await reconcileCustomerLifecycle(supabase, booking.customer_id);
       return res.status(200).json({ ok: true, already_cancelled: true });
     }
@@ -88,6 +89,7 @@ export default async function handler(req, res) {
 
     if (updateError) throw updateError;
 
+    await ensureCancellationFollowUpTask(supabase, booking.customer_id, booking.id);
     await reconcileCustomerLifecycle(supabase, booking.customer_id);
     return res.status(200).json({ ok: true });
   } catch (err) {

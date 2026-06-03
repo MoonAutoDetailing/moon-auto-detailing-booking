@@ -117,6 +117,32 @@ export async function createFollowUpTaskIfMissing(supabase, {
   return task;
 }
 
+export async function ensureCancellationFollowUpTask(supabase, customerId, bookingId) {
+  if (!customerId || !bookingId) return null;
+
+  const { data: profile, error: profileError } = await supabase
+    .from("crm_profiles")
+    .select("do_not_contact, lifecycle_stage, status")
+    .eq("customer_id", customerId)
+    .maybeSingle();
+  if (profileError) throw profileError;
+
+  const stage = normalize(profile?.lifecycle_stage);
+  const status = normalize(profile?.status);
+  if (profile?.do_not_contact === true || stage === "do_not_contact" || status === "do_not_contact") {
+    return null;
+  }
+
+  return createFollowUpTaskIfMissing(supabase, {
+    customerId,
+    bookingId,
+    taskType: "cancellation_follow_up",
+    dueAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+    priority: "high",
+    notes: "Reach out to ask why the customer cancelled and see if they want to reschedule."
+  });
+}
+
 export async function syncCrmProfileStage(supabase, customerId, updates = {}) {
   if (!customerId) return null;
 
