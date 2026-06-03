@@ -76,6 +76,7 @@ export default async function handler(req, res) {
     const responseStatus = clean(body.response_status) || "no_response";
     const responseNotes = clean(body.response_notes);
     const nextFollowUpAt = clean(body.next_follow_up_at);
+    const pendingResponse = responseStatus === "pending_response";
 
     const { data: outreachLog, error: outreachError } = await supabase
       .from("crm_outreach_logs")
@@ -96,17 +97,19 @@ export default async function handler(req, res) {
     if (outreachError) throw outreachError;
 
     let followUpTask = null;
-    if (nextFollowUpAt) {
+    if (nextFollowUpAt || pendingResponse) {
+      const defaultPendingDueAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+      const dueAt = nextFollowUpAt || defaultPendingDueAt;
       const { data: task, error: taskError } = await supabase
         .from("crm_follow_up_tasks")
         .insert([{
           customer_id: customerId,
           booking_id: bookingId,
-          task_type: outreachType || "general_follow_up",
-          due_at: nextFollowUpAt,
-          priority: clean(body.follow_up_priority) || "medium",
+          task_type: pendingResponse ? "check_response" : (outreachType || "general_follow_up"),
+          due_at: dueAt,
+          priority: pendingResponse ? (clean(body.follow_up_priority) || "high") : (clean(body.follow_up_priority) || "medium"),
           status: "open",
-          notes: clean(body.follow_up_notes) || responseNotes || messageSummary
+          notes: pendingResponse ? "Check whether customer responded to outreach." : (clean(body.follow_up_notes) || responseNotes || messageSummary)
         }])
         .select("*")
         .single();

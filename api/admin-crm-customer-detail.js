@@ -122,6 +122,7 @@ export default async function handler(req, res) {
       outreachLogsResult,
       followUpTasksResult,
       outboundMessagesResult,
+      notesResult,
       tags
     ] = await Promise.all([
       supabase
@@ -150,6 +151,12 @@ export default async function handler(req, res) {
         .select("*")
         .eq("customer_id", customerId)
         .order("sent_at", { ascending: false }),
+      supabase
+        .from("crm_notes")
+        .select("*")
+        .eq("customer_id", customerId)
+        .order("pinned", { ascending: false })
+        .order("created_at", { ascending: false }),
       loadTags(supabase, customerId)
     ]);
 
@@ -158,6 +165,7 @@ export default async function handler(req, res) {
     if (outreachLogsResult.error) throw outreachLogsResult.error;
     if (followUpTasksResult.error) throw followUpTasksResult.error;
     if (outboundMessagesResult.error) throw outboundMessagesResult.error;
+    if (notesResult.error) throw notesResult.error;
 
     return res.status(200).json({
       ok: true,
@@ -167,6 +175,7 @@ export default async function handler(req, res) {
       bookings,
       outreach_logs: outreachLogsResult.data || [],
       outbound_messages: outboundMessagesResult.data || [],
+      notes: notesResult.data || [],
       follow_up_tasks: sortFollowUpTasks(followUpTasksResult.data),
       tags
     });

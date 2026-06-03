@@ -3279,7 +3279,7 @@ a.mobile-top-chip {
 
         <div id="tabTasks" class="crm-tab-panel">
           <div class="panel">
-            <div id="tasksStatus" class="status-line">Follow-up tasks from loaded customers.</div>
+            <div id="tasksStatus" class="status-line">Loading CRM task inbox...</div>
             <div id="tasksQueuePills" class="queue-pills" aria-label="Task queues"></div>
             <div id="tasksSections" class="crm-sections"></div>
           </div>
@@ -3708,6 +3708,9 @@ const state = {
   customerSegment: "all",
   todayQueue: null,
   tasksQueue: null,
+  taskInbox: { overdue: [], today: [], upcoming: [], completed: [] },
+  taskCounts: { overdue: 0, today: 0, upcoming: 0, completed: 0 },
+  tasksLoaded: false,
   mobileLeadMode: false
 };
 
@@ -3860,6 +3863,7 @@ function taskIsOverdue(task) {
 
 function determineNextBestAction(customer, profile, tasks, outreachLogs) {
   const openTasks = (tasks || []).filter((task) => task.status !== "completed" && task.status !== "dismissed");
+  const responseTask = openTasks.find((task) => normalize(task.task_type) === "check_response");
   const row = {
     ...customer,
     lifecycle_stage: profile?.lifecycle_stage || customer?.lifecycle_stage,
@@ -3867,33 +3871,36 @@ function determineNextBestAction(customer, profile, tasks, outreachLogs) {
     priority: profile?.priority || customer?.priority
   };
 
-  if (isOverdueFollowUp(row) || openTasks.some(taskIsOverdue)) {
-    return { title: "Follow up overdue", detail: "Complete or reschedule the overdue follow-up." };
+  if (responseTask) {
+    return { title: "Check if customer responded", detail: "A pending-response follow-up is open.", action: "log_outreach", cta: "Log Response" };
   }
   if (!normalizeCustomerEmail(customer?.email)) {
-    return { title: "Collect email", detail: "Add an email address to send templates from CRM." };
+    return { title: "Collect email", detail: "Add an email address to send templates from CRM.", action: "edit_profile", cta: "Edit Profile" };
+  }
+  if (isOverdueFollowUp(row) || openTasks.some(taskIsOverdue)) {
+    return { title: "Complete overdue follow-up", detail: "Log outreach or complete the overdue task.", action: "log_outreach", cta: "Log Outreach" };
   }
   if (normalize(stageValue(row)) === "lead" && !customer?.last_contacted_at && !(outreachLogs || []).length) {
-    return { title: "First contact needed", detail: "Log the first outreach for this lead." };
+    return { title: "First contact needed", detail: "Log the first outreach for this lead.", action: "log_outreach", cta: "Log Outreach" };
   }
   const reviewTask = openTasks.find((task) => String(task.task_type || "").toLowerCase().includes("review"));
   if (reviewTask) {
-    return { title: "Ask for review", detail: "Open task suggests requesting a review." };
+    return { title: "Ask for review", detail: "Open task suggests requesting a review.", action: "open_templates", cta: "Templates" };
   }
   const maintTask = openTasks.find((task) => {
     const type = String(task.task_type || "").toLowerCase();
     return type.includes("maintenance") || type.includes("reminder");
   });
   if (maintTask) {
-    return { title: "Send maintenance reminder", detail: "Follow up on maintenance or rebooking." };
+    return { title: "Send maintenance reminder", detail: "Follow up on maintenance or rebooking.", action: "open_templates", cta: "Templates" };
   }
   if (isCoolingCustomer(row) || isInactiveCustomer(row)) {
-    return { title: "Reactivation follow-up", detail: "Customer is cooling or inactive — check in." };
+    return { title: "Reactivation follow-up", detail: "Customer is cooling or inactive — check in.", action: "open_templates", cta: "Templates" };
   }
   if (!customer?.next_follow_up_at && !openTasks.length) {
-    return { title: "Set next follow-up", detail: "No follow-up date or open task on record." };
+    return { title: "Set next follow-up", detail: "No follow-up date or open task on record.", action: "set_follow_up", cta: "Set Follow-Up" };
   }
-  return { title: "Customer up to date", detail: "No urgent action right now." };
+  return { title: "Up to date", detail: "No urgent action right now.", action: "", cta: "" };
 }
 
 function toggleEditProfilePanel(show) {
@@ -3906,6 +3913,16 @@ function dateTimeLocalToIso(value) {
   if (!value) return null;
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
+function dateToDateTimeLocalValue(date) {
+  if (!date || Number.isNaN(date.getTime())) return "";
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function pendingResponseDefaultLocalValue() {
+  return dateToDateTimeLocalValue(new Date(Date.now() + 24 * 60 * 60 * 1000));
 }
 
 function formatDate(value) {
@@ -4198,6 +4215,7 @@ function switchTab(tab) {
   closeMobileMore();
   if (tab === "analytics" && !state.analyticsLoaded) loadAnalytics();
   if (tab === "cleanup" && !state.duplicatesLoaded) loadDuplicates();
+  if ((tab === "today" || tab === "tasks") && !state.tasksLoaded) loadTaskInbox();
 }
 
 function bindCustomerCards(root) {
@@ -4220,7 +4238,11 @@ function bindCustomerCards(root) {
     btn.dataset.bound = "1";
     btn.addEventListener("click", (event) => {
       event.stopPropagation();
-      completeFollowUpForCustomer(btn.dataset.customerId);
+      if (btn.dataset.taskId) {
+        completeTaskById(btn.dataset.taskId);
+      } else {
+        completeFollowUpForCustomer(btn.dataset.customerId);
+      }
     });
   });
   scope.querySelectorAll(".queue-snooze-btn").forEach((btn) => {
@@ -4228,7 +4250,11 @@ function bindCustomerCards(root) {
     btn.dataset.bound = "1";
     btn.addEventListener("click", (event) => {
       event.stopPropagation();
-      snoozeFollowUpForCustomer(btn.dataset.customerId);
+      if (btn.dataset.taskId) {
+        snoozeTaskById(btn.dataset.taskId);
+      } else {
+        snoozeFollowUpForCustomer(btn.dataset.customerId);
+      }
     });
   });
   scope.querySelectorAll(".queue-log-outreach-btn").forEach((btn) => {
@@ -4276,6 +4302,18 @@ function pipelineBucket(row) {
   if (stage === "quoted") return "quoted";
   if (stage === "lead" && !row.last_contacted_at) return "lead";
   return "contacted";
+}
+
+function isActiveLeadPipelineRow(row) {
+  const stage = normalize(stageValue(row));
+  const status = normalize(statusValue(row));
+  if (["do_not_contact", "ghosted", "lost", "inactive", "closed"].includes(stage) || ["do_not_contact", "ghosted", "lost", "inactive", "closed"].includes(status)) {
+    return false;
+  }
+  if (["booked", "confirmed", "customer"].includes(stage) || ["booked", "confirmed", "completed_customer", "repeat_customer"].includes(status)) {
+    return false;
+  }
+  return ["lead", "prospect", "quoted", "contacted"].includes(stage) || ["new", "active", "nurture", "cooling", "quoted", "contacted"].includes(status);
 }
 
 function isTodaysBookingCustomer(row) {
@@ -4329,6 +4367,11 @@ function isActiveSegmentCustomer(row) {
 }
 
 function followUpTimingLabel(row) {
+  if (row.due_at) {
+    if (isTaskRowOverdue(row)) return `Overdue · ${formatShortDate(row.due_at)}`;
+    if (isTaskRowDueToday(row)) return `Due today · ${formatShortDate(row.due_at)}`;
+    return `Due ${formatShortDate(row.due_at)}`;
+  }
   if (isOverdueFollowUp(row)) return `Overdue · ${formatShortDate(row.next_follow_up_at)}`;
   if (isDueToday(row)) return `Due today · ${formatShortDate(row.next_follow_up_at)}`;
   if (row.next_follow_up_at) return `Due ${formatShortDate(row.next_follow_up_at)}`;
@@ -4336,17 +4379,47 @@ function followUpTimingLabel(row) {
 }
 
 function taskTitleForRow(row) {
+  if (row.task_type) return taskTypeLabel(row.task_type);
   if (isNewLeadNeedingContact(row)) return "New lead — first contact";
   if (isHighValueReactivation(row)) return "Reactivation follow-up";
   if (isTodaysBookingCustomer(row) && !row.next_follow_up_at) return "Today's booking";
   return "Follow-up task";
 }
 
+function taskTypeLabel(value) {
+  const type = normalize(value);
+  if (type === "check_response") return "Check for response";
+  if (type === "review_request") return "Review request";
+  if (type === "maintenance_reminder") return "Maintenance reminder";
+  return String(value || "follow_up").replace(/_/g, " ");
+}
+
+function isTaskRowOverdue(row) {
+  if (!row.due_at || row.status === "completed" || row.status === "dismissed") return false;
+  const due = new Date(row.due_at);
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  return !Number.isNaN(due.getTime()) && due.getTime() < start.getTime();
+}
+
+function isTaskRowDueToday(row) {
+  if (!row.due_at || isTaskRowOverdue(row)) return false;
+  const due = new Date(row.due_at);
+  if (Number.isNaN(due.getTime())) return false;
+  const end = new Date();
+  end.setHours(23, 59, 59, 999);
+  return due.getTime() <= end.getTime();
+}
+
+function taskInboxRows(bucket) {
+  return state.taskInbox?.[bucket] || [];
+}
+
 function getTodayQueueRows(queueId) {
-  const overdue = state.customers.filter(isOverdueFollowUp);
-  const dueToday = state.customers.filter(isDueToday);
-  const upcoming = state.customers.filter((row) => hasOpenFollowUp(row) && !isOverdueFollowUp(row) && !isDueToday(row));
-  const done = state.customers.filter(isRecentlyHandled);
+  const overdue = taskInboxRows("overdue");
+  const dueToday = taskInboxRows("today");
+  const upcoming = taskInboxRows("upcoming");
+  const done = taskInboxRows("completed");
   const todayFocus = state.customers.filter((row) =>
     isNewLeadNeedingContact(row) || isTodaysBookingCustomer(row) || isHighValueReactivation(row)
   );
@@ -4360,10 +4433,10 @@ function getTodayQueueRows(queueId) {
 }
 
 function getTasksQueueRows(queueId) {
-  const overdue = state.customers.filter(isOverdueFollowUp);
-  const dueToday = state.customers.filter(isDueToday);
-  const upcoming = state.customers.filter((row) => hasOpenFollowUp(row) && !isOverdueFollowUp(row) && !isDueToday(row));
-  const completed = state.customers.filter(isRecentlyHandled);
+  const overdue = taskInboxRows("overdue");
+  const dueToday = taskInboxRows("today");
+  const upcoming = taskInboxRows("upcoming");
+  const completed = taskInboxRows("completed");
 
   if (queueId === "overdue") return overdue;
   if (queueId === "today") return dueToday;
@@ -4373,12 +4446,12 @@ function getTasksQueueRows(queueId) {
 }
 
 function resolveDefaultTodayQueue() {
-  const overdue = state.customers.filter(isOverdueFollowUp).length;
+  const overdue = state.taskCounts?.overdue || 0;
   return overdue > 0 ? "overdue" : "due_today";
 }
 
 function resolveDefaultTasksQueue() {
-  const overdue = state.customers.filter(isOverdueFollowUp).length;
+  const overdue = state.taskCounts?.overdue || 0;
   return overdue > 0 ? "overdue" : "today";
 }
 
@@ -4524,14 +4597,14 @@ function buildTimelineEvents(data, assignedTags) {
       type: "Follow-up created",
       badgeClass: "task",
       at: task.created_at || task.due_at,
-      description: `${task.task_type || "follow_up"} · due ${formatDate(task.due_at)}`
+      description: `${taskTypeLabel(task.task_type)} · due ${formatDate(task.due_at)}`
     });
     if (task.status === "completed" && task.completed_at) {
       events.push({
         type: "Follow-up completed",
         badgeClass: "task",
         at: task.completed_at,
-        description: `${task.task_type || "follow_up"} marked complete`
+        description: `${taskTypeLabel(task.task_type)} marked complete`
       });
     }
     if (task.status === "snoozed" && task.updated_at) {
@@ -4542,6 +4615,15 @@ function buildTimelineEvents(data, assignedTags) {
         description: `Snoozed until ${formatDate(task.due_at)}`
       });
     }
+  });
+
+  (data.notes || []).forEach((note) => {
+    events.push({
+      type: "Note added",
+      badgeClass: "note",
+      at: note.created_at || note.updated_at,
+      description: `${note.pinned ? "Pinned · " : ""}${notesPreview(note.note)}`
+    });
   });
 
   const notes = profile.crm_notes || customer.crm_notes;
@@ -4620,6 +4702,9 @@ function customerDetailMetaLine(customer) {
   if (customer.last_service_date) {
     parts.push(`Last service ${formatShortDate(customer.last_service_date)}`);
   }
+  if (Number(customer.total_revenue || 0) > 0) {
+    parts.push(`Revenue ${formatMoney(customer.total_revenue)}`);
+  }
   return parts.join(" · ") || "No follow-up or service on record";
 }
 
@@ -4671,9 +4756,10 @@ function renderKpiStrip(elementId, items) {
 }
 
 function renderQueueRow(row, options = {}) {
-  const overdue = options.overdue || isOverdueFollowUp(row);
+  const taskId = row.task_id || row.id || "";
+  const overdue = options.overdue || isOverdueFollowUp(row) || isTaskRowOverdue(row);
   const priority = priorityValue(row);
-  const showSnooze = options.showSnooze !== false && hasOpenFollowUp(row);
+  const showSnooze = options.showSnooze !== false && (taskId || hasOpenFollowUp(row));
   const openLabel = isMobileCrmView() ? "Open Customer" : "Open";
   return `
     <article class="queue-row ${overdue ? "overdue" : ""}">
@@ -4687,9 +4773,9 @@ function renderQueueRow(row, options = {}) {
         <div class="queue-row-meta">${escapeHtml(followUpTimingLabel(row))}</div>
       </div>
       <div class="queue-row-actions">
-        <button class="act-primary queue-complete-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
+        <button class="act-primary queue-complete-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}" data-task-id="${escapeHtml(taskId)}">Complete</button>
         <button class="act-secondary queue-open-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">${escapeHtml(openLabel)}</button>
-        ${showSnooze ? `<button class="act-quiet queue-snooze-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Snooze</button>` : ""}
+        ${showSnooze ? `<button class="act-quiet queue-snooze-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}" data-task-id="${escapeHtml(taskId)}">Snooze</button>` : ""}
         <button class="act-quiet queue-log-outreach-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Outreach</button>
       </div>
     </article>
@@ -4742,7 +4828,7 @@ function renderToday() {
   const pillsEl = document.getElementById("todayQueuePills");
 
   if (isMobileCrmView()) {
-    const sortByDue = (a, b) => new Date(a.next_follow_up_at || 0).getTime() - new Date(b.next_follow_up_at || 0).getTime();
+    const sortByDue = (a, b) => new Date(a.due_at || a.next_follow_up_at || 0).getTime() - new Date(b.due_at || b.next_follow_up_at || 0).getTime();
     const overdueRows = getTodayQueueRows("overdue").sort(sortByDue);
     const dueTodayRows = getTodayQueueRows("due_today").sort(sortByDue);
     const blocks = [];
@@ -4815,9 +4901,9 @@ function renderToday() {
     bindCustomerCards(container);
   }
 
-  const overdueCount = state.customers.filter(isOverdueFollowUp).length;
-  const dueTodayCount = state.customers.filter(isDueToday).length;
-  document.getElementById("todayStatus").textContent = `${state.customers.length} customers loaded · ${overdueCount} overdue · ${dueTodayCount} due today`;
+  const overdueCount = state.taskCounts?.overdue || 0;
+  const dueTodayCount = state.taskCounts?.today || 0;
+  document.getElementById("todayStatus").textContent = `${overdueCount} overdue · ${dueTodayCount} due today`;
 }
 
 function renderCustomerRow(row) {
@@ -4878,7 +4964,8 @@ function renderPipeline() {
   };
   const buckets = { lead: [], contacted: [], quoted: [], booked: [], lost: [] };
 
-  state.customers.forEach((row) => {
+  const activeLeads = state.customers.filter(isActiveLeadPipelineRow);
+  activeLeads.forEach((row) => {
     buckets[pipelineBucket(row)].push(row);
   });
 
@@ -4896,7 +4983,7 @@ function renderPipeline() {
   }).join("");
 
   bindCustomerCards(document.getElementById("pipelineBoard"));
-  document.getElementById("pipelineStatus").textContent = `${state.customers.length} customers in pipeline view`;
+  document.getElementById("pipelineStatus").textContent = `${activeLeads.length} active lead(s) in pipeline`;
 }
 
 function renderBarList(items, valueKey, labelKey, formatValue = (v) => v) {
@@ -5049,7 +5136,7 @@ function renderTasks() {
   const container = document.getElementById("tasksSections");
 
   if (isMobileCrmView()) {
-    const sortByDue = (a, b) => new Date(a.next_follow_up_at || 0).getTime() - new Date(b.next_follow_up_at || 0).getTime();
+    const sortByDue = (a, b) => new Date(a.due_at || 0).getTime() - new Date(b.due_at || 0).getTime();
     const overdueRows = getTasksQueueRows("overdue").sort(sortByDue);
     const todayRows = getTasksQueueRows("today").sort(sortByDue);
     const upcomingRows = getTasksQueueRows("upcoming").sort(sortByDue);
@@ -5091,7 +5178,7 @@ function renderTasks() {
 
     if (state.tasksQueue === "completed") {
       const completedRows = getTasksQueueRows("completed").sort((a, b) =>
-        new Date(b.last_contacted_at || 0).getTime() - new Date(a.last_contacted_at || 0).getTime()
+        new Date(b.completed_at || 0).getTime() - new Date(a.completed_at || 0).getTime()
       );
       blocks.push(`
         <section class="mobile-today-block">
@@ -5119,11 +5206,11 @@ function renderTasks() {
     }, (queueId) => getTasksQueueRows(queueId).length);
 
     const rows = getTasksQueueRows(state.tasksQueue).sort((a, b) => {
-      const aDue = new Date(a.next_follow_up_at || 0).getTime();
-      const bDue = new Date(b.next_follow_up_at || 0).getTime();
+      const aDue = new Date(a.due_at || 0).getTime();
+      const bDue = new Date(b.due_at || 0).getTime();
       if (state.tasksQueue === "overdue" || state.tasksQueue === "today") return aDue - bDue;
       if (state.tasksQueue === "completed") {
-        return new Date(b.last_contacted_at || 0).getTime() - new Date(a.last_contacted_at || 0).getTime();
+        return new Date(b.completed_at || 0).getTime() - new Date(a.completed_at || 0).getTime();
       }
       return aDue - bDue;
     });
@@ -5135,10 +5222,45 @@ function renderTasks() {
     bindCustomerCards(container);
   }
 
-  const overdue = state.customers.filter(isOverdueFollowUp).length;
-  const dueToday = state.customers.filter(isDueToday).length;
-  const openFuture = state.customers.filter((row) => hasOpenFollowUp(row) && !isOverdueFollowUp(row) && !isDueToday(row)).length;
+  const overdue = state.taskCounts?.overdue || 0;
+  const dueToday = state.taskCounts?.today || 0;
+  const openFuture = state.taskCounts?.upcoming || 0;
   document.getElementById("tasksStatus").textContent = `${overdue} overdue · ${dueToday} due today · ${openFuture} upcoming`;
+}
+
+async function completeTaskById(taskId) {
+  if (!taskId) return;
+  try {
+    await apiJson("/api/admin-crm-follow-up-task", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "complete", task_id: taskId })
+    });
+    toast("Task completed");
+    await loadTaskInbox();
+    await loadCustomers();
+  } catch (err) {
+    toast(err.message || "Failed to complete task", true);
+  }
+}
+
+async function snoozeTaskById(taskId, days = 1) {
+  if (!taskId) return;
+  const snoozeUntil = new Date();
+  snoozeUntil.setDate(snoozeUntil.getDate() + days);
+  snoozeUntil.setHours(9, 0, 0, 0);
+  try {
+    await apiJson("/api/admin-crm-follow-up-task", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "snooze", task_id: taskId, snooze_until: snoozeUntil.toISOString() })
+    });
+    toast(`Snoozed ${days} day${days === 1 ? "" : "s"}`);
+    await loadTaskInbox();
+    await loadCustomers();
+  } catch (err) {
+    toast(err.message || "Failed to snooze task", true);
+  }
 }
 
 async function snoozeFollowUpForCustomer(customerId, days = 1) {
@@ -5155,6 +5277,7 @@ async function snoozeFollowUpForCustomer(customerId, days = 1) {
       body: JSON.stringify({ action: "snooze", task_id: openTask.id, snooze_until: snoozeUntil.toISOString() })
     });
     toast(`Snoozed ${days} day${days === 1 ? "" : "s"}`);
+    await loadTaskInbox();
     await loadCustomers();
   } catch (err) {
     toast(err.message || "Failed to snooze task", true);
@@ -5172,6 +5295,7 @@ async function completeFollowUpForCustomer(customerId) {
       body: JSON.stringify({ action: "complete", task_id: openTask.id })
     });
     toast("Task completed");
+    await loadTaskInbox();
     await loadCustomers();
   } catch (err) {
     toast(err.message || "Failed to complete task", true);
@@ -5285,13 +5409,30 @@ async function loadCustomers() {
     renderActiveTab();
     const countText = `${state.customers.length} shown${typeof data.count === "number" ? ` of ${data.count}` : ""}`;
     setListStatus(countText);
-    document.getElementById("todayStatus").textContent = countText;
     document.getElementById("pipelineStatus").textContent = countText;
   } catch (err) {
     const message = err.message || "Failed to load CRM customers";
     setListStatus(message, true);
     document.getElementById("todayStatus").textContent = message;
     document.getElementById("todayStatus").className = "status-line error-text";
+  }
+}
+
+async function loadTaskInbox() {
+  document.getElementById("tasksStatus").textContent = "Loading CRM task inbox...";
+  try {
+    const data = await apiJson("/api/admin-crm-tasks?limit=200");
+    state.taskInbox = data.tasks || { overdue: [], today: [], upcoming: [], completed: [] };
+    state.taskCounts = data.counts || { overdue: 0, today: 0, upcoming: 0, completed: 0 };
+    state.tasksLoaded = true;
+    if (!state.todayQueue) state.todayQueue = resolveDefaultTodayQueue();
+    if (!state.tasksQueue) state.tasksQueue = resolveDefaultTasksQueue();
+    if (state.activeTab === "today" || state.activeTab === "tasks") renderActiveTab();
+    document.getElementById("tasksStatus").className = "status-line";
+  } catch (err) {
+    state.tasksLoaded = false;
+    document.getElementById("tasksStatus").textContent = err.message || "Failed to load CRM task inbox";
+    document.getElementById("tasksStatus").className = "status-line error-text";
   }
 }
 
@@ -5383,6 +5524,7 @@ function renderDetail(data, assignedTags) {
   const bookings = data.bookings || [];
   const outreachLogs = data.outreach_logs || [];
   const notes = profile.crm_notes || customer.crm_notes || "";
+  const crmNotes = data.notes || [];
   const timelineEvents = buildTimelineEvents(data, assignedTags);
   const nba = determineNextBestAction(customer, profile, tasks, outreachLogs);
   const hasEmail = Boolean(normalizeCustomerEmail(customer.email));
@@ -5486,6 +5628,7 @@ function renderDetail(data, assignedTags) {
     <div class="detail-nba-card" aria-label="Next best action">
       <strong>${escapeHtml(nba.title)}</strong>
       <p>${escapeHtml(nba.detail)}</p>
+      ${nba.action ? `<button class="act-primary quick-action-btn" type="button" data-action="${escapeHtml(nba.action)}">${escapeHtml(nba.cta)}</button>` : ""}
     </div>
 
     <div class="detail-guided-actions" aria-label="Guided actions">
@@ -5506,6 +5649,24 @@ function renderDetail(data, assignedTags) {
       </div>
     </div>
 
+    <div id="quickNotePanel" class="detail-edit-panel" hidden>
+      <form id="quickNoteForm" class="detail-form compact-form">
+        <div class="span-2">
+          <label for="quickNoteText">New Note</label>
+          <textarea id="quickNoteText" name="note" placeholder="Add a short CRM note..." required></textarea>
+        </div>
+        <div>
+          <label for="quickNotePinned">Pinned</label>
+          <select id="quickNotePinned" name="pinned">
+            <option value="">No</option>
+            <option value="true">Yes</option>
+          </select>
+        </div>
+        <button class="act-primary span-2" type="submit">Save Note</button>
+        <button class="act-quiet span-2" type="button" id="cancelQuickNoteBtn">Cancel</button>
+      </form>
+    </div>
+
     <section class="detail-timeline-section" aria-label="Recent activity">
       <div class="detail-timeline-header">
         <h3>Recent Activity</h3>
@@ -5519,7 +5680,7 @@ function renderDetail(data, assignedTags) {
       <div id="taskList">
         ${openTasks.length ? openTasks.map((task) => `
           <div class="detail-item">
-            <strong>${escapeHtml(task.task_type || "follow_up")}</strong>
+            <strong>${escapeHtml(taskTypeLabel(task.task_type))}</strong>
             <div class="meta-text">Due ${escapeHtml(formatDate(task.due_at))} · ${escapeHtml(task.status || "")}</div>
             <div>${escapeHtml(task.notes || "")}</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
@@ -5566,7 +5727,8 @@ function renderDetail(data, assignedTags) {
         <div class="detail-item"><span class="meta-text">Contact</span> ${escapeHtml(contactMethod)}</div>
         <div class="detail-item"><span class="meta-text">Revenue</span> ${escapeHtml(formatMoney(customer.total_revenue))}</div>
         <div class="detail-item"><span class="meta-text">Address</span> ${escapeHtml(customer.address || "Not set")}</div>
-        <div class="detail-item"><span class="meta-text">Notes</span> ${notes ? escapeHtml(notes) : `<span class="meta-text">None</span>`}</div>
+        <div class="detail-item"><span class="meta-text">Profile Notes</span> ${notes ? escapeHtml(notes) : `<span class="meta-text">None</span>`}</div>
+        <div class="detail-item"><span class="meta-text">Dedicated Notes</span> ${crmNotes.length ? crmNotes.slice(0, 5).map((note) => `<div>${note.pinned ? "Pinned · " : ""}${escapeHtml(note.note)}</div>`).join("") : `<span class="meta-text">None</span>`}</div>
       </div>
     </details>
 
@@ -5605,6 +5767,19 @@ function renderDetail(data, assignedTags) {
       </div>
     </details>
 
+    <details class="detail-accordion">
+      <summary>Email History (${(data.outbound_messages || []).length})</summary>
+      <div class="detail-accordion-body">
+        ${(data.outbound_messages || []).slice(0, 20).map((msg) => `
+          <div class="detail-item">
+            <strong>${escapeHtml(msg.subject || msg.template_key || "Email")}</strong>
+            <div class="meta-text">${escapeHtml(formatDate(msg.sent_at || msg.created_at))} · ${escapeHtml(msg.status || "")}</div>
+            <div>${escapeHtml(msg.recipient_email || displayCustomerEmail(customer.email))}</div>
+          </div>
+        `).join("") || `<div class="meta-text">No CRM email history.</div>`}
+      </div>
+    </details>
+
     <details class="detail-accordion" id="refOutreach">
       <summary>Full Outreach Log</summary>
       <div class="detail-accordion-body">
@@ -5633,10 +5808,12 @@ function renderDetail(data, assignedTags) {
             <label for="responseStatus">Response</label>
             <select id="responseStatus" name="response_status">
               <option value="no_response">No Response</option>
+              <option value="pending_response">Pending Response</option>
               <option value="responded">Responded</option>
               <option value="booked">Booked</option>
               <option value="do_not_contact">Do Not Contact</option>
             </select>
+            <p id="pendingResponseHelp" class="form-note" hidden>A follow-up task will be created for 24 hours from now to check if they responded.</p>
           </div>
           <div>
             <label for="nextFollowUp">Next Follow-Up</label>
@@ -5769,6 +5946,11 @@ function wireDetailForms() {
   document.querySelectorAll(".quick-action-btn").forEach(button => {
     button.addEventListener("click", async () => {
       const action = button.dataset.action;
+      if (action === "edit_profile") {
+        toggleEditProfilePanel(true);
+        document.getElementById("editEmail")?.focus();
+        return;
+      }
       if (action === "log_outreach") {
         const outreach = document.getElementById("refOutreach");
         outreach?.setAttribute("open", "");
@@ -5776,8 +5958,9 @@ function wireDetailForms() {
         return;
       }
       if (action === "add_note") {
-        toggleEditProfilePanel(true);
-        document.getElementById("editCrmNotes")?.focus();
+        const panel = document.getElementById("quickNotePanel");
+        if (panel) panel.hidden = false;
+        document.getElementById("quickNoteText")?.focus();
         return;
       }
       if (action === "send_email" || action === "open_templates") {
@@ -5838,6 +6021,41 @@ function wireDetailForms() {
     });
   });
 
+  document.getElementById("cancelQuickNoteBtn")?.addEventListener("click", () => {
+    const panel = document.getElementById("quickNotePanel");
+    if (panel) panel.hidden = true;
+    document.getElementById("quickNoteForm")?.reset();
+  });
+
+  document.getElementById("quickNoteForm")?.addEventListener("submit", async event => {
+    event.preventDefault();
+    const body = formObject(event.currentTarget);
+    body.customer_id = id;
+    try {
+      await apiJson("/api/admin-crm-notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      toast("Note added");
+      event.currentTarget.reset();
+      await refreshCurrentCustomer(id);
+    } catch (err) {
+      toast(err.message || "Failed to add note", true);
+    }
+  });
+
+  const responseStatusEl = document.getElementById("responseStatus");
+  const pendingHelpEl = document.getElementById("pendingResponseHelp");
+  const nextFollowUpEl = document.getElementById("nextFollowUp");
+  responseStatusEl?.addEventListener("change", () => {
+    const isPending = responseStatusEl.value === "pending_response";
+    if (pendingHelpEl) pendingHelpEl.hidden = !isPending;
+    if (isPending && nextFollowUpEl && !nextFollowUpEl.value) {
+      nextFollowUpEl.value = pendingResponseDefaultLocalValue();
+    }
+  });
+
   document.getElementById("outreachForm")?.addEventListener("submit", async event => {
     event.preventDefault();
     const body = formObject(event.currentTarget);
@@ -5851,6 +6069,7 @@ function wireDetailForms() {
         body: JSON.stringify(body)
       });
       toast("Outreach logged");
+      await loadTaskInbox();
       await refreshCurrentCustomer(id);
     } catch (err) {
       toast(err.message || "Failed to log outreach", true);
@@ -5871,6 +6090,7 @@ function wireDetailForms() {
         body: JSON.stringify(body)
       });
       toast("Follow-up task created");
+      await loadTaskInbox();
       await refreshCurrentCustomer(id);
     } catch (err) {
       toast(err.message || "Failed to create task", true);
@@ -5886,6 +6106,7 @@ function wireDetailForms() {
           body: JSON.stringify({ action: "complete", task_id: button.dataset.taskId })
         });
         toast("Task completed");
+        await loadTaskInbox();
         await refreshCurrentCustomer(id);
       } catch (err) {
         toast(err.message || "Failed to complete task", true);
@@ -5938,6 +6159,7 @@ async function bootCrmApp() {
     setDetailPanelOpen(false);
     renderTabHeader();
     await loadCustomers();
+    await loadTaskInbox();
     syncMobileNav(state.activeTab);
   } catch (err) {
     toast(err.message || "CRM failed to load", true);
