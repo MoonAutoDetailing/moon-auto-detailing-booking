@@ -4412,13 +4412,13 @@ function serviceInterestLabel(row) {
 function renderNavKpis() {
   const el = document.getElementById("navKpis");
   if (!el) return;
-  const overdue = state.customers.filter(isOverdueFollowUp).length;
+  const overdue = state.taskCounts?.overdue || 0;
   const leads = state.customers.filter((row) => normalize(stageValue(row)) === "lead").length;
-  const bookingsToday = state.customers.filter(isTodaysBookingCustomer).length;
+  const dueToday = state.taskCounts?.today || 0;
   el.innerHTML = [
     ["Overdue tasks", overdue],
     ["Active leads", leads],
-    ["Today focus", bookingsToday]
+    ["Today focus", dueToday]
   ].map(([label, value]) => `<div class="nav-kpi"><span>${escapeHtml(label)}</span><strong>${escapeHtml(value)}</strong></div>`).join("");
 }
 
@@ -4484,15 +4484,11 @@ function getTodayQueueRows(queueId) {
   const dueToday = taskInboxRows("today");
   const upcoming = taskInboxRows("upcoming");
   const done = taskInboxRows("completed");
-  const todayFocus = state.customers.filter((row) =>
-    isNewLeadNeedingContact(row) || isTodaysBookingCustomer(row) || isHighValueReactivation(row)
-  );
 
   if (queueId === "overdue") return overdue;
-  if (queueId === "due_today") return dueToday;
+  if (queueId === "today" || queueId === "due_today") return dueToday;
   if (queueId === "upcoming") return upcoming;
   if (queueId === "done") return done;
-  if (queueId === "today") return todayFocus;
   return overdue.length ? overdue : dueToday;
 }
 
@@ -4509,6 +4505,15 @@ function getTasksQueueRows(queueId) {
   return overdue.length ? overdue : dueToday;
 }
 
+function taskCountForQueue(queueId) {
+  const counts = state.taskCounts || {};
+  if (queueId === "overdue") return counts.overdue || 0;
+  if (queueId === "today" || queueId === "due_today") return counts.today || 0;
+  if (queueId === "upcoming") return counts.upcoming || 0;
+  if (queueId === "completed" || queueId === "done") return counts.completed || 0;
+  return 0;
+}
+
 function taskBucketFromDueAt(value) {
   const due = value ? new Date(value) : null;
   if (!due || Number.isNaN(due.getTime())) return "upcoming";
@@ -4523,7 +4528,7 @@ function taskBucketFromDueAt(value) {
 
 function resolveDefaultTodayQueue() {
   const overdue = state.taskCounts?.overdue || 0;
-  return overdue > 0 ? "overdue" : "due_today";
+  return overdue > 0 ? "overdue" : "today";
 }
 
 function resolveDefaultTasksQueue() {
@@ -4906,15 +4911,15 @@ function renderToday() {
   const pillsEl = document.getElementById("todayQueuePills");
 
   if (isMobileCrmView()) {
-    const sortByDue = (a, b) => new Date(a.due_at || a.next_follow_up_at || 0).getTime() - new Date(b.due_at || b.next_follow_up_at || 0).getTime();
+    const sortByDue = (a, b) => new Date(a.due_at || 0).getTime() - new Date(b.due_at || 0).getTime();
     const overdueRows = getTodayQueueRows("overdue").sort(sortByDue);
-    const dueTodayRows = getTodayQueueRows("due_today").sort(sortByDue);
+    const dueTodayRows = getTodayQueueRows("today").sort(sortByDue);
     const blocks = [];
 
     if (overdueRows.length) {
       blocks.push(`
         <section class="mobile-today-block">
-          <h3>Overdue (${overdueRows.length})</h3>
+          <h3>Overdue (${taskCountForQueue("overdue")})</h3>
           ${renderActiveQueueList(overdueRows, { overdue: true })}
         </section>
       `);
@@ -4922,7 +4927,7 @@ function renderToday() {
     if (dueTodayRows.length) {
       blocks.push(`
         <section class="mobile-today-block">
-          <h3>Due Today (${dueTodayRows.length})</h3>
+          <h3>Due Today (${taskCountForQueue("today")})</h3>
           ${renderActiveQueueList(dueTodayRows, { overdue: false })}
         </section>
       `);
@@ -4938,13 +4943,13 @@ function renderToday() {
     renderQueuePills("todayQueuePills", extraQueues, state.todayQueue, (queueId) => {
       state.todayQueue = queueId;
       renderToday();
-    }, (queueId) => getTodayQueueRows(queueId).length);
+    }, taskCountForQueue);
 
     if (state.todayQueue === "upcoming" || state.todayQueue === "done") {
       const extraRows = getTodayQueueRows(state.todayQueue).sort((a, b) => customerName(a).localeCompare(customerName(b)));
       blocks.push(`
         <section class="mobile-today-block">
-          <h3>${state.todayQueue === "upcoming" ? "Upcoming" : "Done"} (${extraRows.length})</h3>
+          <h3>${state.todayQueue === "upcoming" ? "Upcoming" : "Done"} (${taskCountForQueue(state.todayQueue)})</h3>
           ${renderActiveQueueList(extraRows, { overdue: false, showSnooze: state.todayQueue !== "done" })}
         </section>
       `);
@@ -4958,7 +4963,6 @@ function renderToday() {
     const queues = [
       { id: "today", label: "Today" },
       { id: "overdue", label: "Overdue" },
-      { id: "due_today", label: "Due Today" },
       { id: "upcoming", label: "Upcoming" },
       { id: "done", label: "Done" }
     ];
@@ -4966,12 +4970,12 @@ function renderToday() {
     renderQueuePills("todayQueuePills", queues, state.todayQueue, (queueId) => {
       state.todayQueue = queueId;
       renderToday();
-    }, (queueId) => getTodayQueueRows(queueId).length);
+    }, taskCountForQueue);
 
     const rows = getTodayQueueRows(state.todayQueue).sort((a, b) => {
-      const aDue = new Date(a.next_follow_up_at || 0).getTime();
-      const bDue = new Date(b.next_follow_up_at || 0).getTime();
-      if (state.todayQueue === "overdue" || state.todayQueue === "due_today") return aDue - bDue;
+      const aDue = new Date(a.due_at || 0).getTime();
+      const bDue = new Date(b.due_at || 0).getTime();
+      if (state.todayQueue === "overdue" || state.todayQueue === "today") return aDue - bDue;
       return customerName(a).localeCompare(customerName(b));
     });
 
@@ -5220,7 +5224,7 @@ function renderTasks() {
     if (overdueRows.length) {
       blocks.push(`
         <section class="mobile-today-block">
-          <h3>Overdue (${overdueRows.length})</h3>
+          <h3>Overdue (${taskCountForQueue("overdue")})</h3>
           ${renderActiveQueueList(overdueRows, { overdue: true })}
         </section>
       `);
@@ -5228,7 +5232,7 @@ function renderTasks() {
     if (todayRows.length) {
       blocks.push(`
         <section class="mobile-today-block">
-          <h3>Due Today (${todayRows.length})</h3>
+          <h3>Due Today (${taskCountForQueue("today")})</h3>
           ${renderActiveQueueList(todayRows, { overdue: false })}
         </section>
       `);
@@ -5236,7 +5240,7 @@ function renderTasks() {
     if (upcomingRows.length) {
       blocks.push(`
         <section class="mobile-today-block">
-          <h3>Upcoming (${upcomingRows.length})</h3>
+          <h3>Upcoming (${taskCountForQueue("upcoming")})</h3>
           ${renderActiveQueueList(upcomingRows, { overdue: false })}
         </section>
       `);
@@ -5249,7 +5253,7 @@ function renderTasks() {
     renderQueuePills("tasksQueuePills", extraQueues, state.tasksQueue, (queueId) => {
       state.tasksQueue = queueId;
       renderTasks();
-    }, (queueId) => getTasksQueueRows(queueId).length);
+    }, taskCountForQueue);
 
     if (state.tasksQueue === "completed") {
       const completedRows = getTasksQueueRows("completed").sort((a, b) =>
@@ -5257,7 +5261,7 @@ function renderTasks() {
       );
       blocks.push(`
         <section class="mobile-today-block">
-          <h3>Completed (${completedRows.length})</h3>
+          <h3>Completed (${taskCountForQueue("completed")})</h3>
           ${renderActiveQueueList(completedRows, { overdue: false, showSnooze: false })}
         </section>
       `);
@@ -5278,7 +5282,7 @@ function renderTasks() {
     renderQueuePills("tasksQueuePills", queues, state.tasksQueue, (queueId) => {
       state.tasksQueue = queueId;
       renderTasks();
-    }, (queueId) => getTasksQueueRows(queueId).length);
+    }, taskCountForQueue);
 
     const rows = getTasksQueueRows(state.tasksQueue).sort((a, b) => {
       const aDue = new Date(a.due_at || 0).getTime();
@@ -5499,9 +5503,11 @@ async function loadTaskInbox() {
     const data = await apiJson("/api/admin-crm-tasks?limit=200");
     state.taskInbox = data.tasks || { overdue: [], today: [], upcoming: [], completed: [] };
     state.taskCounts = data.counts || { overdue: 0, today: 0, upcoming: 0, completed: 0 };
+    console.log("[CRM TASK COUNTS]", state.taskCounts);
     state.tasksLoaded = true;
     if (!state.todayQueue) state.todayQueue = resolveDefaultTodayQueue();
     if (!state.tasksQueue) state.tasksQueue = resolveDefaultTasksQueue();
+    renderNavKpis();
     if (state.activeTab === "today" || state.activeTab === "tasks") renderActiveTab();
     document.getElementById("tasksStatus").className = "status-line";
   } catch (err) {
