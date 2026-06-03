@@ -24,12 +24,31 @@ const PLACEHOLDER_EMAILS = new Set([
   "—"
 ]);
 
+const PLACEHOLDER_ADDRESSES = new Set([
+  "n/a",
+  "na",
+  "none",
+  "no address",
+  "unknown",
+  "null",
+  "nil",
+  "-",
+  "address not provided"
+]);
+
 function normalizeCustomerEmail(value) {
   const text = clean(value);
   if (!text) return null;
   const lower = text.toLowerCase();
   if (PLACEHOLDER_EMAILS.has(lower)) return null;
   return lower;
+}
+
+function normalizeCustomerAddress(value) {
+  const text = clean(value);
+  if (!text) return null;
+  if (PLACEHOLDER_ADDRESSES.has(text.toLowerCase())) return null;
+  return text;
 }
 
 export default async function handler(req, res) {
@@ -73,7 +92,7 @@ export default async function handler(req, res) {
       full_name: fullName,
       email,
       phone,
-      address: clean(body.address)
+      address: normalizeCustomerAddress(body.address)
     };
 
     const { data: customer, error: customerError } = await supabase

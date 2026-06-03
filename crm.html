@@ -589,6 +589,78 @@ button {
   display: none;
 }
 
+.crm-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 999998;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(2, 8, 16, 0.76);
+  backdrop-filter: blur(8px);
+}
+
+.crm-modal-backdrop.open {
+  display: flex;
+}
+
+.crm-outcome-modal {
+  width: min(420px, calc(100vw - 28px));
+  padding: 18px;
+  border: 1px solid rgba(127,184,230,0.32);
+  border-radius: 18px;
+  background: linear-gradient(180deg, rgba(13,22,34,0.98), rgba(8,14,23,0.98));
+  box-shadow: 0 24px 70px rgba(0,0,0,0.62);
+}
+
+.crm-outcome-modal h2 {
+  margin: 0 0 6px;
+  color: var(--moon-primary);
+  font-size: 20px;
+  letter-spacing: -0.02em;
+}
+
+.crm-outcome-modal p {
+  margin: 0 0 14px;
+  color: rgba(255,255,255,0.72);
+  line-height: 1.45;
+}
+
+.crm-outcome-options {
+  display: grid;
+  gap: 8px;
+}
+
+.crm-outcome-option {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid rgba(127,184,230,0.28);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  font-weight: 700;
+  text-align: left;
+}
+
+.crm-outcome-option:first-child {
+  background: linear-gradient(135deg, var(--moon-primary), var(--moon-primary-dark));
+  color: #07111d;
+}
+
+.crm-outcome-cancel {
+  width: 100%;
+  min-height: 42px;
+  margin-top: 12px;
+  padding: 9px 12px;
+  border: 1px solid rgba(255,255,255,0.14);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.78);
+  font-weight: 700;
+}
+
 @media (max-width: 920px) {
   body {
     padding: 0;
@@ -3156,6 +3228,14 @@ a.mobile-top-chip {
 </head>
 <body>
 <div id="toast"></div>
+<div id="crmOutcomeModal" class="crm-modal-backdrop" aria-hidden="true">
+  <div class="crm-outcome-modal" role="dialog" aria-modal="true" aria-labelledby="crmOutcomeTitle" aria-describedby="crmOutcomeInstruction">
+    <h2 id="crmOutcomeTitle">Task Outcome</h2>
+    <p id="crmOutcomeInstruction">Choose how this task ended.</p>
+    <div id="crmOutcomeOptions" class="crm-outcome-options"></div>
+    <button id="crmOutcomeCancel" class="crm-outcome-cancel" type="button">Cancel</button>
+  </div>
+</div>
 <div id="watermarkUnderlay"></div>
 <img src="/NewLogoColor.png" id="watermarkLogo" alt="Moon Auto Detailing Logo" />
 
@@ -3335,8 +3415,8 @@ a.mobile-top-chip {
                     <input id="leadEmail" name="email" type="text" inputmode="email" autocomplete="email" placeholder="Leave blank if unknown" />
                   </div>
                   <div class="span-2">
-                    <label for="leadAddress">Address</label>
-                    <input id="leadAddress" name="address" autocomplete="street-address" placeholder="Start typing address..." />
+                    <label for="leadAddress">Address <span class="field-optional">(optional)</span></label>
+                    <input id="leadAddress" name="address" autocomplete="street-address" placeholder="Start typing address, or leave blank..." />
                   </div>
                   <div class="span-2">
                     <label for="leadCompany">Company</label>
@@ -3471,6 +3551,59 @@ const CRM_TASK_TYPES = [
   { value: "ceramic_checkup", label: "Ceramic Checkup" },
   { value: "referral_ask", label: "Referral Ask" }
 ];
+
+const TASK_OUTCOME_CONFIGS = {
+  review_request: {
+    title: "Review Request Outcome",
+    instruction: "Choose the result of this review request.",
+    options: [
+      { label: "Review received", value: "review_received" },
+      { label: "No response yet", value: "review_no_response" },
+      { label: "Not leaving review", value: "review_declined" }
+    ]
+  },
+  maintenance_reminder: {
+    title: "Maintenance Reminder Outcome",
+    instruction: "Choose how the customer responded to the maintenance reminder.",
+    options: [
+      { label: "Customer responded / interested", value: "maintenance_interested" },
+      { label: "Waiting for response", value: "maintenance_waiting" },
+      { label: "Not interested right now", value: "maintenance_not_interested" },
+      { label: "Booked", value: "maintenance_booked" }
+    ]
+  },
+  check_response: {
+    title: "Response Check Outcome",
+    instruction: "Choose the latest response status.",
+    options: [
+      { label: "Responded", value: "response_yes" },
+      { label: "Still waiting", value: "response_none" },
+      { label: "Booked", value: "response_booked" },
+      { label: "Declined / not interested", value: "response_declined" }
+    ]
+  },
+  cancellation_follow_up: {
+    title: "Cancellation Follow-Up Outcome",
+    instruction: "Choose the result of this cancellation follow-up.",
+    options: [
+      { label: "Wants to reschedule", value: "cancel_reschedule_yes" },
+      { label: "Not right now", value: "cancel_reschedule_no" },
+      { label: "No response", value: "cancel_no_response" }
+    ]
+  }
+};
+
+const FOLLOW_UP_OUTCOME_CONFIG = {
+  title: "Follow-Up Outcome",
+  instruction: "Choose the best outcome for this follow-up task.",
+  options: [
+    { label: "Responded / interested", value: "followup_interested" },
+    { label: "Waiting for response", value: "followup_waiting" },
+    { label: "Booked", value: "followup_booked" },
+    { label: "Not interested / lost", value: "followup_lost" },
+    { label: "Completed only", value: "completed_only" }
+  ]
+};
 
 const TASK_PRIORITY_OPTIONS = ["low", "medium", "high", "urgent"];
 const CRM_GOOGLE_MAPS_SRC = "https://maps.googleapis.com/maps/api/js?key=AIzaSyAszMW1x5-TUHnlDkxpms-z4rDfHxDcTyI&libraries=places&loading=async";
@@ -3766,15 +3899,23 @@ function customerBlocksEmail() {
   return false;
 }
 
-function promptEmailFollowUpDelayMs() {
-  const choice = window.prompt("Create follow-up check task?\n1. 24 hours\n2. 3 days\n3. No follow-up", "3");
-  if (choice === "1") return MS_DAY;
-  if (choice === "2") return 3 * MS_DAY;
+async function promptEmailFollowUpDelayMs() {
+  const choice = await showCrmOptionModal({
+    title: "Email Follow-Up Task",
+    instruction: "Create a response check task for this email?",
+    options: [
+      { label: "24 hours", value: "one_day" },
+      { label: "3 days", value: "three_days" },
+      { label: "No follow-up", value: "none" }
+    ]
+  });
+  if (choice === "one_day") return MS_DAY;
+  if (choice === "three_days") return 3 * MS_DAY;
   return null;
 }
 
 async function maybeCreateEmailCheckResponseTask(customerId) {
-  const delayMs = promptEmailFollowUpDelayMs();
+  const delayMs = await promptEmailFollowUpDelayMs();
   if (!delayMs) return;
   const row = selectedCustomerRow() || {};
   const profile = state.detail?.profile || {};
@@ -4078,12 +4219,30 @@ const PLACEHOLDER_EMAILS = new Set([
   "—"
 ]);
 
+const PLACEHOLDER_ADDRESSES = new Set([
+  "n/a",
+  "na",
+  "none",
+  "no address",
+  "unknown",
+  "null",
+  "nil",
+  "-",
+  "address not provided"
+]);
+
 function normalizeCustomerEmail(value) {
   const text = cleanFormValue(value);
   if (!text) return null;
   const lower = text.toLowerCase();
   if (PLACEHOLDER_EMAILS.has(lower)) return null;
   return lower;
+}
+
+function normalizeCustomerAddressInput(value) {
+  const text = cleanFormValue(value);
+  if (!text) return null;
+  return PLACEHOLDER_ADDRESSES.has(text.toLowerCase()) ? null : text;
 }
 
 function formatGooglePlaceAddress(place) {
@@ -5798,165 +5957,92 @@ function findLoadedTask(taskId) {
   return null;
 }
 
-function promptTaskOutcome(task) {
-  const type = normalize(task?.task_type);
-  if (type === "review_request") {
-    const choice = window.prompt("Did the customer leave a review?\n1. Yes, review received\n2. No response yet\n3. No, they declined/not doing it", "1");
-    if (choice === null) return null;
-    if (choice === "1") return "review_received";
-    if (choice === "2") return "review_no_response";
-    if (choice === "3") return "review_declined";
-  }
-  if (type === "check_response") {
-    const choice = window.prompt("Did the customer respond?\n1. Yes, responded\n2. No response\n3. Booked\n4. Declined", "1");
-    if (choice === null) return null;
-    if (choice === "1") return "response_yes";
-    if (choice === "2") return "response_none";
-    if (choice === "3") return "response_booked";
-    if (choice === "4") return "response_declined";
-  }
-  if (type === "cancellation_follow_up") {
-    const choice = window.prompt("Did customer want to reschedule?\n1. Yes, wants to reschedule\n2. No, not right now\n3. No response", "1");
-    if (choice === null) return null;
-    if (choice === "1") return "cancel_reschedule_yes";
-    if (choice === "2") return "cancel_reschedule_no";
-    if (choice === "3") return "cancel_no_response";
-  }
-  return "";
+function taskOutcomeConfig(task) {
+  return TASK_OUTCOME_CONFIGS[normalize(task?.task_type)] || FOLLOW_UP_OUTCOME_CONFIG;
 }
 
-async function applyTaskOutcome(task, outcome) {
-  const customerIdForTask = customerId(task);
-  if (!customerIdForTask || !outcome) return;
-  if (outcome === "review_received") {
-    await apiJson("/api/admin-crm-notes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customer_id: customerIdForTask, note: "Review request completed; review received." })
-    });
-    await closeReviewFollowUpsForCustomer(customerIdForTask, task.task_id || task.id);
-  } else if (outcome === "review_no_response") {
-    const dueAt = new Date(Date.now() + MS_DAY).toISOString();
-    await apiJson("/api/admin-crm-follow-up-task", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "create",
-        customer_id: customerIdForTask,
-        task_type: "check_response",
-        due_at: dueAt,
-        priority: task.priority || "high",
-        notes: "Check whether customer responded to review request."
-      })
-    });
-  } else if (outcome === "review_declined") {
-    await apiJson("/api/admin-crm-notes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customer_id: customerIdForTask, note: "Review request completed; review not received." })
-    });
-  } else if (outcome === "response_yes") {
-    await apiJson("/api/admin-crm-log-outreach", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        customer_id: customerIdForTask,
-        method: "phone",
-        outreach_type: "task_response",
-        response_status: "responded",
-        message_summary: "Customer responded to follow-up task."
-      })
-    });
-  } else if (outcome === "response_none") {
-    const dueAt = new Date(Date.now() + 3 * MS_DAY).toISOString();
-    await apiJson("/api/admin-crm-follow-up-task", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "create",
-        customer_id: customerIdForTask,
-        task_type: "check_response",
-        due_at: dueAt,
-        priority: task.priority || "high",
-        notes: "No response yet; check again in 3 days."
-      })
-    });
-  } else if (outcome === "response_booked") {
-    await apiJson("/api/admin-crm-update-profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customer_id: customerIdForTask, lifecycle_stage: "booked", status: "active" })
-    });
-  } else if (outcome === "response_declined") {
-    await apiJson("/api/admin-crm-update-profile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customer_id: customerIdForTask, lifecycle_stage: "lost", status: "cooling" })
-    });
-  } else if (outcome === "cancel_reschedule_yes") {
-    await apiJson("/api/admin-crm-notes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customer_id: customerIdForTask, note: "Cancellation follow-up completed; customer wants to reschedule." })
-    });
-  } else if (outcome === "cancel_reschedule_no") {
-    await apiJson("/api/admin-crm-notes", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customer_id: customerIdForTask, note: "Cancellation follow-up completed; not rescheduling now." })
-    });
-  } else if (outcome === "cancel_no_response") {
-    const dueAt = new Date(Date.now() + 3 * MS_DAY).toISOString();
-    await apiJson("/api/admin-crm-follow-up-task", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        action: "create",
-        customer_id: customerIdForTask,
-        task_type: "check_response",
-        due_at: dueAt,
-        priority: task.priority || "high",
-        notes: "No response to cancellation follow-up; check again in 3 days."
-      })
-    });
-  }
-}
+function showCrmOptionModal(config) {
+  const modal = document.getElementById("crmOutcomeModal");
+  const title = document.getElementById("crmOutcomeTitle");
+  const instruction = document.getElementById("crmOutcomeInstruction");
+  const optionsEl = document.getElementById("crmOutcomeOptions");
+  const cancelBtn = document.getElementById("crmOutcomeCancel");
 
-async function closeReviewFollowUpsForCustomer(customerIdForTask, currentTaskId) {
-  const detail = await apiJson(`/api/admin-crm-customer-detail?customer_id=${encodeURIComponent(customerIdForTask)}`);
-  const reviewTasks = (detail.follow_up_tasks || []).filter((task) => {
-    if (String(task.id) === String(currentTaskId)) return false;
-    if (task.status === "completed" || task.status === "dismissed") return false;
-    const type = normalize(task.task_type);
-    if (type === "review_request") return true;
-    if (type !== "check_response") return false;
-    return String(task.notes || "").toLowerCase().includes("review");
+  if (!modal || !title || !instruction || !optionsEl || !cancelBtn) {
+    return Promise.resolve(null);
+  }
+
+  return new Promise((resolve) => {
+    let settled = false;
+    const previousFocus = document.activeElement;
+
+    function close(value) {
+      if (settled) return;
+      settled = true;
+      modal.classList.remove("open");
+      modal.setAttribute("aria-hidden", "true");
+      document.removeEventListener("keydown", onKeyDown);
+      optionsEl.innerHTML = "";
+      if (previousFocus && typeof previousFocus.focus === "function") previousFocus.focus();
+      resolve(value);
+    }
+
+    function onKeyDown(event) {
+      if (event.key === "Escape") close(null);
+    }
+
+    title.textContent = config.title;
+    instruction.textContent = config.instruction;
+    optionsEl.innerHTML = config.options.map((option) => `
+      <button class="crm-outcome-option" type="button" data-outcome="${escapeHtml(option.value)}">${escapeHtml(option.label)}</button>
+    `).join("");
+
+    optionsEl.querySelectorAll(".crm-outcome-option").forEach((button) => {
+      button.addEventListener("click", () => close(button.dataset.outcome));
+    });
+    cancelBtn.onclick = () => close(null);
+
+    document.addEventListener("keydown", onKeyDown);
+    modal.classList.add("open");
+    modal.setAttribute("aria-hidden", "false");
+    optionsEl.querySelector(".crm-outcome-option")?.focus();
   });
+}
 
-  for (const reviewTask of reviewTasks) {
-    await apiJson("/api/admin-crm-follow-up-task", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "complete", task_id: reviewTask.id })
-    });
-  }
+function promptTaskOutcome(task) {
+  return showCrmOptionModal(taskOutcomeConfig(task));
+}
+
+async function completeTaskWithOutcome(task) {
+  const taskId = task?.task_id || task?.id;
+  if (!taskId) return false;
+  const outcome = await promptTaskOutcome(task);
+  if (outcome === null) return false;
+  await apiJson("/api/admin-crm-complete-task-outcome", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      task_id: taskId,
+      customer_id: customerId(task),
+      task_type: task?.task_type,
+      outcome
+    })
+  });
+  return true;
 }
 
 async function completeTaskById(taskId) {
   if (!taskId) return;
   try {
     const task = findLoadedTask(taskId);
-    const outcome = promptTaskOutcome(task);
-    if (outcome === null) return;
-    await apiJson("/api/admin-crm-follow-up-task", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "complete", task_id: taskId })
-    });
-    await applyTaskOutcome(task, outcome);
+    const completed = await completeTaskWithOutcome(task || { id: taskId });
+    if (!completed) return;
     toast("Task completed");
     await loadTaskInbox();
     await loadCustomers();
+    if (state.selectedCustomerId && (!task || String(customerId(task)) === String(state.selectedCustomerId))) {
+      await openCustomerDetail(state.selectedCustomerId);
+    }
   } catch (err) {
     toast(err.message || "Failed to complete task", true);
   }
@@ -6029,11 +6115,8 @@ async function completeFollowUpForCustomer(customerId) {
     const detail = await apiJson(`/api/admin-crm-customer-detail?customer_id=${encodeURIComponent(customerId)}`);
     const openTask = (detail.follow_up_tasks || []).find((task) => task.status !== "completed" && task.status !== "dismissed");
     if (!openTask) throw new Error("No open task found for this customer");
-    await apiJson("/api/admin-crm-follow-up-task", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "complete", task_id: openTask.id })
-    });
+    const completed = await completeTaskWithOutcome({ ...openTask, customer_id: customerId });
+    if (!completed) return;
     toast("Task completed");
     await loadTaskInbox();
     await loadCustomers();
@@ -6307,8 +6390,8 @@ function renderDetail(data, assignedTags) {
           <input id="editEmail" name="email" type="text" value="${escapeHtml(normalizeCustomerEmail(customer.email) || "")}" placeholder="Leave blank if none" />
         </div>
         <div class="span-2">
-          <label for="editAddress">Address</label>
-          <input id="editAddress" name="address" value="${escapeHtml(customer.address || "")}" autocomplete="street-address" placeholder="Start typing address..." />
+          <label for="editAddress">Address <span class="field-optional">(optional)</span></label>
+          <input id="editAddress" name="address" value="${escapeHtml(customer.address || "")}" autocomplete="street-address" placeholder="Start typing address, or leave blank..." />
         </div>
         <div class="span-2">
           <label for="editCompany">Company</label>
@@ -6501,7 +6584,7 @@ function renderDetail(data, assignedTags) {
         <div class="detail-item"><span class="meta-text">Source</span> ${escapeHtml(profile.lead_source || "—")}</div>
         <div class="detail-item"><span class="meta-text">Contact</span> ${escapeHtml(contactMethod)}</div>
         <div class="detail-item"><span class="meta-text">Revenue</span> ${escapeHtml(formatMoney(customer.total_revenue))}</div>
-        <div class="detail-item"><span class="meta-text">Address</span> ${escapeHtml(customer.address || "Not set")}</div>
+        <div class="detail-item"><span class="meta-text">Address</span> ${escapeHtml(customer.address || "No address on file")}</div>
         <div class="detail-item"><span class="meta-text">Profile Notes</span> ${notes ? escapeHtml(notes) : `<span class="meta-text">None</span>`}</div>
         <div class="detail-item"><span class="meta-text">Dedicated Notes</span> ${crmNotes.length ? crmNotes.slice(0, 5).map((note) => `<div>${note.pinned ? "Pinned · " : ""}${escapeHtml(note.note)}</div>`).join("") : `<span class="meta-text">None</span>`}</div>
       </div>
@@ -6671,6 +6754,7 @@ async function submitLeadForm(event) {
   const form = event.currentTarget;
   const body = formObject(form);
   body.email = normalizeCustomerEmail(body.email);
+  body.address = normalizeCustomerAddressInput(body.address);
   body.next_follow_up_at = dateTimeLocalToIso(body.next_follow_up_at);
   body.lifecycle_stage = "lead";
   body.status = "active";
@@ -6725,7 +6809,7 @@ function wireDetailForms() {
       full_name: body.full_name,
       phone: body.phone,
       email: body.email || "",
-      address: body.address
+      address: normalizeCustomerAddressInput(body.address)
     };
     const profilePayload = {
       customer_id: id,
@@ -6799,11 +6883,8 @@ function wireDetailForms() {
         if (action === "complete_open_task") {
           const openTask = (state.detail?.follow_up_tasks || []).find(task => task.status !== "completed" && task.status !== "dismissed");
           if (!openTask) throw new Error("No open task to complete");
-          await apiJson("/api/admin-crm-follow-up-task", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ action: "complete", task_id: openTask.id })
-          });
+          const completed = await completeTaskWithOutcome({ ...openTask, customer_id: id });
+          if (!completed) return;
           toast("Open task completed");
         } else {
           const payload = {

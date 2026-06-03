@@ -27,12 +27,31 @@ const PLACEHOLDER_EMAILS = new Set([
   "—"
 ]);
 
+const PLACEHOLDER_ADDRESSES = new Set([
+  "n/a",
+  "na",
+  "none",
+  "no address",
+  "unknown",
+  "null",
+  "nil",
+  "-",
+  "address not provided"
+]);
+
 function normalizeCustomerEmail(value) {
   const text = clean(value);
   if (!text) return null;
   const lower = text.toLowerCase();
   if (PLACEHOLDER_EMAILS.has(lower)) return null;
   return lower;
+}
+
+function normalizeCustomerAddress(value) {
+  const text = clean(value);
+  if (!text) return null;
+  if (PLACEHOLDER_ADDRESSES.has(text.toLowerCase())) return null;
+  return text;
 }
 
 export default async function handler(req, res) {
@@ -68,7 +87,7 @@ export default async function handler(req, res) {
     }
     if (hasOwn(body, "phone")) payload.phone = clean(body.phone);
     if (hasOwn(body, "email")) payload.email = normalizeCustomerEmail(body.email);
-    if (hasOwn(body, "address")) payload.address = clean(body.address);
+    if (hasOwn(body, "address")) payload.address = normalizeCustomerAddress(body.address);
 
     if (Object.keys(payload).length === 0) {
       return res.status(400).json({ ok: false, error: "No customer fields to update" });
