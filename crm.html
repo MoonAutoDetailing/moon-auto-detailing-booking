@@ -3415,6 +3415,19 @@ let ADMIN_SESSION = sessionStorage.getItem("moon_admin_session");
 
 const MS_DAY = 24 * 60 * 60 * 1000;
 
+const CRM_TASK_TYPES = [
+  { value: "general_follow_up", label: "General Follow-Up" },
+  { value: "lead_follow_up", label: "Lead Follow-Up" },
+  { value: "quote_follow_up", label: "Quote Follow-Up" },
+  { value: "check_response", label: "Check for Response" },
+  { value: "review_request", label: "Review Request" },
+  { value: "maintenance_reminder", label: "Maintenance Reminder" },
+  { value: "reactivation_follow_up", label: "Reactivation Follow-Up" },
+  { value: "winback_follow_up", label: "Winback Follow-Up" },
+  { value: "ceramic_checkup", label: "Ceramic Checkup" },
+  { value: "referral_ask", label: "Referral Ask" }
+];
+
 const TAB_PANEL_IDS = {
   today: "tabToday",
   customers: "tabCustomers",
@@ -4533,10 +4546,25 @@ function taskTitleForRow(row) {
 
 function taskTypeLabel(value) {
   const type = normalize(value);
-  if (type === "check_response") return "Check for response";
-  if (type === "review_request") return "Review request";
-  if (type === "maintenance_reminder") return "Maintenance reminder";
-  return String(value || "follow_up").replace(/_/g, " ");
+  const match = CRM_TASK_TYPES.find((taskType) => taskType.value === type);
+  if (match) return match.label;
+  return String(value || "follow_up")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function defaultTaskTypeForCustomer(customer = {}, profile = {}) {
+  const stage = normalize(profile.lifecycle_stage || customer.lifecycle_stage);
+  if (stage === "quoted") return "quote_follow_up";
+  if (stage === "lead" || stage === "prospect" || stage === "contacted") return "lead_follow_up";
+  return "general_follow_up";
+}
+
+function renderTaskTypeOptions(selectedType) {
+  const selected = normalize(selectedType) || "general_follow_up";
+  return CRM_TASK_TYPES.map((taskType) => `
+    <option value="${escapeHtml(taskType.value)}" ${selected === taskType.value ? "selected" : ""}>${escapeHtml(taskType.label)}</option>
+  `).join("");
 }
 
 function isTaskRowOverdue(row) {
@@ -5274,7 +5302,7 @@ function renderTaskCard(row, options = {}) {
   return `
     <article class="task-card ${tone}">
       <div><strong>${escapeHtml(customerName(row))}</strong> <span class="badge" title="${escapeHtml(priorityInfo.title)}">${escapeHtml(priorityInfo.effective)}</span></div>
-      <div class="muted">${escapeHtml(options.label || "Follow-up")} · Due ${escapeHtml(formatDate(row.next_follow_up_at))}</div>
+      <div class="muted">${escapeHtml(taskTitleForRow(row))} · Due ${escapeHtml(formatDate(row.next_follow_up_at))}</div>
       <div class="task-card-actions">
         <button class="primary-btn complete-followup-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
         <button class="secondary-btn" type="button" data-open-customer="${escapeHtml(customerId(row))}">Open Customer</button>
@@ -5830,6 +5858,7 @@ function renderDetail(data, assignedTags) {
   const priority = profile.priority || priorityValue(customer);
   const contactMethod = profile.preferred_contact_method || "sms";
   const defaultTaskPriority = defaultTaskPriorityForCustomer(customer, profile);
+  const defaultTaskType = defaultTaskTypeForCustomer(customer, profile);
   const emailBtn = hasEmail
     ? `<button class="act-primary quick-action-btn" type="button" data-action="send_email">Send Email</button>`
     : `<button class="act-primary" type="button" disabled title="No email on file">Send Email</button>`;
@@ -5999,7 +6028,9 @@ function renderDetail(data, assignedTags) {
         <form id="taskCreateForm" class="detail-form compact-form">
           <div>
             <label for="taskType">Task Type</label>
-            <input id="taskType" name="task_type" value="general_follow_up" />
+            <select id="taskType" name="task_type">
+              ${renderTaskTypeOptions(defaultTaskType)}
+            </select>
           </div>
           <div>
             <label for="taskDue">Due At</label>
