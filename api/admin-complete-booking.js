@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import verifyAdmin from "./_verifyAdmin.js";
 import { sendBookingCompletedEmailCore } from "../lib/email/sendBookingCompletedEmail.js";
-import { createFollowUpTaskIfMissing, syncCrmProfileStage } from "./_crmWorkflow.js";
+import { createFollowUpTaskIfMissing, reconcileCustomerLifecycle, syncCrmProfileStage } from "./_crmWorkflow.js";
 
 
 export default async function handler(req, res) {
@@ -124,6 +124,7 @@ export default async function handler(req, res) {
         priority: "medium",
         notes: "Ask customer for a review after completed service."
       });
+      await reconcileCustomerLifecycle(supabase, completedBooking.customer_id);
     }
 
     // Subscription activation hook: activate subscription if this was its onboarding booking

@@ -2,7 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
 import twilio from "twilio";
 import { sendBookingConfirmedEmailCore } from "../lib/email/sendBookingConfirmedEmail.js";
-import { syncCrmProfileStage } from "./_crmWorkflow.js";
+import { reconcileCustomerLifecycle, syncCrmProfileStage } from "./_crmWorkflow.js";
 
 export async function confirmBookingCore({ bookingId, sendCustomerEmail = true }) {
   if (!bookingId) {
@@ -39,6 +39,7 @@ export async function confirmBookingCore({ bookingId, sendCustomerEmail = true }
       lifecycle_stage: "confirmed",
       status: "active"
     });
+    await reconcileCustomerLifecycle(supabase, booking.customer_id);
     return { ok: true, statusCode: 200, body: { ok: true, alreadyConfirmed: true } };
   }
 
@@ -186,6 +187,7 @@ export async function confirmBookingCore({ bookingId, sendCustomerEmail = true }
       lifecycle_stage: "confirmed",
       status: "active"
     });
+    await reconcileCustomerLifecycle(supabase, booking.customer_id);
   } catch (eventErr) {
     await supabase
       .from("bookings")

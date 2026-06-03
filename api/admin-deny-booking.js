@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import verifyAdmin from "./_verifyAdmin.js";
 import { sendBookingDeniedEmailCore } from "../lib/email/sendBookingDeniedEmail.js";
+import { reconcileCustomerLifecycle } from "./_crmWorkflow.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -17,13 +18,9 @@ export default async function handler(req, res) {
   req.body = { ...body, bookingId };
 
   try {
-    let adminAuthorized = false;
     try {
-      adminAuthorized = await verifyAdmin(req);
+      await verifyAdmin(req);
     } catch (err) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-    if (!adminAuthorized) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
@@ -31,6 +28,16 @@ export default async function handler(req, res) {
       process.env.SUPABASE_URL,
       process.env.SUPABASE_SERVICE_ROLE_KEY
     );
+
+    const { data: booking, error: bookingError } = await supabase
+      .from("bookings")
+      .select("id, customer_id")
+      .eq("id", bookingId)
+      .maybeSingle();
+    if (bookingError) throw bookingError;
+    if (!booking) {
+      return res.status(404).json({ error: "Booking not found" });
+    }
 
     // 1️⃣ Update booking status → denied
     const { error: updateError } = await supabase
@@ -53,6 +60,8 @@ export default async function handler(req, res) {
         .eq("id", bookingId);
       return res.status(500).json({ error: "Email failed; action rolled back" });
     }
+
+    await reconcileCustomerLifecycle(supabase, booking.customer_id);
 
     return res.status(200).json({ ok: true });
 

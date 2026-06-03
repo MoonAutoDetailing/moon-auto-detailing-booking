@@ -24,6 +24,7 @@ const LOST_TASK_TYPES = [
   "quote_follow_up",
   "check_response"
 ];
+const COMPLETED_BOOKING_STATUSES = ["completed", "complete", "done"];
 
 function clean(value) {
   const text = String(value || "").trim();
@@ -165,6 +166,90 @@ export async function syncCrmProfileStage(supabase, customerId, updates = {}) {
     .single();
 
   if (profileError) throw profileError;
+  await cleanupTasksForLifecycle(supabase, customerId, profile);
+  return profile;
+}
+
+export async function reconcileCustomerLifecycle(supabase, customerId) {
+  if (!customerId) return null;
+
+  const { data: existingProfile, error: profileError } = await supabase
+    .from("crm_profiles")
+    .select("*")
+    .eq("customer_id", customerId)
+    .maybeSingle();
+  if (profileError) throw profileError;
+
+  const existingStage = normalize(existingProfile?.lifecycle_stage || "lead");
+  const existingStatus = normalize(existingProfile?.status);
+  if (
+    existingProfile?.do_not_contact === true ||
+    existingStage === "do_not_contact" ||
+    existingStatus === "do_not_contact" ||
+    existingStage === "lost" ||
+    existingStage === "ghosted" ||
+    existingStatus === "lost" ||
+    existingStatus === "ghosted"
+  ) {
+    return existingProfile;
+  }
+
+  const { data: bookings, error: bookingsError } = await supabase
+    .from("bookings")
+    .select("id, status")
+    .eq("customer_id", customerId);
+  if (bookingsError) throw bookingsError;
+
+  const statuses = (bookings || []).map((booking) => normalize(booking.status));
+  const hasConfirmed = statuses.includes("confirmed");
+  const hasPending = statuses.includes("pending");
+  const completedCount = statuses.filter((status) => COMPLETED_BOOKING_STATUSES.includes(status)).length;
+
+  let targetStage = null;
+  if (hasConfirmed) {
+    targetStage = "confirmed";
+  } else if (hasPending) {
+    targetStage = "booked";
+  } else if (["booked", "confirmed"].includes(existingStage) || ["booked", "confirmed"].includes(existingStatus)) {
+    if (completedCount >= 2) {
+      targetStage = "repeat_customer";
+    } else if (completedCount === 1) {
+      targetStage = "completed_customer";
+    } else {
+      const { count, error: outreachError } = await supabase
+        .from("crm_outreach_logs")
+        .select("id", { count: "exact", head: true })
+        .eq("customer_id", customerId);
+      if (outreachError) throw outreachError;
+      targetStage = (count || 0) > 0 ? "contacted" : "lead";
+    }
+  }
+
+  if (!targetStage || targetStage === existingStage) {
+    return existingProfile;
+  }
+
+  const profilePayload = {
+    customer_id: customerId,
+    company_name: existingProfile?.company_name ?? null,
+    customer_type: existingProfile?.customer_type ?? "residential",
+    lifecycle_stage: targetStage,
+    lead_source: existingProfile?.lead_source ?? null,
+    preferred_contact_method: existingProfile?.preferred_contact_method ?? "sms",
+    status: ["booked", "confirmed"].includes(existingStatus) ? "active" : (existingProfile?.status || "active"),
+    priority: existingProfile?.priority ?? "medium",
+    do_not_contact: existingProfile?.do_not_contact ?? false,
+    crm_notes: existingProfile?.crm_notes ?? null,
+    updated_at: new Date().toISOString()
+  };
+
+  const { data: profile, error: updateError } = await supabase
+    .from("crm_profiles")
+    .upsert([profilePayload], { onConflict: "customer_id" })
+    .select("*")
+    .single();
+  if (updateError) throw updateError;
+
   await cleanupTasksForLifecycle(supabase, customerId, profile);
   return profile;
 }

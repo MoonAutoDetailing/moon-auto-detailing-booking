@@ -3283,29 +3283,15 @@ if (b.google_event_id) {
     try {
       if (!confirm("Cancel this booking?")) return;
 
-      // Delete Google Calendar event ONLY if one exists
-if (b.google_event_id) {
-  const delRes = await adminFetch("/api/delete-calendar-event", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ bookingId: b.id })
-  });
-
-  const delData = await delRes.json();
-  if (!delRes.ok || !delData.ok) {
-    throw new Error(delData.message || "Calendar deletion failed");
-  }
-} else {
-  hardLog("CANCEL: no calendar event to delete");
-}
-
-
-      const { error } = await supabase
-        .from("bookings")
-        .update({ status: "cancelled" })
-        .eq("id", b.id);
-
-      if (error) throw error;
+      const cancelRes = await adminFetch("/api/admin-cancel-booking", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId: b.id })
+      });
+      const cancelData = await cancelRes.json();
+      if (!cancelRes.ok || !cancelData.ok) {
+        throw new Error(cancelData.error || "Cancellation failed");
+      }
 
       showAdminBanner("Booking cancelled.", "success");
       await loadAdminData();
@@ -3340,6 +3326,20 @@ if (b.google_event_id) {
 
 /* ===================== STATUS UPDATE ===================== */
 async function updateStatus(id, status, card) {
+if (status === "cancelled") {
+const res = await adminFetch("/api/admin-cancel-booking", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ bookingId: id })
+});
+const data = await res.json();
+if (!res.ok || !data.ok) {
+showAdminBanner(data.error || "Failed to cancel booking.", "error");
+return;
+}
+card.remove();
+return;
+}
 const { error } = await supabase
 .from("bookings")
 .update({ status })

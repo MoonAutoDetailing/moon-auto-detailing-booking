@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
 import { sendBookingCancelledEmailCore } from "../lib/email/sendBookingCancelledEmail.js";
+import { reconcileCustomerLifecycle } from "./_crmWorkflow.js";
 
 
 function requireEnv(name) {
@@ -36,7 +37,7 @@ export default async function handler(req, res) {
     // =========================
     const { data: booking, error } = await supabase
   .from("bookings")
-  .select("id, google_event_id, status, scheduled_start")
+  .select("id, customer_id, google_event_id, status, scheduled_start")
   .eq("manage_token", token)
   .single();
 
@@ -54,6 +55,7 @@ export default async function handler(req, res) {
     }
 
     if (booking.status === "cancelled") {
+      await reconcileCustomerLifecycle(supabase, booking.customer_id);
       return res.status(200).json({ message: "Booking already cancelled" });
     }
 
@@ -115,6 +117,8 @@ export default async function handler(req, res) {
         .eq("id", booking.id);
       return res.status(500).json({ message: "Email failed; action rolled back" });
     }
+
+    await reconcileCustomerLifecycle(supabase, booking.customer_id);
 
    return res.status(200).json({
   message: "Your booking has been cancelled."

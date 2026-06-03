@@ -2284,12 +2284,34 @@ body {
   gap: 5px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  align-items: center;
 }
 
 .queue-row-actions button {
   min-height: 29px;
   padding: 5px 9px;
   font-size: 11px;
+}
+
+.task-priority-select {
+  width: 104px;
+  min-height: 28px;
+  padding: 3px 22px 3px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(255, 255, 255, 0.68);
+  font-size: 11px;
+  line-height: 1.1;
+}
+
+.task-priority-select:focus {
+  outline: 1px solid rgba(127, 184, 230, 0.45);
+  border-color: rgba(127, 184, 230, 0.42);
+}
+
+.detail-priority-select {
+  width: 110px;
 }
 
 .activity-row {
@@ -2833,6 +2855,12 @@ a.mobile-top-chip {
   .queue-row-actions .act-secondary,
   .queue-row-actions .act-quiet {
     min-height: 40px;
+  }
+
+  .queue-row-actions .task-priority-select {
+    width: 96px;
+    min-height: 34px;
+    flex: 0 0 auto;
   }
 
   .crm-workspace {
@@ -3902,6 +3930,7 @@ const state = {
   analyticsLoaded: false,
   duplicates: null,
   duplicatesLoaded: false,
+  refreshing: false,
   customerSegment: "all",
   todayQueue: null,
   tasksQueue: null,
@@ -5234,11 +5263,11 @@ function renderQueueRow(row, options = {}) {
         <div class="queue-row-meta">${escapeHtml(followUpTimingLabel(row))}</div>
       </div>
       <div class="queue-row-actions">
-        ${renderTaskPrioritySelect(row, "task-priority-select queue-priority-select")}
         ${showComplete ? `<button class="act-primary queue-complete-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}" data-task-id="${escapeHtml(taskId)}">Complete</button>` : ""}
         <button class="act-secondary queue-open-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">${escapeHtml(openLabel)}</button>
         ${showSnooze ? `<button class="act-quiet queue-snooze-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}" data-task-id="${escapeHtml(taskId)}">Snooze</button>` : ""}
         <button class="act-quiet queue-log-outreach-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Outreach</button>
+        ${renderTaskPrioritySelect(row, "task-priority-select queue-priority-select")}
       </div>
     </article>
   `;
@@ -5582,9 +5611,9 @@ function renderTaskCard(row, options = {}) {
       <div><strong>${escapeHtml(customerName(row))}</strong> <span class="badge" title="${escapeHtml(priorityInfo.title)}">${escapeHtml(priorityInfo.taskPriority)}</span> ${customerPriorityMarker}</div>
       <div class="muted">${escapeHtml(taskTitleForRow(row))} · Due ${escapeHtml(formatDate(row.next_follow_up_at))}</div>
       <div class="task-card-actions">
-        ${renderTaskPrioritySelect(row, "task-priority-select task-card-priority-select")}
         <button class="primary-btn complete-followup-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
         <button class="secondary-btn" type="button" data-open-customer="${escapeHtml(customerId(row))}">Open Customer</button>
+        ${renderTaskPrioritySelect(row, "task-priority-select task-card-priority-select")}
       </div>
     </article>
   `;
@@ -6484,6 +6513,45 @@ async function refreshCurrentCustomer(id) {
   if (id) await openCustomerDetail(id);
 }
 
+async function refreshAllCrmData() {
+  if (state.refreshing) return;
+  const selectedId = state.selectedCustomerId;
+  const refreshBtn = document.getElementById("refreshBtn");
+  state.refreshing = true;
+  if (refreshBtn) {
+    refreshBtn.disabled = true;
+    refreshBtn.textContent = "Refreshing...";
+  }
+  try {
+    await loadCustomers();
+    await loadTaskInbox();
+    if (selectedId) {
+      const stillExists = state.customers.some((row) => String(customerId(row)) === String(selectedId));
+      if (stillExists) {
+        state.selectedCustomerId = selectedId;
+        await openCustomerDetail(selectedId);
+      } else {
+        state.selectedCustomerId = null;
+        state.detail = null;
+        setDetailPanelOpen(false);
+      }
+    }
+    if (state.analyticsLoaded) await loadAnalytics();
+    if (state.duplicatesLoaded) await loadDuplicates();
+    renderNavKpis();
+    renderActiveTab();
+    toast("Data refreshed");
+  } catch (err) {
+    toast(err.message || "Failed to refresh CRM data", true);
+  } finally {
+    state.refreshing = false;
+    if (refreshBtn) {
+      refreshBtn.disabled = false;
+      refreshBtn.textContent = "Refresh data";
+    }
+  }
+}
+
 async function submitLeadForm(event) {
   event.preventDefault();
   const form = event.currentTarget;
@@ -6905,17 +6973,7 @@ window.addEventListener("resize", () => {
 
 document.getElementById("navBackdrop")?.addEventListener("click", closeNavDrawer);
 
-document.getElementById("refreshBtn").addEventListener("click", () => {
-  if (state.activeTab === "analytics") {
-    state.analyticsLoaded = false;
-    loadAnalytics();
-  }
-  if (state.activeTab === "cleanup") {
-    state.duplicatesLoaded = false;
-    loadDuplicates();
-  }
-  loadCustomers();
-});
+document.getElementById("refreshBtn").addEventListener("click", refreshAllCrmData);
 
 document.getElementById("leadForm").addEventListener("submit", submitLeadForm);
 document.getElementById("searchInput").addEventListener("input", () => {

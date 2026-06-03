@@ -3,7 +3,7 @@ import verifyAdmin from "./_verifyAdmin.js";
 import { createBookingCore } from "./_createBookingCore.js";
 import { confirmBookingCore } from "./_confirmBookingCore.js";
 import { sendBookingCreatedEmailCore } from "../lib/email/sendBookingCreatedEmail.js";
-import { syncCrmProfileStage } from "./_crmWorkflow.js";
+import { reconcileCustomerLifecycle, syncCrmProfileStage } from "./_crmWorkflow.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -156,6 +156,7 @@ export default async function handler(req, res) {
       lifecycle_stage: "booked",
       status: "active"
     });
+    await reconcileCustomerLifecycle(supabase, booking.customer_id);
 
     if (requestedStatus === "pending") {
       if (sendCustomerEmail) {
@@ -188,6 +189,7 @@ export default async function handler(req, res) {
         .delete()
         .eq("id", booking.id)
         .is("google_event_id", null);
+      await reconcileCustomerLifecycle(supabase, booking.customer_id);
       return res.status(confirmResult.statusCode).json(confirmResult.body);
     }
 
