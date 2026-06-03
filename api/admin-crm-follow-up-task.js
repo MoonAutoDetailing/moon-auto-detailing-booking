@@ -189,6 +189,7 @@ export default async function handler(req, res) {
 
     const task = await updateTask(supabase, taskId, {
       status: "dismissed",
+      completed_at: now,
       updated_at: now
     });
     return res.status(200).json({ ok: true, task });

@@ -2293,6 +2293,21 @@ body {
   font-size: 11px;
 }
 
+.act-danger-light,
+.queue-row-actions .act-danger-light {
+  min-height: 29px;
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 120, 120, 0.22);
+  background: rgba(255, 120, 120, 0.08);
+  color: rgba(255, 190, 190, 0.9);
+  font-size: 11px;
+}
+
+.act-danger-light:hover,
+.queue-row-actions .act-danger-light:hover {
+  background: rgba(255, 120, 120, 0.14);
+}
+
 .task-priority-select {
   width: 104px;
   min-height: 28px;
@@ -4680,6 +4695,14 @@ function bindCustomerCards(root) {
       }
     });
   });
+  scope.querySelectorAll(".queue-dismiss-btn").forEach((btn) => {
+    if (btn.dataset.bound === "1") return;
+    btn.dataset.bound = "1";
+    btn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      dismissTaskById(btn.dataset.taskId, btn.dataset.customerId);
+    });
+  });
   scope.querySelectorAll(".queue-log-outreach-btn").forEach((btn) => {
     if (btn.dataset.bound === "1") return;
     btn.dataset.bound = "1";
@@ -5292,6 +5315,7 @@ function renderQueueRow(row, options = {}) {
         ${showComplete ? `<button class="act-primary queue-complete-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}" data-task-id="${escapeHtml(taskId)}">Complete</button>` : ""}
         <button class="act-secondary queue-open-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">${escapeHtml(openLabel)}</button>
         ${showSnooze ? `<button class="act-quiet queue-snooze-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}" data-task-id="${escapeHtml(taskId)}">Snooze</button>` : ""}
+        ${taskId && !isCompleted ? `<button class="act-danger-light queue-dismiss-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}" data-task-id="${escapeHtml(taskId)}">Dismiss</button>` : ""}
         <button class="act-quiet queue-log-outreach-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Outreach</button>
         ${renderTaskPrioritySelect(row, "task-priority-select queue-priority-select")}
       </div>
@@ -5635,6 +5659,7 @@ async function loadAnalytics() {
 function renderTaskCard(row, options = {}) {
   const tone = options.tone || "";
   const priorityInfo = queueTaskPriorityInfo(row);
+  const taskId = row.task_id || row.id || "";
   const customerPriorityMarker = priorityInfo.elevated
     ? `<span class="badge muted" title="Customer priority: ${escapeHtml(priorityInfo.crmPriority)}">Customer ${escapeHtml(priorityInfo.crmPriority)}</span>`
     : "";
@@ -5645,6 +5670,7 @@ function renderTaskCard(row, options = {}) {
       <div class="task-card-actions">
         <button class="primary-btn complete-followup-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
         <button class="secondary-btn" type="button" data-open-customer="${escapeHtml(customerId(row))}">Open Customer</button>
+        ${taskId ? `<button class="act-danger-light queue-dismiss-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}" data-task-id="${escapeHtml(taskId)}">Dismiss</button>` : ""}
         ${renderTaskPrioritySelect(row, "task-priority-select task-card-priority-select")}
       </div>
     </article>
@@ -5952,6 +5978,28 @@ async function snoozeTaskById(taskId, days = 1) {
     await loadCustomers();
   } catch (err) {
     toast(err.message || "Failed to snooze task", true);
+  }
+}
+
+async function dismissTaskById(taskId, taskCustomerId) {
+  if (!taskId) return;
+  if (!window.confirm("Dismiss this task? It will be removed from active queues but kept in history.")) return;
+  try {
+    await apiJson("/api/admin-crm-follow-up-task", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "dismiss", task_id: taskId })
+    });
+    await loadTaskInbox();
+    if (state.selectedCustomerId && (!taskCustomerId || String(taskCustomerId) === String(state.selectedCustomerId))) {
+      await refreshCurrentCustomer(state.selectedCustomerId);
+    } else {
+      renderToday();
+      renderTasks();
+    }
+    toast("Task dismissed");
+  } catch (err) {
+    toast(err.message || "Failed to dismiss task", true);
   }
 }
 
@@ -6406,6 +6454,7 @@ function renderDetail(data, assignedTags) {
               ${renderTaskPrioritySelect({ ...task, customer_id: customerId(customer) }, "task-priority-select detail-priority-select")}
               <button class="act-primary complete-task-btn" type="button" data-task-id="${escapeHtml(task.id)}" data-customer-id="${escapeHtml(customerId(customer))}">Complete</button>
               <button class="act-quiet detail-snooze-btn" type="button">Snooze 1d</button>
+              <button class="act-danger-light dismiss-task-btn" type="button" data-task-id="${escapeHtml(task.id)}" data-customer-id="${escapeHtml(customerId(customer))}">Dismiss</button>
             </div>
           </div>
         `;
@@ -6787,6 +6836,12 @@ function wireDetailForms() {
       } catch (err) {
         toast(err.message || "Failed to snooze", true);
       }
+    });
+  });
+
+  document.querySelectorAll(".dismiss-task-btn").forEach((button) => {
+    button.addEventListener("click", async () => {
+      await dismissTaskById(button.dataset.taskId, button.dataset.customerId);
     });
   });
 
