@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import verifyAdmin from "./_verifyAdmin.js";
 import { sendBookingCompletedEmailCore } from "../lib/email/sendBookingCompletedEmail.js";
+import { createFollowUpTaskIfMissing, syncCrmProfileStage } from "./_crmWorkflow.js";
 
 
 export default async function handler(req, res) {
@@ -37,13 +38,10 @@ export default async function handler(req, res) {
   req.body = { ...body, bookingId };
 
   try {
-    let adminAuthorized = false;
+    let adminSession = null;
     try {
-      adminAuthorized = await verifyAdmin(req);
+      adminSession = await verifyAdmin(req);
     } catch (err) {
-      return res.status(401).json({ error: "Unauthorized" });
-    }
-    if (!adminAuthorized) {
       return res.status(401).json({ error: "Unauthorized" });
     }
 
@@ -69,8 +67,8 @@ export default async function handler(req, res) {
       payment_method: paymentMethod
     };
     if (paymentNotes) paymentInsert.notes = paymentNotes;
-    if (adminAuthorized && typeof adminAuthorized === "object" && adminAuthorized.admin?.id) {
-      paymentInsert.recorded_by = adminAuthorized.admin.id;
+    if (adminSession && typeof adminSession === "object" && adminSession.admin?.id) {
+      paymentInsert.recorded_by = adminSession.admin.id;
     }
     const { data: paymentRow, error: paymentErr } = await supabase
       .from("job_payments")
@@ -98,6 +96,34 @@ export default async function handler(req, res) {
         .update({ status: "confirmed" })
         .eq("id", bookingId);
       return res.status(500).json({ error: "Email failed; action rolled back" });
+    }
+
+    const { data: completedBooking, error: completedBookingError } = await supabase
+      .from("bookings")
+      .select("customer_id")
+      .eq("id", bookingId)
+      .maybeSingle();
+    if (completedBookingError) throw completedBookingError;
+
+    if (completedBooking?.customer_id) {
+      const { count, error: completedCountError } = await supabase
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("customer_id", completedBooking.customer_id)
+        .in("status", ["completed", "complete", "done"]);
+      if (completedCountError) throw completedCountError;
+      await syncCrmProfileStage(supabase, completedBooking.customer_id, {
+        lifecycle_stage: (count || 0) >= 2 ? "repeat_customer" : "completed_customer",
+        status: "active"
+      });
+      await createFollowUpTaskIfMissing(supabase, {
+        customerId: completedBooking.customer_id,
+        bookingId,
+        taskType: "review_request",
+        dueAt: new Date().toISOString(),
+        priority: "medium",
+        notes: "Ask customer for a review after completed service."
+      });
     }
 
     // Subscription activation hook: activate subscription if this was its onboarding booking

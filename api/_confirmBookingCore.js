@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
 import twilio from "twilio";
 import { sendBookingConfirmedEmailCore } from "../lib/email/sendBookingConfirmedEmail.js";
+import { syncCrmProfileStage } from "./_crmWorkflow.js";
 
 export async function confirmBookingCore({ bookingId, sendCustomerEmail = true }) {
   if (!bookingId) {
@@ -34,6 +35,10 @@ export async function confirmBookingCore({ bookingId, sendCustomerEmail = true }
         return { ok: false, statusCode: 500, body: { ok: false, message: "Database update failed" } };
       }
     }
+    await syncCrmProfileStage(supabase, booking.customer_id, {
+      lifecycle_stage: "confirmed",
+      status: "active"
+    });
     return { ok: true, statusCode: 200, body: { ok: true, alreadyConfirmed: true } };
   }
 
@@ -177,6 +182,10 @@ export async function confirmBookingCore({ bookingId, sendCustomerEmail = true }
 
       return { ok: false, statusCode: 409, body: { ok: false, message: "Finalize failed; event cleaned up" } };
     }
+    await syncCrmProfileStage(supabase, booking.customer_id, {
+      lifecycle_stage: "confirmed",
+      status: "active"
+    });
   } catch (eventErr) {
     await supabase
       .from("bookings")

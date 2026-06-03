@@ -1,5 +1,6 @@
 import verifyAdmin from "./_verifyAdmin.js";
 import { createClient } from "@supabase/supabase-js";
+import { cleanupTasksForLifecycle } from "./_crmWorkflow.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -111,6 +112,7 @@ export default async function handler(req, res) {
       .single();
 
     if (profileError) throw profileError;
+    await cleanupTasksForLifecycle(supabase, customerId, profile);
 
     return res.status(200).json({
       ok: true,

@@ -3,6 +3,7 @@ import verifyAdmin from "./_verifyAdmin.js";
 import { createBookingCore } from "./_createBookingCore.js";
 import { confirmBookingCore } from "./_confirmBookingCore.js";
 import { sendBookingCreatedEmailCore } from "../lib/email/sendBookingCreatedEmail.js";
+import { syncCrmProfileStage } from "./_crmWorkflow.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -151,6 +152,10 @@ export default async function handler(req, res) {
     }
 
     const booking = result.booking;
+    await syncCrmProfileStage(supabase, booking.customer_id, {
+      lifecycle_stage: "booked",
+      status: "active"
+    });
 
     if (requestedStatus === "pending") {
       if (sendCustomerEmail) {

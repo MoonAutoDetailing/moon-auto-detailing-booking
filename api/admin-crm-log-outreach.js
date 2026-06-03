@@ -1,5 +1,6 @@
 import verifyAdmin from "./_verifyAdmin.js";
 import { createClient } from "@supabase/supabase-js";
+import { syncCrmProfileStage } from "./_crmWorkflow.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -76,9 +77,9 @@ export default async function handler(req, res) {
       }
     }
 
-    const { data: profilePriority, error: profilePriorityError } = await supabase
+    const { data: existingProfile, error: profilePriorityError } = await supabase
       .from("crm_profiles")
-      .select("priority")
+      .select("*")
       .eq("customer_id", customerId)
       .maybeSingle();
 
@@ -90,7 +91,7 @@ export default async function handler(req, res) {
     const responseNotes = clean(body.response_notes);
     const nextFollowUpAt = clean(body.next_follow_up_at);
     const pendingResponse = responseStatus === "pending_response";
-    const customerPriority = elevatedCustomerPriority(profilePriority?.priority);
+    const customerPriority = elevatedCustomerPriority(existingProfile?.priority);
 
     const { data: outreachLog, error: outreachError } = await supabase
       .from("crm_outreach_logs")
@@ -132,32 +133,20 @@ export default async function handler(req, res) {
       followUpTask = task;
     }
 
+    const currentStage = String(existingProfile?.lifecycle_stage || "lead").toLowerCase();
+    let profileUpdate = null;
     if (responseStatus === "do_not_contact") {
-      const { data: existingProfile, error: existingProfileError } = await supabase
-        .from("crm_profiles")
-        .select("*")
-        .eq("customer_id", customerId)
-        .maybeSingle();
+      profileUpdate = { lifecycle_stage: "do_not_contact", status: "do_not_contact", do_not_contact: true };
+    } else if (responseStatus === "booked") {
+      profileUpdate = { lifecycle_stage: "booked", status: "active" };
+    } else if (responseStatus === "declined") {
+      profileUpdate = { lifecycle_stage: "lost", status: "cooling" };
+    } else if (currentStage === "lead" || currentStage === "quoted") {
+      profileUpdate = { lifecycle_stage: "contacted" };
+    }
 
-      if (existingProfileError) throw existingProfileError;
-
-      const { error: profileError } = await supabase
-        .from("crm_profiles")
-        .upsert([{
-          customer_id: customerId,
-          company_name: existingProfile?.company_name ?? null,
-          customer_type: existingProfile?.customer_type ?? "residential",
-          lifecycle_stage: "do_not_contact",
-          lead_source: existingProfile?.lead_source ?? null,
-          preferred_contact_method: existingProfile?.preferred_contact_method ?? "sms",
-          status: "do_not_contact",
-          priority: existingProfile?.priority ?? "medium",
-          do_not_contact: true,
-          crm_notes: existingProfile?.crm_notes ?? null,
-          updated_at: now
-        }], { onConflict: "customer_id" });
-
-      if (profileError) throw profileError;
+    if (profileUpdate) {
+      await syncCrmProfileStage(supabase, customerId, profileUpdate);
     }
 
     return res.status(200).json({

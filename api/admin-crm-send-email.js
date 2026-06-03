@@ -1,6 +1,7 @@
 import verifyAdmin from "./_verifyAdmin.js";
 import { createClient } from "@supabase/supabase-js";
 import { sendCrmTemplateEmailCore } from "../lib/email/sendCrmTemplateEmailCore.js";
+import { syncCrmProfileStage } from "./_crmWorkflow.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -95,7 +96,7 @@ export default async function handler(req, res) {
 
     const { data: profile, error: profileError } = await supabase
       .from("crm_profiles")
-      .select("do_not_contact, status")
+      .select("do_not_contact, status, lifecycle_stage")
       .eq("customer_id", customerId)
       .maybeSingle();
 
@@ -172,6 +173,9 @@ export default async function handler(req, res) {
       .single();
 
     if (outreachError) throw outreachError;
+    await syncCrmProfileStage(supabase, customerId, {
+      lifecycle_stage: "contacted"
+    });
 
     return res.status(200).json({
       ok: true,
