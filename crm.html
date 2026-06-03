@@ -3428,6 +3428,8 @@ const CRM_TASK_TYPES = [
   { value: "referral_ask", label: "Referral Ask" }
 ];
 
+const TASK_PRIORITY_OPTIONS = ["low", "medium", "high", "urgent"];
+
 const TAB_PANEL_IDS = {
   today: "tabToday",
   customers: "tabCustomers",
@@ -4119,6 +4121,45 @@ function effectiveTaskPriorityInfo(task, customerPriority) {
   };
 }
 
+function queueTaskPriorityInfo(task) {
+  const taskPriority = normalizedPriority(task?.priority);
+  const crmPriority = normalizedPriority(task?.crm_priority, "");
+  const elevated = crmPriority && PRIORITY_RANK[crmPriority] > PRIORITY_RANK[taskPriority];
+  return {
+    taskPriority,
+    crmPriority,
+    elevated,
+    title: crmPriority
+      ? `Task priority: ${taskPriority} · Customer priority: ${crmPriority}`
+      : `Task priority: ${taskPriority}`
+  };
+}
+
+function renderTaskPriorityOptions(selectedPriority) {
+  const selected = normalizedPriority(selectedPriority);
+  return TASK_PRIORITY_OPTIONS.map((priority) => `
+    <option value="${escapeHtml(priority)}" ${selected === priority ? "selected" : ""}>${escapeHtml(priority[0].toUpperCase() + priority.slice(1))}</option>
+  `).join("");
+}
+
+function renderTaskPrioritySelect(task, className = "task-priority-select") {
+  const taskId = task?.task_id || task?.id || "";
+  if (!taskId || normalize(task?.status) === "completed" || normalize(task?.status) === "dismissed") return "";
+  return `
+    <select class="${escapeHtml(className)}" aria-label="Task priority" data-task-priority-select="1" data-task-id="${escapeHtml(taskId)}" data-customer-id="${escapeHtml(customerId(task))}">
+      ${renderTaskPriorityOptions(task?.priority)}
+    </select>
+  `;
+}
+
+function compareTaskQueueRows(a, b) {
+  const aDue = new Date(a.due_at || 0).getTime();
+  const bDue = new Date(b.due_at || 0).getTime();
+  const dueDiff = aDue - bDue;
+  if (dueDiff) return dueDiff;
+  return PRIORITY_RANK[normalizedPriority(b.priority)] - PRIORITY_RANK[normalizedPriority(a.priority)];
+}
+
 function defaultTaskPriorityForCustomer(customer, profile) {
   const priority = normalizedPriority(profile?.priority || customer?.crm_priority || customer?.priority);
   return priority === "urgent" || priority === "high" ? priority : "medium";
@@ -4423,6 +4464,43 @@ function bindCustomerCards(root) {
       openCustomerDetail(btn.dataset.customerId, { focusOutreach: true });
     });
   });
+  bindTaskPrioritySelects(scope);
+}
+
+function bindTaskPrioritySelects(scope = document) {
+  scope.querySelectorAll("[data-task-priority-select]").forEach((select) => {
+    if (select.dataset.bound === "1") return;
+    select.dataset.bound = "1";
+    select.addEventListener("click", (event) => event.stopPropagation());
+    select.addEventListener("change", async (event) => {
+      event.stopPropagation();
+      try {
+        await updateTaskPriority(select.dataset.taskId, select.value, select.dataset.customerId);
+      } catch (err) {
+        toast(err.message || "Failed to update task priority", true);
+      }
+    });
+  });
+}
+
+async function updateTaskPriority(taskId, priority, taskCustomerId) {
+  if (!taskId || !priority) return;
+  await apiJson("/api/admin-crm-follow-up-task", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "update",
+      task_id: taskId,
+      priority
+    })
+  });
+  await loadTaskInbox();
+  renderToday();
+  renderTasks();
+  if (state.selectedCustomerId && (!taskCustomerId || String(taskCustomerId) === String(state.selectedCustomerId))) {
+    await refreshCurrentCustomer(state.selectedCustomerId);
+  }
+  toast("Task priority updated");
 }
 
 function isDueToday(row) {
@@ -4949,23 +5027,28 @@ function renderKpiStrip(elementId, items) {
 function renderQueueRow(row, options = {}) {
   const taskId = row.task_id || row.id || "";
   const overdue = options.overdue || isOverdueFollowUp(row) || isTaskRowOverdue(row);
-  const priorityInfo = effectiveTaskPriorityInfo(row);
+  const priorityInfo = queueTaskPriorityInfo(row);
   const isCompleted = normalize(row.status) === "completed";
   const showComplete = options.showComplete !== false && !isCompleted;
   const showSnooze = options.showSnooze !== false && !isCompleted && (taskId || hasOpenFollowUp(row));
   const openLabel = isMobileCrmView() ? "Open Customer" : "Open";
+  const customerPriorityMarker = priorityInfo.elevated
+    ? `<span class="badge muted" title="Customer priority: ${escapeHtml(priorityInfo.crmPriority)}">Customer ${escapeHtml(priorityInfo.crmPriority)}</span>`
+    : "";
   return `
     <article class="queue-row ${overdue ? "overdue" : ""}">
       <div class="queue-row-main">
         <div class="queue-row-title">
           <strong>${escapeHtml(customerName(row))}</strong>
-          <span class="badge" title="${escapeHtml(priorityInfo.title)}">${escapeHtml(priorityInfo.effective)}</span>
+          <span class="badge" title="${escapeHtml(priorityInfo.title)}">${escapeHtml(priorityInfo.taskPriority)}</span>
+          ${customerPriorityMarker}
           <span class="badge ${statusBadgeClass(row)}">${escapeHtml(statusValue(row))}</span>
         </div>
         <div class="queue-row-meta">${escapeHtml(taskTitleForRow(row))}</div>
-        <div class="queue-row-meta">${escapeHtml(followUpTimingLabel(row))}${priorityInfo.elevated ? " · Elevated by customer priority" : ""}</div>
+        <div class="queue-row-meta">${escapeHtml(followUpTimingLabel(row))}</div>
       </div>
       <div class="queue-row-actions">
+        ${renderTaskPrioritySelect(row, "task-priority-select queue-priority-select")}
         ${showComplete ? `<button class="act-primary queue-complete-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}" data-task-id="${escapeHtml(taskId)}">Complete</button>` : ""}
         <button class="act-secondary queue-open-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">${escapeHtml(openLabel)}</button>
         ${showSnooze ? `<button class="act-quiet queue-snooze-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}" data-task-id="${escapeHtml(taskId)}">Snooze</button>` : ""}
@@ -5021,9 +5104,8 @@ function renderToday() {
   const pillsEl = document.getElementById("todayQueuePills");
 
   if (isMobileCrmView()) {
-    const sortByDue = (a, b) => new Date(a.due_at || 0).getTime() - new Date(b.due_at || 0).getTime();
-    const overdueRows = getTodayQueueRows("overdue").sort(sortByDue);
-    const dueTodayRows = getTodayQueueRows("today").sort(sortByDue);
+    const overdueRows = getTodayQueueRows("overdue").sort(compareTaskQueueRows);
+    const dueTodayRows = getTodayQueueRows("today").sort(compareTaskQueueRows);
     const blocks = [];
 
     if (overdueRows.length) {
@@ -5056,7 +5138,12 @@ function renderToday() {
     }, taskCountForQueue);
 
     if (state.todayQueue === "upcoming" || state.todayQueue === "done") {
-      const extraRows = getTodayQueueRows(state.todayQueue).sort((a, b) => customerName(a).localeCompare(customerName(b)));
+      const extraRows = getTodayQueueRows(state.todayQueue).sort((a, b) => {
+        if (state.todayQueue === "done") {
+          return new Date(b.completed_at || 0).getTime() - new Date(a.completed_at || 0).getTime();
+        }
+        return compareTaskQueueRows(a, b);
+      });
       blocks.push(`
         <section class="mobile-today-block">
           <h3>${state.todayQueue === "upcoming" ? "Upcoming" : "Done"} (${taskCountForQueue(state.todayQueue)})</h3>
@@ -5083,10 +5170,10 @@ function renderToday() {
     }, taskCountForQueue);
 
     const rows = getTodayQueueRows(state.todayQueue).sort((a, b) => {
-      const aDue = new Date(a.due_at || 0).getTime();
-      const bDue = new Date(b.due_at || 0).getTime();
-      if (state.todayQueue === "overdue" || state.todayQueue === "today") return aDue - bDue;
-      return customerName(a).localeCompare(customerName(b));
+      if (state.todayQueue === "done") {
+        return new Date(b.completed_at || 0).getTime() - new Date(a.completed_at || 0).getTime();
+      }
+      return compareTaskQueueRows(a, b);
     });
 
     container.innerHTML = renderActiveQueueList(rows, { overdue: state.todayQueue === "overdue", showSnooze: state.todayQueue !== "done" });
@@ -5298,12 +5385,16 @@ async function loadAnalytics() {
 
 function renderTaskCard(row, options = {}) {
   const tone = options.tone || "";
-  const priorityInfo = effectiveTaskPriorityInfo(row);
+  const priorityInfo = queueTaskPriorityInfo(row);
+  const customerPriorityMarker = priorityInfo.elevated
+    ? `<span class="badge muted" title="Customer priority: ${escapeHtml(priorityInfo.crmPriority)}">Customer ${escapeHtml(priorityInfo.crmPriority)}</span>`
+    : "";
   return `
     <article class="task-card ${tone}">
-      <div><strong>${escapeHtml(customerName(row))}</strong> <span class="badge" title="${escapeHtml(priorityInfo.title)}">${escapeHtml(priorityInfo.effective)}</span></div>
+      <div><strong>${escapeHtml(customerName(row))}</strong> <span class="badge" title="${escapeHtml(priorityInfo.title)}">${escapeHtml(priorityInfo.taskPriority)}</span> ${customerPriorityMarker}</div>
       <div class="muted">${escapeHtml(taskTitleForRow(row))} · Due ${escapeHtml(formatDate(row.next_follow_up_at))}</div>
       <div class="task-card-actions">
+        ${renderTaskPrioritySelect(row, "task-priority-select task-card-priority-select")}
         <button class="primary-btn complete-followup-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
         <button class="secondary-btn" type="button" data-open-customer="${escapeHtml(customerId(row))}">Open Customer</button>
       </div>
@@ -5326,10 +5417,9 @@ function renderTasks() {
   const container = document.getElementById("tasksSections");
 
   if (isMobileCrmView()) {
-    const sortByDue = (a, b) => new Date(a.due_at || 0).getTime() - new Date(b.due_at || 0).getTime();
-    const overdueRows = getTasksQueueRows("overdue").sort(sortByDue);
-    const todayRows = getTasksQueueRows("today").sort(sortByDue);
-    const upcomingRows = getTasksQueueRows("upcoming").sort(sortByDue);
+    const overdueRows = getTasksQueueRows("overdue").sort(compareTaskQueueRows);
+    const todayRows = getTasksQueueRows("today").sort(compareTaskQueueRows);
+    const upcomingRows = getTasksQueueRows("upcoming").sort(compareTaskQueueRows);
     const blocks = [];
 
     if (overdueRows.length) {
@@ -5396,13 +5486,10 @@ function renderTasks() {
     }, taskCountForQueue);
 
     const rows = getTasksQueueRows(state.tasksQueue).sort((a, b) => {
-      const aDue = new Date(a.due_at || 0).getTime();
-      const bDue = new Date(b.due_at || 0).getTime();
-      if (state.tasksQueue === "overdue" || state.tasksQueue === "today") return aDue - bDue;
       if (state.tasksQueue === "completed") {
         return new Date(b.completed_at || 0).getTime() - new Date(a.completed_at || 0).getTime();
       }
-      return aDue - bDue;
+      return compareTaskQueueRows(a, b);
     });
 
     container.innerHTML = renderActiveQueueList(rows, {
@@ -6010,13 +6097,16 @@ function renderDetail(data, assignedTags) {
       <div id="taskList">
         ${openTasks.length ? openTasks.map((task) => {
           const priorityInfo = effectiveTaskPriorityInfo(task, priority);
+          const customerPriorityText = priorityInfo.crmPriority || "none";
           return `
           <div class="detail-item">
             <strong>${escapeHtml(taskTypeLabel(task.task_type))}</strong>
-            <span class="badge" title="${escapeHtml(priorityInfo.title)}">${escapeHtml(priorityInfo.effective)}</span>
-            <div class="meta-text">Due ${escapeHtml(formatDate(task.due_at))} · ${escapeHtml(task.status || "")}${priorityInfo.elevated ? " · Elevated by customer priority" : ""}</div>
+            <span class="badge" title="${escapeHtml(priorityInfo.title)}">Effective: ${escapeHtml(priorityInfo.effective)}</span>
+            <div class="meta-text">Due ${escapeHtml(formatDate(task.due_at))} · ${escapeHtml(task.status || "")}</div>
+            <div class="meta-text">Task: ${escapeHtml(priorityInfo.taskPriority)} · Customer: ${escapeHtml(customerPriorityText)}${priorityInfo.elevated ? " · Elevated by customer priority" : ""}</div>
             <div>${escapeHtml(task.notes || "")}</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+              ${renderTaskPrioritySelect({ ...task, customer_id: customerId(customer) }, "task-priority-select detail-priority-select")}
               <button class="act-primary complete-task-btn" type="button" data-task-id="${escapeHtml(task.id)}" data-customer-id="${escapeHtml(customerId(customer))}">Complete</button>
               <button class="act-quiet detail-snooze-btn" type="button">Snooze 1d</button>
             </div>
@@ -6229,6 +6319,7 @@ async function submitLeadForm(event) {
 
 function wireDetailForms() {
   const id = state.selectedCustomerId;
+  bindTaskPrioritySelects(document.getElementById("detailBody") || document);
 
   const editBtn = document.getElementById("editProfileBtn");
   if (editBtn && editBtn.dataset.bound !== "1") {
