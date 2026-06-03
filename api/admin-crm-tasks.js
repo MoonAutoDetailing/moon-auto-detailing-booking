@@ -113,7 +113,7 @@ async function loadCompletedBookingSummary(supabase, customerIds) {
 }
 
 function applyBookingSummary(row, bookingSummary) {
-  const customerId = row.customer_id || row.id;
+  const customerId = row.customer_id;
   const summary = bookingSummary.get(customerId);
   return {
     ...row,
@@ -166,22 +166,28 @@ export default async function handler(req, res) {
       .limit(5000);
 
     const { data: rawTasks, error: tasksError } = await query;
-    if (tasksError) throw tasksError;
+    if (tasksError) {
+      console.error("admin-crm-tasks: task query failed", tasksError);
+      return res.status(500).json({ ok: false, error: tasksError.message || "Failed to load CRM tasks" });
+    }
 
     const customerIds = [...new Set((rawTasks || []).map((task) => task.customer_id).filter(Boolean))];
     let summaries = [];
     if (customerIds.length) {
       const { data, error } = await supabase
         .from("crm_customer_summary")
-        .select("customer_id, id, full_name, phone, email, address, crm_status, status, lifecycle_stage, total_revenue, last_service_date")
+        .select("customer_id, full_name, phone, email, address, crm_status, status, lifecycle_stage, total_revenue, last_service_date")
         .in("customer_id", customerIds);
-      if (error) throw error;
-      summaries = data || [];
+      if (error) {
+        console.error("admin-crm-tasks: summary lookup failed", error);
+      } else {
+        summaries = data || [];
+      }
     }
 
     const summaryByCustomerId = new Map();
     summaries.forEach((row) => {
-      summaryByCustomerId.set(row.customer_id || row.id, row);
+      if (row.customer_id) summaryByCustomerId.set(row.customer_id, row);
     });
 
     const missingCustomerIds = customerIds.filter((id) => !summaryByCustomerId.has(id));
@@ -190,18 +196,26 @@ export default async function handler(req, res) {
         .from("customers")
         .select("id, full_name, phone, email, address")
         .in("id", missingCustomerIds);
-      if (error) throw error;
-      (data || []).forEach((row) => {
-        summaryByCustomerId.set(row.id, {
-          customer_id: row.id,
-          ...row,
-          total_revenue: 0,
-          completed_bookings: 0
+      if (error) {
+        console.error("admin-crm-tasks: customer fallback lookup failed", error);
+      } else {
+        (data || []).forEach((row) => {
+          summaryByCustomerId.set(row.id, {
+            customer_id: row.id,
+            ...row,
+            total_revenue: 0,
+            completed_bookings: 0
+          });
         });
-      });
+      }
     }
 
-    const bookingSummary = await loadCompletedBookingSummary(supabase, customerIds);
+    let bookingSummary = new Map();
+    try {
+      bookingSummary = await loadCompletedBookingSummary(supabase, customerIds);
+    } catch (err) {
+      console.error("admin-crm-tasks: booking summary lookup failed", err);
+    }
     summaryByCustomerId.forEach((row, id) => {
       summaryByCustomerId.set(id, applyBookingSummary(row, bookingSummary));
     });
