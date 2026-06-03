@@ -1731,7 +1731,7 @@ body {
 
 .customer-row {
   display: grid;
-  grid-template-columns: minmax(170px, 1.6fr) minmax(130px, 0.9fr) minmax(130px, 1fr) minmax(110px, 0.8fr) minmax(150px, 1fr) minmax(68px, 0.5fr);
+  grid-template-columns: minmax(160px, 1.5fr) minmax(120px, 0.85fr) minmax(125px, 1fr) minmax(130px, 1fr) minmax(105px, 0.8fr) minmax(145px, 1fr) minmax(68px, 0.5fr);
   gap: 6px;
   align-items: center;
   width: 100%;
@@ -3293,7 +3293,7 @@ a.mobile-top-chip {
                   </div>
                   <div class="span-2">
                     <label for="leadAddress">Address</label>
-                    <input id="leadAddress" name="address" />
+                    <input id="leadAddress" name="address" autocomplete="street-address" placeholder="Start typing address..." />
                   </div>
                   <div class="span-2">
                     <label for="leadCompany">Company</label>
@@ -3429,6 +3429,8 @@ const CRM_TASK_TYPES = [
 ];
 
 const TASK_PRIORITY_OPTIONS = ["low", "medium", "high", "urgent"];
+const CRM_GOOGLE_MAPS_SRC = "https://maps.googleapis.com/maps/api/js?key=AIzaSyAszMW1x5-TUHnlDkxpms-z4rDfHxDcTyI&libraries=places&loading=async";
+let crmGooglePlacesPromise = null;
 
 const TAB_PANEL_IDS = {
   today: "tabToday",
@@ -3558,6 +3560,7 @@ function customerFirstName(row) {
 
 function customerVehicleLabel(row) {
   if (!row) return "";
+  if (row.primary_vehicle) return vehicleDisplayLabel(row.primary_vehicle);
   const fromRow = String(row.vehicle || row.vehicle_description || row.vehicle_size || "").trim();
   if (fromRow) return fromRow;
   const bookings = state.detail?.bookings || [];
@@ -3568,6 +3571,89 @@ function customerVehicleLabel(row) {
     if (bits.length) return bits.join(" ");
   }
   return "";
+}
+
+function vehicleField(vehicle, ...keys) {
+  for (const key of keys) {
+    const value = vehicle?.[key];
+    if (value !== undefined && value !== null && String(value).trim() !== "") return String(value).trim();
+  }
+  return "";
+}
+
+function vehicleDisplayLabel(vehicle) {
+  if (!vehicle) return "";
+  return [
+    vehicleField(vehicle, "vehicle_year", "year"),
+    vehicleField(vehicle, "vehicle_color", "color"),
+    vehicleField(vehicle, "vehicle_make", "make"),
+    vehicleField(vehicle, "vehicle_model", "model")
+  ].filter(Boolean).join(" ");
+}
+
+function vehicleDetailBits(vehicle) {
+  return [
+    vehicleField(vehicle, "vehicle_size") ? `Size: ${vehicleField(vehicle, "vehicle_size")}` : "",
+    vehicleField(vehicle, "license_plate") ? `Plate: ${vehicleField(vehicle, "license_plate")}` : "",
+    vehicleField(vehicle, "notes", "vehicle_notes", "condition")
+  ].filter(Boolean);
+}
+
+function renderVehicleForm(vehicle = {}, action = "create") {
+  const isUpdate = action === "update";
+  return `
+    <form class="detail-form compact-form vehicle-form" data-vehicle-form="${escapeHtml(action)}">
+      <input type="hidden" name="action" value="${escapeHtml(action)}" />
+      ${isUpdate ? `<input type="hidden" name="vehicle_id" value="${escapeHtml(vehicle.id || "")}" />` : ""}
+      <div>
+        <label>Year</label>
+        <input name="year" value="${escapeHtml(vehicleField(vehicle, "vehicle_year", "year"))}" inputmode="numeric" />
+      </div>
+      <div>
+        <label>Make</label>
+        <input name="make" value="${escapeHtml(vehicleField(vehicle, "vehicle_make", "make"))}" />
+      </div>
+      <div>
+        <label>Model</label>
+        <input name="model" value="${escapeHtml(vehicleField(vehicle, "vehicle_model", "model"))}" />
+      </div>
+      <div>
+        <label>Color</label>
+        <input name="color" value="${escapeHtml(vehicleField(vehicle, "vehicle_color", "color"))}" />
+      </div>
+      <div>
+        <label>Size</label>
+        <select name="vehicle_size">
+          <option value="">Select size</option>
+          ${["compact", "midsized", "oversized"].map((size) => `<option value="${size}" ${vehicleField(vehicle, "vehicle_size") === size ? "selected" : ""}>${size[0].toUpperCase() + size.slice(1)}</option>`).join("")}
+        </select>
+      </div>
+      <div>
+        <label>License Plate</label>
+        <input name="license_plate" value="${escapeHtml(vehicleField(vehicle, "license_plate"))}" />
+      </div>
+      <div class="span-2">
+        <label>Notes / Condition</label>
+        <input name="notes" value="${escapeHtml(vehicleField(vehicle, "notes", "vehicle_notes", "condition"))}" />
+      </div>
+      <button class="act-primary span-2" type="submit">${isUpdate ? "Save Vehicle" : "Add Vehicle"}</button>
+    </form>
+  `;
+}
+
+function renderVehicleCard(vehicle) {
+  const label = vehicleDisplayLabel(vehicle) || "Vehicle";
+  const details = vehicleDetailBits(vehicle);
+  return `
+    <div class="detail-item">
+      <strong>${escapeHtml(label)}</strong>
+      ${details.length ? `<div class="meta-text">${escapeHtml(details.join(" · "))}</div>` : `<div class="meta-text">No vehicle details set.</div>`}
+      <button class="act-quiet vehicle-edit-toggle-btn" type="button" data-vehicle-id="${escapeHtml(vehicle.id || "")}">Edit Vehicle</button>
+      <div class="detail-task-create-panel vehicle-edit-panel" data-vehicle-edit-panel="${escapeHtml(vehicle.id || "")}" hidden>
+        ${renderVehicleForm(vehicle, "update")}
+      </div>
+    </div>
+  `;
 }
 
 function customerServiceLabel(row) {
@@ -3955,6 +4041,104 @@ function normalizeCustomerEmail(value) {
   return lower;
 }
 
+function formatGooglePlaceAddress(place) {
+  if (!place) return "";
+  if (place.address_components && place.address_components.length) {
+    const components = {};
+    for (const component of place.address_components) {
+      for (const type of component.types) components[type] = component.long_name;
+    }
+    const street = [components.street_number, components.route].filter(Boolean).join(" ");
+    const city = components.locality || components.sublocality || components.postal_town || "";
+    const stateValue = components.administrative_area_level_1 || "";
+    const zip = components.postal_code || "";
+    return [street, city, stateValue, zip].filter(Boolean).join(", ");
+  }
+  return String(place.formatted_address || "").trim();
+}
+
+function waitForGooglePlaces(attemptsLeft = 40) {
+  return new Promise((resolve) => {
+    const check = () => {
+      if (window.google?.maps?.places) {
+        resolve(true);
+        return;
+      }
+      if (attemptsLeft <= 0) {
+        console.warn("CRM address autocomplete unavailable: Google Places did not load.");
+        resolve(false);
+        return;
+      }
+      attemptsLeft -= 1;
+      setTimeout(check, 100);
+    };
+    check();
+  });
+}
+
+function loadGooglePlacesIfNeeded() {
+  if (window.google?.maps?.places) return Promise.resolve(true);
+  if (crmGooglePlacesPromise) return crmGooglePlacesPromise;
+
+  crmGooglePlacesPromise = new Promise((resolve) => {
+    const existingPlacesScript = document.querySelector('script[src*="maps.googleapis.com/maps/api/js"][src*="libraries=places"]');
+    if (existingPlacesScript) {
+      waitForGooglePlaces().then(resolve);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = CRM_GOOGLE_MAPS_SRC;
+    script.async = true;
+    script.defer = true;
+    script.dataset.crmGooglePlaces = "true";
+    script.onload = () => waitForGooglePlaces().then(resolve);
+    script.onerror = () => {
+      console.warn("CRM address autocomplete unavailable: Google Maps script failed to load.");
+      resolve(false);
+    };
+    document.head.appendChild(script);
+  });
+
+  return crmGooglePlacesPromise;
+}
+
+async function attachAddressAutocomplete(input) {
+  if (!input || input.dataset.placesAttached === "true" || input.dataset.placesAttaching === "true") return;
+  input.dataset.placesAttaching = "true";
+  const placesReady = await loadGooglePlacesIfNeeded();
+  if (!placesReady || !window.google?.maps?.places) {
+    delete input.dataset.placesAttaching;
+    return;
+  }
+
+  try {
+    const autocomplete = new google.maps.places.Autocomplete(input, {
+      types: ["address"],
+      componentRestrictions: { country: "us" },
+      fields: ["address_components", "formatted_address", "place_id"]
+    });
+    input.dataset.placesAttached = "true";
+    delete input.dataset.placesAttaching;
+    autocomplete.addListener("place_changed", () => {
+      const place = autocomplete.getPlace();
+      const address = formatGooglePlaceAddress(place);
+      if (!address) return;
+      input.value = address;
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  } catch (err) {
+    delete input.dataset.placesAttaching;
+    console.warn("CRM address autocomplete unavailable:", err);
+  }
+}
+
+function initCrmAddressAutocomplete() {
+  attachAddressAutocomplete(document.getElementById("leadAddress"));
+  attachAddressAutocomplete(document.getElementById("editAddress"));
+}
+
 function displayCustomerEmail(value) {
   const email = normalizeCustomerEmail(value);
   return email || "No email on file";
@@ -4033,6 +4217,7 @@ function toggleEditProfilePanel(show) {
   const panel = document.getElementById("detailEditPanel");
   if (!panel) return;
   panel.hidden = show === undefined ? !panel.hidden : !show;
+  if (!panel.hidden) initCrmAddressAutocomplete();
 }
 
 function dateTimeLocalToIso(value) {
@@ -4317,6 +4502,7 @@ function setMobileLeadMode(enabled) {
   if (enabled) {
     const leadForm = document.getElementById("leadFormCollapse");
     if (leadForm) leadForm.open = true;
+    initCrmAddressAutocomplete();
   }
 }
 
@@ -5192,6 +5378,7 @@ function renderCustomerRow(row) {
     : (row.last_service_date ? `Last service ${formatShortDate(row.last_service_date)}` : "No follow-up");
   const revenueCell = `<div class="row-revenue">${escapeHtml(formatMoney(row.total_revenue || 0))}</div>`;
   const priority = priorityValue(row);
+  const vehiclePreview = row.primary_vehicle ? vehicleDisplayLabel(row.primary_vehicle) : "";
   return `
     <button class="customer-row ${id === state.selectedCustomerId ? "active" : ""}" type="button" data-customer-id="${escapeHtml(id)}">
       <div class="customer-name">${escapeHtml(customerName(row))}</div>
@@ -5201,6 +5388,7 @@ function renderCustomerRow(row) {
         <span class="badge">${escapeHtml(priority)}</span>
       </div>
       <div class="row-meta">${escapeHtml(followUpLabel)}</div>
+      <div class="row-meta">${escapeHtml(vehiclePreview || "No vehicle on file")}</div>
       <div class="row-meta row-contact-phone">${escapeHtml(row.phone || "No phone")}</div>
       <div class="row-meta row-contact-email">${escapeHtml(displayCustomerEmail(row.email))}</div>
       ${revenueCell}
@@ -5933,6 +6121,7 @@ function renderDetail(data, assignedTags) {
   const profile = data.profile || {};
   const tasks = data.follow_up_tasks || [];
   const openTasks = tasks.filter((task) => task.status !== "completed" && task.status !== "dismissed");
+  const vehicles = data.vehicles || [];
   const bookings = data.bookings || [];
   const outreachLogs = data.outreach_logs || [];
   const notes = profile.crm_notes || customer.crm_notes || "";
@@ -5977,7 +6166,7 @@ function renderDetail(data, assignedTags) {
         </div>
         <div class="span-2">
           <label for="editAddress">Address</label>
-          <input id="editAddress" name="address" value="${escapeHtml(customer.address || "")}" />
+          <input id="editAddress" name="address" value="${escapeHtml(customer.address || "")}" autocomplete="street-address" placeholder="Start typing address..." />
         </div>
         <div class="span-2">
           <label for="editCompany">Company</label>
@@ -6062,6 +6251,20 @@ function renderDetail(data, assignedTags) {
         <button class="act-danger quick-action-btn" type="button" data-action="do_not_contact">Do Not Contact</button>
       </div>
     </div>
+
+    <section class="detail-open-tasks-section" aria-label="Customer vehicles">
+      <div class="detail-open-tasks-heading">
+        <p class="detail-section-heading">Vehicles (${vehicles.length})</p>
+        <button class="act-secondary detail-new-task-btn" id="showVehicleCreateBtn" type="button">Add Vehicle</button>
+      </div>
+      <div>
+        ${vehicles.length ? vehicles.map(renderVehicleCard).join("") : `<div class="meta-text">No vehicles on file.</div>`}
+      </div>
+      <div id="vehicleCreatePanel" class="detail-task-create-panel" hidden>
+        ${renderVehicleForm({}, "create")}
+        <button class="act-quiet span-2" id="cancelVehicleCreateBtn" type="button">Cancel</button>
+      </div>
+    </section>
 
     <div id="quickNotePanel" class="detail-edit-panel" hidden>
       <form id="quickNoteForm" class="detail-form compact-form">
@@ -6263,6 +6466,7 @@ function renderDetail(data, assignedTags) {
   `;
 
   wireDetailForms();
+  initCrmAddressAutocomplete();
   if (state.activeTab === "templates") renderTemplates();
 }
 
@@ -6459,6 +6663,43 @@ function wireDetailForms() {
     document.getElementById("quickNoteForm")?.reset();
   });
 
+  document.getElementById("showVehicleCreateBtn")?.addEventListener("click", () => {
+    const panel = document.getElementById("vehicleCreatePanel");
+    if (panel) panel.hidden = false;
+  });
+
+  document.getElementById("cancelVehicleCreateBtn")?.addEventListener("click", () => {
+    const panel = document.getElementById("vehicleCreatePanel");
+    if (panel) panel.hidden = true;
+    panel?.querySelector("form")?.reset();
+  });
+
+  document.querySelectorAll(".vehicle-edit-toggle-btn").forEach((button) => {
+    button.addEventListener("click", () => {
+      const panel = button.nextElementSibling;
+      if (panel) panel.hidden = !panel.hidden;
+    });
+  });
+
+  document.querySelectorAll(".vehicle-form").forEach((form) => {
+    form.addEventListener("submit", async event => {
+      event.preventDefault();
+      const body = formObject(form);
+      body.customer_id = id;
+      try {
+        await apiJson("/api/admin-crm-vehicle", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        toast(body.action === "update" ? "Vehicle updated" : "Vehicle added");
+        await refreshCurrentCustomer(id);
+      } catch (err) {
+        toast(err.message || "Failed to save vehicle", true);
+      }
+    });
+  });
+
   document.getElementById("quickNoteForm")?.addEventListener("submit", async event => {
     event.preventDefault();
     const form = event?.currentTarget || document.getElementById("quickNoteForm");
@@ -6616,6 +6857,7 @@ async function bootCrmApp() {
     hideLoginOverlay();
     setDetailPanelOpen(false);
     renderTabHeader();
+    initCrmAddressAutocomplete();
     await loadCustomers();
     await loadTaskInbox();
     syncMobileNav(state.activeTab);
@@ -6694,7 +6936,10 @@ document.getElementById("toggleLeadFormBtn")?.addEventListener("click", () => {
   const leadForm = document.getElementById("leadFormCollapse");
   if (!leadForm) return;
   leadForm.open = !leadForm.open;
-  if (leadForm.open) leadForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  if (leadForm.open) {
+    initCrmAddressAutocomplete();
+    leadForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
 });
 ["lifecycleFilter", "statusFilter", "priorityFilter", "dueFilter"].forEach(id => {
   document.getElementById(id).addEventListener("change", loadCustomers);

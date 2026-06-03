@@ -57,6 +57,26 @@ async function loadCompletedBookingSummary(supabase, customerIds) {
   return byCustomer;
 }
 
+async function loadPrimaryVehicles(supabase, customerIds) {
+  const ids = [...new Set((customerIds || []).filter(Boolean))];
+  if (!ids.length) return new Map();
+
+  const { data, error } = await supabase
+    .from("vehicles")
+    .select("*")
+    .in("customer_id", ids)
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+
+  const byCustomer = new Map();
+  for (const vehicle of data || []) {
+    if (!vehicle.customer_id || byCustomer.has(vehicle.customer_id)) continue;
+    byCustomer.set(vehicle.customer_id, vehicle);
+  }
+  return byCustomer;
+}
+
 function applyBookingSummary(row, bookingSummary) {
   const customerId = row.customer_id || row.id;
   const summary = bookingSummary.get(customerId);
@@ -72,6 +92,14 @@ function applyBookingSummary(row, bookingSummary) {
     total_revenue: Math.round(summary.total_revenue * 100) / 100,
     completed_bookings: summary.completed_bookings,
     last_service_date: summary.last_service_date || row.last_service_date
+  };
+}
+
+function applyPrimaryVehicle(row, primaryVehicles) {
+  const customerId = row.customer_id || row.id;
+  return {
+    ...row,
+    primary_vehicle: primaryVehicles.get(customerId) || null
   };
 }
 
@@ -140,14 +168,19 @@ export default async function handler(req, res) {
       .range(offset, offset + limit - 1);
 
     if (error) throw error;
-    const bookingSummary = await loadCompletedBookingSummary(
-      supabase,
-      (data || []).map((row) => row.customer_id || row.id)
+    const customerIds = (data || []).map((row) => row.customer_id || row.id);
+    const [bookingSummary, primaryVehicles] = await Promise.all([
+      loadCompletedBookingSummary(supabase, customerIds),
+      loadPrimaryVehicles(supabase, customerIds)
+    ]);
+
+    const customers = (data || []).map((row) =>
+      applyPrimaryVehicle(applyBookingSummary(row, bookingSummary), primaryVehicles)
     );
 
     return res.status(200).json({
       ok: true,
-      customers: (data || []).map((row) => applyBookingSummary(row, bookingSummary)),
+      customers,
       count: count || 0
     });
   } catch (err) {
