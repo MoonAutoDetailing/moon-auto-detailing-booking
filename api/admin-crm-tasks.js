@@ -74,6 +74,7 @@ function toTaskRow(task, customer) {
     email: customer?.email || null,
     address: customer?.address || null,
     crm_status: customer?.crm_status || customer?.status || null,
+    crm_priority: customer?.crm_priority || null,
     lifecycle_stage: customer?.lifecycle_stage || null,
     total_revenue: Number(customer?.total_revenue) || 0,
     last_service_date: customer?.last_service_date || null
@@ -176,7 +177,7 @@ export default async function handler(req, res) {
     if (customerIds.length) {
       const { data, error } = await supabase
         .from("crm_customer_summary")
-        .select("customer_id, full_name, phone, email, address, crm_status, status, lifecycle_stage, total_revenue, last_service_date")
+        .select("customer_id, full_name, phone, email, address, crm_status, crm_priority, status, lifecycle_stage, total_revenue, last_service_date")
         .in("customer_id", customerIds);
       if (error) {
         console.error("admin-crm-tasks: summary lookup failed", error);

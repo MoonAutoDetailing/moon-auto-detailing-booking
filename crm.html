@@ -4030,6 +4030,40 @@ function priorityValue(row) {
   return row.crm_priority || row.priority || "medium";
 }
 
+const PRIORITY_RANK = { low: 1, medium: 2, high: 3, urgent: 4 };
+
+function normalizedPriority(value, fallback = "medium") {
+  const priority = normalize(value);
+  return PRIORITY_RANK[priority] ? priority : fallback;
+}
+
+function higherPriority(a, b) {
+  const first = normalizedPriority(a);
+  const second = normalizedPriority(b);
+  return PRIORITY_RANK[first] >= PRIORITY_RANK[second] ? first : second;
+}
+
+function effectiveTaskPriorityInfo(task, customerPriority) {
+  const taskPriority = normalizedPriority(task?.priority);
+  const crmPriority = normalizedPriority(customerPriority || task?.crm_priority, "");
+  const effective = crmPriority ? higherPriority(taskPriority, crmPriority) : taskPriority;
+  const elevated = crmPriority && PRIORITY_RANK[crmPriority] > PRIORITY_RANK[taskPriority];
+  return {
+    taskPriority,
+    crmPriority,
+    effective,
+    elevated,
+    title: crmPriority
+      ? `Task priority: ${taskPriority} · Customer priority: ${crmPriority}`
+      : `Task priority: ${taskPriority}`
+  };
+}
+
+function defaultTaskPriorityForCustomer(customer, profile) {
+  const priority = normalizedPriority(profile?.priority || customer?.crm_priority || customer?.priority);
+  return priority === "urgent" || priority === "high" ? priority : "medium";
+}
+
 function statusValue(row) {
   return row.crm_status || row.status || "active";
 }
@@ -4674,18 +4708,19 @@ function buildTimelineEvents(data, assignedTags) {
   });
 
   (data.follow_up_tasks || []).forEach((task) => {
+    const priorityInfo = effectiveTaskPriorityInfo(task, profile.priority || customer.crm_priority || customer.priority);
     events.push({
       type: "Follow-up created",
       badgeClass: "task",
       at: task.created_at || task.due_at,
-      description: `${taskTypeLabel(task.task_type)} · due ${formatDate(task.due_at)}`
+      description: `${taskTypeLabel(task.task_type)} · due ${formatDate(task.due_at)} · ${priorityInfo.effective} priority${priorityInfo.elevated ? " (elevated)" : ""}`
     });
     if (task.status === "completed" && task.completed_at) {
       events.push({
         type: "Follow-up completed",
         badgeClass: "task",
         at: task.completed_at,
-        description: `${taskTypeLabel(task.task_type)} marked complete`
+        description: `${taskTypeLabel(task.task_type)} marked complete · ${priorityInfo.effective} priority${priorityInfo.elevated ? " (elevated)" : ""}`
       });
     }
     if (task.status === "snoozed" && task.updated_at) {
@@ -4839,7 +4874,7 @@ function renderKpiStrip(elementId, items) {
 function renderQueueRow(row, options = {}) {
   const taskId = row.task_id || row.id || "";
   const overdue = options.overdue || isOverdueFollowUp(row) || isTaskRowOverdue(row);
-  const priority = priorityValue(row);
+  const priorityInfo = effectiveTaskPriorityInfo(row);
   const isCompleted = normalize(row.status) === "completed";
   const showComplete = options.showComplete !== false && !isCompleted;
   const showSnooze = options.showSnooze !== false && !isCompleted && (taskId || hasOpenFollowUp(row));
@@ -4849,11 +4884,11 @@ function renderQueueRow(row, options = {}) {
       <div class="queue-row-main">
         <div class="queue-row-title">
           <strong>${escapeHtml(customerName(row))}</strong>
-          <span class="badge">${escapeHtml(priority)}</span>
+          <span class="badge" title="${escapeHtml(priorityInfo.title)}">${escapeHtml(priorityInfo.effective)}</span>
           <span class="badge ${statusBadgeClass(row)}">${escapeHtml(statusValue(row))}</span>
         </div>
         <div class="queue-row-meta">${escapeHtml(taskTitleForRow(row))}</div>
-        <div class="queue-row-meta">${escapeHtml(followUpTimingLabel(row))}</div>
+        <div class="queue-row-meta">${escapeHtml(followUpTimingLabel(row))}${priorityInfo.elevated ? " · Elevated by customer priority" : ""}</div>
       </div>
       <div class="queue-row-actions">
         ${showComplete ? `<button class="act-primary queue-complete-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}" data-task-id="${escapeHtml(taskId)}">Complete</button>` : ""}
@@ -5188,9 +5223,10 @@ async function loadAnalytics() {
 
 function renderTaskCard(row, options = {}) {
   const tone = options.tone || "";
+  const priorityInfo = effectiveTaskPriorityInfo(row);
   return `
     <article class="task-card ${tone}">
-      <div><strong>${escapeHtml(customerName(row))}</strong> <span class="badge">${escapeHtml(priorityValue(row))}</span></div>
+      <div><strong>${escapeHtml(customerName(row))}</strong> <span class="badge" title="${escapeHtml(priorityInfo.title)}">${escapeHtml(priorityInfo.effective)}</span></div>
       <div class="muted">${escapeHtml(options.label || "Follow-up")} · Due ${escapeHtml(formatDate(row.next_follow_up_at))}</div>
       <div class="task-card-actions">
         <button class="primary-btn complete-followup-btn" type="button" data-customer-id="${escapeHtml(customerId(row))}">Complete</button>
@@ -5613,6 +5649,7 @@ function renderDetail(data, assignedTags) {
   const status = profile.status || statusValue(customer);
   const priority = profile.priority || priorityValue(customer);
   const contactMethod = profile.preferred_contact_method || "sms";
+  const defaultTaskPriority = defaultTaskPriorityForCustomer(customer, profile);
   const emailBtn = hasEmail
     ? `<button class="act-primary quick-action-btn" type="button" data-action="send_email">Send Email</button>`
     : `<button class="act-primary" type="button" disabled title="No email on file">Send Email</button>`;
@@ -5762,17 +5799,21 @@ function renderDetail(data, assignedTags) {
         <button class="act-secondary detail-new-task-btn" id="showTaskCreateBtn" type="button">+ New Task</button>
       </div>
       <div id="taskList">
-        ${openTasks.length ? openTasks.map((task) => `
+        ${openTasks.length ? openTasks.map((task) => {
+          const priorityInfo = effectiveTaskPriorityInfo(task, priority);
+          return `
           <div class="detail-item">
             <strong>${escapeHtml(taskTypeLabel(task.task_type))}</strong>
-            <div class="meta-text">Due ${escapeHtml(formatDate(task.due_at))} · ${escapeHtml(task.status || "")}</div>
+            <span class="badge" title="${escapeHtml(priorityInfo.title)}">${escapeHtml(priorityInfo.effective)}</span>
+            <div class="meta-text">Due ${escapeHtml(formatDate(task.due_at))} · ${escapeHtml(task.status || "")}${priorityInfo.elevated ? " · Elevated by customer priority" : ""}</div>
             <div>${escapeHtml(task.notes || "")}</div>
             <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
               <button class="act-primary complete-task-btn" type="button" data-task-id="${escapeHtml(task.id)}">Complete</button>
               <button class="act-quiet detail-snooze-btn" type="button">Snooze 1d</button>
             </div>
           </div>
-        `).join("") : `<div class="meta-text">No open follow-up tasks.</div>`}
+        `;
+        }).join("") : `<div class="meta-text">No open follow-up tasks.</div>`}
       </div>
       <div id="taskCreatePanel" class="detail-task-create-panel" hidden>
         <form id="taskCreateForm" class="detail-form compact-form">
@@ -5787,10 +5828,10 @@ function renderDetail(data, assignedTags) {
           <div>
             <label for="taskPriority">Priority</label>
             <select id="taskPriority" name="priority">
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="urgent">Urgent</option>
-              <option value="low">Low</option>
+              <option value="medium" ${defaultTaskPriority === "medium" ? "selected" : ""}>Medium</option>
+              <option value="high" ${defaultTaskPriority === "high" ? "selected" : ""}>High</option>
+              <option value="urgent" ${defaultTaskPriority === "urgent" ? "selected" : ""}>Urgent</option>
+              <option value="low" ${defaultTaskPriority === "low" ? "selected" : ""}>Low</option>
             </select>
           </div>
           <div>
@@ -6118,7 +6159,12 @@ function wireDetailForms() {
 
   document.getElementById("quickNoteForm")?.addEventListener("submit", async event => {
     event.preventDefault();
-    const body = formObject(event.currentTarget);
+    const form = event?.currentTarget || document.getElementById("quickNoteForm");
+    if (!form) {
+      toast("Note form unavailable", true);
+      return;
+    }
+    const body = formObject(form);
     body.customer_id = id;
     try {
       await apiJson("/api/admin-crm-notes", {
@@ -6127,7 +6173,7 @@ function wireDetailForms() {
         body: JSON.stringify(body)
       });
       toast("Note added");
-      event.currentTarget.reset();
+      if (form && typeof form.reset === "function") form.reset();
       await refreshCurrentCustomer(id);
     } catch (err) {
       toast(err.message || "Failed to add note", true);
@@ -6159,7 +6205,12 @@ function wireDetailForms() {
 
   document.getElementById("outreachForm")?.addEventListener("submit", async event => {
     event.preventDefault();
-    const body = formObject(event.currentTarget);
+    const form = event?.currentTarget || document.getElementById("outreachForm");
+    if (!form) {
+      toast("Outreach form unavailable", true);
+      return;
+    }
+    const body = formObject(form);
     body.customer_id = id;
     body.next_follow_up_at = dateTimeLocalToIso(body.next_follow_up_at);
 
@@ -6179,7 +6230,12 @@ function wireDetailForms() {
 
   document.getElementById("taskCreateForm")?.addEventListener("submit", async event => {
     event.preventDefault();
-    const body = formObject(event.currentTarget);
+    const form = event?.currentTarget || document.getElementById("taskCreateForm");
+    if (!form) {
+      toast("Task form unavailable", true);
+      return;
+    }
+    const body = formObject(form);
     body.action = "create";
     body.customer_id = id;
     body.due_at = dateTimeLocalToIso(body.due_at);
@@ -6191,13 +6247,13 @@ function wireDetailForms() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
       });
-      toast("Follow-up task created");
-      event.currentTarget.reset();
+      if (form && typeof form.reset === "function") form.reset();
       const panel = document.getElementById("taskCreatePanel");
       if (panel) panel.hidden = true;
-      await loadTaskInbox();
       state.tasksQueue = createdTaskBucket;
       await refreshCurrentCustomer(id);
+      await loadTaskInbox();
+      toast("Task created");
     } catch (err) {
       toast(err.message || "Failed to create task", true);
     }

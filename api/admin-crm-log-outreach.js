@@ -12,6 +12,11 @@ function clean(value) {
   return text || null;
 }
 
+function elevatedCustomerPriority(value) {
+  const priority = String(value || "").trim().toLowerCase();
+  return priority === "urgent" || priority === "high" ? priority : null;
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -71,12 +76,21 @@ export default async function handler(req, res) {
       }
     }
 
+    const { data: profilePriority, error: profilePriorityError } = await supabase
+      .from("crm_profiles")
+      .select("priority")
+      .eq("customer_id", customerId)
+      .maybeSingle();
+
+    if (profilePriorityError) throw profilePriorityError;
+
     const outreachType = clean(body.outreach_type);
     const messageSummary = clean(body.message_summary);
     const responseStatus = clean(body.response_status) || "no_response";
     const responseNotes = clean(body.response_notes);
     const nextFollowUpAt = clean(body.next_follow_up_at);
     const pendingResponse = responseStatus === "pending_response";
+    const customerPriority = elevatedCustomerPriority(profilePriority?.priority);
 
     const { data: outreachLog, error: outreachError } = await supabase
       .from("crm_outreach_logs")
@@ -107,7 +121,7 @@ export default async function handler(req, res) {
           booking_id: bookingId,
           task_type: pendingResponse ? "check_response" : (outreachType || "general_follow_up"),
           due_at: dueAt,
-          priority: pendingResponse ? (clean(body.follow_up_priority) || "high") : (clean(body.follow_up_priority) || "medium"),
+          priority: pendingResponse ? (customerPriority || clean(body.follow_up_priority) || "high") : (clean(body.follow_up_priority) || "medium"),
           status: "open",
           notes: pendingResponse ? "Check whether customer responded to outreach." : (clean(body.follow_up_notes) || responseNotes || messageSummary)
         }])
