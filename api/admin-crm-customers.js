@@ -24,6 +24,7 @@ function parseOffset(value) {
 }
 
 const COMPLETED_BOOKING_STATUSES = ["completed", "complete", "done"];
+const ACTIVE_BOOKING_STATUSES = ["pending", "confirmed"];
 
 async function loadCompletedBookingSummary(supabase, customerIds) {
   const ids = [...new Set((customerIds || []).filter(Boolean))];
@@ -77,6 +78,47 @@ async function loadPrimaryVehicles(supabase, customerIds) {
   return byCustomer;
 }
 
+async function loadBookingStateSummary(supabase, customerIds) {
+  const ids = [...new Set((customerIds || []).filter(Boolean))];
+  if (!ids.length) return new Map();
+
+  const { data, error } = await supabase
+    .from("bookings")
+    .select("customer_id, status, scheduled_start")
+    .in("customer_id", ids);
+
+  if (error) throw error;
+
+  const byCustomer = new Map();
+  for (const booking of data || []) {
+    const customerId = booking.customer_id;
+    if (!customerId) continue;
+    const status = String(booking.status || "").trim().toLowerCase();
+    const current = byCustomer.get(customerId) || {
+      total_bookings: 0,
+      active_booking_count: 0,
+      pending_booking_count: 0,
+      confirmed_booking_count: 0,
+      completed_bookings: 0,
+      latest_booking_status: null,
+      latest_booking_at: null
+    };
+    current.total_bookings += 1;
+    if (ACTIVE_BOOKING_STATUSES.includes(status)) current.active_booking_count += 1;
+    if (status === "pending") current.pending_booking_count += 1;
+    if (status === "confirmed") current.confirmed_booking_count += 1;
+    if (COMPLETED_BOOKING_STATUSES.includes(status)) current.completed_bookings += 1;
+
+    const stamp = booking.scheduled_start;
+    if (stamp && (!current.latest_booking_at || new Date(stamp).getTime() > new Date(current.latest_booking_at).getTime())) {
+      current.latest_booking_at = stamp;
+      current.latest_booking_status = status || null;
+    }
+    byCustomer.set(customerId, current);
+  }
+  return byCustomer;
+}
+
 function applyBookingSummary(row, bookingSummary) {
   const customerId = row.customer_id || row.id;
   const summary = bookingSummary.get(customerId);
@@ -100,6 +142,30 @@ function applyPrimaryVehicle(row, primaryVehicles) {
   return {
     ...row,
     primary_vehicle: primaryVehicles.get(customerId) || null
+  };
+}
+
+function applyBookingStateSummary(row, bookingStates) {
+  const customerId = row.customer_id || row.id;
+  const summary = bookingStates.get(customerId);
+  if (!summary) {
+    return {
+      ...row,
+      total_bookings: Number(row.total_bookings) || 0,
+      active_booking_count: 0,
+      pending_booking_count: 0,
+      confirmed_booking_count: 0,
+      latest_booking_status: null
+    };
+  }
+  return {
+    ...row,
+    total_bookings: summary.total_bookings,
+    active_booking_count: summary.active_booking_count,
+    pending_booking_count: summary.pending_booking_count,
+    confirmed_booking_count: summary.confirmed_booking_count,
+    completed_bookings: summary.completed_bookings,
+    latest_booking_status: summary.latest_booking_status
   };
 }
 
@@ -169,13 +235,14 @@ export default async function handler(req, res) {
 
     if (error) throw error;
     const customerIds = (data || []).map((row) => row.customer_id || row.id);
-    const [bookingSummary, primaryVehicles] = await Promise.all([
+    const [bookingSummary, primaryVehicles, bookingStates] = await Promise.all([
       loadCompletedBookingSummary(supabase, customerIds),
-      loadPrimaryVehicles(supabase, customerIds)
+      loadPrimaryVehicles(supabase, customerIds),
+      loadBookingStateSummary(supabase, customerIds)
     ]);
 
     const customers = (data || []).map((row) =>
-      applyPrimaryVehicle(applyBookingSummary(row, bookingSummary), primaryVehicles)
+      applyPrimaryVehicle(applyBookingStateSummary(applyBookingSummary(row, bookingSummary), bookingStates), primaryVehicles)
     );
 
     return res.status(200).json({

@@ -2328,7 +2328,7 @@ body {
 }
 
 .pipeline-board {
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 8px;
 }
 
@@ -4392,6 +4392,10 @@ function stageValue(row) {
   return row.lifecycle_stage || "lead";
 }
 
+function lifecycleKey(value) {
+  return normalize(value).replace(/[\s-]+/g, "_");
+}
+
 function isFollowUpDue(row) {
   if (!row.next_follow_up_at) return false;
   const due = new Date(row.next_follow_up_at);
@@ -4747,16 +4751,33 @@ function hasOpenFollowUp(row) {
 }
 
 function pipelineBucket(row) {
-  const stage = normalize(stageValue(row));
-  const status = normalize(statusValue(row));
+  const rawStage = lifecycleKey(row.lifecycle_stage);
+  const stage = rawStage || "";
+  const status = lifecycleKey(statusValue(row));
+  const completedBookings = Number(row.completed_bookings || 0);
+  const totalBookings = Number(row.total_bookings || 0);
+  const activeBookingCount = Number(row.active_booking_count || 0);
+  const pendingCount = Number(row.pending_booking_count || 0);
+  const confirmedCount = Number(row.confirmed_booking_count || 0);
+  const latestBookingStatus = lifecycleKey(row.latest_booking_status);
+  const hasActiveBooking = activeBookingCount > 0 || pendingCount > 0 || confirmedCount > 0 || latestBookingStatus === "pending" || latestBookingStatus === "confirmed";
+  const hasCompletedBooking = completedBookings > 0 || Boolean(row.last_service_date);
+
   if (["do_not_contact", "ghosted", "lost"].includes(stage) || ["do_not_contact", "ghosted", "lost"].includes(status)) {
     return "lost";
   }
-  if (["booked", "confirmed", "customer"].includes(stage) || ["booked", "confirmed", "completed_customer", "repeat_customer"].includes(status)) {
+  if (hasActiveBooking || ["booked", "confirmed"].includes(stage)) {
     return "booked";
   }
+  if (hasCompletedBooking || ["completed_customer", "repeat_customer", "customer"].includes(stage) || ["completed_customer", "repeat_customer"].includes(status)) {
+    return "completed";
+  }
   if (stage === "quoted") return "quoted";
-  if (stage === "lead" && !row.last_contacted_at) return "lead";
+  if (["contacted", "prospect"].includes(stage)) return "contacted";
+  if (!stage || stage === "lead" || stage === "new_lead") {
+    if (row.last_contacted_at || ["active", "nurture", "cooling", "contacted"].includes(status)) return "contacted";
+    if (totalBookings === 0 && !hasActiveBooking && !hasCompletedBooking) return "lead";
+  }
   return "contacted";
 }
 
@@ -5443,45 +5464,51 @@ function renderCustomersTab() {
 function renderPipelineCard(row) {
   const interest = serviceInterestLabel(row);
   const followUp = row.next_follow_up_at ? `Follow-up ${formatShortDate(row.next_follow_up_at)}` : "No follow-up set";
+  const vehicle = row.primary_vehicle ? vehicleDisplayLabel(row.primary_vehicle) : "";
+  const completedBookings = Number(row.completed_bookings || 0);
+  const isCustomer = pipelineBucket(row) === "completed";
+  const lastService = row.last_service_date ? `Last service ${formatShortDate(row.last_service_date)}` : "";
   return `
     <button class="pipeline-card" type="button" data-customer-id="${escapeHtml(customerId(row))}">
       <strong>${escapeHtml(customerName(row))}</strong>
-      <div class="muted">${escapeHtml(statusValue(row))}${interest ? ` · ${escapeHtml(interest)}` : ""}</div>
+      ${vehicle ? `<div class="muted">${escapeHtml(vehicle)}</div>` : ""}
+      <div class="muted">${escapeHtml(stageValue(row))} · ${escapeHtml(statusValue(row))}${interest ? ` · ${escapeHtml(interest)}` : ""}</div>
       <div class="muted">${escapeHtml(followUp)}</div>
+      ${isCustomer ? `<div class="muted">${escapeHtml(formatMoney(row.total_revenue || 0))}${completedBookings ? ` · ${completedBookings} completed` : ""}${lastService ? ` · ${escapeHtml(lastService)}` : ""}</div>` : ""}
     </button>
   `;
 }
 
 function renderPipeline() {
-  const labels = {
-    lead: "New Lead",
-    contacted: "Contacted",
-    quoted: "Quoted",
-    booked: "Booked",
-    lost: "Lost"
-  };
-  const buckets = { lead: [], contacted: [], quoted: [], booked: [], lost: [] };
+  const columns = [
+    { key: "lead", label: "New Lead" },
+    { key: "contacted", label: "Contacted" },
+    { key: "quoted", label: "Quoted" },
+    { key: "booked", label: "Booked" },
+    { key: "completed", label: "Completed / Customer" },
+    { key: "lost", label: "Lost / Ghosted" }
+  ];
+  const buckets = Object.fromEntries(columns.map((column) => [column.key, []]));
 
-  const activeLeads = state.customers.filter(isActiveLeadPipelineRow);
-  activeLeads.forEach((row) => {
+  state.customers.forEach((row) => {
     buckets[pipelineBucket(row)].push(row);
   });
 
-  document.getElementById("pipelineBoard").innerHTML = Object.keys(labels).map((key) => {
-    const rows = buckets[key];
+  document.getElementById("pipelineBoard").innerHTML = columns.map((column) => {
+    const rows = buckets[column.key];
     const cards = rows.length
       ? rows.map(renderPipelineCard).join("")
       : `<div class="muted">None</div>`;
     return `
       <div class="pipeline-column">
-        <h3>${escapeHtml(labels[key])} <span class="section-count">${rows.length}</span></h3>
+        <h3>${escapeHtml(column.label)} <span class="section-count">${rows.length}</span></h3>
         <div class="pipeline-cards">${cards}</div>
       </div>
     `;
   }).join("");
 
   bindCustomerCards(document.getElementById("pipelineBoard"));
-  document.getElementById("pipelineStatus").textContent = `${activeLeads.length} active lead(s) in pipeline`;
+  document.getElementById("pipelineStatus").textContent = `${state.customers.length} customer(s) grouped by lifecycle`;
 }
 
 function renderBarList(items, valueKey, labelKey, formatValue = (v) => v) {
