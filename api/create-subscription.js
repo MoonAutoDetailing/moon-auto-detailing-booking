@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { sendSubscriptionCreatedEmailCore } from "../lib/email/sendSubscriptionCreatedEmail.js";
+import { isSeasonClosed, SEASON_CLOSED_MESSAGE } from "./_seasonStatus.js";
 
 const VALID_FREQUENCIES = ["biweekly", "monthly", "quarterly"];
 
@@ -15,6 +16,11 @@ export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).end();
+
+  // New maintenance enrollments go to the waitlist while closed.
+  if (isSeasonClosed()) {
+    return res.status(403).json({ ok: false, seasonClosed: true, message: SEASON_CLOSED_MESSAGE });
+  }
 
   try {
     const body = req.body || {};

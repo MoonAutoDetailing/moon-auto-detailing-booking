@@ -1725,7 +1725,75 @@ body.help-modal-open {
   }
 }
 
-  </style>                              <!--PAGE UI DESIGN END-->
+  
+/* =====================
+   OFF-SEASON + WAITLIST
+   ===================== */
+.off-season { margin-top: 24px; }
+.off-season-eyebrow {
+  display: inline-block;
+  margin: 0 auto 12px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(127, 184, 230, 0.5);
+  background: rgba(127, 184, 230, 0.14);
+  color: #cfe6f8;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.off-season .wizard-hero { text-align: center; }
+.off-season .starter-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.off-season-members {
+  margin-top: 22px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  text-align: left;
+}
+.off-season-members strong { display: block; margin-bottom: 4px; font-size: 15px; }
+.off-season-members p { margin: 0; text-align: left; font-size: 14px; }
+.off-season-members a { color: #9fd0f5; font-weight: 600; }
+.waitlist-card {
+  margin-top: 18px;
+  padding: 22px;
+  border-radius: 22px;
+  background: #ffffff;
+  border: 1px solid rgba(127, 184, 230, 0.24);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.12);
+  scroll-margin-top: 16px;
+}
+.waitlist-card h2 { margin: 0 0 6px; }
+.waitlist-card > p { margin: 0 0 16px; color: #4b5563; line-height: 1.5; }
+.waitlist-perks { margin: 0 0 18px; padding-left: 20px; color: #374151; line-height: 1.6; font-size: 14px; }
+.waitlist-interest { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin: 6px 0 4px; }
+.waitlist-interest label {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-radius: 14px; border: 1px solid #e5e7eb;
+  cursor: pointer; font-weight: 600; font-size: 14px;
+}
+.waitlist-interest input { width: auto; min-height: 0; margin: 0; box-shadow: none; }
+.waitlist-interest label:has(input:checked) { border-color: #7fb8e6; background: rgba(127, 184, 230, 0.12); }
+.waitlist-hint { margin: 4px 0 0; font-size: 13px; color: #6b7280; }
+#waitlistSubmit {
+  margin-top: 16px; min-height: 52px; border: none; border-radius: 16px; cursor: pointer;
+  font-weight: 700; color: #ffffff; background: linear-gradient(135deg, #7fb8e6, #5ca7df);
+  box-shadow: 0 10px 24px rgba(127, 184, 230, 0.4);
+}
+#waitlistSubmit:disabled { opacity: 0.6; cursor: wait; }
+.waitlist-status { margin-top: 10px; font-size: 14px; }
+.waitlist-status.is-bad { color: #b91c1c; }
+.waitlist-success { text-align: center; padding: 10px 0; }
+.waitlist-success h3 { margin: 0 0 8px; }
+.waitlist-success p { margin: 0; color: #4b5563; line-height: 1.5; }
+@media (max-width: 760px) {
+  .off-season .starter-actions,
+  .waitlist-interest { grid-template-columns: 1fr; }
+  .waitlist-card { padding: 18px 14px; }
+}
+</style>                              <!--PAGE UI DESIGN END-->
 
   
 </head>
@@ -1739,6 +1807,100 @@ body.help-modal-open {
     <p class="page-subtitle">
   Mobile Auto Detailing, WE come to YOU. Book in now, no payment required today.                      <!--ALL BOOKING CONTENT-->
 </p>
+
+    <!-- OFF-SEASON: shown instead of the booking starter while the season is closed.
+         Toggle with MAD_SEASON_CLOSED below (and SEASON_CLOSED_DEFAULT in api/_seasonStatus.js). -->
+    <section id="offSeason" class="off-season" hidden aria-label="Closed for the season">
+      <div class="wizard-hero">
+        <img src="/NewLogoColor.png" class="wizard-hero-logo" alt="Moon Auto Detailing" />
+        <span class="off-season-eyebrow">Winter season</span>
+        <h2>We're closed for the season</h2>
+        <p>Through the winter, we're exclusively servicing vehicles enrolled in our Maintenance Programs. New bookings will reopen in the spring.</p>
+        <div class="off-season-members">
+          <strong>Already a Maintenance member?</strong>
+          <p>Your service continues all winter. Book your next cycle from your <a href="/subscription-login.html">subscription portal</a>.</p>
+        </div>
+        <div class="starter-actions">
+          <a href="#waitlist" class="starter-action-card starter-action-card--primary" data-scroll-waitlist>
+            <strong>Join the Waitlist</strong>
+            <span>Get first access to next season's Maintenance Programs and spring openings.</span>
+          </a>
+          <a href="/booking-lookup.html" class="starter-action-card">
+            <strong>Find Existing Booking</strong>
+            <span>Already on the calendar? Look up or manage your booking.</span>
+          </a>
+        </div>
+      </div>
+
+      <div id="waitlist" class="waitlist-card">
+        <div id="waitlistFormWrap">
+          <h2>Join the Maintenance Program waitlist</h2>
+          <p>Our Maintenance members are the only clients we service year-round. Join the waitlist and we'll reach out in the spring to get you enrolled, so your vehicle stays detailed through next winter.</p>
+          <ul class="waitlist-perks">
+            <li>Year-round service, including winter, for members only</li>
+            <li>Priority scheduling on recurring biweekly, monthly, or quarterly visits</li>
+            <li>Discounted maintenance pricing on every cycle</li>
+          </ul>
+          <form id="waitlistForm" novalidate>
+            <label>What are you interested in?</label>
+            <div class="waitlist-interest">
+              <label><input type="radio" name="interest" value="maintenance_plan" checked /> Maintenance Program</label>
+              <label><input type="radio" name="interest" value="one_time_detail" /> One-time detail in the spring</label>
+            </div>
+            <div class="row" id="waitlistPlanRow">
+              <div>
+                <label for="waitlistPlan">Preferred plan (optional)</label>
+                <select id="waitlistPlan">
+                  <option value="">Not sure yet</option>
+                  <option value="combined-biweekly">Interior + Exterior, Biweekly</option>
+                  <option value="combined-monthly">Interior + Exterior, Monthly</option>
+                  <option value="combined-quarterly">Interior + Exterior, Quarterly</option>
+                  <option value="interior-biweekly">Interior, Biweekly</option>
+                  <option value="interior-monthly">Interior, Monthly</option>
+                  <option value="interior-quarterly">Interior, Quarterly</option>
+                  <option value="exterior-biweekly">Exterior, Biweekly</option>
+                  <option value="exterior-monthly">Exterior, Monthly</option>
+                  <option value="exterior-quarterly">Exterior, Quarterly</option>
+                </select>
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="waitlistName">Full name</label>
+                <input id="waitlistName" type="text" placeholder="First Last" autocomplete="name" required />
+              </div>
+              <div>
+                <label for="waitlistVehicle">Vehicle (optional)</label>
+                <input id="waitlistVehicle" type="text" placeholder="Year Make Model" />
+              </div>
+            </div>
+            <div class="row">
+              <div>
+                <label for="waitlistEmail">Email</label>
+                <input id="waitlistEmail" type="email" placeholder="you@email.com" autocomplete="email" />
+              </div>
+              <div>
+                <label for="waitlistPhone">Phone</label>
+                <input id="waitlistPhone" type="tel" placeholder="(518) 555-1234" autocomplete="tel" />
+              </div>
+            </div>
+            <p class="waitlist-hint">Email or phone is required so we can reach you.</p>
+            <div class="row full">
+              <div>
+                <label for="waitlistNotes">Anything we should know? (optional)</label>
+                <textarea id="waitlistNotes" placeholder="Pets, stains, timing, etc."></textarea>
+              </div>
+            </div>
+            <button type="submit" id="waitlistSubmit">Join the Waitlist</button>
+            <div id="waitlistStatus" class="waitlist-status" role="status"></div>
+          </form>
+        </div>
+        <div id="waitlistSuccess" class="waitlist-success" hidden>
+          <h3>You're on the list!</h3>
+          <p>Thanks for your interest. We'll reach out in the spring before enrollment opens to the public.</p>
+        </div>
+      </div>
+    </section>
 
     <section id="bookingStarter" class="booking-starter" aria-label="Booking start">
       <div class="wizard-hero">
@@ -1761,6 +1923,89 @@ body.help-modal-open {
         </div>
       </div>
     </section>
+
+    <script>
+      // Season switch for the booking page. Reschedule links and maintenance members
+      // (portal link with member_token) still reach the booking form while closed.
+      window.MAD_SEASON_CLOSED = true;
+      (function () {
+        var params = new URLSearchParams(window.location.search);
+        var offSeasonView = window.MAD_SEASON_CLOSED && !params.get("reschedule_token") && !params.get("member_token");
+        window.MAD_OFF_SEASON_VIEW = offSeasonView;
+        if (!offSeasonView) return;
+
+        document.getElementById("offSeason").hidden = false;
+        document.getElementById("bookingStarter").hidden = true;
+        var subtitle = document.querySelector(".page-subtitle");
+        if (subtitle) subtitle.textContent = "Closed for the season. Now servicing Maintenance Program members only.";
+
+        var form = document.getElementById("waitlistForm");
+        var planSelect = document.getElementById("waitlistPlan");
+        var planRow = document.getElementById("waitlistPlanRow");
+        var statusEl = document.getElementById("waitlistStatus");
+        var submitBtn = document.getElementById("waitlistSubmit");
+
+        var prefillPlan = params.get("waitlist_plan");
+        if (prefillPlan && planSelect.querySelector('option[value="' + CSS.escape(prefillPlan) + '"]')) {
+          planSelect.value = prefillPlan;
+        }
+        if (prefillPlan || window.location.hash === "#waitlist") {
+          setTimeout(function () { document.getElementById("waitlist").scrollIntoView({ behavior: "smooth" }); }, 50);
+        }
+
+        form.querySelectorAll('input[name="interest"]').forEach(function (radio) {
+          radio.addEventListener("change", function () {
+            planRow.hidden = form.querySelector('input[name="interest"]:checked').value !== "maintenance_plan";
+          });
+        });
+        document.querySelector("[data-scroll-waitlist]").addEventListener("click", function (e) {
+          e.preventDefault();
+          document.getElementById("waitlist").scrollIntoView({ behavior: "smooth" });
+        });
+
+        function setStatus(msg) {
+          statusEl.textContent = msg || "";
+          statusEl.classList.toggle("is-bad", Boolean(msg));
+        }
+
+        form.addEventListener("submit", async function (e) {
+          e.preventDefault();
+          var interest = form.querySelector('input[name="interest"]:checked').value;
+          var payload = {
+            full_name: document.getElementById("waitlistName").value.trim(),
+            email: document.getElementById("waitlistEmail").value.trim(),
+            phone: document.getElementById("waitlistPhone").value.trim(),
+            vehicle: document.getElementById("waitlistVehicle").value.trim(),
+            notes: document.getElementById("waitlistNotes").value.trim(),
+            interest: interest,
+            preferred_plan: interest === "maintenance_plan" ? planSelect.value : "",
+            source: params.get("waitlist_source") === "maintenance_page" ? "maintenance_page" : "booking_page"
+          };
+          if (!payload.full_name) return setStatus("Please enter your name.");
+          if (!payload.email && !payload.phone) return setStatus("Please enter an email or phone number so we can reach you.");
+
+          setStatus("");
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Joining…";
+          try {
+            var resp = await fetch("/api/join-waitlist", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload)
+            });
+            var json = await resp.json().catch(function () { return {}; });
+            if (!resp.ok || !json.ok) throw new Error(json.message || "Could not join the waitlist. Please try again.");
+            document.getElementById("waitlistFormWrap").hidden = true;
+            document.getElementById("waitlistSuccess").hidden = false;
+            document.getElementById("waitlist").scrollIntoView({ behavior: "smooth", block: "center" });
+          } catch (err) {
+            setStatus(err.message);
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Join the Waitlist";
+          }
+        });
+      })();
+    </script>
 
     <section id="recommendationFlow" class="recommendation-flow" hidden aria-label="Help me choose">
       <div class="recommendation-card">
@@ -2114,6 +2359,11 @@ const SUBSCRIPTION_MODE = urlParams.get("subscription") === "1";
 const SUBSCRIPTION_FREQUENCY = urlParams.get("frequency") || null;
 const SUBSCRIPTION_PLAN_VARIANT_ID = urlParams.get("plan_variant_id") || null;
 const SUBSCRIPTION_CATEGORY = urlParams.get("category") || null;
+
+// Off-season: maintenance members arrive from their portal with member_token (see the
+// MAD_SEASON_CLOSED script above the booking starter).
+const MEMBER_TOKEN = urlParams.get("member_token") || null;
+const OFF_SEASON_VIEW = window.MAD_OFF_SEASON_VIEW === true;
 
                                                                                                     //DEBUG SWITCH!!                                                                           
 
@@ -4005,7 +4255,8 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
           service_variant_id: draft.service_variant_id,
           subscription_mode: SUBSCRIPTION_MODE,
           subscription_category: SUBSCRIPTION_CATEGORY,
-          subscription_frequency: SUBSCRIPTION_FREQUENCY
+          subscription_frequency: SUBSCRIPTION_FREQUENCY,
+          member_token: MEMBER_TOKEN
         };
         if (draft.discount_code != null && draft.discount_code !== "") {
           createBody.discount_code = draft.discount_code;
@@ -4040,7 +4291,8 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
           throw new Error("Booking creation failed. Please try again.");
         }
 
-        if (SUBSCRIPTION_MODE && SUBSCRIPTION_FREQUENCY) {
+        // Members already have a subscription; only new enrollments create one.
+        if (SUBSCRIPTION_MODE && SUBSCRIPTION_FREQUENCY && !MEMBER_TOKEN) {
           const subRes = await fetch("/api/create-subscription", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -4806,6 +5058,7 @@ if (toggleBtn && calContainer) {
 // =========================
 
 async function bootApp() {
+  if (OFF_SEASON_VIEW) return; // booking closed; only the waitlist is shown
   try {
     await loadSubscriptionPrices();
     await loadServiceVariants();

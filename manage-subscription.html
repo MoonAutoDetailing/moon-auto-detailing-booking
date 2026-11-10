@@ -791,6 +791,8 @@
           if (sub && sub.frequency && sub.subscription_category) {
             bookHref = '/index.html?subscription=1&frequency=' + encodeURIComponent(sub.frequency) + '&category=' + encodeURIComponent(sub.subscription_category);
           }
+          // member_token lets active members book while the public booking page is closed for the season.
+          bookHref += (bookHref.indexOf('?') === -1 ? '?' : '&') + 'member_token=' + encodeURIComponent(TOKEN);
           html += '<div class="cta-book">';
           html += '<a href="' + bookHref + '" class="btn btn-primary">Continue to booking form</a>';
           html += '<p class="cta-book-note">You\'ll go to the main booking page. Use the same plan and vehicle details so your booking counts toward this subscription cycle.</p>';

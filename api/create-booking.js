@@ -2,6 +2,8 @@ import { rateLimit } from "./_rateLimit.js";
 import { createBookingCore } from "./_createBookingCore.js";
 import { sendBookingCreatedEmailCore } from "../lib/email/sendBookingCreatedEmail.js";
 import { sendAdminNewBookingAlertEmailCore } from "../lib/email/sendAdminNewBookingAlertEmail.js";
+import { createClient } from "@supabase/supabase-js";
+import { isSeasonClosed, isActiveMemberToken, SEASON_CLOSED_MESSAGE } from "./_seasonStatus.js";
 
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -24,6 +26,14 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (isSeasonClosed()) {
+      const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+      const isMember = await isActiveMemberToken(supabase, (req.body || {}).member_token);
+      if (!isMember) {
+        return res.status(403).json({ ok: false, seasonClosed: true, message: SEASON_CLOSED_MESSAGE });
+      }
+    }
+
     const result = await createBookingCore({
       body: req.body || {},
       status: "pending",

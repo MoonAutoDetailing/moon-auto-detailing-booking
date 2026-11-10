@@ -2487,6 +2487,7 @@ function stopRealtimeBookings() {
 
      // ===================== VIEW STATE =====================
 let currentView = null;
+let reloadWaitlistPage = null;
      let knownBookingIds = new Set();
      let refreshInFlight = false;
 
@@ -2529,6 +2530,13 @@ const viewContainer = document.getElementById("viewContainer");
     if (currentView === "subscriptions") {
       if (reloadSubscriptionsPage) {
         await reloadSubscriptionsPage();
+      }
+      return;
+    }
+
+    if (currentView === "waitlist") {
+      if (reloadWaitlistPage) {
+        await reloadWaitlistPage();
       }
       return;
     }
@@ -3374,13 +3382,14 @@ function renderButtons() {
   viewButtons.innerHTML = "";
 
   const primaryKeys = ["pending", "today", "upcoming"];
-  const menuKeys = ["history", "subscriptions", "discount-codes", "book-customer", "availability", "expenses", "bookkeeping"];
+  const menuKeys = ["history", "subscriptions", "waitlist", "discount-codes", "book-customer", "availability", "expenses", "bookkeeping"];
   const allButtons = [
     { key: "pending", label: "Pending Bookings" },
     { key: "today", label: "Today's Schedule" },
     { key: "upcoming", label: "Upcoming Bookings" },
     { key: "history", label: "History" },
     { key: "subscriptions", label: "Subscriptions" },
+    { key: "waitlist", label: "Waitlist" },
     { key: "discount-codes", label: "Discount Codes" },
     { key: "book-customer", label: "Book Customer" },
     { key: "availability", label: "Availability" },
@@ -3402,7 +3411,7 @@ function renderButtons() {
   if (dropdown) {
     dropdown.innerHTML = "";
     const sections = [
-      { title: "Views", keys: ["history", "subscriptions"] },
+      { title: "Views", keys: ["history", "subscriptions", "waitlist"] },
       { title: "Tools", keys: ["discount-codes", "book-customer", "availability", "expenses", "bookkeeping"] },
       { title: "Account", keys: ["__debug__"] }
     ];
@@ -4573,6 +4582,128 @@ function renderView(viewName) {
   // =========================
   // DISCOUNT CODES
   // =========================
+  // =========================
+  // WAITLIST (off-season sign-ups)
+  // =========================
+  if (viewName === "waitlist") {
+    const wrapper = document.createElement("div");
+    wrapper.style.display = "flex";
+    wrapper.style.flexDirection = "column";
+    wrapper.style.gap = "14px";
+    viewContainer.appendChild(wrapper);
+
+    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const interestLabel = (v) => v === "one_time_detail" ? "One-time detail" : "Maintenance Program";
+    const planLabel = (v) => {
+      if (!v) return "";
+      const [cat, freq] = String(v).split("-");
+      const catLabel = { combined: "Interior + Exterior", interior: "Interior", exterior: "Exterior" }[cat] || cat;
+      return freq ? `${catLabel}, ${freq.charAt(0).toUpperCase()}${freq.slice(1)}` : catLabel;
+    };
+
+    const toolbar = document.createElement("div");
+    toolbar.className = "admin-filters";
+    toolbar.style.display = "flex";
+    toolbar.style.flexWrap = "wrap";
+    toolbar.style.gap = "10px";
+    toolbar.style.alignItems = "center";
+    toolbar.innerHTML = `
+      <h3 style="margin:0;flex:1 1 auto;">Waitlist <span id="waitlistCount" class="booking-summary-meta"></span></h3>
+      <label style="display:flex;align-items:center;gap:6px;font-size:14px;"><input type="checkbox" id="waitlistHideContacted" style="width:auto;" /> Hide contacted</label>
+      <button type="button" id="waitlistExportBtn" class="moon-tab">Export CSV</button>
+    `;
+    wrapper.appendChild(toolbar);
+
+    const list = document.createElement("div");
+    list.style.display = "flex";
+    list.style.flexDirection = "column";
+    list.style.gap = "10px";
+    wrapper.appendChild(list);
+
+    let entries = [];
+
+    function renderEntries() {
+      const hideContacted = toolbar.querySelector("#waitlistHideContacted").checked;
+      const visible = hideContacted ? entries.filter(e => !e.contacted) : entries;
+      const open = entries.filter(e => !e.contacted).length;
+      toolbar.querySelector("#waitlistCount").textContent = `· ${entries.length} total, ${open} to contact`;
+      list.innerHTML = "";
+      if (visible.length === 0) {
+        list.innerHTML = "<p style='margin:0;color:rgba(255,255,255,0.6);'>No waitlist sign-ups yet.</p>";
+        return;
+      }
+      visible.forEach(e => {
+        const created = e.created_at ? new Date(e.created_at).toLocaleDateString() : "—";
+        const plan = planLabel(e.preferred_plan);
+        const card = document.createElement("div");
+        card.className = "discount-code-card";
+        if (e.contacted) card.style.opacity = "0.6";
+        card.innerHTML = `
+          <div class="discount-code-header">
+            <span><strong>${esc(e.full_name)}</strong></span>
+            <span class="booking-summary-meta">${esc(interestLabel(e.interest))}${plan ? " · " + esc(plan) : ""}</span>
+            <span class="booking-summary-meta">Joined ${esc(created)}${e.contacted ? " · Contacted" : ""}</span>
+            <span class="chevron" aria-hidden="true">▼</span>
+          </div>
+          <div class="discount-code-detail">
+            <p style="margin:0 0 6px;"><strong>Email:</strong> ${e.email ? `<a href="mailto:${esc(e.email)}" style="color:inherit;">${esc(e.email)}</a>` : "—"}</p>
+            <p style="margin:0 0 6px;"><strong>Phone:</strong> ${e.phone ? `<a href="tel:${esc(e.phone)}" style="color:inherit;">${esc(e.phone)}</a>` : "—"}</p>
+            <p style="margin:0 0 6px;"><strong>Vehicle:</strong> ${esc(e.vehicle || "—")}</p>
+            <p style="margin:0 0 6px;"><strong>Notes:</strong> ${esc(e.notes || "—")}</p>
+            <p style="margin:0 0 10px;"><strong>Source:</strong> ${esc(e.source === "maintenance_page" ? "Maintenance page" : "Booking page")}</p>
+            <button type="button" class="moon-tab" data-toggle-contacted>${e.contacted ? "Mark not contacted" : "Mark contacted"}</button>
+          </div>
+        `;
+        card.querySelector(".discount-code-header").onclick = () => card.classList.toggle("expanded");
+        card.querySelector("[data-toggle-contacted]").onclick = async (ev) => {
+          ev.stopPropagation();
+          try {
+            const r = await adminFetch("/api/admin-waitlist", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: e.id, contacted: !e.contacted })
+            });
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.error || "Update failed");
+            e.contacted = data.entry.contacted;
+            e.contacted_at = data.entry.contacted_at;
+            renderEntries();
+          } catch (err) { showAdminBanner(err.message || "Update failed.", "error"); }
+        };
+        list.appendChild(card);
+      });
+    }
+
+    toolbar.querySelector("#waitlistHideContacted").onchange = renderEntries;
+    toolbar.querySelector("#waitlistExportBtn").onclick = () => {
+      const cols = ["created_at", "full_name", "email", "phone", "interest", "preferred_plan", "vehicle", "notes", "source", "contacted"];
+      const csvCell = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+      const csv = [cols.join(",")].concat(entries.map(e => cols.map(c => csvCell(e[c])).join(","))).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `moon-waitlist-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    };
+
+    async function loadWaitlist() {
+      list.innerHTML = "<p style='margin:0;'>Loading…</p>";
+      try {
+        const res = await adminFetch("/api/admin-waitlist");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to load");
+        entries = data.entries || [];
+        renderEntries();
+      } catch (err) {
+        list.innerHTML = "<div style='color:#ff6b6b;'>" + esc(err.message || "Failed to load waitlist") + "</div>";
+      }
+    }
+    reloadWaitlistPage = loadWaitlist;
+    loadWaitlist();
+    return;
+  }
+
   if (viewName === "discount-codes") {
     const wrapper = document.createElement("div");
     wrapper.style.display = "flex";

@@ -374,10 +374,24 @@
         padding: 24px 20px;
       }
     }
+    .season-banner {
+      margin: 0 0 24px;
+      padding: 16px 18px;
+      border-radius: 16px;
+      border: 1px solid rgba(127, 184, 230, 0.45);
+      background: rgba(127, 184, 230, 0.12);
+      line-height: 1.5;
+    }
+    .season-banner strong { display: block; margin-bottom: 4px; }
+    .season-banner a { font-weight: 600; }
   </style>
 </head>
 <body>
   <div class="page-container">
+    <div id="seasonBanner" class="season-banner" hidden>
+      <strong>Enrollment reopens in the spring</strong>
+      Our Maintenance members are the only clients we service through the winter. Choose a plan below to join the waitlist and we'll reach out before enrollment opens. Current members: book your next cycle from your <a href="/subscription.html">subscription portal</a>.
+    </div>
     <!-- Section 1: Hero -->
     <section class="hero">
       <h1>Vehicle Maintenance Plans</h1>
@@ -518,7 +532,21 @@
   </div>
 
   <script>
+    // Keep in sync with MAD_SEASON_CLOSED in index.html. While closed, plan buttons join the waitlist.
+    var SEASON_CLOSED = true;
+
+    if (SEASON_CLOSED) {
+      document.getElementById("seasonBanner").hidden = false;
+      document.querySelectorAll(".btn-plan").forEach(function (btn) {
+        btn.textContent = btn.textContent.replace(/^Start /, "Join Waitlist: ");
+      });
+    }
+
     function startPlan(freq, category) {
+      if (SEASON_CLOSED) {
+        window.location.href = "/index.html?waitlist_source=maintenance_page&waitlist_plan=" + encodeURIComponent(category + "-" + freq) + "#waitlist";
+        return;
+      }
       window.location.href = "/index.html?subscription=1&frequency=" + freq + "&category=" + category;
     }
 
