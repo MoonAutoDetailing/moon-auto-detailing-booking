@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { validateCustomerReschedule } from "../_subscriptions/cycleState.js";
 import { sendRescheduleSubmittedEmailCore } from "../../lib/email/sendRescheduleSubmittedEmail.js";
 import { formatServiceName } from "../../lib/email/_shared.js";
 
@@ -24,6 +25,12 @@ export default async function handler(req, res) {
 
     if (!bookingId || !start || !end) {
       return res.status(400).json({ error: "Missing required fields" });
+    }
+
+    // Maintenance plan bookings must stay inside their cycle window.
+    const cycleCheck = await validateCustomerReschedule(supabase, bookingId, start);
+    if (!cycleCheck.ok) {
+      return res.status(400).json({ error: cycleCheck.message });
     }
 
     // Update booking time and reset lifecycle

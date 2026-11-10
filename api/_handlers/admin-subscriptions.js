@@ -130,6 +130,7 @@ export default async function handler(req, res) {
       const { data: links } = await supabase
         .from("subscription_cycle_bookings")
         .select("cycle_id")
+        .is("released_at", null)
         .in("cycle_id", cycleIds);
       cycleBookings = links || [];
     }

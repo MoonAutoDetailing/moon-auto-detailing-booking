@@ -88,6 +88,7 @@ export default async function handler(req, res) {
             travel_fee
           )
         `)
+        .is("released_at", null)
         .in("cycle_id", allCycleIds);
       cycleBookings = links || [];
     }

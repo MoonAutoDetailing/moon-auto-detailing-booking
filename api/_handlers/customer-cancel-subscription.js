@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { voidOpenCycles } from "../_subscriptions/cycleState.js";
 import { resolveSubscriptionByToken } from "../_subscriptions/resolveSubscriptionByToken.js";
 
 function requireEnv(name) {
@@ -56,6 +57,8 @@ export default async function handler(req, res) {
       console.error("customer-cancel-subscription error:", updateErr);
       return res.status(500).json({ error: "Failed to cancel subscription." });
     }
+
+    await voidOpenCycles(supabase, subscription.id, { actor: "customer", reason: "cancelled" });
 
     return res.status(200).json({
       ok: true,

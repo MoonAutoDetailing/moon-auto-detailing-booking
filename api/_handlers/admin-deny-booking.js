@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { onBookingCancelled } from "../_subscriptions/cycleState.js";
 import verifyAdmin from "../_verifyAdmin.js";
 import { sendBookingDeniedEmailCore } from "../../lib/email/sendBookingDeniedEmail.js";
 import { reconcileCustomerLifecycle } from "../_crmWorkflow.js";
@@ -59,6 +60,13 @@ export default async function handler(req, res) {
         .update({ status: "pending" })
         .eq("id", bookingId);
       return res.status(500).json({ error: "Email failed; action rolled back" });
+    }
+
+
+    try {
+      await onBookingCancelled(supabase, bookingId, { actor: "admin", businessInitiated: true });
+    } catch (cycleErr) {
+      console.error("[CYCLE_STATE] admin deny failed", cycleErr);
     }
 
     await reconcileCustomerLifecycle(supabase, booking.customer_id);

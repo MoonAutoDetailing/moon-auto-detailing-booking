@@ -18,6 +18,9 @@ export async function resolveSubscriptionById(supabase, subscriptionId) {
       frequency,
       status,
       anchor_date,
+      anchor_index_base,
+      pending_frequency,
+      pending_service_variant_id,
       activation_booking_id,
       activation_completed_at,
       discount_reset_required,
@@ -112,6 +115,7 @@ export async function resolveSubscriptionById(supabase, subscriptionId) {
         )
       `)
       .eq("cycle_id", activeCycle.id)
+      .is("released_at", null)
       .maybeSingle();
 
     if (linkedErr) {

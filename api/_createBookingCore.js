@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { google } from "googleapis";
 import { checkAvailability } from "./_availability.js";
 import getTravelMinutes from "./_routing/getTravelMinutes.js";
-import { getEffectiveWindowEnd } from "./_subscriptions/lifecycle.js";
+import { linkBookingToCycle, pushbackFeeFor } from "./_subscriptions/cycleState.js";
 import { getActiveDiscountCode, normalizeDiscountCode } from "./_discountCode.js";
 import { applyDiscountToPricing } from "../lib/discount.js";
 import { isSoloMode } from "./_staffingOverrides.js";
@@ -129,7 +129,10 @@ export async function createBookingCore({
   allowDiscount = true,
   allowSubscription = true,
   allowAvailabilityOverride = false,
-  adminPriceOverride = null
+  adminPriceOverride = null,
+  // Pre-validated maintenance cycle booking: { subscription, cycle, price: { base_price, price_mode } }.
+  // Only create-member-booking / admin cycle booking pass this; the browser can't.
+  memberCycle = null
 }) {
   const {
     customer_id,
@@ -204,18 +207,11 @@ export async function createBookingCore({
   let base_price = Number(variantRow.price);
   if (adminPriceOverride != null) {
     base_price = adminPriceOverride.base_price;
-  } else if (allowSubscription && body.subscription_mode === true) {
-    const { data: subPrice } = await supabase
-      .from("subscription_prices")
-      .select("price")
-      .eq("service_category", body.subscription_category)
-      .eq("frequency", body.subscription_frequency)
-      .eq("vehicle_size", variantRow.vehicle_size)
-      .single();
-    if (subPrice) {
-      base_price = subPrice.price;
-    }
+  } else if (memberCycle) {
+    base_price = Number(memberCycle.price.base_price);
   }
+  // Sign-up bookings (subscription_mode) are the first service and are charged full price;
+  // member pricing starts once the plan is active.
 
   const dayDate = getDayStartUtcForBusinessTZ(dayStr);
   const dayEnd = addMinutes(dayDate, 1440);
@@ -262,65 +258,14 @@ export async function createBookingCore({
   }
   const travel_fee = travelFeeFromMinutes(travel_minutes);
 
-  const subscriptionId = allowSubscription ? body.subscription_id : null;
-  let validatedSubscription = null;
-  let validatedCycle = null;
-  if (subscriptionId) {
-    const { data: subscription } = await supabase
-      .from("subscriptions")
-      .select("id, status, discount_reset_required")
-      .eq("id", subscriptionId)
-      .single();
-    if (!subscription || subscription.status !== "active") {
-      return { ok: false, statusCode: 400, body: { ok: false, message: "Invalid or inactive subscription." } };
-    }
-    const bookingDate = new Date(scheduled_start).toISOString().split("T")[0];
-    const { data: cycles, error: cycleErr } = await supabase
-      .from("subscription_cycles")
-      .select("*")
-      .eq("subscription_id", subscriptionId)
-      .eq("status", "open")
-      .lte("window_start_date", bookingDate)
-      .order("cycle_index", { ascending: false });
-    if (cycleErr) {
-      console.error("CYCLE_LOOKUP_FAILED", cycleErr);
-      return { ok: false, statusCode: 500, body: { ok: false, message: "Failed to attach booking to subscription cycle." } };
-    }
-    const matchingCycles = (cycles || []).filter((row) => {
-      const effectiveEnd = getEffectiveWindowEnd(row);
-      return effectiveEnd && bookingDate <= effectiveEnd;
-    });
-    if (matchingCycles.length > 1) {
-      console.error("MULTIPLE_MATCHING_OPEN_CYCLES", {
-        subscriptionId,
-        bookingDate,
-        cycleIds: matchingCycles.map((c) => c.id)
-      });
-      return { ok: false, statusCode: 500, body: { ok: false, message: "Subscription cycle state is invalid." } };
-    }
-    const cycle = matchingCycles[0];
-    if (!cycle) {
-      return { ok: false, statusCode: 400, body: { ok: false, message: "No open subscription cycle matches this booking date." } };
-    }
-    const { data: existingLink } = await supabase
-      .from("subscription_cycle_bookings")
-      .select("id")
-      .eq("cycle_id", cycle.id)
-      .limit(1)
-      .maybeSingle();
-    if (existingLink) {
-      return { ok: false, statusCode: 409, body: { ok: false, message: "This subscription cycle already has a booking." } };
-    }
-    validatedSubscription = subscription;
-    validatedCycle = cycle;
-  }
+  const pushbackFee = memberCycle ? pushbackFeeFor(memberCycle.cycle, base_price) : null;
 
-  let total_price = base_price + travel_fee;
+  let total_price = base_price + travel_fee + (pushbackFee?.pushback_fee_amount || 0);
   let discount_code = null;
   let discount_percent = null;
   let discount_amount = null;
   const discountCodeRaw = allowDiscount ? body.discount_code : null;
-  if (subscriptionId && (discountCodeRaw != null && String(discountCodeRaw).trim() !== "")) {
+  if (memberCycle && (discountCodeRaw != null && String(discountCodeRaw).trim() !== "")) {
     return {
       ok: false,
       statusCode: 400,
@@ -331,7 +276,7 @@ export async function createBookingCore({
       }
     };
   }
-  if (!subscriptionId && discountCodeRaw != null && String(discountCodeRaw).trim() !== "") {
+  if (!memberCycle && discountCodeRaw != null && String(discountCodeRaw).trim() !== "") {
     const codeNormalized = normalizeDiscountCode(discountCodeRaw);
     const discount = await getActiveDiscountCode(supabase, codeNormalized);
     if (!discount) {
@@ -395,48 +340,22 @@ export async function createBookingCore({
 
   const bookingId = booking.id;
 
-  if (subscriptionId && validatedSubscription && validatedCycle) {
-    const cycle = validatedCycle;
-    const subscription = validatedSubscription;
-    console.log("ATTACHING_BOOKING_TO_CYCLE", {
-      cycle_id: cycle.id,
-      booking_id: bookingId
+  if (memberCycle) {
+    const linked = await linkBookingToCycle(supabase, {
+      subscription: memberCycle.subscription,
+      cycle: memberCycle.cycle,
+      bookingId,
+      priceMode: memberCycle.price.price_mode,
+      pushbackFeeApplied: pushbackFee.pushback_fee_applied,
+      pushbackFeeAmount: pushbackFee.pushback_fee_amount,
+      adminOverride: memberCycle.adminOverride === true,
+      actor: memberCycle.actor || "customer"
     });
-    const chargePushbackFee = cycle.pushback_used === true && cycle.free_pushback !== true;
-    const numericBasePrice = Number(base_price);
-
-    if (chargePushbackFee && !Number.isFinite(numericBasePrice)) {
-      console.error("INVALID_BASE_PRICE_FOR_PUSHBACK_FEE", {
-        subscriptionId,
-        cycleId: cycle.id,
-        base_price
-      });
-      return { ok: false, statusCode: 500, body: { ok: false, message: "Unable to calculate pushback fee." } };
+    if (!linked.ok) {
+      const { error: delErr } = await supabase.from("bookings").delete().eq("id", bookingId);
+      if (delErr) console.error("BOOKING_CLEANUP_FAILED", { bookingId, error: delErr });
+      return { ok: false, statusCode: 409, body: { ok: false, message: "This maintenance window already has a booking." } };
     }
-
-    const pushback_fee_amount = chargePushbackFee
-      ? Math.round(numericBasePrice * 0.15 * 100) / 100
-      : null;
-    const { error: linkErr } = await supabase
-      .from("subscription_cycle_bookings")
-      .insert({
-        cycle_id: cycle.id,
-        booking_id: bookingId,
-        price_mode: subscription.status === "active" && !subscription.discount_reset_required ? "discounted" : "full",
-        pushback_fee_applied: chargePushbackFee,
-        pushback_fee_amount
-      });
-    if (linkErr) {
-      console.error("[create-booking] subscription_cycle_bookings insert", linkErr);
-      const { error: delErr } = await supabase.from("bookings").delete().eq("id", booking.id);
-      if (delErr) console.error("BOOKING_CLEANUP_FAILED", { bookingId: booking.id, error: delErr });
-      return { ok: false, statusCode: 500, body: { ok: false, message: "Failed to attach booking to subscription cycle." } };
-    }
-    await supabase
-      .from("subscription_cycles")
-      .update({ status: "booked" })
-      .eq("id", cycle.id);
-    console.log("CYCLE_BOOKED", { cycle_id: cycle.id, booking_id: bookingId });
   }
 
   return { ok: true, booking, bookingId, manage_token: booking.manage_token };

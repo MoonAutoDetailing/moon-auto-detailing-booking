@@ -1,4 +1,5 @@
 import verifyAdmin from "../_verifyAdmin.js";
+import { voidOpenCycles } from "../_subscriptions/cycleState.js";
 import { createClient } from "@supabase/supabase-js";
 import { resolveSubscriptionById } from "../_subscriptions/resolveSubscriptionById.js";
 
@@ -60,6 +61,8 @@ export default async function handler(req, res) {
       console.error("admin-cancel-subscription error:", updateErr);
       return res.status(500).json({ error: "Failed to cancel subscription." });
     }
+
+    await voidOpenCycles(supabase, subscriptionId, { actor: "admin", reason: "cancelled" });
 
     return res.status(200).json({
       ok: true,

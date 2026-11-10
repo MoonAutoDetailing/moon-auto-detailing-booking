@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import verifyAdmin from "../_verifyAdmin.js";
+import { onBookingCompleted } from "../_subscriptions/cycleState.js";
 import { sendBookingCompletedEmailCore } from "../../lib/email/sendBookingCompletedEmail.js";
 import { createFollowUpTaskIfMissing, reconcileCustomerLifecycle, syncCrmProfileStage } from "../_crmWorkflow.js";
 
@@ -127,69 +128,12 @@ export default async function handler(req, res) {
       await reconcileCustomerLifecycle(supabase, completedBooking.customer_id);
     }
 
-    // Subscription activation hook: activate subscription if this was its onboarding booking
-    const { data: subscription } = await supabase
-      .from("subscriptions")
-      .select("id, status")
-      .eq("activation_booking_id", bookingId)
-      .maybeSingle();
-    if (subscription && subscription.status === "pending_activation") {
-      const { data: booking } = await supabase
-        .from("bookings")
-        .select("scheduled_start")
-        .eq("id", bookingId)
-        .single();
-      if (booking?.scheduled_start) {
-        const anchorDate = booking.scheduled_start.split("T")[0];
-        await supabase
-          .from("subscriptions")
-          .update({
-            status: "active",
-            anchor_date: anchorDate
-          })
-          .eq("id", subscription.id);
-        console.log("SUBSCRIPTION_ACTIVATED", {
-          subscription_id: subscription.id,
-          anchor_date: anchorDate
-        });
-      }
-    }
-
-    // Subscription cycle completion: mark cycle completed and clear discount reset if applicable
-    const { data: cycleBooking } = await supabase
-      .from("subscription_cycle_bookings")
-      .select("cycle_id")
-      .eq("booking_id", bookingId)
-      .maybeSingle();
-    if (cycleBooking) {
-      const cycleId = cycleBooking.cycle_id;
-      await supabase
-        .from("subscription_cycles")
-        .update({ status: "completed" })
-        .eq("id", cycleId);
-      console.log("CYCLE_COMPLETED", { cycle_id: cycleId, booking_id: bookingId });
-      const { data: cycle } = await supabase
-        .from("subscription_cycles")
-        .select("subscription_id")
-        .eq("id", cycleId)
-        .single();
-      if (cycle) {
-        const { data: sub } = await supabase
-          .from("subscriptions")
-          .select("id, discount_reset_required, completed_cycles_count")
-          .eq("id", cycle.subscription_id)
-          .single();
-        if (sub) {
-          const updates = { completed_cycles_count: (sub.completed_cycles_count ?? 0) + 1 };
-          if (sub.discount_reset_required) {
-            updates.discount_reset_required = false;
-          }
-          await supabase
-            .from("subscriptions")
-            .update(updates)
-            .eq("id", sub.id);
-        }
-      }
+    // Maintenance plans: activate a pending subscription (first service) or complete the
+    // linked cycle. Failures here must not undo the recorded payment.
+    try {
+      await onBookingCompleted(supabase, bookingId, { actor: "admin" });
+    } catch (cycleErr) {
+      console.error("[CYCLE_STATE] completion hook failed", cycleErr);
     }
 
     console.log("JOB_PAYMENT_RECORDED", {

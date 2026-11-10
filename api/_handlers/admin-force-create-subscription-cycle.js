@@ -1,9 +1,9 @@
 import verifyAdmin from "../_verifyAdmin.js";
 import { createClient } from "@supabase/supabase-js";
 import {
-  getCycleStartDate,
-  getCycleEndDate,
-  getNextCycleSequence
+  computeCycleWindow,
+  getNextCycleSequence,
+  todayNY
 } from "../_subscriptions/lifecycle.js";
 import { resolveSubscriptionById } from "../_subscriptions/resolveSubscriptionById.js";
 
@@ -62,9 +62,17 @@ export default async function handler(req, res) {
       .limit(1)
       .maybeSingle();
 
-    const nextSeq = getNextCycleSequence(maxRow?.cycle_index ?? null);
-    const cycleStart = getCycleStartDate(subscription.anchor_date, subscription.frequency, nextSeq);
-    const cycleEnd = getCycleEndDate(cycleStart, subscription.frequency);
+    // Next window that hasn't already ended (past windows are skipped, never back-filled).
+    const today = todayNY();
+    let nextSeq = getNextCycleSequence(maxRow?.cycle_index ?? null);
+    const base = subscription.anchor_index_base || 0;
+    let win = computeCycleWindow(subscription.anchor_date, subscription.frequency, nextSeq, base);
+    for (let guard = 0; win && win.end < today && guard < 400; guard++) {
+      nextSeq += 1;
+      win = computeCycleWindow(subscription.anchor_date, subscription.frequency, nextSeq, base);
+    }
+    const cycleStart = win?.start;
+    const cycleEnd = win?.end;
 
     if (!cycleStart || !cycleEnd) {
       return res.status(400).json({ error: "Invalid cadence or anchor date; cannot compute cycle window." });
@@ -77,6 +85,7 @@ export default async function handler(req, res) {
         status: "open",
         window_start_date: cycleStart,
         window_end_date: cycleEnd,
+        opens_on: win.opensOn,
         cycle_index: nextSeq,
         pushback_used: false
       })

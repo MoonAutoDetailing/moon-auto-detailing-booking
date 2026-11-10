@@ -40,10 +40,6 @@ export default async function handler(req, res) {
     const window8Start = now.toISOString();
     const window8End = new Date(nowMs + 16 * H_MS).toISOString();
 
-    const { data: subscriptionLinked } = await supabase
-      .from("subscription_cycle_bookings")
-      .select("booking_id");
-    const linkedBookingIds = new Set((subscriptionLinked || []).map((r) => r.booking_id));
 
     let sent48 = 0;
     let sent8 = 0;
@@ -61,7 +57,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Internal error" });
     }
 
-    const candidates48 = (for48 || []).filter((b) => !linkedBookingIds.has(b.id));
+    const candidates48 = (for48 || []);
     for (const row of candidates48) {
       try {
         await sendBookingReminder48EmailCore(row.id);
@@ -93,7 +89,7 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Internal error" });
     }
 
-    const candidates8 = (for8 || []).filter((b) => !linkedBookingIds.has(b.id));
+    const candidates8 = (for8 || []);
     for (const row of candidates8) {
       try {
         await sendBookingReminder8EmailCore(row.id);

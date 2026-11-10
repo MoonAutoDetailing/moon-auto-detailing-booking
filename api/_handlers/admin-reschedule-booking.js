@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { onAdminReschedule } from "../_subscriptions/cycleState.js";
 import { google } from "googleapis";
 import verifyAdmin from "../_verifyAdmin.js";
 import { sendBookingRescheduledEmailCore } from "../../lib/email/sendBookingRescheduledEmail.js";
@@ -183,6 +184,12 @@ export default async function handler(req, res) {
         no_rows_updated: !updateError && (!updatedRows || updatedRows.length === 0)
       });
       return res.status(500).json({ ok: false, error: "Database update failed" });
+    }
+
+    try {
+      await onAdminReschedule(supabase, booking.id, scheduledStartIso, { actor: "admin" });
+    } catch (cycleErr) {
+      console.error("[CYCLE_STATE] admin reschedule failed", cycleErr);
     }
 
     if (sendCustomerEmail) {

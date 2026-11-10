@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { onBookingCancelled } from "../_subscriptions/cycleState.js";
 import { google } from "googleapis";
 import verifyAdmin from "../_verifyAdmin.js";
 import { ensureCancellationFollowUpTask, reconcileCustomerLifecycle } from "../_crmWorkflow.js";
@@ -88,6 +89,12 @@ export default async function handler(req, res) {
       .eq("id", bookingId);
 
     if (updateError) throw updateError;
+
+    try {
+      await onBookingCancelled(supabase, bookingId, { actor: "admin", businessInitiated: true });
+    } catch (cycleErr) {
+      console.error("[CYCLE_STATE] admin cancel failed", cycleErr);
+    }
 
     await ensureCancellationFollowUpTask(supabase, booking.customer_id, booking.id);
     await reconcileCustomerLifecycle(supabase, booking.customer_id);

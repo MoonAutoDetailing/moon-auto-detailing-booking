@@ -1,4 +1,5 @@
 import verifyAdmin from "../_verifyAdmin.js";
+import { resumeSubscription } from "../_subscriptions/cycleState.js";
 import { createClient } from "@supabase/supabase-js";
 import { resolveSubscriptionById } from "../_subscriptions/resolveSubscriptionById.js";
 
@@ -48,11 +49,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Only paused subscriptions can be resumed." });
     }
 
+    // Re-anchor to today so the next window is one cadence period from now, not in the past.
+    const resumed = await resumeSubscription(supabase, subscription, { actor: "admin" });
     const { data: updated, error: updateErr } = await supabase
       .from("subscriptions")
-      .update({ status: "active" })
-      .eq("id", subscriptionId)
       .select("id, status, anchor_date, frequency")
+      .eq("id", subscriptionId)
       .single();
 
     if (updateErr) {
@@ -62,8 +64,11 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       ok: true,
-      message: "Subscription resumed. Anchor cadence preserved.",
-      subscription: { id: updated.id, status: updated.status, anchor_date: updated.anchor_date, frequency: updated.frequency }
+      message: resumed.next_window
+        ? `Subscription resumed. Next service window: ${resumed.next_window.start} – ${resumed.next_window.end}.`
+        : "Subscription resumed.",
+      subscription: { id: updated.id, status: updated.status, anchor_date: updated.anchor_date, frequency: updated.frequency },
+      next_window: resumed.next_window
     });
   } catch (err) {
     console.error("admin-resume-subscription error:", err);

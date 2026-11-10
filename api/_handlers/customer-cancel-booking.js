@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { onBookingCancelled } from "../_subscriptions/cycleState.js";
 import { google } from "googleapis";
 import { sendBookingCancelledEmailCore } from "../../lib/email/sendBookingCancelledEmail.js";
 import { ensureCancellationFollowUpTask, reconcileCustomerLifecycle } from "../_crmWorkflow.js";
@@ -117,6 +118,13 @@ export default async function handler(req, res) {
         .update({ status: previousStatus })
         .eq("id", booking.id);
       return res.status(500).json({ message: "Email failed; action rolled back" });
+    }
+
+
+    try {
+      await onBookingCancelled(supabase, booking.id, { actor: "customer" });
+    } catch (cycleErr) {
+      console.error("[CYCLE_STATE] customer cancel failed", cycleErr);
     }
 
     await ensureCancellationFollowUpTask(supabase, booking.customer_id, booking.id);

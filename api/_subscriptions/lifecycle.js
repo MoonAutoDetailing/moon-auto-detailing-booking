@@ -1,13 +1,13 @@
 /**
  * Subscription lifecycle: date math and cycle helpers.
- * All calculations use local date (YYYY-MM-DD) logic. Do not rely on timestamps.
+ *
+ * All dates are calendar dates (YYYY-MM-DD) in the business timezone (America/New_York).
+ * Arithmetic is done on those strings with UTC-based Date objects so the server's timezone
+ * and DST never shift a date. Convert timestamps with toNYDate() and get "today" with todayNY().
  */
+import { DateTime } from "luxon";
 
-const CADENCE_DAYS = {
-  biweekly: 14,
-  monthly: null,
-  quarterly: null
-};
+export const BUSINESS_TZ = "America/New_York";
 
 const WINDOW_BUSINESS_DAYS = {
   biweekly: 5,
@@ -17,8 +17,15 @@ const WINDOW_BUSINESS_DAYS = {
 
 const PUSHBACK_BUSINESS_DAYS = 5;
 
+/** Days before window start when booking opens and the "book now" email is sent. */
+export const BOOKING_OPENS_DAYS_BEFORE = 7;
+
+/** Reminder offsets (calendar days before the effective window end). */
+export const REMINDER_1_DAYS_BEFORE_END = 3;
+export const REMINDER_2_DAYS_BEFORE_END = 1;
+
 /**
- * Parse YYYY-MM-DD string to { year, month, day } (local calendar).
+ * Parse YYYY-MM-DD string to { year, month (0-based), day }.
  */
 export function parseLocalDate(dateStr) {
   if (!dateStr || typeof dateStr !== "string") return null;
@@ -31,69 +38,96 @@ export function parseLocalDate(dateStr) {
   };
 }
 
+function toUtcDate(dateStr) {
+  const p = parseLocalDate(dateStr);
+  if (!p) return null;
+  return new Date(Date.UTC(p.year, p.month, p.day));
+}
+
 /**
- * Format { year, month, day } or Date to YYYY-MM-DD.
+ * Format { year, month (0-based), day } or a UTC-midnight Date to YYYY-MM-DD.
  */
 export function formatLocalDate(obj) {
   if (!obj) return null;
-  if (typeof obj.toISOString === "function") {
-    return obj.toISOString().slice(0, 10);
+  if (obj instanceof Date) {
+    return `${obj.getUTCFullYear()}-${String(obj.getUTCMonth() + 1).padStart(2, "0")}-${String(obj.getUTCDate()).padStart(2, "0")}`;
   }
   if (obj.year == null || obj.month == null || obj.day == null) return null;
-  const month = (obj.month + 1).toString().padStart(2, "0");
-  const day = obj.day.toString().padStart(2, "0");
-  return `${obj.year}-${month}-${day}`;
+  return `${obj.year}-${String(obj.month + 1).padStart(2, "0")}-${String(obj.day).padStart(2, "0")}`;
+}
+
+/** Today's date in New York. `now` is injectable for tests. */
+export function todayNY(now = new Date()) {
+  return DateTime.fromJSDate(now).setZone(BUSINESS_TZ).toISODate();
+}
+
+/** New York calendar date of a timestamp (ISO string or Date). */
+export function toNYDate(ts) {
+  if (!ts) return null;
+  const dt = ts instanceof Date ? DateTime.fromJSDate(ts) : DateTime.fromISO(String(ts), { setZone: true });
+  if (!dt.isValid) return null;
+  return dt.setZone(BUSINESS_TZ).toISODate();
+}
+
+export function addDays(dateStr, n) {
+  const d = toUtcDate(dateStr);
+  if (!d) return null;
+  d.setUTCDate(d.getUTCDate() + n);
+  return formatLocalDate(d);
+}
+
+/** Add n calendar months, clamping to the last day of the target month (Jan 31 + 1 = Feb 28/29). */
+export function addMonthsClamped(dateStr, n) {
+  const p = parseLocalDate(dateStr);
+  if (!p) return null;
+  const totalMonths = p.year * 12 + p.month + n;
+  const year = Math.floor(totalMonths / 12);
+  const month = totalMonths - year * 12;
+  const lastDay = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+  return formatLocalDate({ year, month, day: Math.min(p.day, lastDay) });
 }
 
 /**
- * Add cadence to a local date string. Returns YYYY-MM-DD.
- * biweekly = +14 days, monthly = +1 calendar month, quarterly = +3 calendar months.
+ * Add one cadence step to a date. biweekly = +14 days, monthly = +1 month, quarterly = +3 months
+ * (month steps are clamped to month end).
  */
 export function addCadence(dateStr, cadence) {
-  const p = parseLocalDate(dateStr);
-  if (!p || !cadence) return null;
-  if (cadence === "biweekly") {
-    const d = new Date(p.year, p.month, p.day);
-    d.setDate(d.getDate() + CADENCE_DAYS.biweekly);
-    return formatLocalDate(d);
-  }
-  if (cadence === "monthly") {
-    const d = new Date(p.year, p.month, p.day);
-    d.setMonth(d.getMonth() + 1);
-    return formatLocalDate(d);
-  }
-  if (cadence === "quarterly") {
-    const d = new Date(p.year, p.month, p.day);
-    d.setMonth(d.getMonth() + 3);
-    return formatLocalDate(d);
-  }
+  return cadenceDate(dateStr, cadence, 1);
+}
+
+/** Anchor + `steps` cadence periods, computed from the anchor (never chained, so no drift). */
+export function cadenceDate(anchorDateStr, cadence, steps) {
+  if (!parseLocalDate(anchorDateStr)) return null;
+  if (cadence === "biweekly") return addDays(anchorDateStr, 14 * steps);
+  if (cadence === "monthly") return addMonthsClamped(anchorDateStr, steps);
+  if (cadence === "quarterly") return addMonthsClamped(anchorDateStr, 3 * steps);
   return null;
 }
 
-/**
- * Check if a date (YYYY-MM-DD) is weekend (Sat/Sun).
- */
-function isWeekend(dateStr) {
-  const p = parseLocalDate(dateStr);
-  if (!p) return false;
-  const d = new Date(p.year, p.month, p.day);
-  const day = d.getDay();
+export function isWeekend(dateStr) {
+  const d = toUtcDate(dateStr);
+  if (!d) return false;
+  const day = d.getUTCDay();
   return day === 0 || day === 6;
 }
 
+/** Same date if it is a weekday, otherwise the following Monday. */
+export function nextBusinessDayOnOrAfter(dateStr) {
+  let current = dateStr;
+  while (current && isWeekend(current)) current = addDays(current, 1);
+  return current;
+}
+
 /**
- * Add n business days to dateStr (YYYY-MM-DD). Returns YYYY-MM-DD.
+ * Add n business days (Mon–Fri) to dateStr. n = 0 returns dateStr.
  */
 export function addBusinessDays(dateStr, n) {
   if (n <= 0) return dateStr;
   let current = dateStr;
   let added = 0;
   while (added < n) {
-    const p = parseLocalDate(current);
-    if (!p) return null;
-    const d = new Date(p.year, p.month, p.day);
-    d.setDate(d.getDate() + 1);
-    current = formatLocalDate(d);
+    current = addDays(current, 1);
+    if (!current) return null;
     if (!isWeekend(current)) added += 1;
   }
   return current;
@@ -107,29 +141,54 @@ export function getCycleWindowLength(cadence) {
 }
 
 /**
- * Cycle start date: anchor_date + cadence * cycle_index.
- * index 0 = anchor_date, 1 = anchor + 1 cadence, etc.
+ * Raw cadence date for a cycle: anchor + cadence * (cycleIndex - anchorIndexBase).
+ * Cycle 0 is the activation (first completed) service on the anchor date.
  */
-export function getCycleStartDate(anchorDateStr, cadence, cycleSequence) {
-  let current = anchorDateStr;
-  for (let i = 0; i < cycleSequence; i++) {
-    current = addCadence(current, cadence);
-    if (!current) return null;
-  }
-  return current;
+export function getCycleStartDate(anchorDateStr, cadence, cycleIndex, anchorIndexBase = 0) {
+  return cadenceDate(anchorDateStr, cadence, cycleIndex - (anchorIndexBase || 0));
 }
 
 /**
- * Cycle end date: cycle start + window business days (last day of window).
- * Exported for ESM import (e.g. cron-generate-subscription-cycles).
+ * Last day of a window that starts on startDate: the window covers N business days
+ * including the start day (5 → Mon–Fri when it starts on a Monday).
  */
 export function getCycleEndDate(startDate, frequency) {
   const n = getCycleWindowLength(frequency);
-  return addBusinessDays(startDate, n);
+  return addBusinessDays(nextBusinessDayOnOrAfter(startDate), n - 1);
 }
 
 /**
- * Next cycle sequence = max(cycle_index) + 1, or 1 if none.
+ * Full window for a cycle: start rolls forward to Monday if the cadence date is a weekend.
+ * Returns { start, end, opensOn } (all YYYY-MM-DD) or null.
+ */
+export function computeCycleWindow(anchorDateStr, cadence, cycleIndex, anchorIndexBase = 0) {
+  const raw = getCycleStartDate(anchorDateStr, cadence, cycleIndex, anchorIndexBase);
+  if (!raw) return null;
+  const start = nextBusinessDayOnOrAfter(raw);
+  const end = getCycleEndDate(start, cadence);
+  return { start, end, opensOn: getBookingOpensDate(start) };
+}
+
+/** Date booking opens (and the "book now" email goes out) for a window starting on startDate. */
+export function getBookingOpensDate(startDate) {
+  return addDays(startDate, -BOOKING_OPENS_DAYS_BEFORE);
+}
+
+/** Reminder dates relative to a cycle's effective end. */
+export function getReminderDates(effectiveEnd) {
+  return {
+    reminder1: addDays(effectiveEnd, -REMINDER_1_DAYS_BEFORE_END),
+    reminder2: addDays(effectiveEnd, -REMINDER_2_DAYS_BEFORE_END)
+  };
+}
+
+/** End of a pushback/extension that starts from `fromDate` (+5 business days). */
+export function getPushbackEnd(fromDate) {
+  return addBusinessDays(fromDate, PUSHBACK_BUSINESS_DAYS);
+}
+
+/**
+ * Next cycle index = max(cycle_index) + 1, or 1 if none.
  */
 export function getNextCycleSequence(maxSequence) {
   if (maxSequence == null || maxSequence === undefined) return 1;
@@ -152,7 +211,7 @@ export function isCycleUnresolved(cycle) {
 }
 
 export function isCycleResolved(cycle) {
-  return cycle && (cycle.status === "completed" || cycle.status === "missed");
+  return cycle && (cycle.status === "completed" || cycle.status === "missed" || cycle.status === "void");
 }
 
 /**
