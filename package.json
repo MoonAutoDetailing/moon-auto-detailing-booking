@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test tests/*.test.js",
+    "test": "node --test --experimental-test-module-mocks tests/*.test.js",
     "smoke": "node scripts/smoke-tests.js",
     "smoke:admin-booking": "node scripts/smoke-test-admin-create-booking.js",
     "smoke:admin-reschedule": "node scripts/smoke-test-admin-reschedule-booking.js",

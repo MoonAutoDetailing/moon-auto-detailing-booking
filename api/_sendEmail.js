@@ -9,6 +9,11 @@ function requireEnv(name) {
 const resend = new Resend(requireEnv("RESEND_API_KEY"));
 
 export async function sendBookingEmail({ to, subject, html }) {
+  // EMAIL_DRY_RUN=1: log instead of sending (testing against real data without emailing customers).
+  if (process.env.EMAIL_DRY_RUN === "1") {
+    console.log("[EMAIL_DRY_RUN]", JSON.stringify({ to, subject, html: String(html || "").replace(/\s+/g, " ").slice(0, 2000) }));
+    return { success: true, id: "dry-run" };
+  }
   try {
     const cleanHtml = String(html || "").trim();
     const text = cleanHtml
