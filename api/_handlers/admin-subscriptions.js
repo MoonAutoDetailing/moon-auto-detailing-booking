@@ -1,6 +1,7 @@
 import verifyAdmin from "../_verifyAdmin.js";
 import { createClient } from "@supabase/supabase-js";
-import { getEffectiveWindowEnd } from "../_subscriptions/lifecycle.js";
+import { getEffectiveWindowEnd, getBookingOpensDate, toNYDate, todayNY } from "../_subscriptions/lifecycle.js";
+import { previewNextWindow } from "../_subscriptions/memberContext.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -50,6 +51,7 @@ export default async function handler(req, res) {
         discount_reset_required,
         completed_cycles_count,
         missed_cycles_count,
+        anchor_index_base,
         vehicle_changed_since_anchor,
         subscription_category,
         created_at,
@@ -113,32 +115,31 @@ export default async function handler(req, res) {
 
     const { data: cycles } = await supabase
       .from("subscription_cycles")
-      .select("id, subscription_id, cycle_index, status, window_start_date, window_end_date, pushback_used, pushback_end_date, free_pushback")
-      .in("subscription_id", subIds)
-      .in("status", ["open", "booked"]);
+      .select("id, subscription_id, cycle_index, status, window_start_date, window_end_date, opens_on, pushback_used, pushback_end_date, free_pushback")
+      .in("subscription_id", subIds);
 
-    const cycleBySubId = {};
+    const cyclesBySub = {};
     (cycles || []).forEach((c) => {
-      if (!cycleBySubId[c.subscription_id] || c.cycle_index > cycleBySubId[c.subscription_id].cycle_index) {
-        cycleBySubId[c.subscription_id] = c;
-      }
+      (cyclesBySub[c.subscription_id] ||= []).push(c);
     });
 
-    const cycleIds = (cycles || []).map((c) => c.id);
-    let cycleBookings = [];
-    if (cycleIds.length > 0) {
+    const activeCycleIds = (cycles || []).filter((c) => c.status === "open" || c.status === "booked").map((c) => c.id);
+    const linkByCycle = {};
+    if (activeCycleIds.length > 0) {
       const { data: links } = await supabase
         .from("subscription_cycle_bookings")
-        .select("cycle_id")
+        .select("cycle_id, booking_id, price_mode, bookings:booking_id(id, status, scheduled_start)")
         .is("released_at", null)
-        .in("cycle_id", cycleIds);
-      cycleBookings = links || [];
+        .in("cycle_id", activeCycleIds);
+      (links || []).forEach((l) => { linkByCycle[l.cycle_id] = l; });
     }
-    const cycleHasBooking = new Set(cycleBookings.map((l) => l.cycle_id));
 
+    const today = todayNY();
     const payload = list.map((sub) => {
-      const activeCycle = cycleBySubId[sub.id] || null;
+      const subCycles = (cyclesBySub[sub.id] || []).sort((a, b) => b.cycle_index - a.cycle_index);
+      const activeCycle = subCycles.find((c) => c.status === "open" || c.status === "booked") || null;
       const effectiveWindowEnd = activeCycle ? getEffectiveWindowEnd(activeCycle) : null;
+      const link = activeCycle ? linkByCycle[activeCycle.id] : null;
       const vehicle = sub.vehicles;
       const vehicleLabel = vehicle
         ? `${vehicle.vehicle_year || ""} ${vehicle.vehicle_make || ""} ${vehicle.vehicle_model || ""}`.trim()
@@ -148,6 +149,19 @@ export default async function handler(req, res) {
         ? `${service.category} Detail Level ${service.level}`
         : "Service";
 
+      // What needs the owner's attention, most urgent first.
+      const flags = [];
+      if (sub.status === "active" && activeCycle) {
+        const bookingDay = link?.bookings?.scheduled_start ? toNYDate(link.bookings.scheduled_start) : null;
+        if (link && bookingDay && bookingDay < today && link.bookings.status !== "completed") flags.push("needs_completion");
+        if (!link && activeCycle.status === "open" && today > effectiveWindowEnd) flags.push("overdue");
+        const opensOn = activeCycle.opens_on || getBookingOpensDate(activeCycle.window_start_date);
+        if (!link && activeCycle.status === "open" && today >= opensOn && today <= effectiveWindowEnd) flags.push("awaiting_booking");
+      }
+      if (sub.discount_reset_required) flags.push("discount_lost");
+      if (activeCycle?.pushback_used) flags.push(activeCycle.free_pushback ? "extended_free" : "extended_paid");
+
+      const next = !activeCycle && sub.status === "active" ? previewNextWindow(sub, subCycles, today) : null;
       return {
         id: sub.id,
         customer_name: sub.customers?.full_name ?? "",
@@ -158,19 +172,25 @@ export default async function handler(req, res) {
         frequency: sub.frequency,
         status: sub.status,
         anchor_date: sub.anchor_date,
-        completed_cycles_count: sub.completed_cycles_count ?? 0,
-        missed_cycles_count: sub.missed_cycles_count ?? 0,
+        discount_reset_required: sub.discount_reset_required === true,
+        completed_cycles_count: subCycles.filter((c) => c.status === "completed").length,
+        missed_cycles_count: subCycles.filter((c) => c.status === "missed").length,
+        flags,
         active_cycle: activeCycle
           ? {
               id: activeCycle.id,
-              cycle_index: activeCycle.cycle_index,
+              cycle_number: activeCycle.cycle_index + 1,
               status: activeCycle.status,
               window_start_date: activeCycle.window_start_date,
               window_end_date: activeCycle.window_end_date,
               effective_window_end: effectiveWindowEnd,
-              has_booking: cycleHasBooking.has(activeCycle.id)
+              pushback_used: activeCycle.pushback_used === true,
+              has_booking: Boolean(link),
+              booking_start: link?.bookings?.scheduled_start || null,
+              booking_status: link?.bookings?.status || null
             }
-          : null
+          : null,
+        next_window: next ? { start: next.start, end: next.end, opens_on: next.opensOn } : null
       };
     });
 

@@ -422,7 +422,7 @@ export async function onBookingCompleted(sb, bookingId, { actor = "admin" } = {}
   });
 }
 
-async function priceModeForExistingBooking(sb, subscription, bookingId) {
+export async function priceModeForExistingBooking(sb, subscription, bookingId) {
   if (subscription.status !== "active" || subscription.discount_reset_required) return "full";
   const { data: booking } = await sb
     .from("bookings")

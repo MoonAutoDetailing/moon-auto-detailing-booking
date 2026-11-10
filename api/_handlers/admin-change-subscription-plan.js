@@ -1,6 +1,6 @@
 import verifyAdmin from "../_verifyAdmin.js";
 import { createClient } from "@supabase/supabase-js";
-import { resolveSubscriptionById } from "../_subscriptions/resolveSubscriptionById.js";
+import { audit } from "../_subscriptions/cycleState.js";
 
 const VALID_FREQUENCIES = ["biweekly", "monthly", "quarterly"];
 
@@ -10,6 +10,13 @@ function requireEnv(name) {
   return v;
 }
 
+/**
+ * POST { subscription_id, frequency?, service_variant_id?, reset_discount? }
+ * Queues a plan change for the member's next cycle (the current cycle and any booking are
+ * unaffected). The nightly cycle job applies it when it creates the next cycle.
+ * reset_discount (default false) makes the next visit full price.
+ * POST { subscription_id, cancel_pending: true } clears a queued change.
+ */
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -26,94 +33,61 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const subscriptionId = req.body?.subscription_id || req.body?.id;
-  const serviceVariantId = typeof req.body?.service_variant_id === "string" ? req.body.service_variant_id.trim() : null;
-  const frequencyRaw = typeof req.body?.frequency === "string" ? req.body.frequency.trim() : null;
-
-  if (!subscriptionId) {
-    return res.status(400).json({ error: "Missing subscription_id" });
-  }
-  const hasVariant = serviceVariantId !== null && serviceVariantId !== "";
-  const hasFrequency = frequencyRaw !== null && frequencyRaw !== "";
-  if (!hasVariant && !hasFrequency) {
-    return res.status(400).json({ error: "Provide at least one of service_variant_id or frequency." });
-  }
-  if (hasFrequency && !VALID_FREQUENCIES.includes(frequencyRaw)) {
-    return res.status(400).json({ error: "frequency must be exactly one of: biweekly, monthly, quarterly" });
-  }
+  const body = req.body || {};
+  const subscriptionId = body.subscription_id || body.id;
+  const serviceVariantId = typeof body.service_variant_id === "string" ? body.service_variant_id.trim() : "";
+  const frequency = typeof body.frequency === "string" ? body.frequency.trim() : "";
+  if (!subscriptionId) return res.status(400).json({ error: "Missing subscription_id" });
 
   try {
-    const supabase = createClient(
-      requireEnv("SUPABASE_URL"),
-      requireEnv("SUPABASE_SERVICE_ROLE_KEY")
-    );
-
-    const resolved = await resolveSubscriptionById(supabase, subscriptionId);
-    if (resolved.error) {
-      return res.status(resolved.status || 500).json({ error: resolved.error });
-    }
-
-    const { subscription, activeCycle, activeCycleBooking } = resolved;
-
-    if (!activeCycle) {
-      return res.status(400).json({ error: "No current open cycle. Plan change is only allowed when there is an open cycle." });
-    }
-    if (activeCycleBooking) {
-      return res.status(400).json({ error: "Current cycle already has a booking. Plan change not allowed." });
-    }
-    if (activeCycle.status !== "open") {
-      return res.status(400).json({ error: "Current cycle is not open. Plan change is only allowed for open cycles." });
-    }
-
-    const updates = {};
-    const frequency = frequencyRaw !== null && frequencyRaw !== "" ? frequencyRaw : null;
-    if (frequency) {
-      updates.frequency = frequency;
-    }
-
-    let newSubscriptionCategory = subscription.subscription_category;
-    if (hasVariant && serviceVariantId) {
-      const { data: variant, error: varErr } = await supabase
-        .from("service_variants")
-        .select("id, service_id, services:service_id ( category )")
-        .eq("id", serviceVariantId)
-        .single();
-
-      if (varErr || !variant) {
-        return res.status(400).json({ error: "Invalid service_variant_id." });
-      }
-      updates.service_variant_id = serviceVariantId;
-      if (variant.services?.category) {
-        newSubscriptionCategory = variant.services.category;
-        updates.subscription_category = newSubscriptionCategory;
-      }
-    }
-
-    updates.discount_reset_required = true;
-
-    const { data: updated, error: updateErr } = await supabase
+    const supabase = createClient(requireEnv("SUPABASE_URL"), requireEnv("SUPABASE_SERVICE_ROLE_KEY"));
+    const { data: sub } = await supabase
       .from("subscriptions")
-      .update(updates)
+      .select("id, status, frequency, service_variant_id, pending_frequency, pending_service_variant_id, discount_reset_required")
       .eq("id", subscriptionId)
-      .select("id, service_variant_id, frequency, subscription_category, discount_reset_required")
-      .single();
+      .maybeSingle();
+    if (!sub) return res.status(404).json({ error: "Subscription not found." });
+    if (sub.status === "cancelled") return res.status(400).json({ error: "This plan is cancelled." });
 
-    if (updateErr) {
-      console.error("admin-change-subscription-plan error:", updateErr);
-      return res.status(500).json({ error: "Failed to update plan." });
+    if (body.cancel_pending === true) {
+      await supabase.from("subscriptions").update({ pending_frequency: null, pending_service_variant_id: null }).eq("id", sub.id);
+      await audit(supabase, { subscription_id: sub.id, action: "plan_change_cancelled", actor: "admin", before: { pending_frequency: sub.pending_frequency, pending_service_variant_id: sub.pending_service_variant_id } });
+      return res.status(200).json({ ok: true, message: "Queued plan change removed." });
     }
 
-    return res.status(200).json({
-      ok: true,
-      message: "Plan updated. Current open cycle will use new plan when booked.",
-      subscription: {
-        id: updated.id,
-        service_variant_id: updated.service_variant_id,
-        frequency: updated.frequency,
-        subscription_category: updated.subscription_category,
-        discount_reset_required: updated.discount_reset_required
-      }
+    if (!frequency && !serviceVariantId) {
+      return res.status(400).json({ error: "Choose a new frequency or service." });
+    }
+    if (frequency && !VALID_FREQUENCIES.includes(frequency)) {
+      return res.status(400).json({ error: "Frequency must be biweekly, monthly, or quarterly." });
+    }
+    if (serviceVariantId) {
+      const { data: variant } = await supabase.from("service_variants").select("id").eq("id", serviceVariantId).maybeSingle();
+      if (!variant) return res.status(400).json({ error: "That service option doesn't exist." });
+    }
+
+    const update = {
+      pending_frequency: frequency && frequency !== sub.frequency ? frequency : null,
+      pending_service_variant_id: serviceVariantId && serviceVariantId !== sub.service_variant_id ? serviceVariantId : null
+    };
+    if (!update.pending_frequency && !update.pending_service_variant_id) {
+      return res.status(400).json({ error: "That's already the member's current plan." });
+    }
+    if (body.reset_discount === true) update.discount_reset_required = true;
+
+    const { error } = await supabase.from("subscriptions").update(update).eq("id", sub.id);
+    if (error) {
+      console.error("admin-change-subscription-plan error:", error);
+      return res.status(500).json({ error: "Failed to save the plan change." });
+    }
+    await audit(supabase, {
+      subscription_id: sub.id,
+      action: "plan_change_queued",
+      actor: "admin",
+      before: { frequency: sub.frequency, service_variant_id: sub.service_variant_id },
+      after: update
     });
+    return res.status(200).json({ ok: true, message: "Plan change saved. It takes effect from the member's next service window." });
   } catch (err) {
     console.error("admin-change-subscription-plan error:", err);
     return res.status(500).json({ error: "Server error" });

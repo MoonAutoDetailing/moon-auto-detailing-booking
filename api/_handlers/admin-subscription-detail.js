@@ -1,6 +1,7 @@
 import verifyAdmin from "../_verifyAdmin.js";
 import { createClient } from "@supabase/supabase-js";
-import { getEffectiveWindowEnd } from "../_subscriptions/lifecycle.js";
+import { getEffectiveWindowEnd, todayNY } from "../_subscriptions/lifecycle.js";
+import { buildNextService, planLabel } from "../_subscriptions/memberContext.js";
 import { resolveSubscriptionById } from "../_subscriptions/resolveSubscriptionById.js";
 
 function requireEnv(name) {
@@ -58,63 +59,70 @@ export default async function handler(req, res) {
       return res.status(resolved.status || 500).json({ error: resolved.error });
     }
 
-    const { subscription, activeCycle, activeCycleBooking, history } = resolved;
-
-    const effectiveWindowEnd = activeCycle ? getEffectiveWindowEnd(activeCycle) : null;
+    const { subscription, activeCycle } = resolved;
+    const today = todayNY();
 
     const { data: allCycles } = await supabase
       .from("subscription_cycles")
-      .select("id")
-      .eq("subscription_id", subscription.id);
-    const allCycleIds = (allCycles || []).map((c) => c.id);
+      .select("*")
+      .eq("subscription_id", subscription.id)
+      .order("cycle_index", { ascending: false });
+    const cycles = allCycles || [];
+    const cycleIds = cycles.map((c) => c.id);
 
-    let cycleBookings = [];
-    if (allCycleIds.length > 0) {
-      const { data: links } = await supabase
+    let links = [];
+    if (cycleIds.length > 0) {
+      const { data } = await supabase
         .from("subscription_cycle_bookings")
-        .select(`
-          id,
-          cycle_id,
-          booking_id,
-          price_mode,
-          pushback_fee_applied,
-          pushback_fee_amount,
-          bookings:booking_id (
-            id,
-            status,
-            scheduled_start,
-            total_price,
-            base_price,
-            travel_fee
-          )
-        `)
-        .is("released_at", null)
-        .in("cycle_id", allCycleIds);
-      cycleBookings = links || [];
+        .select("id, cycle_id, booking_id, price_mode, pushback_fee_applied, pushback_fee_amount, admin_override, released_at, created_at, bookings:booking_id(id, status, scheduled_start, total_price, base_price, travel_fee, manage_token)")
+        .in("cycle_id", cycleIds);
+      links = data || [];
+    }
+    const activeLinkByCycle = {};
+    links.filter((l) => !l.released_at).forEach((l) => { activeLinkByCycle[l.cycle_id] = l; });
+
+    // Lifetime value: what was actually collected for this plan's completed services.
+    const completedBookingIds = links
+      .filter((l) => !l.released_at && l.bookings?.status === "completed")
+      .map((l) => l.booking_id);
+    let lifetimeValue = 0;
+    if (completedBookingIds.length) {
+      const { data: payments } = await supabase
+        .from("job_payments")
+        .select("booking_id, amount_collected")
+        .in("booking_id", completedBookingIds);
+      lifetimeValue = (payments || []).reduce((t, p) => t + toNum(p.amount_collected), 0);
     }
 
-    let lifetimeValue = 0;
-    const recentBookingHistory = [];
-    (cycleBookings || []).forEach((scb) => {
-      const b = scb.bookings;
-      if (!b) return;
-      const displayTotal = customerVisibleTotalForCycleBooking(b.total_price, scb);
-      lifetimeValue += displayTotal;
-      recentBookingHistory.push({
+    // The member's bookings that aren't attached to any cycle (candidates for "attach booking").
+    const linkedIds = new Set(links.filter((l) => !l.released_at).map((l) => l.booking_id));
+    const { data: customerBookings } = await supabase
+      .from("bookings")
+      .select("id, status, scheduled_start, total_price, vehicle_id, vehicles:vehicle_id(vehicle_make, vehicle_model)")
+      .eq("customer_id", subscription.customer_id)
+      .in("status", ["pending", "confirmed", "reschedule_requested", "completed"])
+      .order("scheduled_start", { ascending: false })
+      .limit(40);
+    const unlinkedBookings = (customerBookings || [])
+      .filter((b) => !linkedIds.has(b.id))
+      .map((b) => ({
         id: b.id,
         status: b.status,
         scheduled_start: b.scheduled_start,
         total_price: toNum(b.total_price),
-        pushback_fee_applied: scb.pushback_fee_applied,
-        pushback_fee_amount: scb.pushback_fee_applied === true ? toNum(scb.pushback_fee_amount) : 0,
-        display_total: displayTotal
-      });
-    });
-    recentBookingHistory.sort((a, b) => (b.scheduled_start || "").localeCompare(a.scheduled_start || ""));
-    const recentBookings = recentBookingHistory.slice(0, 10);
+        vehicle: [b.vehicles?.vehicle_make, b.vehicles?.vehicle_model].filter(Boolean).join(" ")
+      }));
 
-    const subscriptionAgeDays = subscription.created_at
-      ? Math.floor((Date.now() - new Date(subscription.created_at).getTime()) / (24 * 60 * 60 * 1000))
+    const { data: auditRows } = await supabase
+      .from("subscription_cycle_audit")
+      .select("action, actor, cycle_id, booking_id, notes, before, after, created_at")
+      .eq("subscription_id", subscription.id)
+      .order("created_at", { ascending: false })
+      .limit(30);
+
+    const startDate = subscription.anchor_date || (subscription.created_at || "").slice(0, 10);
+    const subscriptionAgeDays = startDate
+      ? Math.max(0, Math.round((Date.parse(today + "T00:00:00Z") - Date.parse(startDate + "T00:00:00Z")) / 86400000))
       : null;
 
     const vehicle = subscription.vehicles;
@@ -126,6 +134,8 @@ export default async function handler(req, res) {
       ? `${service.category} Detail Level ${service.level}`
       : "Service";
 
+    const nextService = await buildNextService(supabase, resolved, today);
+
     return res.status(200).json({
       subscription: {
         id: subscription.id,
@@ -134,42 +144,58 @@ export default async function handler(req, res) {
         subscription_category: subscription.subscription_category,
         default_address: subscription.default_address,
         anchor_date: subscription.anchor_date,
+        anchor_index_base: subscription.anchor_index_base ?? 0,
+        pending_frequency: subscription.pending_frequency || null,
+        pending_service_variant_id: subscription.pending_service_variant_id || null,
         activation_booking_id: subscription.activation_booking_id,
         activation_completed_at: subscription.activation_completed_at,
-        discount_reset_required: subscription.discount_reset_required,
-        completed_cycles_count: subscription.completed_cycles_count ?? 0,
-        missed_cycles_count: subscription.missed_cycles_count ?? 0,
-        vehicle_changed_since_anchor: subscription.vehicle_changed_since_anchor,
+        discount_reset_required: subscription.discount_reset_required === true,
         created_at: subscription.created_at,
-        updated_at: subscription.updated_at,
         customer_name: subscription.customers?.full_name ?? "",
         email: subscription.customers?.email ?? "",
         phone: subscription.customers?.phone ?? "",
         vehicle_summary: vehicleLabel,
-        service_summary: serviceLabel
+        vehicle_size: vehicle?.vehicle_size || null,
+        service_variant_id: subscription.service_variant_id || subscription.service_variants?.id || null,
+        service_summary: serviceLabel,
+        plan: planLabel(subscription)
       },
-      active_cycle: activeCycle
-        ? {
-            id: activeCycle.id,
-            cycle_index: activeCycle.cycle_index,
-            status: activeCycle.status,
-            window_start_date: activeCycle.window_start_date,
-            window_end_date: activeCycle.window_end_date,
-            pushback_used: activeCycle.pushback_used,
-            pushback_end_date: activeCycle.pushback_end_date,
-            free_pushback: activeCycle.free_pushback,
-            effective_window_end: effectiveWindowEnd
-          }
-        : null,
-      active_cycle_booking: activeCycleBooking || null,
-      history: (history || []).map((c) => ({
-        ...c,
-        effective_window_end: getEffectiveWindowEnd(c)
-      })),
-      recent_booking_history: recentBookings,
+      next_service: nextService,
+      active_cycle_id: activeCycle?.id || null,
+      cycles: cycles.map((c) => {
+        const link = activeLinkByCycle[c.id] || null;
+        return {
+          id: c.id,
+          cycle_number: c.cycle_index + 1,
+          cycle_index: c.cycle_index,
+          status: c.status,
+          window_start_date: c.window_start_date,
+          window_end_date: c.window_end_date,
+          effective_window_end: getEffectiveWindowEnd(c),
+          opens_on: c.opens_on,
+          pushback_used: c.pushback_used === true,
+          free_pushback: c.free_pushback === true,
+          pushback_end_date: c.pushback_end_date,
+          resolved_by: c.resolved_by || null,
+          booking: link?.bookings
+            ? {
+                id: link.bookings.id,
+                status: link.bookings.status,
+                scheduled_start: link.bookings.scheduled_start,
+                total_price: toNum(link.bookings.total_price),
+                price_mode: link.price_mode,
+                pushback_fee_amount: link.pushback_fee_applied ? toNum(link.pushback_fee_amount) : 0,
+                admin_override: link.admin_override === true
+              }
+            : null
+        };
+      }),
+      unlinked_bookings: unlinkedBookings,
+      audit: auditRows || [],
       metrics: {
-        completed_cycles: subscription.completed_cycles_count ?? 0,
-        missed_cycles: subscription.missed_cycles_count ?? 0,
+        completed_cycles: cycles.filter((c) => c.status === "completed").length,
+        missed_cycles: cycles.filter((c) => c.status === "missed").length,
+        skipped_cycles: cycles.filter((c) => c.status === "void").length,
         subscription_age_days: subscriptionAgeDays,
         lifetime_value: Math.round(lifetimeValue * 100) / 100
       }

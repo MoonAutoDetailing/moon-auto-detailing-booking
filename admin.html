@@ -1940,6 +1940,51 @@ body {
   }
 }
 
+
+/* ----- Maintenance plans (subscriptions) view ----- */
+.subs-view { display: flex; flex-direction: column; gap: 14px; }
+.subs-filters { display: flex; flex-wrap: wrap; gap: 8px; }
+.subs-filters select, .subs-filters input { padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.25); background: rgba(255,255,255,0.08); color: white; }
+.subs-filters input { flex: 1 1 220px; }
+.subs-summary { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 14px; }
+.subs-empty, .subs-error { margin-top: 12px; font-weight: 600; color: rgba(255,255,255,0.7); }
+.subs-error { color: #ff8a8a; }
+.sub-flag { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 12px; font-weight: 600; margin: 2px 4px 2px 0; }
+.sub-flag-red { background: rgba(239,68,68,0.2); color: #fecaca; border: 1px solid rgba(239,68,68,0.5); }
+.sub-flag-amber { background: rgba(245,158,11,0.18); color: #fde68a; border: 1px solid rgba(245,158,11,0.45); }
+.sub-flag-blue { background: rgba(96,165,250,0.18); color: #bfdbfe; border: 1px solid rgba(96,165,250,0.45); }
+.sub-card-flags { display: flex; flex-wrap: wrap; }
+.sub-card-counts { font-size: 12px; color: rgba(255,255,255,0.65); }
+.subscription-detail-panel { margin: -4px 0 12px; padding: 18px; border-radius: 14px; border: 1px solid rgba(255,255,255,0.2); background: rgba(111,147,196,0.16); }
+.sub-detail-head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
+.sub-detail-head h3 { margin: 0 0 4px; }
+.sub-muted { color: rgba(255,255,255,0.65); font-size: 13px; }
+.sub-metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; margin: 14px 0; }
+.sub-metrics div { background: rgba(255,255,255,0.06); border-radius: 10px; padding: 8px 10px; }
+.sub-metrics span { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: rgba(255,255,255,0.6); }
+.sub-block { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.12); }
+.sub-block-title { font-weight: 700; margin-bottom: 6px; cursor: default; }
+details.sub-block summary { cursor: pointer; }
+.sub-note { margin-top: 8px; font-size: 13px; color: #fde68a; }
+.sub-table-wrap { overflow-x: auto; }
+.sub-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.sub-table th { text-align: left; font-weight: 600; color: rgba(255,255,255,0.6); padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.15); }
+.sub-table td { padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.08); vertical-align: top; }
+.sub-row-missed td { background: rgba(239,68,68,0.08); }
+.sub-cycle-badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.sub-cycle-completed { background: rgba(34,197,94,0.2); color: #bbf7d0; }
+.sub-cycle-booked { background: rgba(96,165,250,0.22); color: #bfdbfe; }
+.sub-cycle-open { background: rgba(255,255,255,0.12); color: #fff; }
+.sub-cycle-missed { background: rgba(239,68,68,0.28); color: #fecaca; }
+.sub-cycle-void { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.6); }
+.sub-actions { white-space: normal; }
+.sub-mini { padding: 4px 8px !important; font-size: 12px !important; margin: 2px 2px 2px 0; }
+.sub-attach { padding: 4px 6px; border-radius: 6px; background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.25); max-width: 220px; }
+.sub-plan-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.sub-inline-form { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
+.sub-inline-form select, .sub-inline-form input[type="date"] { padding: 6px 8px; border-radius: 6px; background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.25); margin-left: 4px; }
+.sub-check { display: flex; align-items: center; gap: 6px; }
+.sub-audit { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
 </style>
 </head>
 
@@ -4344,77 +4389,118 @@ function renderView(viewName) {
   // SUBSCRIPTIONS (ADMIN)
   // =========================
   if (viewName === "subscriptions") {
+    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const fmtD = (d) => d ? new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC", month: "short", day: "numeric", year: "numeric" }) : "—";
+    const fmtDT = (iso) => iso ? new Date(iso).toLocaleString("en-US", { timeZone: "America/New_York", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—";
+    const money = (n) => "$" + Number(n || 0).toFixed(2);
+    const STATUS_LABEL = { active: "Active", paused: "Paused", cancelled: "Cancelled", pending_activation: "Awaiting first service" };
+    const FREQ_LABEL = { biweekly: "Every 2 weeks", monthly: "Monthly", quarterly: "Quarterly" };
+    const CYCLE_LABEL = { open: "Open", booked: "Booked", completed: "Completed", missed: "Missed", void: "Skipped" };
+    const FLAG_INFO = {
+      needs_completion: ["Mark appointment complete", "sub-flag-red"],
+      overdue: ["Window ended, no booking", "sub-flag-red"],
+      awaiting_booking: ["Booking open — not booked yet", "sub-flag-amber"],
+      discount_lost: ["Full price next visit", "sub-flag-amber"],
+      extended_paid: ["Extended (15% fee)", "sub-flag-blue"],
+      extended_free: ["Extended (free)", "sub-flag-blue"]
+    };
+    const flagRank = (s) => (s.flags.includes("needs_completion") || s.flags.includes("overdue") ? 0 : s.flags.includes("awaiting_booking") ? 1 : 2);
+
     const wrapper = document.createElement("div");
-    wrapper.style.display = "flex";
-    wrapper.style.flexDirection = "column";
-    wrapper.style.gap = "20px";
+    wrapper.className = "subs-view";
 
     const filterRow = document.createElement("div");
-    filterRow.className = "admin-filters";
-    const statusSelect = document.createElement("select");
-    statusSelect.style.padding = "8px 12px";
-    statusSelect.style.borderRadius = "8px";
-    statusSelect.style.border = "1px solid rgba(255,255,255,0.25)";
-    statusSelect.style.background = "rgba(255,255,255,0.08)";
-    statusSelect.style.color = "white";
-    statusSelect.innerHTML = "<option value=''>All statuses</option><option value='active'>active</option><option value='paused'>paused</option><option value='cancelled'>cancelled</option><option value='pending_activation'>pending_activation</option>";
-
-    const freqSelect = document.createElement("select");
-    freqSelect.style.padding = "8px 12px";
-    freqSelect.style.borderRadius = "8px";
-    freqSelect.style.border = "1px solid rgba(255,255,255,0.25)";
-    freqSelect.style.background = "rgba(255,255,255,0.08)";
-    freqSelect.style.color = "white";
-    freqSelect.innerHTML = "<option value=''>All frequencies</option><option value='biweekly'>biweekly</option><option value='monthly'>monthly</option><option value='quarterly'>quarterly</option>";
-
-    const searchInputSub = document.createElement("input");
-    searchInputSub.type = "text";
-    searchInputSub.placeholder = "Search customer, email, phone";
-    searchInputSub.style.padding = "8px 12px";
-    searchInputSub.style.borderRadius = "8px";
-    searchInputSub.style.border = "1px solid rgba(255,255,255,0.25)";
-    searchInputSub.style.background = "rgba(255,255,255,0.08)";
-    searchInputSub.style.color = "white";
-
-    filterRow.appendChild(statusSelect);
-    filterRow.appendChild(freqSelect);
-    filterRow.appendChild(searchInputSub);
+    filterRow.className = "admin-filters subs-filters";
+    filterRow.innerHTML = `
+      <select id="subsStatus"><option value="">All plans</option><option value="active" selected>Active</option><option value="paused">Paused</option><option value="pending_activation">Awaiting first service</option><option value="cancelled">Cancelled</option></select>
+      <select id="subsFreq"><option value="">Any frequency</option><option value="biweekly">Every 2 weeks</option><option value="monthly">Monthly</option><option value="quarterly">Quarterly</option></select>
+      <select id="subsSort"><option value="attention">Sort: needs attention</option><option value="next">Sort: next window</option><option value="name">Sort: name</option></select>
+      <input id="subsSearch" type="text" placeholder="Search name, email, phone (Enter)" />`;
     wrapper.appendChild(filterRow);
+    const statusSelect = filterRow.querySelector("#subsStatus");
+    const freqSelect = filterRow.querySelector("#subsFreq");
+    const sortSelect = filterRow.querySelector("#subsSort");
+    const searchInputSub = filterRow.querySelector("#subsSearch");
 
-    const listSection = document.createElement("div");
-    listSection.className = "admin-section";
-    const listSectionHeader = document.createElement("div");
-    listSectionHeader.className = "admin-section-header";
-    listSectionHeader.setAttribute("role", "button");
-    listSectionHeader.setAttribute("aria-expanded", "true");
-    listSectionHeader.innerHTML = '<span>Subscriptions</span><span class="chevron" aria-hidden="true">▼</span>';
-    listSectionHeader.onclick = () => {
-      listSection.classList.toggle("collapsed");
-      listSectionHeader.setAttribute("aria-expanded", listSection.classList.contains("collapsed") ? "false" : "true");
-    };
-    listSection.appendChild(listSectionHeader);
+    const summaryBar = document.createElement("div");
+    summaryBar.className = "subs-summary";
+    wrapper.appendChild(summaryBar);
+
     const listContainer = document.createElement("div");
-    listContainer.className = "admin-section-body";
-    listSection.appendChild(listContainer);
-    wrapper.appendChild(listSection);
-
-    const detailPanel = document.createElement("div");
-    detailPanel.id = "subscriptionDetailPanel";
-    detailPanel.style.display = "none";
-    detailPanel.style.marginTop = "8px";
-    detailPanel.style.padding = "18px";
-    detailPanel.style.borderRadius = "14px";
-    detailPanel.style.border = "1px solid rgba(255,255,255,0.2)";
-    detailPanel.style.background = "rgba(111,147,196,0.2)";
-    detailPanel.className = "subscription-detail-panel";
-
+    listContainer.className = "subs-list";
+    wrapper.appendChild(listContainer);
     viewContainer.appendChild(wrapper);
 
+    let lastList = [];
     let selectedSubscriptionId = null;
+    let variantsCache = null;
+
+    function nextLabel(s) {
+      const ac = s.active_cycle;
+      if (ac) {
+        if (ac.has_booking) return `Booked ${fmtDT(ac.booking_start)}`;
+        return `Window ${fmtD(ac.window_start_date)} – ${fmtD(ac.effective_window_end)}`;
+      }
+      if (s.next_window) return `Next window ${fmtD(s.next_window.start)} (opens ${fmtD(s.next_window.opens_on)})`;
+      return "—";
+    }
+
+    function renderList() {
+      const subs = [...lastList];
+      if (sortSelect.value === "attention") subs.sort((a, b) => flagRank(a) - flagRank(b) || (a.customer_name || "").localeCompare(b.customer_name || ""));
+      else if (sortSelect.value === "next") subs.sort((a, b) => ((a.active_cycle?.window_start_date || a.next_window?.start || "9999")).localeCompare(b.active_cycle?.window_start_date || b.next_window?.start || "9999"));
+      else subs.sort((a, b) => (a.customer_name || "").localeCompare(b.customer_name || ""));
+
+      const attention = subs.filter((s) => flagRank(s) === 0).length;
+      const awaiting = subs.filter((s) => s.flags.includes("awaiting_booking")).length;
+      summaryBar.innerHTML = `<span><strong>${subs.length}</strong> plans</span>` +
+        (attention ? `<span class="sub-flag sub-flag-red">${attention} need attention</span>` : "") +
+        (awaiting ? `<span class="sub-flag sub-flag-amber">${awaiting} waiting to book</span>` : "");
+
+      if (!subs.length) {
+        listContainer.innerHTML = "<div class='subs-empty'>No plans match these filters.</div>";
+        return;
+      }
+      listContainer.innerHTML = "";
+      subs.forEach((s) => {
+        const card = document.createElement("div");
+        card.className = "subscription-card" + (selectedSubscriptionId === s.id ? " expanded" : "");
+        card.dataset.subscriptionId = s.id;
+        const flags = s.flags.map((f) => FLAG_INFO[f] ? `<span class="sub-flag ${FLAG_INFO[f][1]}">${esc(FLAG_INFO[f][0])}</span>` : "").join("");
+        card.innerHTML = `
+          <div class="subscription-card-header" role="button" tabindex="0">
+            <span class="subscription-card-name">${esc((s.customer_name || "").trim() || "—")}</span>
+            <span class="subscription-card-meta">${esc(s.vehicle_summary || "—")} · ${esc(FREQ_LABEL[s.frequency] || s.frequency)}</span>
+            <span class="subscription-card-meta">${esc(nextLabel(s))}</span>
+            <span class="status-badge status-${esc(s.status)}">${esc(STATUS_LABEL[s.status] || s.status)}</span>
+            <span class="sub-card-flags">${flags}</span>
+            <span class="sub-card-counts">${s.completed_cycles_count} done · ${s.missed_cycles_count} missed</span>
+          </div>`;
+        const header = card.querySelector(".subscription-card-header");
+        const toggle = () => {
+          if (selectedSubscriptionId === s.id) {
+            selectedSubscriptionId = null;
+            renderList();
+            return;
+          }
+          selectedSubscriptionId = s.id;
+          renderList();
+        };
+        header.onclick = toggle;
+        header.onkeydown = (e) => { if (e.key === "Enter") toggle(); };
+        listContainer.appendChild(card);
+        if (selectedSubscriptionId === s.id) {
+          const panel = document.createElement("div");
+          panel.className = "subscription-detail-panel";
+          panel.textContent = "Loading…";
+          listContainer.appendChild(panel);
+          loadSubscriptionDetail(s.id, panel);
+        }
+      });
+    }
 
     async function loadSubscriptionsList() {
-      listContainer.innerHTML = "Loading subscriptions...";
-      if (detailPanel.parentNode) detailPanel.parentNode.removeChild(detailPanel);
+      listContainer.innerHTML = "Loading plans…";
       const params = new URLSearchParams();
       if (statusSelect.value) params.append("status", statusSelect.value);
       if (freqSelect.value) params.append("frequency", freqSelect.value);
@@ -4423,156 +4509,197 @@ function renderView(viewName) {
         const res = await adminFetch(`/api/admin-subscriptions?${params.toString()}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to load");
-        const subs = data.subscriptions || [];
-        listSectionHeader.querySelector("span").textContent = "Subscriptions (" + subs.length + ")";
-        if (subs.length === 0) {
-          listContainer.innerHTML = "<div style='margin-top:12px;font-weight:600;color:rgba(255,255,255,0.7);'>No subscriptions found.</div>";
-          return;
-        }
-        listContainer.innerHTML = "";
-        subs.forEach(s => {
-          const ac = s.active_cycle;
-          const acText = ac ? `${ac.status} ${ac.window_start_date}–${ac.effective_window_end || ac.window_end_date} ${ac.has_booking ? "(booked)" : ""}` : "—";
-          const card = document.createElement("div");
-          card.className = "subscription-card";
-          card.dataset.subscriptionId = s.id;
-          card.innerHTML = `
-            <div class="subscription-card-header">
-              <span class="subscription-card-name">${((s.customer_name || "").trim() || "—").replace(/</g, "&lt;")}</span>
-              <span class="subscription-card-meta">${(s.vehicle_summary || "—").replace(/</g, "&lt;")} / ${(s.service_summary || "—").replace(/</g, "&lt;")}</span>
-              <span class="subscription-card-meta">${s.frequency || "—"}</span>
-              <span class="status-badge status-${s.status || ""}">${s.status || "—"}</span>
-              <span class="chevron" aria-hidden="true">▼</span>
-            </div>
-            <div class="subscription-card-detail">
-              <p><strong>Anchor:</strong> ${s.anchor_date || "—"}</p>
-              <p><strong>Cycles:</strong> ${s.completed_cycles_count ?? 0} completed / ${s.missed_cycles_count ?? 0} missed</p>
-              <p><strong>Active cycle:</strong> ${acText}</p>
-              <button type="button" class="moon-tab" data-sub-id="${s.id}">View details & actions</button>
-            </div>
-          `;
-          card.querySelector(".subscription-card-header").onclick = () => {
-            if (card.classList.contains("expanded") && selectedSubscriptionId === s.id) {
-              if (detailPanel.parentNode) detailPanel.parentNode.removeChild(detailPanel);
-              detailPanel.style.display = "none";
-              selectedSubscriptionId = null;
-            }
-            card.classList.toggle("expanded");
-          };
-          card.querySelector("[data-sub-id]").onclick = (e) => {
-            e.stopPropagation();
-            const prevId = selectedSubscriptionId;
-            if (prevId && prevId !== s.id) {
-              const prevCard = listContainer.querySelector(`[data-subscription-id="${prevId}"]`);
-              if (prevCard) prevCard.classList.remove("expanded");
-              if (detailPanel.parentNode) detailPanel.parentNode.removeChild(detailPanel);
-            }
-            selectedSubscriptionId = s.id;
-            if (detailPanel.parentNode) detailPanel.parentNode.removeChild(detailPanel);
-            listContainer.insertBefore(detailPanel, card.nextSibling);
-            detailPanel.style.display = "block";
-            card.classList.add("expanded");
-            loadSubscriptionDetail(s.id);
-          };
-          listContainer.appendChild(card);
-        });
-        if (selectedSubscriptionId) {
-          const selCard = listContainer.querySelector(`[data-subscription-id="${selectedSubscriptionId}"]`);
-          if (selCard) {
-            listContainer.insertBefore(detailPanel, selCard.nextSibling);
-            detailPanel.style.display = "block";
-            selCard.classList.add("expanded");
-            loadSubscriptionDetail(selectedSubscriptionId);
-          }
-        }
+        lastList = (data.subscriptions || []).map((s) => ({ ...s, flags: s.flags || [] }));
+        renderList();
       } catch (err) {
-        listContainer.innerHTML = "<div style='margin-top:12px;color:#ff6b6b;'>" + (err.message || "Failed to load subscriptions") + "</div>";
+        listContainer.innerHTML = "<div class='subs-error'>" + esc(err.message || "Failed to load plans") + "</div>";
       }
     }
 
-    async function loadSubscriptionDetail(id) {
-      detailPanel.style.display = "block";
-      detailPanel.innerHTML = "Loading detail...";
+    async function postJson(url, body) {
+      const r = await adminFetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || d.message || "Action failed");
+      return d;
+    }
+
+    async function loadVariants() {
+      if (variantsCache) return variantsCache;
+      const r = await adminFetch("/api/admin-service-variants");
+      const d = await r.json();
+      variantsCache = d.service_variants || [];
+      return variantsCache;
+    }
+
+    function cycleActions(c, data) {
+      const btn = (action, label, extra = "") => `<button type="button" class="moon-tab sub-mini" data-cycle-action="${action}" data-cycle-id="${c.id}" ${extra}>${esc(label)}</button>`;
+      const out = [];
+      if (c.cycle_index === 0) return "";
+      if (c.booking) out.push(btn("unlink_booking", "Detach booking"));
+      if (!c.booking && ["open", "missed", "void"].includes(c.status) && data.unlinked_bookings.length) {
+        out.push(`<select class="sub-attach" data-cycle-id="${c.id}"><option value="">Attach booking…</option>${data.unlinked_bookings.map((b) => `<option value="${b.id}">${esc(fmtDT(b.scheduled_start))} · ${esc(b.status)}${b.vehicle ? " · " + esc(b.vehicle) : ""}</option>`).join("")}</select>`);
+      }
+      if (c.status === "open") {
+        out.push(btn("grant_extension", "+5 days free"));
+        out.push(btn("skip_cycle", "Skip window"));
+        out.push(btn("mark_missed", "Mark missed"));
+      }
+      if (["open", "booked", "missed", "void"].includes(c.status)) out.push(btn("mark_completed", "Mark completed"));
+      if (c.status === "missed") out.push(btn("undo_missed", "Undo missed"));
+      return out.join(" ");
+    }
+
+    const CONFIRM = {
+      mark_missed: "Mark this window missed? The member's next visit becomes full price. (No email is sent.)",
+      skip_cycle: "Skip this window with no penalty?",
+      mark_completed: "Mark this window completed without changing any booking?",
+      unlink_booking: "Detach this booking from the window? The booking itself is not cancelled.",
+      undo_missed: "Remove this miss and restore member pricing?",
+      grant_extension: "Give a free 5-business-day extension?"
+    };
+
+    async function loadSubscriptionDetail(id, panel) {
       try {
         const res = await adminFetch(`/api/admin-subscription-detail?id=${encodeURIComponent(id)}`);
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || "Failed to load detail");
         const sub = data.subscription;
-        const metrics = data.metrics || {};
-        const activeCycle = data.active_cycle;
-        const history = data.history || [];
-        const recentBookings = data.recent_booking_history || [];
-        let html = `
-          <h3 style="margin-top:0;">Subscription ${sub.id}</h3>
-          <p><strong>Customer:</strong> ${sub.customer_name || "—"} | ${sub.email || "—"} | ${sub.phone || "—"}</p>
-          <p><strong>Vehicle:</strong> ${sub.vehicle_summary || "—"} | <strong>Service:</strong> ${sub.service_summary || "—"}</p>
-          <p><strong>Status:</strong> <span class="status-badge status-${sub.status}">${sub.status}</span> | <strong>Frequency:</strong> ${sub.frequency} | <strong>Anchor:</strong> ${sub.anchor_date || "—"}</p>
-          <p><strong>Completed / Missed cycles:</strong> ${metrics.completed_cycles ?? 0} / ${metrics.missed_cycles ?? 0} | <strong>Age (days):</strong> ${metrics.subscription_age_days ?? "—"} | <strong>Lifetime value (incl. fees):</strong> $${(metrics.lifetime_value ?? 0).toFixed(2)}</p>
-          ${activeCycle ? `<p><strong>Active cycle:</strong> ${activeCycle.window_start_date} – ${activeCycle.effective_window_end || activeCycle.window_end_date} (${activeCycle.status}) ${data.active_cycle_booking ? "— has booking" : ""}</p>` : "<p>No active cycle.</p>"}
-          <div style="margin-top:12px;"><strong>Recent cycle history:</strong></div>
-          <ul style="margin:4px 0;padding-left:20px;">${history.slice(0, 6).map(c => `<li>#${c.cycle_index} ${c.status} ${c.window_start_date}–${c.effective_window_end || c.window_end_date}</li>`).join("")}</ul>
-          ${recentBookings.length ? `<div style="margin-top:8px;"><strong>Recent bookings:</strong></div><ul style="margin:4px 0;padding-left:20px;">${recentBookings.slice(0, 5).map(b => `<li>${b.scheduled_start ? new Date(b.scheduled_start).toLocaleString() : ""} ${b.status} $${(b.display_total ?? b.total_price ?? 0).toFixed(2)}</li>`).join("")}</ul>` : ""}
-          <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;">
-        `;
-        const canPause = sub.status === "active";
-        const canResume = sub.status === "paused";
-        const canCancel = sub.status !== "cancelled";
-        const canExtend = activeCycle && activeCycle.status === "open" && !data.active_cycle_booking && !activeCycle.pushback_used;
-        const canForceCreate = sub.status === "active" && !activeCycle;
-        const canChangePlan = activeCycle && activeCycle.status === "open" && !data.active_cycle_booking;
-        if (canPause) html += `<button class="moon-tab" data-action="pause">Pause</button>`;
-        if (canResume) html += `<button class="moon-tab" data-action="resume">Resume</button>`;
-        if (canCancel) html += `<button class="moon-tab" data-action="cancel">Cancel</button>`;
-        if (canExtend) html += `<button class="moon-tab" data-action="extend">Extend cycle</button>`;
-        if (canForceCreate) html += `<button class="moon-tab" data-action="forceCreate">Force create cycle</button>`;
-        if (canChangePlan) html += `<button class="moon-tab" data-action="changePlan">Change plan</button>`;
-        html += "</div>";
-        detailPanel.innerHTML = html;
-        detailPanel.querySelectorAll("[data-action]").forEach(btn => {
-          btn.onclick = async () => {
-            const action = btn.dataset.action;
-            if (action === "changePlan") {
-              const freq = prompt("New frequency (biweekly, monthly, quarterly)? Leave blank to keep.");
-              if (freq === null) return;
-              const svId = prompt("New service_variant_id (UUID)? Leave blank to keep.");
-              const body = { subscription_id: id };
-              if (freq && ["biweekly", "monthly", "quarterly"].includes(freq)) body.frequency = freq;
-              if (svId && svId.trim()) body.service_variant_id = svId.trim();
-              if (!body.frequency && !body.service_variant_id) return;
-              try {
-                const r = await adminFetch("/api/admin-change-subscription-plan", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-                const d = await r.json();
-                if (!r.ok) throw new Error(d.error || "Failed");
-                showAdminBanner("Plan updated.", "success");
-                loadSubscriptionDetail(id);
-                loadSubscriptionsList();
-              } catch (e) { showAdminBanner(e.message || "Update failed.", "error"); }
-              return;
-            }
-            const endpoints = { pause: "/api/admin-pause-subscription", resume: "/api/admin-resume-subscription", cancel: "/api/admin-cancel-subscription", extend: "/api/admin-extend-subscription-cycle", forceCreate: "/api/admin-force-create-subscription-cycle" };
-            const url = endpoints[action];
-            if (!url) return;
-            btn.disabled = true;
+        const m = data.metrics || {};
+        const n = data.next_service || {};
+        const cycles = data.cycles || [];
+
+        let nextHtml = "—";
+        if (n.phase === "booked" && n.booking) nextHtml = `Booked for <strong>${esc(fmtDT(n.booking.scheduled_start))}</strong> (${esc(n.booking.status)})`;
+        else if (n.phase === "bookable") nextHtml = `Booking open: <strong>${esc(fmtD(n.window_start))} – ${esc(fmtD(n.effective_end))}</strong> · not booked yet`;
+        else if (n.phase === "upcoming") nextHtml = `Next window <strong>${esc(fmtD(n.window_start))} – ${esc(fmtD(n.effective_end))}</strong> · booking opens ${esc(fmtD(n.opens_on))}`;
+        else if (n.phase === "overdue") nextHtml = `<span class="sub-flag sub-flag-red">Window ${esc(fmtD(n.window_start))} – ${esc(fmtD(n.effective_end))} ended with no booking</span>`;
+        else nextHtml = esc(STATUS_LABEL[n.phase] || n.phase || "—");
+
+        const priceHtml = n.price ? `${money(n.price.base_price)} ${n.price.price_mode === "discounted" ? "member price" : "full price" + (n.price.reason === "missed_cycle" ? " (missed window)" : "")}` : "—";
+        const pending = sub.pending_frequency || sub.pending_service_variant_id
+          ? `<div class="sub-note">Queued for next window: ${sub.pending_frequency ? esc(FREQ_LABEL[sub.pending_frequency]) : ""}${sub.pending_service_variant_id ? " new service" : ""} <button type="button" class="moon-tab sub-mini" data-plan-action="cancelPending">Remove</button></div>` : "";
+
+        panel.innerHTML = `
+          <div class="sub-detail-head">
+            <div>
+              <h3>${esc(sub.customer_name || "Member")}</h3>
+              <div class="sub-muted">${esc(sub.email || "—")} · ${esc(sub.phone || "—")}</div>
+              <div class="sub-muted">${esc(sub.vehicle_summary || "—")} · ${esc(sub.plan?.categoryLabel || sub.service_summary)} · ${esc(FREQ_LABEL[sub.frequency] || sub.frequency)}</div>
+              <div class="sub-muted">${esc(sub.default_address || "")}</div>
+            </div>
+            <span class="status-badge status-${esc(sub.status)}">${esc(STATUS_LABEL[sub.status] || sub.status)}</span>
+          </div>
+          <div class="sub-metrics">
+            <div><span>Completed</span><strong>${m.completed_cycles ?? 0}</strong></div>
+            <div><span>Missed</span><strong>${m.missed_cycles ?? 0}</strong></div>
+            <div><span>Skipped</span><strong>${m.skipped_cycles ?? 0}</strong></div>
+            <div><span>Member for</span><strong>${m.subscription_age_days ?? "—"} days</strong></div>
+            <div><span>Collected</span><strong>${money(m.lifetime_value)}</strong></div>
+          </div>
+          <div class="sub-block"><div class="sub-block-title">Next service</div>${nextHtml}<div class="sub-muted">Price next visit: ${esc(priceHtml)}${sub.discount_reset_required ? ` <button type="button" class="moon-tab sub-mini" data-cycle-action="clear_discount_reset">Restore member price</button>` : ""}</div>${pending}</div>
+          <div class="sub-block"><div class="sub-block-title">Service windows</div>
+            <div class="sub-table-wrap"><table class="sub-table"><thead><tr><th>#</th><th>Window</th><th>Status</th><th>Appointment</th><th>Actions</th></tr></thead><tbody>
+            ${cycles.map((c) => `<tr class="sub-row-${esc(c.status)}">
+              <td>${c.cycle_number}</td>
+              <td>${c.cycle_index === 0 ? "First service " + esc(fmtD(c.window_start_date)) : esc(fmtD(c.window_start_date)) + " – " + esc(fmtD(c.effective_window_end))}${c.pushback_used ? `<div class="sub-muted">extended${c.free_pushback ? " (free)" : " (15% fee)"}</div>` : ""}</td>
+              <td><span class="sub-cycle-badge sub-cycle-${esc(c.status)}">${esc(CYCLE_LABEL[c.status] || c.status)}</span>${c.resolved_by && c.resolved_by !== "cron" ? `<div class="sub-muted">by ${esc(c.resolved_by)}</div>` : ""}</td>
+              <td>${c.booking ? `${esc(fmtDT(c.booking.scheduled_start))}<div class="sub-muted">${esc(c.booking.status)} · ${money(c.booking.total_price)} · ${c.booking.price_mode === "discounted" ? "member" : "full"} price</div>` : "—"}</td>
+              <td class="sub-actions">${cycleActions(c, data)}</td></tr>`).join("")}
+            </tbody></table></div>
+          </div>
+          <div class="sub-block"><div class="sub-block-title">Plan</div>
+            <div class="sub-plan-actions">
+              ${sub.status === "active" ? `<button type="button" class="moon-tab" data-plan-action="pause">Pause plan</button>` : ""}
+              ${sub.status === "paused" ? `<button type="button" class="moon-tab" data-plan-action="resume">Resume plan</button>` : ""}
+              ${sub.status !== "cancelled" ? `<button type="button" class="moon-tab" data-plan-action="cancel">Cancel plan</button>` : ""}
+            </div>
+            ${sub.status === "active" ? `<div class="sub-inline-form"><label>Move next window to start on <input type="date" id="subNextDate"></label><button type="button" class="moon-tab sub-mini" data-plan-action="setNext">Save</button></div>` : ""}
+            ${sub.status !== "cancelled" ? `<div class="sub-inline-form" id="subPlanForm"><label>Change plan (from next window):
+              <select id="subNewFreq"><option value="">Keep ${esc(FREQ_LABEL[sub.frequency] || sub.frequency)}</option>${["biweekly", "monthly", "quarterly"].filter((f) => f !== sub.frequency).map((f) => `<option value="${f}">${FREQ_LABEL[f]}</option>`).join("")}</select>
+              <select id="subNewVariant"><option value="">Keep current service</option></select></label>
+              <label class="sub-check"><input type="checkbox" id="subResetDiscount"> Charge full price on next visit</label>
+              <button type="button" class="moon-tab sub-mini" data-plan-action="changePlan">Save plan change</button></div>` : ""}
+          </div>
+          <details class="sub-block"><summary class="sub-block-title">Activity log (${(data.audit || []).length})</summary>
+            <ul class="sub-audit">${(data.audit || []).map((a) => `<li><span class="sub-muted">${esc(fmtDT(a.created_at))}</span> ${esc(a.action.replace(/_/g, " "))} <span class="sub-muted">· ${esc(a.actor)}${a.notes ? " · " + esc(a.notes) : ""}</span></li>`).join("") || "<li class='sub-muted'>No activity recorded yet.</li>"}</ul>
+          </details>`;
+
+        const refresh = async (message) => {
+          showAdminBanner(message || "Saved.", "success");
+          await loadSubscriptionsList();
+        };
+
+        if (panel.querySelector("#subNewVariant")) {
+          loadVariants().then((variants) => {
+            const sel = panel.querySelector("#subNewVariant");
+            if (!sel) return;
+            variants
+              .filter((v) => !sub.vehicle_size || v.vehicle_size === sub.vehicle_size)
+              .filter((v) => v.service_variant_id !== sub.service_variant_id)
+              .forEach((v) => sel.insertAdjacentHTML("beforeend", `<option value="${v.service_variant_id}">${esc(v.service_label)} · ${esc(v.vehicle_size)} · ${money(v.price)}</option>`));
+          }).catch(() => {});
+        }
+
+        panel.querySelectorAll("[data-cycle-action]").forEach((b) => {
+          b.onclick = async () => {
+            const action = b.dataset.cycleAction;
+            if (CONFIRM[action] && !confirm(CONFIRM[action])) return;
+            b.disabled = true;
             try {
-              const r = await adminFetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ subscription_id: id }) });
-              const d = await r.json();
-              if (!r.ok) throw new Error(d.error || "Failed");
-              showAdminBanner(d.message || "Done.", "success");
-              loadSubscriptionDetail(id);
-              loadSubscriptionsList();
-            } catch (e) { showAdminBanner(e.message || "Action failed.", "error"); }
-            btn.disabled = false;
+              const d = await postJson("/api/admin-subscription-cycle-action", { subscription_id: id, action, cycle_id: b.dataset.cycleId });
+              await refresh(d.message);
+            } catch (e) { showAdminBanner(e.message, "error"); b.disabled = false; }
+          };
+        });
+        panel.querySelectorAll(".sub-attach").forEach((sel) => {
+          sel.onchange = async () => {
+            if (!sel.value) return;
+            if (!confirm("Attach this booking to the window?")) { sel.value = ""; return; }
+            try {
+              const d = await postJson("/api/admin-subscription-cycle-action", { subscription_id: id, action: "link_booking", cycle_id: sel.dataset.cycleId, booking_id: sel.value });
+              await refresh(d.message);
+            } catch (e) { showAdminBanner(e.message, "error"); sel.value = ""; }
+          };
+        });
+        panel.querySelectorAll("[data-plan-action]").forEach((b) => {
+          b.onclick = async () => {
+            const action = b.dataset.planAction;
+            try {
+              let d;
+              if (action === "pause") {
+                if (!confirm("Pause this plan? Any open, unbooked window is skipped and no emails are sent while paused.")) return;
+                d = await postJson("/api/admin-pause-subscription", { subscription_id: id });
+              } else if (action === "resume") {
+                if (!confirm("Resume this plan? The next window will be scheduled one period from today.")) return;
+                d = await postJson("/api/admin-resume-subscription", { subscription_id: id });
+              } else if (action === "cancel") {
+                if (!confirm("Cancel this plan for good? The member stops getting windows and member pricing. Existing appointments stay booked.")) return;
+                d = await postJson("/api/admin-cancel-subscription", { subscription_id: id });
+              } else if (action === "setNext") {
+                const date = panel.querySelector("#subNextDate").value;
+                if (!date) return showAdminBanner("Pick a date first.", "error");
+                if (!confirm(`Start this member's next window on ${fmtD(date)}? Any open, unbooked window is skipped.`)) return;
+                d = await postJson("/api/admin-subscription-cycle-action", { subscription_id: id, action: "set_next_window", start_date: date });
+              } else if (action === "changePlan") {
+                const body = { subscription_id: id, frequency: panel.querySelector("#subNewFreq").value, service_variant_id: panel.querySelector("#subNewVariant").value, reset_discount: panel.querySelector("#subResetDiscount").checked };
+                if (!body.frequency && !body.service_variant_id) return showAdminBanner("Choose a new frequency or service.", "error");
+                d = await postJson("/api/admin-change-subscription-plan", body);
+              } else if (action === "cancelPending") {
+                d = await postJson("/api/admin-change-subscription-plan", { subscription_id: id, cancel_pending: true });
+              }
+              if (d) await refresh(d.message);
+            } catch (e) { showAdminBanner(e.message, "error"); }
           };
         });
       } catch (err) {
-        detailPanel.innerHTML = "<div style='color:#ff6b6b;'>" + (err.message || "Failed to load detail") + "</div>";
-        showAdminBanner(err.message || "Failed to load detail.", "error");
+        panel.innerHTML = "<div class='subs-error'>" + esc(err.message || "Failed to load detail") + "</div>";
       }
     }
 
     searchInputSub.addEventListener("keydown", (e) => { if (e.key === "Enter") loadSubscriptionsList(); });
     statusSelect.addEventListener("change", loadSubscriptionsList);
     freqSelect.addEventListener("change", loadSubscriptionsList);
+    sortSelect.addEventListener("change", renderList);
 
     reloadSubscriptionsPage = loadSubscriptionsList;
     loadSubscriptionsList();

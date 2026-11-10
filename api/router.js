@@ -56,6 +56,7 @@ const ROUTES = {
   "admin-staffing-clear": () => import("./_handlers/admin-staffing-clear.js"),
   "admin-staffing-enable": () => import("./_handlers/admin-staffing-enable.js"),
   "admin-staffing-list": () => import("./_handlers/admin-staffing-list.js"),
+  "admin-subscription-cycle-action": () => import("./_handlers/admin-subscription-cycle-action.js"),
   "admin-subscription-detail": () => import("./_handlers/admin-subscription-detail.js"),
   "admin-subscriptions": () => import("./_handlers/admin-subscriptions.js"),
   "admin-waitlist": () => import("./_handlers/admin-waitlist.js"),

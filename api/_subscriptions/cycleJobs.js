@@ -18,6 +18,7 @@ import {
   getActiveLinkForCycle,
   linkBookingToCycle,
   markCycleMissed,
+  normalizePlanCategory,
   voidOpenCycles
 } from "./cycleState.js";
 
@@ -53,6 +54,15 @@ async function applyPendingPlanChange(sb, sub, lastCycle) {
   if (update.frequency !== sub.frequency && lastCycle) {
     update.anchor_date = lastCycle.window_start_date;
     update.anchor_index_base = lastCycle.cycle_index;
+  }
+  if (sub.pending_service_variant_id) {
+    const { data: variant } = await sb
+      .from("service_variants")
+      .select("services:service_id(category)")
+      .eq("id", sub.pending_service_variant_id)
+      .maybeSingle();
+    const category = normalizePlanCategory(variant?.services?.category);
+    if (category) update.subscription_category = category;
   }
   await sb.from("subscriptions").update(update).eq("id", sub.id);
   await audit(sb, { subscription_id: sub.id, action: "plan_change_applied", actor: "cron", before: { frequency: sub.frequency, service_variant_id: sub.service_variant_id }, after: update });
