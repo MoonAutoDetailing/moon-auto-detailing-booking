@@ -94,6 +94,7 @@ export async function resolveSubscriptionByToken(supabase, token) {
       pushback_used,
       pushback_end_date,
       free_pushback,
+      opens_on,
       created_at,
       updated_at
     `)
@@ -156,6 +157,7 @@ export async function resolveSubscriptionByToken(supabase, token) {
       pushback_used,
       pushback_end_date,
       free_pushback,
+      opens_on,
       created_at,
       updated_at
     `)

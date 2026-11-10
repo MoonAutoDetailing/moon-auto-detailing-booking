@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { getEffectiveWindowEnd } from "../_subscriptions/lifecycle.js";
+import { buildNextService, planLabel } from "../_subscriptions/memberContext.js";
 import { resolveSubscriptionByToken } from "../_subscriptions/resolveSubscriptionByToken.js";
 
 function requireEnv(name) {
@@ -53,14 +54,11 @@ export default async function handler(req, res) {
       : "";
 
     const effectiveWindowEnd = activeCycle ? getEffectiveWindowEnd(activeCycle) : null;
-    const canPushback = !!(
-      activeCycle &&
-      activeCycle.status === "open" &&
-      !activeCycle.pushback_used &&
-      !activeCycleBooking
-    );
+    const nextService = await buildNextService(supabase, resolved);
+    const canPushback = nextService.pushback?.available === true;
 
-    const canCancelSubscription = (subscription.completed_cycles_count ?? 0) >= 3;
+    const completedCycles = subscription.completed_cycles_count ?? 0;
+    const canCancelSubscription = completedCycles >= 3;
 
     let bookingPricing = null;
     if (activeCycleBooking) {
@@ -139,8 +137,11 @@ export default async function handler(req, res) {
         pushback_end_date: cycle.pushback_end_date,
         effective_window_end: getEffectiveWindowEnd(cycle)
       })),
+      next_service: nextService,
+      plan: planLabel(subscription),
       actions: {
-        can_cancel_subscription: canCancelSubscription
+        can_cancel_subscription: canCancelSubscription,
+        cycles_until_cancel: Math.max(0, 3 - completedCycles)
       }
     });
   } catch (err) {

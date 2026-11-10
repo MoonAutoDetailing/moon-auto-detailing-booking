@@ -48,30 +48,25 @@ async function findMatchingCustomerIds(supabase, normalizedEmail, normalizedPhon
 }
 
 /**
- * Find a recoverable subscription for the given customer_id(s).
- * Rule: 1) prefer status != 'cancelled', 2) require valid activation_booking_id,
- * 3) require linked booking with manage_token, 4) newest created_at.
- * Returns { subscription, manageToken } or null.
+ * All plans this customer can open: every non-cancelled subscription with a valid portal link
+ * (activation booking manage_token), or the newest cancelled one if that's all there is.
+ * Returns [{ subscription, manageToken, vehicleLabel }] (newest first).
  */
-async function findRecoverableSubscriptionForCustomers(supabase, customerIds) {
-  if (!customerIds?.length) return null;
+async function findRecoverableSubscriptionsForCustomers(supabase, customerIds) {
+  if (!customerIds?.length) return [];
 
   const { data: subscriptions, error: subErr } = await supabase
     .from("subscriptions")
-    .select("id, status, activation_booking_id, created_at")
+    .select("id, status, activation_booking_id, created_at, vehicles:vehicle_id(vehicle_year, vehicle_make, vehicle_model)")
     .in("customer_id", customerIds)
     .order("created_at", { ascending: false });
 
-  if (subErr || !subscriptions?.length) return null;
+  if (subErr || !subscriptions?.length) return [];
 
-  const sorted = [...subscriptions].sort((a, b) => {
-    const aCancelled = a.status === "cancelled" ? 1 : 0;
-    const bCancelled = b.status === "cancelled" ? 1 : 0;
-    if (aCancelled !== bCancelled) return aCancelled - bCancelled;
-    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-  });
-
-  for (const sub of sorted) {
+  const live = subscriptions.filter((s) => s.status !== "cancelled");
+  const candidates = live.length ? live : subscriptions.slice(0, 1);
+  const found = [];
+  for (const sub of candidates) {
     if (!sub.activation_booking_id) continue;
     const { data: booking, error: bookErr } = await supabase
       .from("bookings")
@@ -79,10 +74,14 @@ async function findRecoverableSubscriptionForCustomers(supabase, customerIds) {
       .eq("id", sub.activation_booking_id)
       .maybeSingle();
     if (bookErr || !booking?.manage_token) continue;
-    return { subscription: sub, manageToken: booking.manage_token };
+    const v = sub.vehicles || {};
+    const vehicleLabel = [v.vehicle_year, v.vehicle_make, v.vehicle_model].filter(Boolean).join(" ");
+    found.push({ subscription: sub, manageToken: booking.manage_token, vehicleLabel });
   }
-  console.warn("[request-subscription-access] customer match but no recoverable subscription (missing activation_booking_id or manage_token)");
-  return null;
+  if (!found.length) {
+    console.warn("[request-subscription-access] customer match but no recoverable subscription (missing activation_booking_id or manage_token)");
+  }
+  return found;
 }
 
 export default async function handler(req, res) {
@@ -123,22 +122,18 @@ export default async function handler(req, res) {
       requireEnv("SUPABASE_SERVICE_ROLE_KEY")
     );
 
-    const recovered = await findRecoverableSubscriptionForCustomers(
-      supabase,
-      await findMatchingCustomerIds(supabase, normalizedEmail, normalizedPhone)
-    );
+    const customerIds = await findMatchingCustomerIds(supabase, normalizedEmail, normalizedPhone);
+    const plans = await findRecoverableSubscriptionsForCustomers(supabase, customerIds);
 
-    if (recovered) {
-      const { subscription, manageToken } = recovered;
+    if (plans.length) {
       try {
         const { data: subWithCustomer } = await supabase
           .from("subscriptions")
           .select("customers:customer_id(email)")
-          .eq("id", subscription.id)
+          .eq("id", plans[0].subscription.id)
           .maybeSingle();
-        const customerEmail = subWithCustomer?.customers?.email;
-        const toEmail = customerEmail || normalizedEmail;
-        await sendSubscriptionAccessLinkEmailCore(toEmail, manageToken, subscription.id);
+        const toEmail = subWithCustomer?.customers?.email || normalizedEmail;
+        await sendSubscriptionAccessLinkEmailCore(toEmail, plans);
       } catch (err) {
         console.warn("[request-subscription-access] send failed:", err?.message || err);
       }

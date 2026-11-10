@@ -560,6 +560,26 @@
       .card { padding: 20px 18px; }
       .hero { padding: 24px 12px 20px; }
     }
+    /* ----- Next service (portal redesign) ----- */
+    .next-banner { border-radius: 18px; padding: 18px 20px; background: #e0f2fe; color: #0c4a6e; line-height: 1.55; }
+    body.dark .next-banner { background: #0c4a6e; color: #e0f2fe; }
+    .next-banner .big { display: block; font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .next-banner.booked { background: #dcfce7; color: #14532d; }
+    body.dark .next-banner.booked { background: #14532d; color: #dcfce7; }
+    .next-banner.warn { background: #fef3c7; color: #78350f; }
+    body.dark .next-banner.warn { background: #78350f; color: #fef3c7; }
+    .next-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+    .next-actions .btn { flex: 1 1 200px; text-align: center; text-decoration: none; }
+    .fine { font-size: 13px; color: #6b7280; margin: 10px 0 0; line-height: 1.5; }
+    body.dark .fine { color: #9ca3af; }
+    .h-badge { display: inline-block; min-width: 86px; text-align: center; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+    .h-completed { background: #dcfce7; color: #166534; }
+    .h-booked { background: #e0f2fe; color: #075985; }
+    .h-open { background: #f3f4f6; color: #374151; }
+    .h-missed { background: #fee2e2; color: #991b1b; }
+    .h-void { background: #f3f4f6; color: #6b7280; }
+    .pushback-confirm { border: 1px solid #fcd34d; background: #fffbeb; border-radius: 14px; padding: 14px; margin-top: 12px; color: #78350f; }
+    body.dark .pushback-confirm { background: #3b2a06; border-color: #92400e; color: #fde68a; }
   </style>
 </head>
 <body>
@@ -590,10 +610,10 @@
   <div class="page-wrap">
     <div class="page-header">
       <img src="/NewLogoColor.png" class="page-logo" alt="Moon Auto Detailing" />
-      <h1>Your Subscription</h1>
+      <h1>Your Maintenance Plan</h1>
     </div>
     <header class="hero">
-      <p class="sub">View your plan, current cycle, and booking.</p>
+      <p class="sub">Your maintenance plan, your next service window, and your history.</p>
       <div class="badge-row" id="heroBadges"></div>
     </header>
 
@@ -617,23 +637,19 @@
     </div>
 
     <div id="content" class="hidden">
+      <div class="card" id="nextCard">
+        <h2 class="card-title">Your next service</h2>
+        <div id="nextBody"></div>
+      </div>
+
       <div class="card" id="summaryCard">
-        <h2 class="card-title">Subscription summary</h2>
+        <h2 class="card-title">Your plan</h2>
         <div id="summaryBody"></div>
-      </div>
-
-      <div class="card" id="cycleCard">
-        <h2 class="card-title">Current cycle</h2>
-        <div id="cycleBody"></div>
-      </div>
-
-      <div class="card hidden" id="bookingCard">
-        <h2 class="card-title">Your booking</h2>
-        <div id="bookingBody"></div>
+        <div id="cancelArea"></div>
       </div>
 
       <div class="card" id="historyCard">
-        <h2 class="card-title">Cycle history</h2>
+        <h2 class="card-title">Service history</h2>
         <div id="historyBody"></div>
       </div>
     </div>
@@ -642,7 +658,7 @@
   <div class="modal-backdrop" id="cancelModal">
     <div class="modal-content">
       <h3>Cancel subscription</h3>
-      <p>This will cancel your maintenance plan. You will no longer receive discounted cycle pricing. This does not cancel any existing booking.</p>
+      <p>This ends your maintenance plan: no more service windows or member pricing. Any appointment you already have stays booked unless you cancel it separately.</p>
       <div class="modal-actions">
         <button type="button" class="btn btn-secondary" id="cancelModalClose">Keep plan</button>
         <button type="button" class="btn btn-danger" id="cancelModalConfirm">Cancel subscription</button>
@@ -707,218 +723,180 @@
 
       let portalData = null;
 
+      const esc = function (v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+      const TZ = 'America/New_York';
+      function niceDate(d, long) {
+        if (!d) return '—';
+        return new Date(d + 'T12:00:00Z').toLocaleDateString('en-US', long
+          ? { timeZone: 'UTC', weekday: 'long', month: 'long', day: 'numeric' }
+          : { timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric' });
+      }
+      function niceDateTime(iso) {
+        return new Date(iso).toLocaleString('en-US', { timeZone: TZ, weekday: 'long', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+      }
+      const bookUrl = function () { return '/member-booking.html?token=' + encodeURIComponent(TOKEN); };
+
       async function loadSubscription() {
         if (!TOKEN) return null;
-        const res = await fetch('/api/get-subscription-by-token?token=' + encodeURIComponent(TOKEN));
-        if (!res.ok) return null;
-        return res.json();
+        try {
+          const res = await fetch('/api/get-subscription-by-token?token=' + encodeURIComponent(TOKEN));
+          if (!res.ok) return { error: res.status === 404 ? 'not_found' : 'server' };
+          return await res.json();
+        } catch (e) {
+          return { error: 'network' };
+        }
       }
 
       function renderSubscription() {
         const sub = portalData.subscription;
-        const badges = document.getElementById('heroBadges');
-        badges.innerHTML = '';
-        const statusBadge = document.createElement('span');
-        statusBadge.className = 'badge badge-status' + (sub.status === 'cancelled' ? ' cancelled' : '');
-        statusBadge.textContent = sub.status === 'active' ? 'Active' : (sub.status === 'cancelled' ? 'Cancelled' : sub.status);
-        badges.appendChild(statusBadge);
-        const freqBadge = document.createElement('span');
-        freqBadge.className = 'badge badge-frequency';
-        freqBadge.textContent = (sub.frequency || '—').charAt(0).toUpperCase() + (sub.frequency || '').slice(1);
-        badges.appendChild(freqBadge);
-        const catBadge = document.createElement('span');
-        catBadge.className = 'badge badge-category';
-        catBadge.textContent = sub.service || sub.subscription_category || 'Plan';
-        badges.appendChild(catBadge);
-        if (sub.vehicle) {
-          const vBadge = document.createElement('span');
-          vBadge.className = 'badge badge-vehicle';
-          vBadge.textContent = sub.vehicle;
-          badges.appendChild(vBadge);
+        const plan = portalData.plan || {};
+        const statusText = { active: 'Active', paused: 'Paused', cancelled: 'Cancelled', pending_activation: 'Starting soon' }[sub.status] || sub.status;
+        const badges = [
+          '<span class="badge badge-status' + (sub.status === 'active' ? '' : ' cancelled') + '">' + esc(statusText) + '</span>',
+          '<span class="badge badge-frequency">' + esc(plan.frequencyLabel || sub.frequency) + '</span>',
+          '<span class="badge badge-category">' + esc(plan.categoryLabel || sub.service) + '</span>'
+        ];
+        if (sub.vehicle) badges.push('<span class="badge badge-vehicle">' + esc(sub.vehicle) + '</span>');
+        document.getElementById('heroBadges').innerHTML = badges.join('');
+      }
+
+      function priceText(price) {
+        if (!price) return '';
+        if (price.price_mode === 'discounted') return formatCurrency(price.base_price) + ' member price';
+        if (price.reason === 'missed_cycle') return formatCurrency(price.base_price) + ' (full price this visit — a window was missed; member pricing returns after it)';
+        return formatCurrency(price.base_price);
+      }
+
+      function renderNext() {
+        const n = portalData.next_service || {};
+        const body = document.getElementById('nextBody');
+        const windowText = n.window_start ? niceDate(n.window_start) + ' – ' + niceDate(n.effective_end) : '';
+        let html = '';
+        if (n.phase === 'booked' && n.booking) {
+          html += '<div class="next-banner booked"><span class="big">You’re booked for ' + esc(niceDateTime(n.booking.scheduled_start)) + '</span>';
+          html += esc(n.booking.service_address || '') + '</div>';
+          html += '<div class="next-actions"><a class="btn btn-secondary" href="/manage-booking.html?token=' + encodeURIComponent(n.booking.manage_token) + '">Reschedule or cancel this appointment</a></div>';
+          html += '<p class="fine">This appointment covers your ' + esc(windowText) + ' service window. Payment is due after service.</p>';
+        } else if (n.phase === 'bookable') {
+          html += '<div class="next-banner"><span class="big">Book your service: ' + esc(windowText) + '</span>';
+          html += 'Pick any weekday in this window. Price: ' + esc(priceText(n.price)) + ' plus any travel fee.</div>';
+          html += '<div class="next-actions"><a class="btn btn-primary" href="' + bookUrl() + '">Book now</a></div>';
+          if (n.pushback && n.pushback.used) {
+            html += '<p class="fine">Your window was extended to ' + esc(niceDate(n.effective_end)) + (n.pushback.free ? ' at no extra cost.' : ' (15% extension fee applies to this visit).') + '</p>';
+          }
+          if (n.pushback && n.pushback.available) {
+            const fee = n.pushback.fee_if_paid ? formatCurrency(n.pushback.fee_if_paid) : '15%';
+            html += '<div id="pushbackArea"><p class="fine">Can’t make it this week? You can extend this window once, to ' + esc(niceDate(n.pushback.would_extend_to)) + '. ';
+            html += 'A 15% extension fee (' + esc(fee) + ') is added to this visit, unless there were no open times in your window.</p>';
+            html += '<div class="next-actions"><button type="button" class="btn btn-secondary" id="pushbackBtn">Extend my window</button></div></div>';
+          }
+        } else if (n.phase === 'upcoming') {
+          html += '<div class="next-banner"><span class="big">Next window: ' + esc(windowText) + '</span>';
+          html += 'Booking opens ' + esc(niceDate(n.opens_on, true)) + '. We’ll email you when it does.</div>';
+          html += '<p class="fine">Nothing to do yet. Your price for this visit: ' + esc(priceText(n.price)) + ' plus any travel fee.</p>';
+        } else if (n.phase === 'overdue') {
+          html += '<div class="next-banner warn"><span class="big">Your ' + esc(windowText) + ' window has ended</span>';
+          html += 'Your next window will appear here shortly. Questions? Just reply to any of our emails.</div>';
+        } else if (n.phase === 'paused') {
+          html += '<div class="next-banner warn"><span class="big">Your plan is paused</span>No service windows while paused. Contact us whenever you’re ready to resume.</div>';
+        } else if (n.phase === 'cancelled') {
+          html += '<div class="next-banner warn"><span class="big">This plan has ended</span>Reach out any time if you’d like to start again.</div>';
+        } else if (n.phase === 'pending_activation') {
+          html += '<div class="next-banner"><span class="big">Your plan starts after your first service</span>Once your first detail is completed, your maintenance windows will show up here.</div>';
         }
+        body.innerHTML = html;
+        bindPushback();
       }
 
       function renderSummary() {
         const sub = portalData.subscription;
-        const html = [
-          '<div class="summary-grid">',
-          '<div class="summary-item"><div class="label">Service</div><div class="value">' + (sub.service || '—') + '</div></div>',
-          '<div class="summary-item"><div class="label">Vehicle</div><div class="value">' + (sub.vehicle || '—') + '</div></div>',
-          '<div class="summary-item"><div class="label">Anchor date</div><div class="value">' + formatDate(sub.anchor_date) + '</div></div>',
-          '<div class="summary-item"><div class="label">Status</div><div class="value">' + (sub.status || '—') + '</div></div>',
-          '<div class="summary-item"><div class="label">Preferred address</div><div class="value">' + (sub.default_address || '—') + '</div></div>',
-          '<div class="summary-item"><div class="label">Completed cycles</div><div class="value">' + (sub.completed_cycles_count ?? '—') + '</div></div>',
-          '<div class="summary-item"><div class="label">Missed cycles</div><div class="value">' + (sub.missed_cycles_count ?? '—') + '</div></div>',
-          '<div class="summary-item"><div class="label">Discount reset</div><div class="value">' + (sub.discount_reset_required ? 'Yes' : 'No') + '</div></div>',
-          '</div>'
+        const plan = portalData.plan || {};
+        const items = [
+          ['Plan', (plan.categoryLabel || '') + ' · ' + (plan.frequencyLabel || '')],
+          ['Vehicle', sub.vehicle || '—'],
+          ['Service', sub.service || '—'],
+          ['Completed services', String(sub.completed_cycles_count || 0)],
+          ['Usual service address', sub.default_address || '—']
         ];
+        let html = '<div class="summary-grid">' + items.map(function (i) {
+          return '<div class="summary-item"><div class="label">' + esc(i[0]) + '</div><div class="value">' + esc(i[1]) + '</div></div>';
+        }).join('') + '</div>';
         if (sub.discount_reset_required) {
-          html.push('<div class="discount-reset-note">Your next service will be charged at full price. Discount resumes after that cycle.</div>');
+          html += '<p class="discount-reset-note">Because a service window was missed, your next visit is full price. Member pricing returns right after it.</p>';
         }
-        document.getElementById('summaryBody').innerHTML = html.join('');
-      }
-
-      function renderCycle() {
-        const cycle = portalData.active_cycle;
-        const body = document.getElementById('cycleBody');
-        if (!cycle) {
-          body.innerHTML = '<div class="empty-state">No active cycle right now. Check back when your next window opens.</div>';
-          return;
-        }
-        const effectiveEnd = cycle.effective_window_end || cycle.window_end_date;
-        let html = '<div class="cycle-meta">';
-        html += '<span><strong>Cycle ' + (cycle.cycle_index ?? '—') + '</strong></span>';
-        html += '<span>Window: ' + formatDate(cycle.window_start_date) + ' – ' + formatDate(cycle.window_end_date) + '</span>';
-        html += '<span>Book by: ' + formatDate(effectiveEnd) + '</span>';
-        html += '</div>';
-        html += '<p><span class="badge badge-status">' + (cycle.status || '—') + '</span>';
-        if (cycle.pushback_used) html += ' <span>Pushback used</span>';
-        if (cycle.free_pushback) html += ' <span>(Free pushback)</span>';
-        html += '</p>';
-        if (cycle.can_pushback) {
-          html += '<div class="pushback-msg">You can extend your booking window by 5 business days once per cycle.</div>';
-          html += '<div class="action-row">';
-          html += '<button type="button" class="btn btn-primary" id="pushbackBtn">Push back window</button>';
-          html += '</div>';
-        } else if (cycle.status === 'open' && !cycle.pushback_used && portalData.active_cycle_booking) {
-          html += '<div class="pushback-msg">Pushback is not available after a booking is scheduled for this cycle.</div>';
-        } else if (cycle.pushback_used) {
-          html += '<div class="pushback-msg">Pushback already used for this cycle. Deadline: ' + formatDate(cycle.pushback_end_date || effectiveEnd) + '.</div>';
-        }
-        if (cycle.status === 'open' && !portalData.active_cycle_booking) {
-          const sub = portalData.subscription;
-          let bookHref = '/index.html';
-          if (sub && sub.frequency && sub.subscription_category) {
-            bookHref = '/index.html?subscription=1&frequency=' + encodeURIComponent(sub.frequency) + '&category=' + encodeURIComponent(sub.subscription_category);
-          }
-          // member_token lets active members book while the public booking page is closed for the season.
-          bookHref += (bookHref.indexOf('?') === -1 ? '?' : '&') + 'member_token=' + encodeURIComponent(TOKEN);
-          html += '<div class="cta-book">';
-          html += '<a href="' + bookHref + '" class="btn btn-primary">Continue to booking form</a>';
-          html += '<p class="cta-book-note">You\'ll go to the main booking page. Use the same plan and vehicle details so your booking counts toward this subscription cycle.</p>';
-          html += '</div>';
-        }
-        body.innerHTML = html;
-        if (cycle.can_pushback) bindPushback();
-      }
-
-      function renderBooking() {
-        const acb = portalData.active_cycle_booking;
-        const card = document.getElementById('bookingCard');
-        const body = document.getElementById('bookingBody');
-        if (!acb || !acb.booking) {
-          card.classList.add('hidden');
-          return;
-        }
-        card.classList.remove('hidden');
-        const b = acb.booking;
-        const pricing = acb.pricing || {};
-        const base = pricing.base_price != null ? pricing.base_price : b.base_price;
-        const travel = pricing.travel_fee != null ? pricing.travel_fee : b.travel_fee;
-        const pushbackAmount = pricing.pushback_fee_amount != null ? pricing.pushback_fee_amount : (acb.pushback_fee_amount || 0);
-        const displayTotal = pricing.display_total != null ? pricing.display_total : (b.total_price || 0);
-        const pushbackApplied = pricing.pushback_fee_applied === true || acb.pushback_fee_applied === true;
-        const storedMatches = pricing.stored_total_matches_display_total !== false;
-
-        let html = '<div class="booking-box">';
-        html += '<div class="label">Status</div><div>' + (b.status || '—') + '</div>';
-        html += '<div class="label" style="margin-top:10px;">Date & time</div><div>' + formatDateTime(b.scheduled_start) + '</div>';
-        html += '<div class="label" style="margin-top:10px;">Address</div><div>' + (b.service_address || '—') + '</div>';
-        if (b.manage_token) {
-          html += '<p style="margin-top:12px;"><a href="/manage-booking.html?token=' + encodeURIComponent(b.manage_token) + '" class="btn btn-secondary" style="display:inline-block;">Manage this booking</a></p>';
-        }
-        if (b.google_event_html_link) {
-          html += '<p style="margin-top:8px;"><a href="' + (b.google_event_html_link || '#') + '" target="_blank" rel="noopener">Add to Google Calendar</a></p>';
-        }
-        html += '<div class="pricing-summary">';
-        html += '<div class="pricing-rows">';
-        html += '<div class="pricing-row"><span>Service</span><span>' + formatCurrency(base) + '</span></div>';
-        html += '<div class="pricing-row"><span>Travel fee</span><span>' + formatCurrency(travel) + '</span></div>';
-        html += '<div class="pricing-row"><span>Pushback fee' + (pushbackApplied ? ' <span class="pushback-fee-badge">Applied</span>' : '') + '</span><span>' + (pushbackApplied ? formatCurrency(pushbackAmount) : 'Not applied') + '</span></div>';
-        html += '<div class="pricing-row total"><span>Total</span><span>' + formatCurrency(displayTotal) + '</span></div>';
-        html += '</div>';
-        if (!storedMatches) {
-          html += '<p class="display-total-note">Displayed total includes all applicable cycle fees.</p>';
-        }
-        html += '<p class="cash-note">Cash due after service.</p>';
-        html += '</div></div>';
-        body.innerHTML = html;
+        document.getElementById('summaryBody').innerHTML = html;
       }
 
       function renderHistory() {
-        const history = portalData.history || [];
+        const n = portalData.next_service || {};
+        const rows = (portalData.history || []).filter(function (c) {
+          return c.id !== n.cycle_id && c.status !== 'open';
+        });
         const body = document.getElementById('historyBody');
-        if (!history.length) {
-          body.innerHTML = '<div class="empty-state">No cycle history yet.</div>';
+        if (!rows.length) {
+          body.innerHTML = '<p class="empty-state">Your completed services will show up here.</p>';
           return;
         }
+        const label = { completed: 'Completed', booked: 'Booked', missed: 'Missed', void: 'Skipped', open: 'Open' };
         let html = '<ul class="history-list">';
-        history.forEach(function (c) {
-          const effectiveEnd = c.effective_window_end || c.window_end_date;
-          html += '<li class="history-item">';
-          html += '<span class="cycle-num">Cycle ' + (c.cycle_index ?? '—') + '</span>';
-          html += '<span class="status-pill badge-status">' + (c.status || '—') + '</span>';
-          html += '<span class="dates">' + formatDate(c.window_start_date) + ' – ' + formatDate(effectiveEnd) + '</span>';
-          if (c.pushback_used) html += '<span>Pushback used</span>';
-          html += '</li>';
+        rows.forEach(function (c) {
+          const when = c.cycle_index === 0 ? niceDate(c.window_start_date) + ' · first service' : niceDate(c.window_start_date) + ' – ' + niceDate(c.effective_window_end);
+          html += '<li class="history-item"><span class="h-badge h-' + esc(c.status) + '">' + esc(label[c.status] || c.status) + '</span> <span class="dates">' + esc(when) + '</span></li>';
         });
-        html += '</ul>';
-        body.innerHTML = html;
+        body.innerHTML = html + '</ul>';
       }
 
       function bindActions() {
         const actions = portalData.actions || {};
         const sub = portalData.subscription;
-        const canCancel = actions.can_cancel_subscription === true;
-        const cycle = portalData.active_cycle;
-        const cycleBody = document.getElementById('cycleBody');
-        if (canCancel && cycle && sub && sub.status !== 'cancelled') {
-          const existing = document.getElementById('cancelSubRow');
-          if (!existing) {
-            const cancelHtml = '<div class="action-row" id="cancelSubRow"><button type="button" class="btn btn-danger btn-block" id="cancelSubBtn">Cancel subscription</button></div>';
-            cycleBody.insertAdjacentHTML('beforeend', cancelHtml);
-            document.getElementById('cancelSubBtn').onclick = openCancelModal;
-          }
-        } else if (sub && sub.status === 'cancelled') {
-          const existing = document.getElementById('cancelSubRow');
-          if (!existing) {
-            cycleBody.insertAdjacentHTML('beforeend', '<div class="cancel-disabled-msg" id="cancelSubRow">This subscription has been cancelled.</div>');
-          }
-        } else if (sub && sub.status !== 'cancelled') {
-          let msg = 'You can cancel your plan after completing at least 3 cycles.';
-          if ((sub.completed_cycles_count ?? 0) >= 1) {
-            msg = 'Complete ' + (3 - (sub.completed_cycles_count || 0)) + ' more cycle(s) to be able to cancel your plan.';
-          }
-          const existing = document.getElementById('cancelSubRow');
-          if (!existing) {
-            cycleBody.insertAdjacentHTML('beforeend', '<div class="cancel-disabled-msg" id="cancelSubRow">' + msg + '</div>');
-          }
+        const area = document.getElementById('cancelArea');
+        if (sub.status === 'cancelled') {
+          area.innerHTML = '';
+        } else if (actions.can_cancel_subscription) {
+          area.innerHTML = '<div class="action-row"><button type="button" class="btn btn-secondary" id="cancelSubBtn">Cancel my plan</button></div>';
+          document.getElementById('cancelSubBtn').onclick = openCancelModal;
+        } else {
+          const left = actions.cycles_until_cancel || 0;
+          area.innerHTML = '<p class="fine">Plans include a 3-service minimum. ' + (left > 0 ? 'You can cancel online after ' + left + ' more completed service' + (left === 1 ? '' : 's') + '.' : '') + '</p>';
         }
       }
 
       function bindPushback() {
         const btn = document.getElementById('pushbackBtn');
         if (!btn) return;
-        btn.onclick = async function () {
+        btn.onclick = function () {
+          const n = portalData.next_service;
+          const area = document.getElementById('pushbackArea');
+          area.insertAdjacentHTML('beforeend', '<div class="pushback-confirm" id="pushbackConfirm"><strong>Extend to ' + esc(niceDate(n.pushback.would_extend_to)) + '?</strong>' +
+            '<p style="margin:6px 0 10px">You can only do this once for this window. We’ll add the 15% extension fee to this visit unless there were no open times in your original window.</p>' +
+            '<div class="next-actions"><button type="button" class="btn btn-primary" id="pushbackYes">Yes, extend my window</button><button type="button" class="btn btn-secondary" id="pushbackNo">Never mind</button></div></div>');
           btn.disabled = true;
-          try {
-            const res = await fetch('/api/customer-subscription-pushback', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ token: TOKEN })
-            });
-            const data = await res.json().catch(function () { return {}; });
-            if (res.ok && data.ok) {
-              showMessage(data.message || 'Cycle pushback applied.');
-              await runLoad();
-            } else {
-              showError(data.error || data.message || 'Pushback failed.');
-              btn.disabled = false;
+          document.getElementById('pushbackNo').onclick = function () { document.getElementById('pushbackConfirm').remove(); btn.disabled = false; };
+          document.getElementById('pushbackYes').onclick = async function () {
+            const yes = document.getElementById('pushbackYes');
+            yes.disabled = true;
+            yes.textContent = 'Extending…';
+            try {
+              const res = await fetch('/api/customer-subscription-pushback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token: TOKEN })
+              });
+              const data = await res.json().catch(function () { return {}; });
+              if (res.ok && data.ok) {
+                showMessage(data.free_pushback ? 'Window extended — no extension fee, since your original window had no open times.' : 'Window extended.');
+                await runLoad();
+              } else {
+                showError(data.error || data.message || 'We couldn’t extend your window.');
+                yes.disabled = false;
+                yes.textContent = 'Yes, extend my window';
+              }
+            } catch (e) {
+              showError('Something went wrong. Please try again.');
+              yes.disabled = false;
+              yes.textContent = 'Yes, extend my window';
             }
-          } catch (e) {
-            showError('Something went wrong.');
-            btn.disabled = false;
-          }
+          };
         };
       }
 
@@ -971,9 +949,8 @@
 
       function render() {
         renderSubscription();
+        renderNext();
         renderSummary();
-        renderCycle();
-        renderBooking();
         renderHistory();
         bindActions();
         fillProfile();
@@ -994,6 +971,10 @@
         portalData = await loadSubscription();
         loading.classList.add('hidden');
         if (!portalData || portalData.error) {
+          if (portalData && portalData.error === 'network') {
+            error.querySelector('h2').textContent = 'Can\u2019t reach Moon Auto Detailing';
+            error.querySelector('p').textContent = 'Check your internet connection and refresh the page.';
+          }
           error.classList.remove('hidden');
           return;
         }

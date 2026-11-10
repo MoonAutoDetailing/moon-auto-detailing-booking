@@ -75,6 +75,7 @@ export async function resolveSubscriptionById(supabase, subscriptionId) {
       pushback_used,
       pushback_end_date,
       free_pushback,
+      opens_on,
       created_at,
       updated_at
     `)
@@ -137,6 +138,7 @@ export async function resolveSubscriptionById(supabase, subscriptionId) {
       pushback_used,
       pushback_end_date,
       free_pushback,
+      opens_on,
       created_at,
       updated_at
     `)

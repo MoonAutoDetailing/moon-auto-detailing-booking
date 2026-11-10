@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" href="/NewLogoColor.png" type="image/png" />
+  <title>Book Your Maintenance Service — Moon Auto Detailing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Poppins', system-ui, sans-serif; background: #000; color: #1c1c1c; min-height: 100vh; }
+    .page-wrap { max-width: 760px; margin: 32px auto; padding: 0 16px 60px; }
+    .page-header { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 0 0 20px; flex-wrap: wrap; }
+    .page-header img { height: 48px; width: auto; }
+    .page-header h1 { margin: 0; font-size: clamp(1.4rem, 4vw, 2rem); color: #7fb8e6; text-align: center; }
+    .card { background: #fff; border-radius: 22px; padding: 24px 26px; margin-bottom: 18px; box-shadow: 0 18px 40px rgba(0,0,0,.12), 0 6px 18px rgba(0,0,0,.08); }
+    .card h2 { font-size: 18px; margin: 0 0 14px; padding-bottom: 10px; border-bottom: 1px solid #e5e7eb; }
+    .muted { color: #6b7280; }
+    .facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; }
+    .fact { background: rgba(0,0,0,.03); border-radius: 14px; padding: 12px 14px; }
+    .fact .label { font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; }
+    .fact .value { font-weight: 600; margin-top: 2px; }
+    .window-banner { border-radius: 16px; padding: 14px 16px; background: #e0f2fe; color: #0c4a6e; margin-bottom: 14px; line-height: 1.5; }
+    .window-banner strong { display: block; font-size: 16px; }
+    .note { border-radius: 14px; padding: 12px 14px; background: #fef3c7; color: #78350f; margin-top: 12px; font-size: 14px; line-height: 1.5; }
+    label { display: block; font-weight: 600; font-size: 14px; margin: 14px 0 6px; }
+    input, textarea { width: 100%; padding: 13px 14px; font-size: 16px; font-family: inherit; border-radius: 12px; border: 1px solid #e5e7eb; }
+    input:focus, textarea:focus { outline: none; border-color: #7fb8e6; box-shadow: 0 0 0 3px rgba(127,184,230,.25); }
+    textarea { min-height: 70px; resize: vertical; }
+    .days { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; }
+    .day-btn, .slot-btn { border: 1px solid #d1d5db; background: #fff; border-radius: 14px; padding: 12px 10px; font-family: inherit; font-size: 14px; cursor: pointer; text-align: center; }
+    .day-btn strong { display: block; font-size: 15px; }
+    .day-btn[aria-pressed="true"], .slot-btn[aria-pressed="true"] { border-color: #5ca7df; background: #e0f2fe; box-shadow: 0 0 0 2px rgba(92,167,223,.35); }
+    .slots { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 12px; }
+    .slot-btn small { display: block; color: #6b7280; font-size: 12px; }
+    .price-table { width: 100%; border-collapse: collapse; margin-top: 6px; }
+    .price-table td { padding: 6px 0; }
+    .price-table td:last-child { text-align: right; }
+    .price-table tr.total td { border-top: 1px solid #e5e7eb; font-weight: 700; padding-top: 10px; }
+    .btn { display: inline-block; border: none; border-radius: 14px; padding: 14px 20px; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer; text-decoration: none; text-align: center; }
+    .btn-primary { background: linear-gradient(135deg, #7fb8e6, #5ca7df); color: #fff; width: 100%; margin-top: 16px; }
+    .btn-primary:disabled { opacity: .55; cursor: not-allowed; }
+    .btn-secondary { background: #f3f4f6; color: #111827; }
+    .status { margin-top: 10px; font-size: 14px; }
+    .status.bad { color: #b91c1c; }
+    .loading { text-align: center; color: #9ca3af; padding: 40px 0; }
+    .success { text-align: center; }
+    .success h2 { border: none; }
+    [hidden] { display: none !important; }
+    @media (max-width: 560px) { .card { padding: 20px 16px; } }
+  </style>
+</head>
+<body>
+  <div class="page-wrap">
+    <div class="page-header">
+      <img src="/NewLogoColor.png" alt="Moon Auto Detailing" />
+      <h1>Book Your Maintenance Service</h1>
+    </div>
+
+    <div id="loading" class="card loading">Loading your plan…</div>
+    <div id="error" class="card" hidden></div>
+
+    <div id="content" hidden>
+      <div class="card">
+        <h2>Your plan</h2>
+        <div class="facts" id="facts"></div>
+      </div>
+
+      <div class="card" id="stateCard" hidden></div>
+
+      <div id="bookingFlow" hidden>
+        <div class="card">
+          <h2>1. Where should we come?</h2>
+          <label for="address">Service address</label>
+          <input id="address" type="text" autocomplete="street-address" />
+          <p class="muted" style="font-size:13px;margin:6px 0 0;">Change this if we're detailing at work or somewhere else this time. Travel fees still apply.</p>
+        </div>
+
+        <div class="card">
+          <h2>2. Pick a day</h2>
+          <div id="windowBanner" class="window-banner"></div>
+          <div class="days" id="days"></div>
+          <div id="slotsWrap" hidden>
+            <label style="margin-top:18px;">Available start times</label>
+            <div id="slotsStatus" class="muted"></div>
+            <div class="slots" id="slots"></div>
+          </div>
+        </div>
+
+        <div class="card" id="reviewCard" hidden>
+          <h2>3. Review &amp; confirm</h2>
+          <div id="reviewSummary"></div>
+          <label for="notes">Anything we should know? (optional)</label>
+          <textarea id="notes" placeholder="Gate code, parking, problem areas…"></textarea>
+          <button class="btn btn-primary" id="confirmBtn" type="button">Confirm appointment</button>
+          <div id="status" class="status" role="status"></div>
+        </div>
+      </div>
+
+      <div class="card success" id="successCard" hidden></div>
+    </div>
+  </div>
+
+  <script>
+    const TZ = "America/New_York";
+    const token = new URLSearchParams(location.search).get("token");
+    const $ = (id) => document.getElementById(id);
+    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const money = (n) => "$" + Number(n || 0).toFixed(2).replace(/\.00$/, "");
+    const portalUrl = "/manage-subscription.html?token=" + encodeURIComponent(token || "");
+    let ctx = null;
+    let selectedDay = null;
+    let selectedSlot = null; // { start, meta }
+
+    // Calendar dates (YYYY-MM-DD) shown in Eastern time.
+    function fmtDate(d, opts = { weekday: "short", month: "short", day: "numeric" }) {
+      if (!d) return "";
+      return new Date(d + "T12:00:00Z").toLocaleDateString("en-US", { timeZone: "UTC", ...opts });
+    }
+    function fmtTime(iso) {
+      return new Date(iso).toLocaleTimeString("en-US", { timeZone: TZ, hour: "numeric", minute: "2-digit" });
+    }
+    function fmtDateTime(iso) {
+      return new Date(iso).toLocaleString("en-US", { timeZone: TZ, weekday: "long", month: "long", day: "numeric", hour: "numeric", minute: "2-digit" });
+    }
+    function todayNY() {
+      return new Intl.DateTimeFormat("en-CA", { timeZone: TZ, year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    }
+    function addDays(d, n) {
+      const x = new Date(d + "T00:00:00Z");
+      x.setUTCDate(x.getUTCDate() + n);
+      return x.toISOString().slice(0, 10);
+    }
+    function isWeekend(d) {
+      const day = new Date(d + "T00:00:00Z").getUTCDay();
+      return day === 0 || day === 6;
+    }
+
+    function showError(msg) {
+      $("loading").hidden = true;
+      $("content").hidden = true;
+      $("error").hidden = false;
+      $("error").innerHTML = `<h2 style="margin-top:0">We couldn't open your booking page</h2><p class="muted">${esc(msg)}</p>
+        <a class="btn btn-secondary" href="/subscription-login.html">Get a new access link</a>`;
+    }
+
+    function priceLine(price) {
+      if (!price) return "";
+      if (price.price_mode === "discounted") return `${money(price.base_price)} <span class="muted">(member price)</span>`;
+      const why = { missed_cycle: "full price this visit after a missed window", first_service: "first service", no_member_price: "standard price" }[price.reason] || "standard price";
+      return `${money(price.base_price)} <span class="muted">(${esc(why)})</span>`;
+    }
+
+    function renderFacts() {
+      const n = ctx.next_service;
+      $("facts").innerHTML = [
+        ["Plan", `${ctx.plan.categoryLabel} · ${ctx.plan.frequencyLabel}`],
+        ["Vehicle", ctx.vehicle.label],
+        ["Service", ctx.service.label],
+        ["Price per visit", priceLine(n.price)]
+      ].map(([l, v]) => `<div class="fact"><div class="label">${esc(l)}</div><div class="value">${l === "Price per visit" ? v : esc(v)}</div></div>`).join("");
+    }
+
+    function renderState() {
+      const n = ctx.next_service;
+      const card = $("stateCard");
+      const win = n.window_start ? `${fmtDate(n.window_start)} – ${fmtDate(n.effective_end)}` : "";
+      let html = "";
+      if (n.phase === "booked" && n.booking) {
+        html = `<h2>You're booked</h2>
+          <p>Your service for this window is scheduled for <strong>${esc(fmtDateTime(n.booking.scheduled_start))}</strong>.</p>
+          <p class="muted">${esc(n.booking.service_address || "")}</p>
+          <a class="btn btn-secondary" href="/manage-booking.html?token=${encodeURIComponent(n.booking.manage_token)}">Manage this appointment</a>`;
+      } else if (n.phase === "upcoming") {
+        html = `<h2>Your next service window</h2>
+          <div class="window-banner"><strong>${esc(win)}</strong>Booking opens ${esc(fmtDate(n.opens_on, { weekday: "long", month: "long", day: "numeric" }))}. We'll email you a reminder then.</div>`;
+      } else if (n.phase === "overdue") {
+        html = `<h2>This window has ended</h2><p class="muted">Your ${esc(win)} window closed without an appointment. Your next window will appear in your portal shortly.</p>`;
+      } else if (n.phase === "paused") {
+        html = `<h2>Your plan is paused</h2><p class="muted">Contact us to resume your maintenance plan.</p>`;
+      } else if (n.phase === "cancelled") {
+        html = `<h2>This plan has ended</h2><p class="muted">Your maintenance plan is cancelled. Reach out if you'd like to restart it.</p>`;
+      } else if (n.phase === "pending_activation") {
+        html = `<h2>Almost there</h2><p class="muted">Your plan starts after your first service is completed. You'll be able to book maintenance visits here after that.</p>`;
+      }
+      if (html) {
+        card.innerHTML = html + `<p style="margin:16px 0 0"><a href="${portalUrl}">← Back to your plan</a></p>`;
+        card.hidden = false;
+      }
+    }
+
+    function bookableDays() {
+      const n = ctx.next_service;
+      const out = [];
+      let d = n.window_start > todayNY() ? n.window_start : todayNY();
+      for (; d <= n.effective_end; d = addDays(d, 1)) {
+        if (!isWeekend(d)) out.push(d);
+      }
+      return out;
+    }
+
+    function renderBookingFlow() {
+      const n = ctx.next_service;
+      $("bookingFlow").hidden = false;
+      $("address").value = ctx.default_address || "";
+      const extension = n.pushback.used ? ` (extended${n.pushback.free ? ", no extra fee" : ""})` : "";
+      $("windowBanner").innerHTML = `<strong>${esc(fmtDate(n.window_start))} – ${esc(fmtDate(n.effective_end))}</strong>Choose any weekday in your service window${esc(extension)}. Appointments need at least 24 hours' notice.`;
+      const days = bookableDays();
+      $("days").innerHTML = days.length
+        ? days.map((d) => `<button type="button" class="day-btn" data-day="${d}" aria-pressed="false"><strong>${esc(fmtDate(d, { weekday: "short" }))}</strong>${esc(fmtDate(d, { month: "short", day: "numeric" }))}</button>`).join("")
+        : `<p class="muted">No days left in this window. Please contact us.</p>`;
+      document.querySelectorAll(".day-btn").forEach((b) => b.addEventListener("click", () => selectDay(b.dataset.day)));
+    }
+
+    async function selectDay(day) {
+      selectedDay = day;
+      selectedSlot = null;
+      $("reviewCard").hidden = true;
+      document.querySelectorAll(".day-btn").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.day === day)));
+      const address = $("address").value.trim();
+      $("slotsWrap").hidden = false;
+      $("slots").innerHTML = "";
+      if (!address) {
+        $("slotsStatus").textContent = "Enter the service address above first.";
+        return;
+      }
+      $("slotsStatus").textContent = "Checking availability…";
+      try {
+        const params = new URLSearchParams({
+          day,
+          duration_minutes: String(ctx.service.duration_minutes),
+          service_address: address,
+          service_variant_id: ctx.service.variant_id
+        });
+        const resp = await fetch("/api/get-availability?" + params);
+        const data = await resp.json();
+        if (selectedDay !== day) return;
+        if (!resp.ok) throw new Error(data.error || data.message || "Couldn't load times.");
+        const minStart = Date.now() + 24 * 3600 * 1000;
+        const slots = (data.slots || []).filter((s) => new Date(s).getTime() >= minStart);
+        if (!slots.length) {
+          $("slotsStatus").textContent = "No open times this day. Please try another day.";
+          return;
+        }
+        $("slotsStatus").textContent = "";
+        $("slots").innerHTML = slots.map((s) => {
+          const fee = data.meta?.[s]?.travel_fee || 0;
+          return `<button type="button" class="slot-btn" data-start="${esc(s)}" aria-pressed="false">${esc(fmtTime(s))}<small>${fee ? "+" + money(fee) + " travel" : "No travel fee"}</small></button>`;
+        }).join("");
+        document.querySelectorAll(".slot-btn").forEach((b) => b.addEventListener("click", () => {
+          document.querySelectorAll(".slot-btn").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+          selectedSlot = { start: b.dataset.start, meta: data.meta?.[b.dataset.start] || {} };
+          renderReview();
+        }));
+      } catch (err) {
+        $("slotsStatus").textContent = err.message || "Couldn't load times. Please try again.";
+      }
+    }
+
+    function renderReview() {
+      const n = ctx.next_service;
+      const base = Number(n.price.base_price);
+      const travel = Number(selectedSlot.meta.travel_fee || 0);
+      const pushbackFee = Number(n.price.pushback_fee || 0);
+      const rows = [[`${ctx.service.label} (${n.price.price_mode === "discounted" ? "member price" : "full price"})`, base]];
+      if (travel) rows.push(["Travel fee", travel]);
+      if (pushbackFee) rows.push(["Window extension fee (15%)", pushbackFee]);
+      const total = rows.reduce((t, r) => t + r[1], 0);
+      $("reviewSummary").innerHTML = `
+        <p style="margin:0 0 6px"><strong>${esc(fmtDateTime(selectedSlot.start))}</strong></p>
+        <p class="muted" style="margin:0 0 10px">${esc($("address").value.trim())} · ${esc(ctx.vehicle.label)}</p>
+        <table class="price-table">${rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${money(r[1])}</td></tr>`).join("")}
+          <tr class="total"><td>Total due after service</td><td>${money(total)}</td></tr></table>
+        ${n.price.reason === "missed_cycle" ? `<div class="note">Because your last window was missed, this visit is full price. Member pricing returns on your next visit.</div>` : ""}`;
+      $("reviewCard").hidden = false;
+      $("status").textContent = "";
+      $("reviewCard").scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    $("address").addEventListener("change", () => { if (selectedDay) selectDay(selectedDay); });
+
+    $("confirmBtn").addEventListener("click", async () => {
+      if (!selectedSlot) return;
+      const btn = $("confirmBtn");
+      btn.disabled = true;
+      btn.textContent = "Booking…";
+      $("status").className = "status";
+      $("status").textContent = "";
+      const start = new Date(selectedSlot.start);
+      const end = new Date(start.getTime() + Number(ctx.service.duration_minutes) * 60000);
+      try {
+        const resp = await fetch("/api/create-member-booking", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            member_token: token,
+            cycle_id: ctx.next_service.cycle_id,
+            scheduled_start: start.toISOString(),
+            scheduled_end: end.toISOString(),
+            service_address: $("address").value.trim(),
+            customer_notes: $("notes").value.trim()
+          })
+        });
+        const json = await resp.json().catch(() => ({}));
+        if (!resp.ok || !json.ok) {
+          if (resp.status === 409 && /slot|available/i.test(json.message || "")) {
+            selectDay(selectedDay);
+          }
+          throw new Error(json.message || "Booking failed. Please try again.");
+        }
+        $("bookingFlow").hidden = true;
+        $("successCard").hidden = false;
+        $("successCard").innerHTML = `<h2>You're all set!</h2>
+          <p>We've received your request for <strong>${esc(fmtDateTime(selectedSlot.start))}</strong>. You'll get a confirmation email once it's confirmed.</p>
+          <p style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px">
+            <a class="btn btn-secondary" href="/manage-booking.html?token=${encodeURIComponent(json.manage_token)}">Manage appointment</a>
+            <a class="btn btn-secondary" href="${portalUrl}">Back to your plan</a></p>`;
+        $("successCard").scrollIntoView({ behavior: "smooth" });
+      } catch (err) {
+        $("status").className = "status bad";
+        $("status").textContent = err.message;
+        btn.disabled = false;
+        btn.textContent = "Confirm appointment";
+      }
+    });
+
+    async function init() {
+      if (!token) return showError("This link is missing your access code.");
+      try {
+        const resp = await fetch("/api/get-member-booking-context?token=" + encodeURIComponent(token));
+        const json = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw new Error(resp.status === 404 ? "This link isn't valid anymore." : (json.error || "Something went wrong."));
+        ctx = json;
+      } catch (err) {
+        return showError(err.message === "Failed to fetch" ? "Check your internet connection and try again." : err.message);
+      }
+      $("loading").hidden = true;
+      $("content").hidden = false;
+      renderFacts();
+      if (ctx.next_service.phase === "bookable") renderBookingFlow();
+      else renderState();
+    }
+    init();
+  </script>
+</body>
+</html>

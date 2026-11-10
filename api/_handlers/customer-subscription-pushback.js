@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import { getEffectiveWindowEnd, addBusinessDays, PUSHBACK_BUSINESS_DAYS } from "../_subscriptions/lifecycle.js";
+import { getEffectiveWindowEnd, addBusinessDays, PUSHBACK_BUSINESS_DAYS, todayNY } from "../_subscriptions/lifecycle.js";
 import { resolveSubscriptionByToken } from "../_subscriptions/resolveSubscriptionByToken.js";
 import { sendCyclePushbackEmailCore } from "../../lib/email/sendCyclePushbackEmail.js";
 
@@ -143,7 +143,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Pushback has already been used for this cycle." });
     }
     if (activeCycleBooking) {
-      return res.status(400).json({ error: "Cannot push back after a booking is already scheduled." });
+      return res.status(400).json({ error: "You already have an appointment for this window." });
+    }
+    const today = todayNY();
+    if (today < activeCycle.window_start_date) {
+      return res.status(400).json({ error: `You can extend your window once it opens on ${activeCycle.window_start_date}.` });
+    }
+    if (today > activeCycle.window_end_date) {
+      return res.status(400).json({ error: "This window has already ended." });
     }
 
     const durationMinutes = subscription.service_variants?.duration_minutes;
@@ -174,9 +181,14 @@ export default async function handler(req, res) {
       .update({
         pushback_used: true,
         pushback_end_date,
-        free_pushback
+        free_pushback,
+        // Reminders start over against the new end date.
+        reminder_1_sent_at: null,
+        reminder_2_sent_at: null
       })
       .eq("id", activeCycle.id)
+      .eq("status", "open")
+      .eq("pushback_used", false)
       .select("id, cycle_index, status, window_start_date, window_end_date, pushback_used, pushback_end_date, free_pushback")
       .single();
 
@@ -208,7 +220,8 @@ export default async function handler(req, res) {
     const cycle = updatedCycle;
     return res.status(200).json({
       ok: true,
-      message: "Cycle pushback applied.",
+      message: "Window extended.",
+      free_pushback: cycle.free_pushback === true,
       cycle: {
         id: cycle.id,
         cycle_index: cycle.cycle_index,

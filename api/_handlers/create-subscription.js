@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { sendSubscriptionCreatedEmailCore } from "../../lib/email/sendSubscriptionCreatedEmail.js";
 import { isSeasonClosed, SEASON_CLOSED_MESSAGE } from "../_seasonStatus.js";
+import { normalizePlanCategory } from "../_subscriptions/cycleState.js";
 
 const VALID_FREQUENCIES = ["biweekly", "monthly", "quarterly"];
 
@@ -68,9 +69,19 @@ export default async function handler(req, res) {
       });
     }
 
+    // Plan category (combined/interior/exterior) drives member pricing and portal labels.
+    const { data: variantRow } = await supabase
+      .from("service_variants")
+      .select("services:service_id(category)")
+      .eq("id", service_variant_id)
+      .maybeSingle();
+    const subscription_category =
+      normalizePlanCategory(body.subscription_category) || normalizePlanCategory(variantRow?.services?.category);
+
     const { data: subscription, error: insertErr } = await supabase
       .from("subscriptions")
       .insert({
+        subscription_category,
         customer_id,
         vehicle_id,
         service_variant_id,
