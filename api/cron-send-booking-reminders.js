@@ -32,10 +32,13 @@ export default async function handler(req, res) {
     const now = new Date();
     const nowMs = now.getTime();
 
-    const window48Start = new Date(nowMs + 47 * H_MS).toISOString();
-    const window48End = new Date(nowMs + 49 * H_MS).toISOString();
-    const window8Start = new Date(nowMs + 7 * H_MS).toISOString();
-    const window8End = new Date(nowMs + 9 * H_MS).toISOString();
+    // Runs once a day at 11:00 UTC (6am EST / 7am EDT; Hobby crons may fire any time in that hour).
+    // "2 days" reminder: jobs on the day after tomorrow (now+36h..now+60h covers that whole business day).
+    // "Today" reminder: jobs later today (business hours end by 6pm, well inside now..now+16h).
+    const window48Start = new Date(nowMs + 36 * H_MS).toISOString();
+    const window48End = new Date(nowMs + 60 * H_MS).toISOString();
+    const window8Start = now.toISOString();
+    const window8End = new Date(nowMs + 16 * H_MS).toISOString();
 
     const { data: subscriptionLinked } = await supabase
       .from("subscription_cycle_bookings")
