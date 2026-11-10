@@ -1,4 +1,10 @@
 {
+  "rewrites": [
+    {
+      "source": "/api/:route",
+      "destination": "/api/router?__route=:route"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",

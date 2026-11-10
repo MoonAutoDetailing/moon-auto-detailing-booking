@@ -1,0 +1,134 @@
+import { createClient } from "@supabase/supabase-js";
+import { google } from "googleapis";
+import { sendBookingCancelledEmailCore } from "../../lib/email/sendBookingCancelledEmail.js";
+import { ensureCancellationFollowUpTask, reconcileCustomerLifecycle } from "../_crmWorkflow.js";
+
+
+function requireEnv(name) {
+  const v = process.env[name];
+  if (!v) throw new Error(`Missing env ${name}`);
+  return v;
+}
+
+const WITHIN_24_HOURS_RESPONSE = {
+  ok: false,
+  code: "WITHIN_24_HOURS",
+  message: "Because your appointment is within 24 hours, online cancellations or reschedule requests are no longer available. Please call or text Darren at (518) 496-3691 to request a cancellation or reschedule."
+};
+
+export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+  if (req.method === "OPTIONS") return res.status(204).end();
+  if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
+
+  try {
+    const token = req.body?.token || req.body?.manage_token;
+    if (!token) return res.status(400).json({ message: "Missing token" });
+
+    const supabase = createClient(
+      requireEnv("SUPABASE_URL"),
+      requireEnv("SUPABASE_SERVICE_ROLE_KEY")
+    );
+
+    // =========================
+    // 1) Fetch booking by token
+    // =========================
+    const { data: booking, error } = await supabase
+  .from("bookings")
+  .select("id, customer_id, google_event_id, status, scheduled_start")
+  .eq("manage_token", token)
+  .single();
+
+    if (error || !booking) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    // =========================
+    // 24-HOUR CUSTOMER CANCEL RULE
+    // =========================
+    const hoursUntilService = (new Date(booking.scheduled_start).getTime() - Date.now()) / (1000 * 60 * 60);
+    if (Number.isFinite(hoursUntilService) && hoursUntilService <= 24) {
+      console.log("[MANAGE_BOOKING] customer_cancel_blocked_within_24 booking_id=" + booking.id);
+      return res.status(409).json(WITHIN_24_HOURS_RESPONSE);
+    }
+
+    if (booking.status === "cancelled") {
+      await ensureCancellationFollowUpTask(supabase, booking.customer_id, booking.id);
+      await reconcileCustomerLifecycle(supabase, booking.customer_id);
+      return res.status(200).json({ message: "Booking already cancelled" });
+    }
+
+
+
+    // =========================
+    // 2) Delete Google Calendar event (if exists)
+    // =========================
+    if (booking.google_event_id) {
+      const decoded = Buffer.from(
+        requireEnv("GOOGLE_SERVICE_ACCOUNT_JSON"),
+        "base64"
+      ).toString("utf-8");
+
+      const creds = JSON.parse(decoded);
+
+      const auth = new google.auth.JWT({
+        email: creds.client_email,
+        key: creds.private_key.replace(/\\n/g, "\n"),
+        scopes: ["https://www.googleapis.com/auth/calendar"]
+      });
+
+      const calendar = google.calendar({ version: "v3", auth });
+
+      try {
+        await calendar.events.delete({
+          calendarId: requireEnv("GOOGLE_CALENDAR_ID").trim(),
+          eventId: booking.google_event_id
+        });
+      } catch (err) {
+        console.error("Calendar delete warning:", err.message);
+        // Do NOT fail booking cancel if calendar delete fails
+      }
+    }
+
+    // =========================
+    // 3) Update booking status
+    // =========================
+    const previousStatus = booking.status;
+    const { error: updateError } = await supabase
+  .from("bookings")
+  .update({
+    status: "cancelled"
+  })
+  .eq("id", booking.id);
+
+    if (updateError) {
+      console.error("SUPABASE UPDATE FAILED", updateError);
+      return res.status(500).json({ message: "Database update failed" });
+    }
+
+    // Send cancellation email (only after status update succeeds; must succeed or roll back)
+    const emailResult = await sendBookingCancelledEmailCore(booking.id);
+    if (!emailResult?.success) {
+      console.error("Cancel email failed:", emailResult?.error);
+      await supabase
+        .from("bookings")
+        .update({ status: previousStatus })
+        .eq("id", booking.id);
+      return res.status(500).json({ message: "Email failed; action rolled back" });
+    }
+
+    await ensureCancellationFollowUpTask(supabase, booking.customer_id, booking.id);
+    await reconcileCustomerLifecycle(supabase, booking.customer_id);
+
+   return res.status(200).json({
+  message: "Your booking has been cancelled."
+});
+
+
+  } catch (err) {
+    console.error("customer-cancel-booking error:", err);
+    return res.status(500).json({ message: "Server error" });
+  }
+}
