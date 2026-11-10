@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { isCycleAutomationEnabled } from "../_subscriptions/flags.js";
 import {
   getCycleStartDate,
   getCycleEndDate,
@@ -28,6 +29,11 @@ export default async function handler(req, res) {
 
   if (!validBearer && !validVercelCron) {
     return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  if (!isCycleAutomationEnabled()) {
+    console.log("[CYCLE_AUTOMATION] paused; skipping cron-generate-subscription-cycles");
+    return res.status(200).json({ ok: true, paused: true });
   }
 
   try {

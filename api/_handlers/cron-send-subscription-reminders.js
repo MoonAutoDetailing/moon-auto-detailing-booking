@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { isCycleAutomationEnabled } from "../_subscriptions/flags.js";
 import { getEffectiveWindowEnd } from "../_subscriptions/lifecycle.js";
 import { sendCycleReminder1EmailCore } from "../../lib/email/sendCycleReminder1Email.js";
 import { sendCycleReminder2EmailCore } from "../../lib/email/sendCycleReminder2Email.js";
@@ -41,6 +42,11 @@ export default async function handler(req, res) {
   const validVercelCron = cronHeader === "1";
   if (!validBearer && !validVercelCron) {
     return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  if (!isCycleAutomationEnabled()) {
+    console.log("[CYCLE_AUTOMATION] paused; skipping cron-send-subscription-reminders");
+    return res.status(200).json({ ok: true, paused: true });
   }
 
   try {
