@@ -10,6 +10,7 @@
 // and Vercel's bundler can still trace every handler.
 
 const ROUTES = {
+  "admin-analytics": () => import("./_handlers/admin-analytics.js"),
   "admin-availability-clear": () => import("./_handlers/admin-availability-clear.js"),
   "admin-availability-list": () => import("./_handlers/admin-availability-list.js"),
   "admin-availability-upsert": () => import("./_handlers/admin-availability-upsert.js"),
@@ -53,6 +54,7 @@ const ROUTES = {
   "admin-pause-subscription": () => import("./_handlers/admin-pause-subscription.js"),
   "admin-record-expense": () => import("./_handlers/admin-record-expense.js"),
   "admin-reschedule-booking": () => import("./_handlers/admin-reschedule-booking.js"),
+  "admin-payroll": () => import("./_handlers/admin-payroll.js"),
   "admin-request-reschedule": () => import("./_handlers/admin-request-reschedule.js"),
   "admin-resume-subscription": () => import("./_handlers/admin-resume-subscription.js"),
   "admin-schedule": () => import("./_handlers/admin-schedule.js"),
@@ -111,6 +113,7 @@ const ROUTES = {
   "staff-jobs": () => import("./_handlers/staff-jobs.js"),
   "staff-login": () => import("./_handlers/staff-login.js"),
   "staff-me": () => import("./_handlers/staff-me.js"),
+  "staff-pay": () => import("./_handlers/staff-pay.js"),
   "staff-shifts": () => import("./_handlers/staff-shifts.js"),
   "submit-reschedule": () => import("./_handlers/submit-reschedule.js"),
   "subscription-pushback": () => import("./_handlers/subscription-pushback.js"),

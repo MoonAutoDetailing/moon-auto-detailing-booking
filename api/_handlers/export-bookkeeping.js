@@ -138,6 +138,16 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Expenses query failed" });
     }
 
+    // Crew pay from approved/paid payroll weeks.
+    const { data: payrollRows, error: payErr } = await supabase
+      .from("payroll_lines")
+      .select("regular_hours, overtime_hours, regular_pay, overtime_pay, tips, reimbursements, total, payment_method, staff:staff_id ( full_name ), run:run_id ( week_start, week_end, status, paid_at )")
+      .order("created_at", { ascending: true });
+    if (payErr) {
+      console.error("export-bookkeeping payroll query failed", payErr);
+      return res.status(500).json({ error: "Payroll query failed" });
+    }
+
     // ---------- Build workbook ----------
     const wb = new ExcelJS.Workbook();
     wb.creator = "Moon Auto Detailing";
@@ -157,7 +167,8 @@ export default async function handler(req, res) {
       ["", ""],
       ["WHAT'S IN HERE", ""],
       ["Jobs", "Every completed and cancelled booking. Revenue uses Amount Collected."],
-      ["Expenses", "Every expense logged via the admin Expenses panel."],
+      ["Expenses", "Every approved expense (admin entries and approved crew receipts)."],
+      ["Payroll", "Crew pay by week from approved/paid payroll: wages, tips, pay-backs. Wages are a labor cost; tips are passed through from customers; pay-backs are already in Expenses."],
       ["Monthly Summary", "Auto-aggregated by month. Drives statements + dashboard."],
       ["Income Statement", "Revenue, costs, profit, margin by month."],
       ["Cash Flow", "Beginning balance, inflows, outflows, ending balance by month."],
@@ -321,6 +332,44 @@ export default async function handler(req, res) {
       expensesSheet.getRow(r).getCell(7).numFmt = MONEY_FMT_2DP;
     }
     expensesSheet.views = [{ state: "frozen", ySplit: 1 }];
+
+    // === Payroll ===
+    const payrollSheet = wb.addWorksheet("Payroll");
+    const payHeaders = [
+      "Week Start", "Week End", "Name", "Regular Hours", "Overtime Hours", "Wages",
+      "Tips", "Pay-backs", "Total Paid", "Status", "Paid On", "Paid Via"
+    ];
+    payrollSheet.addRow(payHeaders);
+    styleHeaderRow(payrollSheet, 1, payHeaders.length);
+    setColWidths(payrollSheet, [12, 12, 22, 14, 14, 12, 12, 12, 12, 10, 12, 16]);
+    (payrollRows || [])
+      .filter((l) => l.run && l.run.status !== "draft")
+      .sort((a, b) => (a.run.week_start < b.run.week_start ? -1 : a.run.week_start > b.run.week_start ? 1 : 0))
+      .forEach((l) => {
+        payrollSheet.addRow([
+          new Date(l.run.week_start + "T00:00:00"),
+          new Date(l.run.week_end + "T00:00:00"),
+          l.staff?.full_name || "",
+          Number(l.regular_hours) || 0,
+          Number(l.overtime_hours) || 0,
+          (Number(l.regular_pay) || 0) + (Number(l.overtime_pay) || 0),
+          Number(l.tips) || 0,
+          Number(l.reimbursements) || 0,
+          Number(l.total) || 0,
+          l.run.status,
+          l.run.paid_at ? new Date(l.run.paid_at) : null,
+          l.payment_method || ""
+        ]);
+      });
+    const payLastRow = payrollSheet.lastRow ? payrollSheet.lastRow.number : 1;
+    for (let r = 2; r <= payLastRow; r++) {
+      const row = payrollSheet.getRow(r);
+      row.getCell(1).numFmt = DATE_FMT;
+      row.getCell(2).numFmt = DATE_FMT;
+      row.getCell(11).numFmt = DATE_FMT;
+      for (const c of [6, 7, 8, 9]) row.getCell(c).numFmt = MONEY_FMT_2DP;
+    }
+    payrollSheet.views = [{ state: "frozen", ySplit: 1 }];
 
     // === Monthly Summary ===
     const monthly = wb.addWorksheet("Monthly Summary");

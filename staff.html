@@ -192,7 +192,7 @@ form.mini { margin-top: 8px; padding-top: 4px; }
   <button type="button" data-tab="schedule"><span class="ico">📅</span>Schedule</button>
   <button type="button" data-tab="availability"><span class="ico">🗓️</span>Availability</button>
   <button type="button" data-tab="expenses"><span class="ico">🧾</span>Expenses</button>
-  <button type="button" data-tab="account"><span class="ico">👤</span>Account</button>
+  <button type="button" data-tab="account"><span class="ico">👤</span>Me</button>
 </nav>
 
 <input type="file" id="photoInput" accept="image/*" capture="environment" multiple class="hidden" />
@@ -803,6 +803,7 @@ receiptInput.onchange = async () => {
 function renderAccount() {
   const me = state.me || {};
   app.innerHTML = `
+    <div class="panel" id="payPanel"><h3>My pay</h3><p class="muted" style="margin:0;font-size:14px;">Loading…</p></div>
     <div class="panel">
       <h3>${esc(me.full_name || "")}</h3>
       <div class="kv">
@@ -825,6 +826,7 @@ function renderAccount() {
     ${me.role !== "employee" ? `<a class="btn block" href="/admin.html" style="margin-bottom:12px;">Open admin page</a>` : ""}
     <button class="btn block" id="signOutBtn" type="button">Sign out</button>`;
   app.querySelector("#signOutBtn").onclick = signOut;
+  loadPay();
   app.querySelector("#pwForm").onsubmit = async (e) => {
     e.preventDefault();
     const f = new FormData(e.target);
@@ -834,6 +836,32 @@ function renderAccount() {
       toast("Password changed.");
     } catch (err) { toast(err.message, true); }
   };
+}
+
+// Pay: this week so far and last week are estimates until a manager approves payroll.
+async function loadPay() {
+  const el = document.getElementById("payPanel");
+  if (!el) return;
+  try {
+    const p = await api("/api/staff-pay");
+    const fmtD = (d) => new Date(d + "T12:00:00Z").toLocaleDateString([], { timeZone: "UTC", month: "short", day: "numeric" });
+    const week = (w, title) => {
+      const hours = Number(w.regular_hours) + Number(w.overtime_hours);
+      const tag = w.status === "paid" ? '<span class="chip ok">Paid</span>' : w.status === "approved" ? '<span class="chip info">Approved</span>' : '<span class="chip">Estimate</span>';
+      return `<div class="item"><div class="grow"><strong>${title}</strong> <span class="muted">${esc(fmtD(w.start))}–${esc(fmtD(w.end))}</span><br>
+        <span class="muted">${hours.toFixed(2)} hrs${Number(w.overtime_hours) ? ` (${Number(w.overtime_hours).toFixed(2)} overtime)` : ""}${Number(w.tips) ? ` · tips ${money(w.tips)}` : ""}${Number(w.reimbursements) ? ` · pay-backs ${money(w.reimbursements)}` : ""}</span></div>
+        <div style="text-align:right;"><strong style="font-size:18px;">${money(w.total)}</strong><br>${tag}</div></div>`;
+    };
+    el.innerHTML = `
+      <h3>My pay ${p.rate != null ? `<span class="count muted">${money(p.rate)}/hr</span>` : ""}</h3>
+      ${p.rate == null ? `<p class="muted" style="margin:0 0 6px;font-size:13px;">Your hourly rate hasn't been set yet — ask a manager.</p>` : ""}
+      ${week(p.this_week, "This week")}
+      ${week(p.last_week, "Last week")}
+      ${p.history.filter((h) => h.start !== p.last_week.start).slice(0, 6).map((h) => week(h, "Week of")).join("")}
+      <p class="muted" style="margin:8px 0 0;font-size:12px;">Hours come from the time clock; overtime over 40 hrs is 1.5×. Tips are shared with the crew on each job. Paid weekly.</p>`;
+  } catch (err) {
+    el.innerHTML = `<h3>My pay</h3><p class="muted" style="margin:0;">${esc(err.message)}</p>`;
+  }
 }
 
 /* ---------------- One job ---------------- */

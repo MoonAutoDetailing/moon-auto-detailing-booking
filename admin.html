@@ -3600,7 +3600,7 @@ function renderButtons() {
   viewButtons.innerHTML = "";
 
   const primaryKeys = ["pending", "today", "upcoming"];
-  const menuKeys = ["history", "subscriptions", "waitlist", "team", "schedule", "timeclock", "checklists", "discount-codes", "book-customer", "availability", "expenses", "bookkeeping"];
+  const menuKeys = ["business", "history", "subscriptions", "waitlist", "team", "schedule", "timeclock", "payroll", "checklists", "discount-codes", "book-customer", "availability", "expenses", "bookkeeping"];
   const allButtons = [
     { key: "pending", label: "Pending Bookings" },
     { key: "today", label: "Today's Schedule" },
@@ -3611,6 +3611,8 @@ function renderButtons() {
     { key: "team", label: "Team" },
     { key: "schedule", label: "Crew Schedule" },
     { key: "timeclock", label: "Time Clock" },
+    { key: "payroll", label: "Payroll" },
+    { key: "business", label: "Business" },
     { key: "checklists", label: "Job Checklists" },
     { key: "discount-codes", label: "Discount Codes" },
     { key: "book-customer", label: "Book Customer" },
@@ -3633,8 +3635,8 @@ function renderButtons() {
   if (dropdown) {
     dropdown.innerHTML = "";
     const sections = [
-      { title: "Views", keys: ["history", "subscriptions", "waitlist"] },
-      { title: "Team", keys: ["team", "schedule", "timeclock", "checklists"] },
+      { title: "Views", keys: ["business", "history", "subscriptions", "waitlist"] },
+      { title: "Team", keys: ["team", "schedule", "timeclock", "payroll", "checklists"] },
       { title: "Tools", keys: ["discount-codes", "book-customer", "availability", "expenses", "bookkeeping"] },
       { title: "Account", keys: ["__debug__"] }
     ];
@@ -4890,6 +4892,234 @@ function renderView(viewName) {
   // =========================
   // WAITLIST (off-season sign-ups)
   // =========================
+  // =========================
+  // PAYROLL (weekly: draft → approve → mark paid)
+  // =========================
+  if (viewName === "payroll") {
+    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const $ = (n) => "$" + Number(n || 0).toFixed(2);
+    const h = (n) => Number(n || 0).toFixed(2);
+    const fmtD = (d) => new Date(d + "T12:00:00Z").toLocaleDateString([], { timeZone: "UTC", month: "short", day: "numeric" });
+    const STATUS = { draft: ["Draft — live numbers", "rgba(255,255,255,0.12)", "#fff"], approved: ["Approved — ready to pay", "rgba(127,184,230,0.2)", "#9fd0f5"], paid: ["Paid", "rgba(111,211,154,0.2)", "#6fd39a"] };
+    let weekDate = null;
+    let paidArmed = false;
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText = "display:flex;flex-direction:column;gap:12px;";
+    viewContainer.appendChild(wrapper);
+
+    async function call(method, url, body) {
+      const res = await adminFetch(url, { method, headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || "Request failed");
+      return d;
+    }
+
+    function render(d) {
+      const st = STATUS[d.run.status] || STATUS.draft;
+      const isCurrentWeek = d.week.start >= d.this_week;
+      const shift = (n) => { const x = new Date(d.week.start + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+      const btn = "padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:#fff;font:inherit;font-size:14px;cursor:pointer;";
+      const primary = "padding:8px 14px;border-radius:10px;border:none;background:var(--moon-primary);color:#07111d;font:inherit;font-size:14px;font-weight:700;cursor:pointer;";
+      const tile = (label, value, strong) => `<div style="flex:1 1 120px;padding:10px 12px;border-radius:10px;background:rgba(111,147,196,0.12);"><div style="font-size:12px;opacity:.75;">${label}</div><div style="font-size:${strong ? 22 : 18}px;font-weight:700;">${value}</div></div>`;
+      wrapper.innerHTML = `
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+          <h3 style="margin:0;flex:1 1 auto;">Payroll <span class="booking-summary-meta">· ${esc(fmtD(d.week.start))} – ${esc(fmtD(d.week.end))}</span></h3>
+          <button type="button" style="${btn}" data-prev>‹ Prev</button>
+          <button type="button" style="${btn}" data-last>Last week</button>
+          <button type="button" style="${btn}" data-next>Next ›</button>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
+          <span style="padding:5px 12px;border-radius:999px;background:${st[1]};color:${st[2]};font-weight:700;font-size:13px;">${esc(st[0])}</span>
+          ${d.run.approved_at ? `<span style="font-size:12px;opacity:.7;">Approved ${esc(new Date(d.run.approved_at).toLocaleString())} by ${esc(String(d.run.approved_by || "").replace(/ \(.*\)$/, ""))}</span>` : ""}
+          ${d.run.paid_at ? `<span style="font-size:12px;opacity:.7;">· Paid ${esc(new Date(d.run.paid_at).toLocaleDateString())}${d.lines[0]?.payment_method ? " via " + esc(d.lines[0].payment_method) : ""}</span>` : ""}
+          <span style="flex:1"></span>
+          <button type="button" style="${btn}" data-csv ${d.lines.length ? "" : "disabled"}>Download CSV</button>
+          ${d.run.status === "draft" ? `<button type="button" style="${primary}" data-approve ${isCurrentWeek || !d.lines.length ? "disabled title='Approve once the week is over'" : ""}>Approve payroll</button>` : ""}
+          ${d.run.status === "approved" ? (paidArmed
+            ? `<select data-method style="padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;">${d.payment_methods.map(m => `<option style="color:#000;">${esc(m)}</option>`).join("")}</select>
+               <button type="button" style="${primary}" data-paid-yes>Confirm paid ${$(d.totals.total)}</button>
+               <button type="button" style="${btn}" data-paid-no>Cancel</button>`
+            : `<button type="button" style="${btn}" data-reopen>Reopen</button><button type="button" style="${primary}" data-paid>Mark as paid</button>`) : ""}
+        </div>
+        ${isCurrentWeek && d.run.status === "draft" ? `<div style="font-size:13px;opacity:.75;">This week isn't over yet — numbers update live as the crew clocks time and completes jobs.</div>` : ""}
+        <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          ${tile("Total to pay", $(d.totals.total), true)}
+          ${tile("Hours", h(d.totals.hours))}
+          ${tile("Wages", $(d.totals.wages))}
+          ${tile("Tips", $(d.totals.tips))}
+          ${tile("Pay-backs", $(d.totals.reimbursements))}
+        </div>
+        ${d.unassigned_tips?.length ? `<div style="padding:10px 12px;border-radius:10px;border:1px solid rgba(255,198,92,.5);color:#ffc65c;font-size:13px;">${$(d.unassigned_tips.reduce((t, x) => t + x.tip, 0))} in tips from ${d.unassigned_tips.length} job${d.unassigned_tips.length === 1 ? "" : "s"} completed from the admin page have no crew recorded, so they aren't in anyone's pay. Pay them out by hand or have the crew complete jobs in the crew app.</div>` : ""}
+        <div style="overflow-x:auto;border:1px solid rgba(255,255,255,.12);border-radius:12px;">
+          <table style="border-collapse:collapse;width:100%;min-width:720px;font-size:14px;">
+            <thead><tr style="text-align:right;font-size:12px;opacity:.75;">
+              <th style="text-align:left;padding:10px;">Name</th><th style="padding:10px;">Rate</th><th style="padding:10px;">Reg. hrs</th><th style="padding:10px;">OT hrs</th>
+              <th style="padding:10px;">Wages</th><th style="padding:10px;">Tips</th><th style="padding:10px;">Pay-backs</th><th style="padding:10px;">Total</th>
+            </tr></thead>
+            <tbody>${d.lines.length ? d.lines.map(l => `
+              <tr style="border-top:1px solid rgba(255,255,255,.08);text-align:right;">
+                <td style="text-align:left;padding:10px;font-weight:600;">${esc(l.full_name)}${l.warnings.length ? `<div style="font-weight:400;font-size:12px;color:#ffc65c;">⚠ ${l.warnings.map(esc).join("<br>⚠ ")}</div>` : ""}</td>
+                <td style="padding:10px;">${l.hourly_rate != null ? $(l.hourly_rate) : "—"}</td>
+                <td style="padding:10px;">${h(l.regular_hours)}</td>
+                <td style="padding:10px;${l.overtime_hours ? "color:#ffc65c;" : ""}">${h(l.overtime_hours)}</td>
+                <td style="padding:10px;">${$(Number(l.regular_pay) + Number(l.overtime_pay))}</td>
+                <td style="padding:10px;">${$(l.tips)}</td>
+                <td style="padding:10px;">${$(l.reimbursements)}</td>
+                <td style="padding:10px;font-weight:700;">${$(l.total)}</td>
+              </tr>`).join("") : `<tr><td colspan="8" style="padding:16px;opacity:.7;">No hours, tips or pay-backs this week.</td></tr>`}</tbody>
+          </table>
+        </div>
+        <p style="margin:0;font-size:12px;opacity:.65;">Wages = time clock hours × hourly rate, 1.5× over 40 hours. Tips are split evenly between the crew who worked each job. Pay-backs are approved "own money" expenses. Approving freezes the numbers; fix time entries first under Time Clock. This page records payroll — it doesn't send money.</p>
+        ${d.recent.length ? `<div><div style="font-weight:700;margin-bottom:6px;">Recent weeks</div>${d.recent.map(r => `<button type="button" data-week="${esc(r.week_start)}" style="${btn}margin:0 6px 6px 0;">${esc(fmtD(r.week_start))} · ${esc(r.status)}</button>`).join("")}</div>` : ""}`;
+
+      wrapper.querySelector("[data-prev]").onclick = () => { weekDate = shift(-7); load(); };
+      wrapper.querySelector("[data-next]").onclick = () => { weekDate = shift(7); load(); };
+      wrapper.querySelector("[data-last]").onclick = () => { weekDate = null; load(); };
+      wrapper.querySelectorAll("[data-week]").forEach(b => (b.onclick = () => { weekDate = b.dataset.week; load(); }));
+      wrapper.querySelector("[data-csv]").onclick = async () => {
+        try {
+          const res = await adminFetch(`/api/admin-payroll?week=${d.week.start}&format=csv`);
+          if (!res.ok) throw new Error("Download failed");
+          const blob = await res.blob();
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = `moon-payroll-${d.week.start}.csv`;
+          a.click();
+          URL.revokeObjectURL(a.href);
+        } catch (err) { showAdminBanner(err.message, "error"); }
+      };
+      const act = async (body, msg) => {
+        try { await call("POST", "/api/admin-payroll", { week: d.week.start, ...body }); paidArmed = false; showAdminBanner(msg, "success"); load(); }
+        catch (err) { showAdminBanner(err.message, "error"); }
+      };
+      wrapper.querySelector("[data-approve]")?.addEventListener("click", () => act({ action: "approve" }, "Payroll approved. Numbers are frozen."));
+      wrapper.querySelector("[data-reopen]")?.addEventListener("click", () => act({ action: "reopen" }, "Back to draft."));
+      wrapper.querySelector("[data-paid]")?.addEventListener("click", () => { paidArmed = true; render(d); });
+      wrapper.querySelector("[data-paid-no]")?.addEventListener("click", () => { paidArmed = false; render(d); });
+      wrapper.querySelector("[data-paid-yes]")?.addEventListener("click", () => act({ action: "paid", payment_method: wrapper.querySelector("[data-method]").value }, "Marked as paid."));
+    }
+
+    async function load() {
+      wrapper.innerHTML = "<p style='margin:0;'>Loading…</p>";
+      try {
+        const d = await call("GET", `/api/admin-payroll${weekDate ? "?week=" + weekDate : ""}`);
+        weekDate = d.week.start;
+        render(d);
+      } catch (err) {
+        wrapper.innerHTML = `<p style="margin:0;color:#ff8a8a;">${esc(err.message)}</p>`;
+      }
+    }
+    load();
+    return;
+  }
+
+  // =========================
+  // BUSINESS (revenue, labor, expenses, profit)
+  // =========================
+  if (viewName === "business") {
+    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const $ = (n) => (Number(n) < 0 ? "-$" : "$") + Math.abs(Number(n || 0)).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+    let period = "month";
+    let date = null;
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText = "display:flex;flex-direction:column;gap:12px;";
+    viewContainer.appendChild(wrapper);
+
+    function chart(series) {
+      // One series (revenue) on one axis; costs and profit live in the tooltip and table.
+      const W = 720, H = 220, L = 52, B = 26, T = 10;
+      const max = Math.max(1, ...series.map(s => s.revenue));
+      const nice = Math.pow(10, Math.floor(Math.log10(max)));
+      const top = Math.ceil(max / nice) * nice;
+      const slot = (W - L) / series.length;
+      const bw = Math.min(36, slot * 0.5);
+      const y = (v) => T + (H - T - B) * (1 - v / top);
+      const ticks = [0, top / 2, top];
+      return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Revenue by period" style="width:100%;height:auto;display:block;">
+        ${ticks.map(t => `<line x1="${L}" x2="${W}" y1="${y(t)}" y2="${y(t)}" stroke="rgba(255,255,255,.10)" stroke-width="1"/><text x="${L - 8}" y="${y(t) + 4}" text-anchor="end" font-size="11" fill="rgba(255,255,255,.6)">${$(t)}</text>`).join("")}
+        ${series.map((s, i) => {
+          const x = L + slot * i + (slot - bw) / 2;
+          const hgt = Math.max(0, y(0) - y(s.revenue));
+          const r = Math.min(4, hgt / 2);
+          const path = hgt > 0 ? `M${x},${y(0)} V${y(s.revenue) + r} Q${x},${y(s.revenue)} ${x + r},${y(s.revenue)} H${x + bw - r} Q${x + bw},${y(s.revenue)} ${x + bw},${y(s.revenue) + r} V${y(0)} Z` : "";
+          return `<g data-i="${i}" style="cursor:default;">
+            <rect x="${L + slot * i}" y="${T}" width="${slot}" height="${H - T - B}" fill="transparent"/>
+            ${path ? `<path d="${path}" fill="${i === series.length - 1 ? "#7fb8e6" : "rgba(127,184,230,.55)"}"/>` : ""}
+            <text x="${L + slot * i + slot / 2}" y="${H - 8}" text-anchor="middle" font-size="11" fill="rgba(255,255,255,.65)">${esc(s.label)}</text>
+          </g>`;
+        }).join("")}
+      </svg>`;
+    }
+
+    async function load() {
+      wrapper.innerHTML = "<p style='margin:0;'>Loading…</p>";
+      try {
+        const res = await adminFetch(`/api/admin-analytics?period=${period}${date ? "&date=" + date : ""}`);
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error || "Failed to load");
+        date = d.date;
+        const c = d.current;
+        const prev = d.series[d.series.length - 2];
+        const delta = (a, b) => b ? `${a >= b ? "▲" : "▼"} ${Math.abs(Math.round(((a - b) / (Math.abs(b) || 1)) * 100))}% vs ${esc(prev.label)}` : "";
+        const tile = (label, value, sub) => `<div style="flex:1 1 150px;padding:12px 14px;border-radius:12px;background:rgba(111,147,196,0.12);"><div style="font-size:12px;opacity:.75;">${label}</div><div style="font-size:24px;font-weight:700;">${value}</div>${sub ? `<div style="font-size:12px;opacity:.7;">${sub}</div>` : ""}</div>`;
+        const btn = (on) => `padding:7px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:${on ? "var(--moon-primary)" : "rgba(255,255,255,.06)"};color:${on ? "#07111d" : "#fff"};font:inherit;font-size:14px;cursor:pointer;${on ? "font-weight:700;" : ""}`;
+        const step = (n) => { const x = new Date(d.date + "T12:00:00Z"); if (period === "week") x.setUTCDate(x.getUTCDate() + 7 * n); else x.setUTCMonth(x.getUTCMonth() + n, 15); return x.toISOString().slice(0, 10); };
+        wrapper.innerHTML = `
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+            <h3 style="margin:0;flex:1 1 auto;">Business <span class="booking-summary-meta">· ${esc(c.label)}${period === "week" ? " week" : ""}</span></h3>
+            <button type="button" style="${btn(period === "week")}" data-p="week">Week</button>
+            <button type="button" style="${btn(period === "month")}" data-p="month">Month</button>
+            <button type="button" style="${btn(false)}" data-step="-1">‹</button>
+            <button type="button" style="${btn(false)}" data-step="0">Now</button>
+            <button type="button" style="${btn(false)}" data-step="1">›</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            ${tile("Revenue", $(c.revenue), delta(c.revenue, prev?.revenue))}
+            ${tile("Profit (est.)", $(c.profit), `${c.margin}% margin`)}
+            ${tile("Jobs completed", c.jobs, `avg ticket ${$(c.average_ticket)}`)}
+            ${tile("Labor (est.)", $(c.labor), `${c.hours} hrs · ${c.hours_per_job} hrs/job`)}
+            ${tile("Expenses", $(c.expenses), c.asset_purchases ? `+ ${$(c.asset_purchases)} equipment` : "")}
+            ${tile("Tips to crew", $(c.tips), "not counted as revenue")}
+          </div>
+          <div style="padding:12px;border-radius:12px;border:1px solid rgba(255,255,255,.12);position:relative;">
+            <div style="font-weight:700;margin-bottom:6px;">Revenue · last ${d.series.length} ${period === "week" ? "weeks" : "months"}</div>
+            <div data-chart>${chart(d.series)}</div>
+            <div data-tip style="position:absolute;pointer-events:none;display:none;padding:8px 10px;border-radius:8px;background:#141a22;border:1px solid rgba(255,255,255,.2);font-size:12px;line-height:1.5;white-space:nowrap;"></div>
+          </div>
+          <details><summary style="cursor:pointer;font-weight:600;">Table</summary>
+            <div style="overflow-x:auto;margin-top:8px;"><table style="border-collapse:collapse;width:100%;min-width:640px;font-size:13px;">
+              <thead><tr style="text-align:right;opacity:.75;"><th style="text-align:left;padding:6px;">Period</th><th style="padding:6px;">Revenue</th><th style="padding:6px;">Labor</th><th style="padding:6px;">Expenses</th><th style="padding:6px;">Profit</th><th style="padding:6px;">Margin</th><th style="padding:6px;">Jobs</th><th style="padding:6px;">Hours</th></tr></thead>
+              <tbody>${d.series.slice().reverse().map(s => `<tr style="text-align:right;border-top:1px solid rgba(255,255,255,.08);"><td style="text-align:left;padding:6px;">${esc(s.label)}</td><td style="padding:6px;">${$(s.revenue)}</td><td style="padding:6px;">${$(s.labor)}</td><td style="padding:6px;">${$(s.expenses)}</td><td style="padding:6px;">${$(s.profit)}</td><td style="padding:6px;">${s.margin}%</td><td style="padding:6px;">${s.jobs}</td><td style="padding:6px;">${s.hours}</td></tr>`).join("")}</tbody>
+            </table></div>
+          </details>
+          <p style="margin:0;font-size:12px;opacity:.65;">Revenue = amount collected on completed jobs (by service date), excluding your TEST ACCOUNT bookings. Labor = clocked hours × hourly rate (before overtime). Expenses = approved direct + operating costs; equipment, owner draws and loan payments aren't counted. For tax figures use the Bookkeeping export.</p>`;
+
+        wrapper.querySelectorAll("[data-p]").forEach(b => (b.onclick = () => { period = b.dataset.p; load(); }));
+        wrapper.querySelectorAll("[data-step]").forEach(b => (b.onclick = () => { date = Number(b.dataset.step) === 0 ? null : step(Number(b.dataset.step)); load(); }));
+        const tip = wrapper.querySelector("[data-tip]");
+        const box = wrapper.querySelector("[data-chart]").parentElement;
+        wrapper.querySelectorAll("[data-chart] g[data-i]").forEach(g => {
+          g.addEventListener("pointerenter", () => {
+            const s = d.series[Number(g.dataset.i)];
+            tip.innerHTML = `<strong>${esc(s.label)}</strong><br>Revenue ${$(s.revenue)}<br>Labor ${$(s.labor)} · Expenses ${$(s.expenses)}<br>Profit ${$(s.profit)} (${s.margin}%) · ${s.jobs} jobs`;
+            tip.style.display = "block";
+          });
+          g.addEventListener("pointermove", (ev) => {
+            const r = box.getBoundingClientRect();
+            const x = Math.min(ev.clientX - r.left + 12, r.width - tip.offsetWidth - 8);
+            tip.style.left = Math.max(8, x) + "px";
+            tip.style.top = (ev.clientY - r.top - tip.offsetHeight - 10) + "px";
+          });
+          g.addEventListener("pointerleave", () => { tip.style.display = "none"; });
+        });
+      } catch (err) {
+        wrapper.innerHTML = `<p style="margin:0;color:#ff8a8a;">${esc(err.message)}</p>`;
+      }
+    }
+    load();
+    return;
+  }
+
   // =========================
   // CREW SCHEDULE — drag-and-drop week timeline
   // Drag a person from the team bar onto a day, drag inside someone's column to paint a
