@@ -16,7 +16,7 @@ export function attentionItems(c, { isOwner }) {
       detail: c.forgotClockOut.join(", ") + " — fix the time entry" });
   }
   if (c.overdueJobs) {
-    items.push({ key: "overdue", icon: "check", view: "today", tone: "warn",
+    items.push({ key: "overdue", icon: "check", view: "overdue", tone: "warn",
       title: `${plural(c.overdueJobs, "job", "jobs")} finished but not marked complete`,
       detail: "Complete them so payment and the customer email are recorded" });
   }
@@ -74,7 +74,8 @@ export default async function handler(req, res) {
       { count: drafts, error: e7 },
     ] = await Promise.all([
       sb.from("time_entries").select("clock_in_at, staff:staff_id ( full_name )").is("clock_out_at", null).is("voided_at", null),
-      sb.from("bookings").select("id").eq("status", "confirmed").lt("scheduled_end", new Date(now - H).toISOString()).gte("scheduled_end", new Date(now - 14 * 24 * H).toISOString()),
+      // Same rule as the Bookings → Not completed list: confirmed, ended over an hour ago.
+      sb.from("bookings").select("id").eq("status", "confirmed").lt("scheduled_end", new Date(now - H).toISOString()),
       sb.from("time_off_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
       sb.from("expenses").select("id", { count: "exact", head: true }).eq("status", "pending"),
       sb.from("time_entries").select("clock_in_at, clock_out_at").is("voided_at", null).gte("clock_in_at", lastWeek.startISO).lt("clock_in_at", lastWeek.endISO),

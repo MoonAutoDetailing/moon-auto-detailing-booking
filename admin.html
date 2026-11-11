@@ -3319,6 +3319,10 @@ cachedViews.pending = [];
 cachedViews.today = [];
 cachedViews.upcoming = [];
 cachedViews.history = [];
+// Confirmed jobs that ended over an hour ago and were never completed (or cancelled).
+// Past days' ones would otherwise not appear in any list.
+cachedViews.overdue = [];
+const overdueCutoff = Date.now() - 60 * 60 * 1000;
 
 const now = new Date();
 const startOfToday = new Date();
@@ -3335,6 +3339,9 @@ if (b.status === "pending") {
 }
 
 else if (b.status === "confirmed") {
+if (new Date(b.scheduled_end).getTime() < overdueCutoff) {
+  cachedViews.overdue.push(b);
+}
 if (start >= startOfToday && start < endOfToday) {
 cachedViews.today.push(b);
 } else if (start >= endOfToday) {
@@ -4034,7 +4041,7 @@ const TABBAR = [
   { key: "schedule", label: "Schedule", icon: "calendar" },
   { key: "more", label: "More", icon: "menu" }
 ];
-const VIEW_TITLES = { more: "More", pending: "Bookings", upcoming: "Bookings" };
+const VIEW_TITLES = { more: "More", pending: "Bookings", upcoming: "Bookings", overdue: "Bookings" };
 NAV_GROUPS.forEach(g => g.items.forEach(i => { VIEW_TITLES[i.key] = i.label; }));
 const TABBAR_KEYS = TABBAR.map(t => t.key);
 let bookingsSegment = "pending";
@@ -4208,14 +4215,21 @@ async function loadAttention(el) {
 function renderBookingsView() {
   const pending = cachedViews.pending || [];
   const upcoming = cachedViews.upcoming || [];
+  const overdue = cachedViews.overdue || [];
+  if (bookingsSegment === "overdue" && !overdue.length) bookingsSegment = "pending";
   const seg = document.createElement("div");
   seg.className = "ux-seg";
   seg.innerHTML = `
-    <button type="button" data-seg="pending" class="${bookingsSegment === "pending" ? "on" : ""}">Needs confirming <b>${pending.length}</b></button>
-    <button type="button" data-seg="upcoming" class="${bookingsSegment === "upcoming" ? "on" : ""}">Upcoming <b>${upcoming.length}</b></button>`;
+    <button type="button" data-seg="pending" class="${bookingsSegment === "pending" ? "on" : ""}">To confirm <b>${pending.length}</b></button>
+    <button type="button" data-seg="upcoming" class="${bookingsSegment === "upcoming" ? "on" : ""}">Upcoming <b>${upcoming.length}</b></button>
+    ${overdue.length ? `<button type="button" data-seg="overdue" class="${bookingsSegment === "overdue" ? "on" : ""}">Not completed <b class="ux-warn-text">${overdue.length}</b></button>` : ""}`;
   seg.querySelectorAll("[data-seg]").forEach(b => (b.onclick = () => { bookingsSegment = b.dataset.seg; renderView("bookings"); }));
   viewContainer.appendChild(seg);
   if (bookingsSegment === "pending") renderBookingList(pending, "Nothing waiting for confirmation. New booking requests show up here.");
+  else if (bookingsSegment === "overdue") {
+    viewContainer.insertAdjacentHTML("beforeend", `<p class="ux-footnote" style="max-width:860px;margin:0 auto 12px;">These jobs ended but were never marked complete. Open each one and use <strong>Complete job &amp; take payment</strong>, or cancel it if it didn't happen.</p>`);
+    renderBookingList(overdue, "All finished jobs are marked complete.");
+  }
   else renderBookingList(upcoming, "No upcoming confirmed jobs.");
 }
 
@@ -4242,7 +4256,7 @@ function closeAdminMenu() {
 }
 
 function handleViewSwitch(viewName) {
-  if (viewName === "pending" || viewName === "upcoming") {
+  if (viewName === "pending" || viewName === "upcoming" || viewName === "overdue") {
     bookingsSegment = viewName;
     viewName = "bookings";
   }
