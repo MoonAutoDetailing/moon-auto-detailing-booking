@@ -105,6 +105,8 @@ export default async function handler(req, res) {
   discount_percent,
   discount_amount,
   customer_notes,
+  job_flag,
+  crew_notes,
   customers:customer_id (
     full_name,
     phone

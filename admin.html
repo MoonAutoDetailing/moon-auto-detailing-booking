@@ -3106,6 +3106,90 @@ function createAdminReschedulePanel(b, card) {
   return panel;
 }
 
+// Crew & QC panel inside a booking card. Crew notes and the ceramic flag show in the crew app;
+// "Photos & checklist" loads what the crew recorded (signed photo links expire after an hour).
+function buildCrewQcPanel(b) {
+  const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const wrap = document.createElement("div");
+  wrap.className = "row";
+  wrap.style.display = "block";
+  wrap.style.marginTop = "10px";
+  wrap.style.paddingTop = "10px";
+  wrap.style.borderTop = "1px solid rgba(255,255,255,0.12)";
+  const editable = b.status === "pending" || b.status === "confirmed";
+  wrap.innerHTML = `
+    <div style="font-weight:700;margin-bottom:6px;">Crew &amp; QC</div>
+    ${editable ? `
+      <label style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <input type="checkbox" data-qc-ceramic style="width:auto;" ${b.job_flag === "ceramic" ? "checked" : ""} /> Ceramic coating job
+      </label>
+      <textarea data-qc-notes rows="2" placeholder="Notes for the crew (gate code, pet hair, focus areas…)"
+        style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:white;font-family:inherit;">${esc(b.crew_notes || "")}</textarea>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+        <button type="button" class="moon-tab" data-qc-save>Save crew info</button>
+        <button type="button" class="moon-tab" data-qc-load>Photos &amp; checklist</button>
+      </div>` : `
+      ${b.crew_notes ? `<div style="opacity:0.85;margin-bottom:6px;">Crew notes: ${esc(b.crew_notes)}</div>` : ""}
+      <button type="button" class="moon-tab" data-qc-load>Photos &amp; checklist</button>`}
+    <div data-qc-body style="margin-top:8px;"></div>`;
+
+  wrap.querySelector("[data-qc-save]")?.addEventListener("click", async (ev) => {
+    ev.stopPropagation();
+    try {
+      const res = await adminFetch("/api/admin-job", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          booking_id: b.id,
+          job_flag: wrap.querySelector("[data-qc-ceramic]").checked ? "ceramic" : null,
+          crew_notes: wrap.querySelector("[data-qc-notes]").value
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Save failed");
+      b.job_flag = data.booking.job_flag;
+      b.crew_notes = data.booking.crew_notes;
+      showAdminBanner("Crew info saved.", "success");
+    } catch (err) { showAdminBanner(err.message || "Save failed.", "error"); }
+  });
+
+  wrap.querySelector("[data-qc-load]").addEventListener("click", async (ev) => {
+    ev.stopPropagation();
+    const body = wrap.querySelector("[data-qc-body]");
+    body.innerHTML = "Loading…";
+    try {
+      const res = await adminFetch(`/api/admin-job?booking_id=${encodeURIComponent(b.id)}`);
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || "Load failed");
+      const fmt = (iso) => iso ? new Date(iso).toLocaleString() : "—";
+      const doneCount = d.checklist.filter(s => s.done).length;
+      const photosOf = (kind) => d.photos.filter(p => p.kind === kind);
+      const thumbs = (list) => list.length
+        ? `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:6px;margin:4px 0 10px;">${list.map(p =>
+            `<a href="${esc(p.url)}" target="_blank" rel="noopener" title="${esc((p.taken_by || "") + " · " + fmt(p.taken_at))}"><img src="${esc(p.url)}" loading="lazy" style="width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;display:block;" /></a>`).join("")}</div>`
+        : `<div style="opacity:0.6;margin:2px 0 10px;">None</div>`;
+      body.innerHTML = `
+        <div style="font-size:13px;opacity:0.85;margin-bottom:8px;">
+          Started: ${esc(fmt(d.started_at))}${d.started_by ? " by " + esc(d.started_by) : ""}<br>
+          Completed: ${esc(fmt(d.completed_at))}${d.completed_by ? " by " + esc(d.completed_by) : ""}<br>
+          Crew: ${d.worked_by.length ? esc(d.worked_by.join(", ")) : "—"}
+        </div>
+        <div style="font-weight:600;">Before (${photosOf("before").length})</div>${thumbs(photosOf("before"))}
+        <div style="font-weight:600;">After (${photosOf("after").length})</div>${thumbs(photosOf("after"))}
+        <div style="font-weight:600;">Damage / issues (${photosOf("issue").length})</div>${thumbs(photosOf("issue"))}
+        <details><summary style="cursor:pointer;font-weight:600;">Checklist ${doneCount}/${d.checklist.length}</summary>
+          <ul style="margin:6px 0 0;padding-left:18px;">${d.checklist.map(s =>
+            `<li style="${s.done ? "" : "color:#ffc65c;"}">${s.done ? "✓" : "✗"} ${esc(s.text)}</li>`).join("")}</ul>
+        </details>`;
+    } catch (err) {
+      body.innerHTML = `<span style="color:#ff8a8a;">${esc(err.message || "Load failed")}</span>`;
+    }
+  });
+  // Keep clicks/typing inside the panel from toggling the card.
+  wrap.addEventListener("click", (ev) => ev.stopPropagation());
+  return wrap;
+}
+
 function buildCard(b) {
   const start = new Date(b.scheduled_start);
   const end = new Date(b.scheduled_end);
@@ -3212,6 +3296,13 @@ if (b.google_event_html_link) {
 }
 
 
+
+// ===== Crew & QC: ceramic flag, crew notes, job photos/checklist review =====
+if (b.job_flag === "ceramic") {
+  card.querySelector(".booking-header .booking-summary-line")
+    .insertAdjacentHTML("afterend", '<span class="status-badge" style="background:rgba(255,198,92,0.2);color:#ffc65c;">Ceramic</span>');
+}
+card.querySelector(".booking-content").appendChild(buildCrewQcPanel(b));
 
 const header = card.querySelector(".booking-header");
 
@@ -3506,7 +3597,7 @@ function renderButtons() {
   viewButtons.innerHTML = "";
 
   const primaryKeys = ["pending", "today", "upcoming"];
-  const menuKeys = ["history", "subscriptions", "waitlist", "team", "discount-codes", "book-customer", "availability", "expenses", "bookkeeping"];
+  const menuKeys = ["history", "subscriptions", "waitlist", "team", "checklists", "discount-codes", "book-customer", "availability", "expenses", "bookkeeping"];
   const allButtons = [
     { key: "pending", label: "Pending Bookings" },
     { key: "today", label: "Today's Schedule" },
@@ -3515,6 +3606,7 @@ function renderButtons() {
     { key: "subscriptions", label: "Subscriptions" },
     { key: "waitlist", label: "Waitlist" },
     { key: "team", label: "Team" },
+    { key: "checklists", label: "Job Checklists" },
     { key: "discount-codes", label: "Discount Codes" },
     { key: "book-customer", label: "Book Customer" },
     { key: "availability", label: "Availability" },
@@ -3537,7 +3629,7 @@ function renderButtons() {
     dropdown.innerHTML = "";
     const sections = [
       { title: "Views", keys: ["history", "subscriptions", "waitlist"] },
-      { title: "Team", keys: ["team"] },
+      { title: "Team", keys: ["team", "checklists"] },
       { title: "Tools", keys: ["discount-codes", "book-customer", "availability", "expenses", "bookkeeping"] },
       { title: "Account", keys: ["__debug__"] }
     ];
@@ -4793,6 +4885,100 @@ function renderView(viewName) {
   // =========================
   // WAITLIST (off-season sign-ups)
   // =========================
+  // =========================
+  // JOB CHECKLISTS (what the crew must tick off per service)
+  // =========================
+  if (viewName === "checklists") {
+    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const inputStyle = "padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:white;font-family:inherit;";
+    const SCOPES = [
+      { key: "general", label: "Every job (arrival & handoff)", hint: "Order 90+ shows at the end of the job." },
+      { key: "interior", label: "Interior (Interior, Combined, Monthly)", hint: "" },
+      { key: "exterior", label: "Exterior (Exterior, Combined, Monthly)", hint: "" },
+      { key: "ceramic", label: "Ceramic coating jobs", hint: "Added when a booking is marked Ceramic." }
+    ];
+    const wrapper = document.createElement("div");
+    wrapper.style.display = "flex";
+    wrapper.style.flexDirection = "column";
+    wrapper.style.gap = "14px";
+    wrapper.innerHTML = `
+      <div class="admin-filters"><h3 style="margin:0;">Job checklists</h3>
+        <p style="margin:6px 0 0;font-size:13px;opacity:0.75;">The crew must tick every required step and upload before/after photos before they can complete a job.
+        “Level 2+” steps only appear on Level 2 services. Changes apply to jobs not yet completed.</p></div>
+      <div data-list><p style="margin:0;">Loading…</p></div>`;
+    viewContainer.appendChild(wrapper);
+    const listEl = wrapper.querySelector("[data-list]");
+
+    async function call(method, url, body) {
+      const res = await adminFetch(url, { method, headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Request failed");
+      return data;
+    }
+
+    function stepRow(s) {
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px;";
+      row.innerHTML = `
+        <input type="number" value="${s.step_order}" title="Order" style="${inputStyle}width:56px;" data-f="step_order" />
+        <input type="text" value="${esc(s.text)}" style="${inputStyle}flex:1 1 220px;min-width:0;" data-f="text" />
+        <select style="${inputStyle}" data-f="min_level"><option value="1" ${s.min_level === 1 ? "selected" : ""}>All levels</option><option value="2" ${s.min_level === 2 ? "selected" : ""}>Level 2+</option></select>
+        <label style="font-size:12px;display:flex;gap:4px;align-items:center;"><input type="checkbox" data-f="required" style="width:auto;" ${s.required ? "checked" : ""} />Req.</label>
+        <button type="button" class="moon-tab" data-save>Save</button>
+        <button type="button" class="moon-tab" data-del title="Remove">✕</button>`;
+      const val = () => ({
+        id: s.id,
+        step_order: row.querySelector('[data-f="step_order"]').value,
+        text: row.querySelector('[data-f="text"]').value,
+        min_level: row.querySelector('[data-f="min_level"]').value,
+        required: row.querySelector('[data-f="required"]').checked
+      });
+      row.querySelector("[data-save]").onclick = async () => {
+        try { await call("PATCH", "/api/admin-checklists", val()); showAdminBanner("Step saved.", "success"); load(); }
+        catch (err) { showAdminBanner(err.message, "error"); }
+      };
+      row.querySelector("[data-del]").onclick = async () => {
+        if (!confirm(`Remove “${s.text}”?`)) return;
+        try { await call("DELETE", `/api/admin-checklists?id=${encodeURIComponent(s.id)}`); load(); }
+        catch (err) { showAdminBanner(err.message, "error"); }
+      };
+      return row;
+    }
+
+    async function load() {
+      try {
+        const { steps } = await call("GET", "/api/admin-checklists");
+        listEl.innerHTML = "";
+        for (const scope of SCOPES) {
+          const card = document.createElement("div");
+          card.className = "discount-code-card expanded";
+          card.style.padding = "14px";
+          card.innerHTML = `<div style="font-weight:700;margin-bottom:4px;">${esc(scope.label)}</div>
+            ${scope.hint ? `<div style="font-size:12px;opacity:0.7;margin-bottom:8px;">${esc(scope.hint)}</div>` : ""}`;
+          steps.filter(s => s.scope === scope.key).sort((a, b) => a.step_order - b.step_order).forEach(s => card.appendChild(stepRow(s)));
+          const add = document.createElement("form");
+          add.style.cssText = "display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;";
+          add.innerHTML = `<input name="text" placeholder="Add a step…" style="${inputStyle}flex:1;min-width:180px;" required />
+            <select name="min_level" style="${inputStyle}"><option value="1">All levels</option><option value="2">Level 2+</option></select>
+            <button type="submit" class="moon-tab">Add</button>`;
+          add.onsubmit = async (e) => {
+            e.preventDefault();
+            const f = Object.fromEntries(new FormData(add).entries());
+            const maxOrder = Math.max(0, ...steps.filter(s => s.scope === scope.key && s.step_order < 90).map(s => s.step_order));
+            try { await call("POST", "/api/admin-checklists", { scope: scope.key, text: f.text, min_level: f.min_level, step_order: maxOrder + 10 }); load(); }
+            catch (err) { showAdminBanner(err.message, "error"); }
+          };
+          card.appendChild(add);
+          listEl.appendChild(card);
+        }
+      } catch (err) {
+        listEl.innerHTML = `<p style="margin:0;color:#ff8a8a;">${esc(err.message)}</p>`;
+      }
+    }
+    load();
+    return;
+  }
+
   // =========================
   // TEAM (staff logins, roles, pay rates, clock-in PINs)
   // =========================

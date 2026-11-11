@@ -47,6 +47,8 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   discount_percent,
   discount_amount,
   customer_notes,
+  job_flag,
+  crew_notes,
 
   customers:customer_id (
     full_name,

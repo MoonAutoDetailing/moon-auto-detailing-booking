@@ -4,96 +4,647 @@
 <meta charset="utf-8" />
 <title>Moon Auto Detailing — Crew</title>
 <link rel="icon" href="/NewLogoColor.png" type="image/png" />
+<link rel="apple-touch-icon" href="/NewLogoColor.png" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
 <meta name="theme-color" content="#0e0e0e" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-title" content="MAD Crew" />
 <meta name="robots" content="noindex" />
 <style>
 :root {
   --moon-primary: #7fb8e6;
   --moon-primary-dark: #4f95cf;
+  --panel: rgba(111,147,196,0.14);
+  --line: rgba(255,255,255,0.15);
+  --muted: rgba(255,255,255,0.65);
+  --ok: #6fd39a;
+  --warn: #ffc65c;
+  --bad: #ff6b6b;
 }
 * { box-sizing: border-box; }
+html, body { margin: 0; }
 body {
   font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-  margin: 0;
-  min-height: 100vh;
   background: #0e0e0e;
   color: white;
-  padding: 16px;
+  min-height: 100vh;
+  padding: 0 0 calc(76px + env(safe-area-inset-bottom));
+  -webkit-tap-highlight-color: transparent;
 }
-header {
+a { color: var(--moon-primary); }
+header.top {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background: rgba(14,14,14,0.94);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(8px);
+}
+header.top img { width: 38px; }
+header.top .who { flex: 1; min-width: 0; }
+header.top .who strong { display: block; color: var(--moon-primary); font-size: 15px; }
+header.top .who span { font-size: 12px; color: var(--muted); }
+main { padding: 14px 16px; max-width: 680px; margin: 0 auto; }
+nav.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
   display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 18px;
+  background: #121417;
+  border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
 }
-header img { width: 44px; }
-header .who { flex: 1; }
-header .who strong { display: block; color: var(--moon-primary); }
-header .who span { font-size: 13px; opacity: 0.7; }
+nav.tabs button {
+  flex: 1; padding: 12px 0 14px; border: none; background: none; color: var(--muted);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+}
+nav.tabs button.active { color: var(--moon-primary); }
+nav.tabs button .ico { display: block; font-size: 20px; line-height: 1.2; }
 .btn {
-  padding: 9px 14px;
-  border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.25);
-  background: rgba(255,255,255,0.06);
-  color: white;
-  font-size: 14px;
-  cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 11px 16px; border-radius: 12px;
+  border: 1px solid var(--line); background: rgba(255,255,255,0.06);
+  color: white; font-size: 15px; font-weight: 600; text-decoration: none; cursor: pointer;
 }
+.btn.primary { background: var(--moon-primary); border-color: var(--moon-primary); color: #07111d; }
+.btn.block { width: 100%; }
+.btn.small { padding: 7px 12px; font-size: 13px; border-radius: 10px; }
+.btn:disabled { opacity: 0.45; cursor: default; }
 .panel {
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 14px;
-  background: rgba(111,147,196,0.14);
-  padding: 18px;
-  margin-bottom: 14px;
+  border: 1px solid var(--line); border-radius: 14px; background: var(--panel);
+  padding: 14px; margin-bottom: 12px;
 }
-.panel h2 { margin: 0 0 8px; font-size: 18px; }
-.panel p { margin: 0; opacity: 0.85; line-height: 1.5; }
+.panel h3 { margin: 0 0 10px; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.panel h3 .count { margin-left: auto; font-size: 13px; font-weight: 600; }
+.muted { color: var(--muted); }
+.banner {
+  border-radius: 14px; padding: 12px 14px; margin-bottom: 12px; font-weight: 600;
+  background: rgba(255,198,92,0.14); border: 1px solid rgba(255,198,92,0.5); color: var(--warn);
+}
+.daynav { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.daynav .label { flex: 1; text-align: center; font-weight: 700; }
+.job {
+  display: block; width: 100%; text-align: left; color: white; cursor: pointer;
+  border: 1px solid var(--line); border-left: 4px solid var(--moon-primary);
+  border-radius: 14px; background: var(--panel); padding: 12px 14px; margin-bottom: 10px; font: inherit;
+}
+.job.done { border-left-color: var(--ok); opacity: 0.8; }
+.job.ceramic { border-left-color: var(--warn); }
+.job .time { font-size: 13px; color: var(--moon-primary); font-weight: 700; }
+.job .name { font-size: 17px; font-weight: 700; margin: 2px 0; }
+.job .line { font-size: 14px; color: var(--muted); }
+.chip {
+  display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 700;
+  background: rgba(255,255,255,0.1); margin-right: 4px;
+}
+.chip.ok { background: rgba(111,211,154,0.18); color: var(--ok); }
+.chip.warn { background: rgba(255,198,92,0.18); color: var(--warn); }
+.chip.info { background: rgba(127,184,230,0.18); color: var(--moon-primary); }
+.kv { display: grid; grid-template-columns: 92px 1fr; gap: 6px 10px; font-size: 14px; }
+.kv .k { color: var(--muted); }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.note { white-space: pre-wrap; background: rgba(255,255,255,0.06); border-radius: 10px; padding: 10px; font-size: 14px; }
+.note.crew { background: rgba(255,198,92,0.12); border: 1px solid rgba(255,198,92,0.35); }
+.photos { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+.photos .ph { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: #222; }
+.photos .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photos .ph button {
+  position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%;
+  border: none; background: rgba(0,0,0,0.7); color: white; font-size: 14px; cursor: pointer;
+}
+.photos .ph.uploading { display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); }
+.step {
+  display: flex; gap: 12px; align-items: flex-start; padding: 10px 2px;
+  border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 15px; cursor: pointer;
+}
+.step:last-child { border-bottom: none; }
+.step input { width: 22px; height: 22px; margin: 1px 0 0; accent-color: var(--moon-primary); flex: none; }
+.step.done span { color: var(--muted); text-decoration: line-through; }
+.scope { font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--moon-primary); margin: 12px 0 2px; }
+.scope:first-child { margin-top: 0; }
+label.field { display: block; font-size: 13px; color: var(--muted); margin: 10px 0 4px; }
+input.in, select.in, textarea.in {
+  width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08); color: white; font-size: 16px; font-family: inherit;
+}
+select.in option { color: black; }
+.problems { margin: 0 0 10px; padding-left: 18px; color: var(--warn); font-size: 14px; }
+.toast {
+  position: fixed; left: 16px; right: 16px; bottom: calc(86px + env(safe-area-inset-bottom)); z-index: 20;
+  padding: 12px 14px; border-radius: 12px; background: #1e2a36; border: 1px solid var(--line);
+  font-size: 14px; text-align: center;
+}
+.toast.error { background: #3a1d1d; border-color: rgba(255,107,107,0.5); }
+.empty { text-align: center; padding: 30px 10px; color: var(--muted); }
+.daygroup { font-weight: 700; margin: 16px 0 8px; color: var(--moon-primary); }
+.daygroup:first-child { margin-top: 0; }
+.hidden { display: none !important; }
 </style>
 </head>
 <body>
-<header>
+<header class="top">
   <img src="/NewLogoColor.png" alt="" />
   <div class="who"><strong id="name">Loading…</strong><span>Moon Auto Detailing crew</span></div>
-  <button class="btn" id="signOut" type="button">Sign out</button>
 </header>
 
-<main id="app">
-  <section class="panel">
-    <h2>You're signed in</h2>
-    <p>Your schedule, time clock, jobs, photos, expenses and pay will appear here.</p>
-  </section>
-</main>
+<main id="app"></main>
+
+<nav class="tabs" id="tabs">
+  <button type="button" data-tab="today" class="active"><span class="ico">🚗</span>Jobs</button>
+  <button type="button" data-tab="schedule"><span class="ico">📅</span>Schedule</button>
+  <button type="button" data-tab="account"><span class="ico">👤</span>Account</button>
+</nav>
+
+<input type="file" id="photoInput" accept="image/*" capture="environment" multiple class="hidden" />
 
 <script type="module">
-// Crew app shell. Phase 0 only verifies the session; later phases add Today, Schedule,
-// Availability, Expenses and Pay tabs that call /api/staff-* with x-staff-session.
+// Crew app. All data comes from /api/staff-* with the x-staff-session header; the token
+// lives in localStorage so the crew stays signed in on their phone (12-hour sessions).
 const TOKEN_KEY = "moon_staff_session";
 let token = null;
 try { token = localStorage.getItem(TOKEN_KEY); } catch {}
+
+const app = document.getElementById("app");
+const state = { me: null, tab: "today", date: null, today: null, job: null, saveTimer: null };
+
+const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const money = (n) => (n == null ? "—" : "$" + Number(n).toFixed(2));
+const timeOf = (iso) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit", timeZone: "America/New_York" });
+const dayLabel = (d) => new Date(d + "T12:00:00").toLocaleDateString([], { weekday: "long", month: "short", day: "numeric" });
+const addDays = (d, n) => { const x = new Date(d + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+const serviceName = (j) => j.service_category ? `${j.service_category.replace(/ Detail$/, "")} · Level ${j.service_level || 1}` : "Service";
+const SCOPE_LABEL = { general: "Arrival & handoff", interior: "Interior", exterior: "Exterior", ceramic: "Ceramic coating" };
 
 function signOut() {
   try { localStorage.removeItem(TOKEN_KEY); } catch {}
   window.location.replace("/staff-login.html");
 }
 
-export async function staffFetch(url, options = {}) {
+async function api(url, options = {}) {
   options.headers = { ...(options.headers || {}), "x-staff-session": token };
+  if (options.body && typeof options.body !== "string") {
+    options.headers["Content-Type"] = "application/json";
+    options.body = JSON.stringify(options.body);
+  }
   const res = await fetch(url, options);
-  if (res.status === 401) signOut();
-  return res;
+  if (res.status === 401) { signOut(); throw new Error("Signed out"); }
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const err = new Error(data.error || "Something went wrong");
+    err.data = data;
+    throw err;
+  }
+  return data;
 }
 
-document.getElementById("signOut").onclick = signOut;
+let toastTimer = null;
+function toast(message, isError) {
+  document.querySelector(".toast")?.remove();
+  const el = document.createElement("div");
+  el.className = "toast" + (isError ? " error" : "");
+  el.textContent = message;
+  document.body.appendChild(el);
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.remove(), isError ? 6000 : 3000);
+}
+
+function setTab(tab) {
+  state.tab = tab;
+  state.job = null;
+  document.querySelectorAll("#tabs button").forEach((b) => b.classList.toggle("active", b.dataset.tab === tab));
+  render();
+}
+document.querySelectorAll("#tabs button").forEach((b) => (b.onclick = () => setTab(b.dataset.tab)));
+
+function render() {
+  window.scrollTo(0, 0);
+  if (state.job) return renderJob();
+  if (state.tab === "today") return renderDay();
+  if (state.tab === "schedule") return renderSchedule();
+  return renderAccount();
+}
+
+/* ---------------- Jobs (one day) ---------------- */
+
+function jobCard(j) {
+  const done = j.status === "completed";
+  const started = !done && j.started_at;
+  const status = done ? `<span class="chip ok">Done</span>` : started ? `<span class="chip info">In progress</span>` : "";
+  const ceramic = j.job_flag === "ceramic" ? `<span class="chip warn">Ceramic</span>` : "";
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "job" + (done ? " done" : "") + (j.job_flag === "ceramic" ? " ceramic" : "");
+  btn.innerHTML = `
+    <div class="time">${esc(timeOf(j.scheduled_start))} – ${esc(timeOf(j.scheduled_end))}</div>
+    <div class="name">${esc(j.customer_name)}</div>
+    <div class="line">${esc(serviceName(j))}${j.vehicle ? " · " + esc(j.vehicle) : ""}</div>
+    <div class="line">${esc(j.service_address || "")}</div>
+    <div style="margin-top:6px;">${status}${ceramic}${j.crew_notes ? `<span class="chip warn">Crew note</span>` : ""}</div>`;
+  btn.onclick = () => openJob(j.id);
+  return btn;
+}
+
+async function renderDay() {
+  const date = state.date || state.today;
+  app.innerHTML = `
+    <div class="daynav">
+      <button class="btn small" id="prevDay" type="button">‹</button>
+      <div class="label">${date ? esc(date === state.today ? "Today · " + dayLabel(date) : dayLabel(date)) : "Today"}</div>
+      <button class="btn small" id="nextDay" type="button">›</button>
+    </div>
+    <div id="dayBody"><div class="empty">Loading jobs…</div></div>`;
+  const go = (n) => { state.date = addDays(date || state.today, n); renderDay(); };
+  app.querySelector("#prevDay").onclick = () => go(-1);
+  app.querySelector("#nextDay").onclick = () => go(1);
+
+  try {
+    const data = await api(`/api/staff-jobs${date ? "?date=" + date : ""}`);
+    state.today = data.today;
+    if (!state.date) state.date = data.date;
+    app.querySelector(".daynav .label").textContent = data.date === data.today ? "Today · " + dayLabel(data.date) : dayLabel(data.date);
+    const body = app.querySelector("#dayBody");
+    body.innerHTML = "";
+    if (data.ceramic_today) {
+      body.insertAdjacentHTML("beforeend", `<div class="banner">✨ Ceramic coating on this day — bring the coating kit, panel prep and lights, and plan for cure time.</div>`);
+    }
+    if (!data.jobs.length) {
+      body.insertAdjacentHTML("beforeend", `<div class="empty">No jobs scheduled.</div>`);
+      return;
+    }
+    const done = data.jobs.filter((j) => j.status === "completed").length;
+    body.insertAdjacentHTML("beforeend", `<p class="muted" style="margin:0 0 10px;font-size:14px;">${data.jobs.length} job${data.jobs.length === 1 ? "" : "s"} · ${done} done</p>`);
+    data.jobs.forEach((j) => body.appendChild(jobCard(j)));
+  } catch (err) {
+    app.querySelector("#dayBody").innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+  }
+}
+
+/* ---------------- Schedule (next 14 days) ---------------- */
+
+async function renderSchedule() {
+  app.innerHTML = `<div class="empty">Loading schedule…</div>`;
+  try {
+    const data = await api("/api/staff-jobs?upcoming=14");
+    app.innerHTML = `<p class="muted" style="margin:0 0 12px;font-size:14px;">Jobs for the next 14 days. Tap one for details.</p>`;
+    if (!data.jobs.length) {
+      app.insertAdjacentHTML("beforeend", `<div class="empty">Nothing booked in the next two weeks.</div>`);
+      return;
+    }
+    let lastDay = null;
+    for (const j of data.jobs) {
+      const day = new Date(j.scheduled_start).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+      if (day !== lastDay) {
+        lastDay = day;
+        const hasCeramic = data.jobs.some((x) => x.job_flag === "ceramic" &&
+          new Date(x.scheduled_start).toLocaleDateString("en-CA", { timeZone: "America/New_York" }) === day);
+        app.insertAdjacentHTML("beforeend", `<div class="daygroup">${esc(day === data.today ? "Today" : dayLabel(day))}${hasCeramic ? ' <span class="chip warn">Ceramic</span>' : ""}</div>`);
+      }
+      app.appendChild(jobCard(j));
+    }
+  } catch (err) {
+    app.innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+  }
+}
+
+/* ---------------- Account ---------------- */
+
+function renderAccount() {
+  const me = state.me || {};
+  app.innerHTML = `
+    <div class="panel">
+      <h3>${esc(me.full_name || "")}</h3>
+      <div class="kv">
+        <div class="k">Email</div><div>${esc(me.email || "")}</div>
+        <div class="k">Role</div><div>${esc(me.role || "")}</div>
+      </div>
+    </div>
+    <form class="panel" id="pwForm">
+      <h3>Change password</h3>
+      <label class="field">Current password</label>
+      <input class="in" type="password" name="current" autocomplete="current-password" required />
+      <label class="field">New password (8+ characters)</label>
+      <input class="in" type="password" name="next" autocomplete="new-password" required />
+      <div class="actions"><button class="btn primary" type="submit">Save password</button></div>
+    </form>
+    <div class="panel">
+      <h3>Add to home screen</h3>
+      <p class="muted" style="margin:0;font-size:14px;">iPhone: tap Share → “Add to Home Screen”. Android: menu ⋮ → “Add to Home screen”. It opens like an app.</p>
+    </div>
+    ${me.role !== "employee" ? `<a class="btn block" href="/admin.html" style="margin-bottom:12px;">Open admin page</a>` : ""}
+    <button class="btn block" id="signOutBtn" type="button">Sign out</button>`;
+  app.querySelector("#signOutBtn").onclick = signOut;
+  app.querySelector("#pwForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    try {
+      await api("/api/staff-me", { method: "POST", body: { current_password: f.get("current"), new_password: f.get("next") } });
+      e.target.reset();
+      toast("Password changed.");
+    } catch (err) { toast(err.message, true); }
+  };
+}
+
+/* ---------------- One job ---------------- */
+
+async function openJob(id) {
+  state.job = { id, loading: true };
+  app.innerHTML = `<div class="empty">Loading job…</div>`;
+  window.scrollTo(0, 0);
+  try {
+    const data = await api(`/api/staff-job?id=${encodeURIComponent(id)}`);
+    state.job = { id, ...data, pendingUploads: 0 };
+    renderJob();
+  } catch (err) {
+    state.job = null;
+    toast(err.message, true);
+    render();
+  }
+}
+
+function localProblems(J) {
+  const problems = [];
+  const missing = J.checklist.filter((s) => s.required && !J.checked[s.id]).length;
+  if (missing) problems.push(`${missing} checklist step${missing === 1 ? "" : "s"} not checked off`);
+  for (const kind of ["before", "after"]) {
+    const have = J.photos.filter((p) => p.kind === kind).length;
+    const need = J.min_photos[kind] - have;
+    if (need > 0) problems.push(`${need} more ${kind} photo${need === 1 ? "" : "s"} needed (minimum ${J.min_photos[kind]})`);
+  }
+  if (J.pendingUploads) problems.push("Wait for photos to finish uploading");
+  return problems;
+}
+
+function photoSection(J, kind, title, hint) {
+  const list = J.photos.filter((p) => p.kind === kind);
+  const min = J.min_photos[kind];
+  const done = J.job.status === "completed";
+  const countHtml = min ? `<span class="count ${list.length >= min ? "" : "muted"}">${list.length}/${min}${list.length >= min ? " ✓" : ""}</span>` : `<span class="count muted">${list.length}</span>`;
+  return `
+    <div class="panel" data-photos="${kind}">
+      <h3>${esc(title)} ${countHtml}</h3>
+      ${hint ? `<p class="muted" style="margin:0 0 8px;font-size:13px;">${esc(hint)}</p>` : ""}
+      <div class="photos">
+        ${list.map((p) => `<div class="ph"><img src="${esc(p.url || "")}" alt="" loading="lazy" />${!done && p.mine ? `<button type="button" data-del="${esc(p.id)}" aria-label="Remove photo">✕</button>` : ""}</div>`).join("")}
+        ${Array.from({ length: J.uploading?.[kind] || 0 }).map(() => `<div class="ph uploading">Uploading…</div>`).join("")}
+      </div>
+      ${done ? "" : `<div class="actions"><button class="btn small" type="button" data-add="${kind}">📷 Add ${kind} photo</button></div>`}
+    </div>`;
+}
+
+function renderJob() {
+  const J = state.job;
+  const j = J.job;
+  const done = j.status === "completed";
+  const started = !!J.work?.started_at;
+  const mapsUrl = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(j.service_address || "");
+  const phone = (j.customer_phone || "").replace(/[^\d+]/g, "");
+
+  let lastScope = null;
+  const checklistHtml = J.checklist.map((s) => {
+    const head = s.scope !== lastScope ? `<div class="scope">${esc(SCOPE_LABEL[s.scope] || s.scope)}</div>` : "";
+    lastScope = s.scope;
+    const on = !!J.checked[s.id];
+    return `${head}<label class="step ${on ? "done" : ""}"><input type="checkbox" data-step="${esc(s.id)}" ${on ? "checked" : ""} ${done ? "disabled" : ""} /><span>${esc(s.text)}${s.required ? "" : ' <span class="muted">(optional)</span>'}</span></label>`;
+  }).join("");
+
+  const problems = localProblems(J);
+  const crewHtml = J.crew.filter((c) => c.role !== "owner" || c.id === J.me).map((c) => {
+    const isMe = c.id === J.me;
+    const on = isMe || J.worked_by.includes(c.id) || (!J.worked_by.length && c.role === "employee");
+    return `<label class="step"><input type="checkbox" data-crew="${esc(c.id)}" ${on ? "checked" : ""} ${isMe ? "disabled" : ""} /><span>${esc(c.full_name)}${isMe ? " (you)" : ""}</span></label>`;
+  }).join("");
+
+  app.innerHTML = `
+    <button class="btn small" id="backBtn" type="button" style="margin-bottom:12px;">‹ Back to jobs</button>
+    ${j.job_flag === "ceramic" ? `<div class="banner">✨ Ceramic coating job — follow the coating steps exactly and keep the car dry for the cure time.</div>` : ""}
+    <div class="panel">
+      <div class="job-head">
+        <div class="muted" style="font-size:13px;font-weight:700;color:var(--moon-primary);">${esc(timeOf(j.scheduled_start))} – ${esc(timeOf(j.scheduled_end))}${j.duration_minutes ? ` · ~${Math.round(j.duration_minutes / 6) / 10} hrs` : ""}</div>
+        <h2 style="margin:2px 0 6px;font-size:21px;">${esc(j.customer_name)}</h2>
+        <div>${done ? '<span class="chip ok">Completed</span>' : started ? '<span class="chip info">In progress</span>' : '<span class="chip">Not started</span>'}</div>
+      </div>
+      <div class="kv" style="margin-top:12px;">
+        <div class="k">Service</div><div>${esc(serviceName(j))}</div>
+        <div class="k">Vehicle</div><div>${esc(j.vehicle || "—")}${j.vehicle_size ? ` <span class="muted">(${esc(j.vehicle_size)})</span>` : ""}${j.license_plate ? `<br><span class="muted">Plate ${esc(j.license_plate)}</span>` : ""}</div>
+        <div class="k">Address</div><div>${esc(j.service_address || "—")}</div>
+        <div class="k">Collect</div><div><strong>${money(j.amount_to_collect)}</strong></div>
+      </div>
+      <div class="actions">
+        <a class="btn small" href="${esc(mapsUrl)}" target="_blank" rel="noopener">🧭 Directions</a>
+        ${phone ? `<a class="btn small" href="tel:${esc(phone)}">📞 Call</a><a class="btn small" href="sms:${esc(phone)}">💬 Text</a>` : ""}
+      </div>
+    </div>
+    ${j.crew_notes ? `<div class="panel"><h3>Crew notes</h3><div class="note crew">${esc(j.crew_notes)}</div></div>` : ""}
+    ${j.customer_notes ? `<div class="panel"><h3>Customer notes</h3><div class="note">${esc(j.customer_notes)}</div></div>` : ""}
+
+    ${!done && !started ? `<button class="btn primary block" id="startBtn" type="button" style="margin-bottom:12px;">Start job</button>` : ""}
+
+    ${photoSection(J, "before", "1 · Before photos", "All four sides plus front and back interior, before you touch the car.")}
+    ${photoSection(J, "issue", "Damage / issues (if any)", "Scratches, dents, stains or anything already wrong — protects you and the business.")}
+    <div class="panel">
+      <h3>2 · Checklist <span class="count">${J.checklist.filter((s) => J.checked[s.id]).length}/${J.checklist.length}</span></h3>
+      ${checklistHtml || '<p class="muted" style="margin:0;">No checklist for this service.</p>'}
+    </div>
+    ${photoSection(J, "after", "3 · After photos", "Same angles as the before photos, once the job is finished.")}
+
+    ${done ? `<div class="panel"><h3>✅ Job completed</h3><p class="muted" style="margin:0;">Payment recorded and the customer has been emailed.</p></div>` : `
+    <form class="panel" id="completeForm">
+      <h3>4 · Payment & complete</h3>
+      <label class="field">Amount collected</label>
+      <input class="in" name="amount_collected" type="number" inputmode="decimal" min="0" step="0.01" value="${j.amount_to_collect ?? ""}" required />
+      <label class="field">Tip</label>
+      <input class="in" name="tip_amount" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00" />
+      <label class="field">Payment method</label>
+      <select class="in" name="payment_method" required>
+        <option value="">Choose…</option><option>Cash</option><option>Venmo</option><option>PayPal</option><option>Check</option>
+      </select>
+      <label class="field">Notes (optional)</label>
+      <textarea class="in" name="payment_notes" rows="2"></textarea>
+      <label class="field">Who worked this job</label>
+      <div>${crewHtml}</div>
+      <div style="margin-top:14px;">
+        ${problems.length ? `<ul class="problems">${problems.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>` : ""}
+        <button class="btn primary block" type="submit" ${problems.length ? "disabled" : ""}>Complete job</button>
+      </div>
+    </form>`}`;
+
+  app.querySelector("#backBtn").onclick = () => { state.job = null; render(); };
+  app.querySelector("#startBtn")?.addEventListener("click", startJob);
+  app.querySelectorAll("[data-add]").forEach((b) => (b.onclick = () => pickPhotos(b.dataset.add)));
+  app.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () => deletePhoto(b.dataset.del)));
+  app.querySelectorAll("[data-step]").forEach((cb) => (cb.onchange = () => {
+    if (cb.checked) J.checked[cb.dataset.step] = true;
+    else delete J.checked[cb.dataset.step];
+    cb.closest(".step").classList.toggle("done", cb.checked);
+    saveChecklistSoon();
+    refreshCompleteState();
+  }));
+  app.querySelector("#completeForm")?.addEventListener("submit", submitComplete);
+}
+
+// Updates the checklist counter and the complete button without redrawing (keeps form input).
+function refreshCompleteState() {
+  const J = state.job;
+  const form = app.querySelector("#completeForm");
+  const counter = [...app.querySelectorAll(".panel h3")].find((h) => h.textContent.includes("Checklist"))?.querySelector(".count");
+  if (counter) counter.textContent = `${J.checklist.filter((s) => J.checked[s.id]).length}/${J.checklist.length}`;
+  if (!form) return;
+  const problems = localProblems(J);
+  form.querySelector(".problems")?.remove();
+  const btn = form.querySelector('button[type="submit"]');
+  if (problems.length) btn.insertAdjacentHTML("beforebegin", `<ul class="problems">${problems.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>`);
+  btn.disabled = problems.length > 0;
+}
+
+function saveChecklistSoon() {
+  clearTimeout(state.saveTimer);
+  const J = state.job;
+  state.saveTimer = setTimeout(async () => {
+    try {
+      await api("/api/staff-job", { method: "POST", body: { id: J.id, action: "checklist", checklist: J.checked } });
+      if (!J.work) J.work = { started_at: new Date().toISOString() };
+    } catch (err) { toast("Checklist not saved: " + err.message, true); }
+  }, 700);
+}
+
+async function startJob() {
+  try {
+    const data = await api("/api/staff-job", { method: "POST", body: { id: state.job.id, action: "start" } });
+    state.job = { id: state.job.id, ...data, pendingUploads: 0 };
+    renderJob();
+    toast("Job started. Take your before photos first.");
+  } catch (err) { toast(err.message, true); }
+}
+
+/* ---------------- photos ---------------- */
+
+const photoInput = document.getElementById("photoInput");
+let photoKind = null;
+function pickPhotos(kind) {
+  photoKind = kind;
+  photoInput.value = "";
+  photoInput.click();
+}
+photoInput.onchange = () => {
+  const files = [...photoInput.files];
+  if (files.length && photoKind) files.forEach((f) => uploadPhoto(photoKind, f));
+};
+
+// Shrinks phone photos (often 4–12 MB) to ~1600px JPEG before upload. Falls back to the
+// original file if the browser can't decode it (e.g. HEIC outside Safari).
+async function compressImage(file) {
+  try {
+    const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext("2d").drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise((r) => canvas.toBlob(r, "image/jpeg", 0.8));
+    if (blob) return { blob, type: "image/jpeg" };
+  } catch {}
+  return { blob: file, type: file.type || "image/jpeg" };
+}
+
+async function putToSignedUrl(url, blob, type) {
+  let res = await fetch(url, { method: "PUT", headers: { "Content-Type": type, "x-upsert": "false" }, body: blob });
+  if (!res.ok) {
+    // Storage also accepts the multipart form supabase-js sends.
+    const form = new FormData();
+    form.append("cacheControl", "3600");
+    form.append("", blob);
+    res = await fetch(url, { method: "PUT", headers: { "x-upsert": "false" }, body: form });
+  }
+  if (!res.ok) throw new Error("Upload failed (" + res.status + ")");
+}
+
+async function uploadPhoto(kind, file) {
+  const J = state.job;
+  if (!J) return;
+  J.uploading = J.uploading || {};
+  J.uploading[kind] = (J.uploading[kind] || 0) + 1;
+  J.pendingUploads++;
+  renderJobKeepingForm();
+  try {
+    const { blob, type } = await compressImage(file);
+    const signed = await api("/api/staff-job-photo", { method: "POST", body: { action: "sign", booking_id: J.id, kind, content_type: type } });
+    await putToSignedUrl(signed.upload_url, blob, type);
+    const { photo } = await api("/api/staff-job-photo", { method: "POST", body: { action: "confirm", booking_id: J.id, kind, path: signed.path } });
+    if (state.job === J) J.photos.push(photo);
+    if (!J.work) J.work = { started_at: new Date().toISOString() };
+  } catch (err) {
+    toast("Photo not saved: " + err.message, true);
+  } finally {
+    J.uploading[kind]--;
+    J.pendingUploads--;
+    if (state.job === J) renderJobKeepingForm();
+  }
+}
+
+async function deletePhoto(id) {
+  if (!confirm("Remove this photo?")) return;
+  try {
+    await api(`/api/staff-job-photo?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+    state.job.photos = state.job.photos.filter((p) => p.id !== id);
+    renderJobKeepingForm();
+  } catch (err) { toast(err.message, true); }
+}
+
+// Redraws the job but keeps whatever was typed into the payment form and the scroll position.
+function renderJobKeepingForm() {
+  const form = app.querySelector("#completeForm");
+  const saved = form ? Object.fromEntries(new FormData(form).entries()) : null;
+  const crew = form ? [...form.querySelectorAll("[data-crew]")].filter((c) => c.checked).map((c) => c.dataset.crew) : null;
+  const y = window.scrollY;
+  if (crew) state.job.worked_by = crew;
+  renderJob();
+  const again = app.querySelector("#completeForm");
+  if (again && saved) for (const [k, v] of Object.entries(saved)) if (again.elements[k]) again.elements[k].value = v;
+  window.scrollTo(0, y);
+}
+
+/* ---------------- complete ---------------- */
+
+async function submitComplete(e) {
+  e.preventDefault();
+  const J = state.job;
+  const form = e.target;
+  const f = Object.fromEntries(new FormData(form).entries());
+  const workedBy = [...form.querySelectorAll("[data-crew]")].filter((c) => c.checked).map((c) => c.dataset.crew);
+  const amount = Number(f.amount_collected);
+  if (J.job.amount_to_collect != null && amount < J.job.amount_to_collect &&
+      !confirm(`You entered ${money(amount)}, but the job total is ${money(J.job.amount_to_collect)}. Complete anyway?`)) return;
+  if (!confirm("Complete this job? The customer will get their completion email.")) return;
+
+  const btn = form.querySelector('button[type="submit"]');
+  btn.disabled = true;
+  btn.textContent = "Completing…";
+  try {
+    await api("/api/staff-complete-job", {
+      method: "POST",
+      body: { booking_id: J.id, checklist: J.checked, worked_by: workedBy, ...f },
+    });
+    toast("Job completed. Nice work!");
+    await openJob(J.id);
+  } catch (err) {
+    const extra = err.data?.problems?.length ? ": " + err.data.problems.join("; ") : "";
+    toast(err.message + extra, true);
+    btn.disabled = false;
+    btn.textContent = "Complete job";
+  }
+}
+
+/* ---------------- boot ---------------- */
 
 if (!token) {
   signOut();
 } else {
-  const res = await staffFetch("/api/staff-me");
-  if (res.ok) {
-    const { staff } = await res.json();
-    if (staff.must_change_password) signOut(); // finish the first-login step on the sign-in page
+  try {
+    const { staff } = await api("/api/staff-me");
+    if (staff.must_change_password) signOut(); // finish first sign-in on the sign-in page
+    state.me = staff;
     document.getElementById("name").textContent = staff.full_name;
+    render();
+  } catch (err) {
+    app.innerHTML = `<div class="empty">${esc(err.message)}</div>`;
   }
 }
 </script>
