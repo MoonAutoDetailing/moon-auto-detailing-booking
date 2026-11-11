@@ -136,6 +136,17 @@ select.in option { color: black; }
 .empty { text-align: center; padding: 30px 10px; color: var(--muted); }
 .daygroup { font-weight: 700; margin: 16px 0 8px; color: var(--moon-primary); }
 .daygroup:first-child { margin-top: 0; }
+.clock { border-radius: 14px; padding: 14px; margin-bottom: 14px; border: 1px solid var(--line); background: var(--panel); }
+.clock.on { border-color: rgba(111,211,154,0.6); background: rgba(111,211,154,0.10); }
+.clock .row1 { display: flex; align-items: center; gap: 10px; }
+.clock .state { flex: 1; }
+.clock .state strong { display: block; font-size: 17px; }
+.clock .state span { font-size: 13px; color: var(--muted); }
+.clock .dot { width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.3); flex: none; }
+.clock.on .dot { background: var(--ok); box-shadow: 0 0 0 4px rgba(111,211,154,0.2); }
+.clock .pin { display: flex; gap: 8px; margin-top: 12px; }
+.clock .pin input { flex: 1; letter-spacing: 0.3em; text-align: center; }
+.clock .why { margin-top: 10px; font-size: 13px; color: var(--warn); }
 .hidden { display: none !important; }
 </style>
 </head>
@@ -250,7 +261,9 @@ async function renderDay() {
       <div class="label">${date ? esc(date === state.today ? "Today · " + dayLabel(date) : dayLabel(date)) : "Today"}</div>
       <button class="btn small" id="nextDay" type="button">›</button>
     </div>
+    <div id="clockCard"></div>
     <div id="dayBody"><div class="empty">Loading jobs…</div></div>`;
+  loadClock();
   const go = (n) => { state.date = addDays(date || state.today, n); renderDay(); };
   app.querySelector("#prevDay").onclick = () => go(-1);
   app.querySelector("#nextDay").onclick = () => go(1);
@@ -274,6 +287,114 @@ async function renderDay() {
     data.jobs.forEach((j) => body.appendChild(jobCard(j)));
   } catch (err) {
     app.querySelector("#dayBody").innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+  }
+}
+
+/* ---------------- time clock ---------------- */
+// Clock-in is verified by GPS (near one of today's jobs or the base). Away from those, a
+// manager types their PIN on this phone. Clock-out records location but never blocks.
+
+let clockState = null;
+let clockTicker = null;
+
+const fmtDuration = (ms) => {
+  const m = Math.max(0, Math.floor(ms / 60000));
+  return `${Math.floor(m / 60)}h ${String(m % 60).padStart(2, "0")}m`;
+};
+
+function getPosition() {
+  return new Promise((resolve) => {
+    if (!navigator.geolocation) return resolve(null);
+    navigator.geolocation.getCurrentPosition(
+      (p) => resolve({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 30000 }
+    );
+  });
+}
+
+async function loadClock() {
+  try {
+    clockState = await api("/api/staff-clock");
+    renderClock();
+  } catch (err) {
+    const el = document.getElementById("clockCard");
+    if (el) el.innerHTML = `<div class="clock"><span class="muted">Time clock unavailable: ${esc(err.message)}</span></div>`;
+  }
+}
+
+function renderClock(extra = {}) {
+  const el = document.getElementById("clockCard");
+  if (!el || !clockState) return;
+  const open = clockState.open_entry;
+  const since = open ? new Date(open.clock_in_at) : null;
+  const weekHours = clockState.week?.hours ?? 0;
+  el.innerHTML = `
+    <div class="clock ${open ? "on" : ""}">
+      <div class="row1">
+        <div class="dot"></div>
+        <div class="state">
+          <strong>${open ? "On the clock" : "Off the clock"}</strong>
+          <span>${open
+            ? `Since ${esc(timeOf(open.clock_in_at))} · <span data-elapsed>${fmtDuration(Date.now() - since)}</span>`
+            : "Clock in when you arrive at your first job"} · ${weekHours.toFixed(2)} hrs this week</span>
+        </div>
+        <button class="btn ${open ? "" : "primary"}" type="button" data-clock>${open ? "Clock out" : "Clock in"}</button>
+      </div>
+      ${extra.why ? `<div class="why">${esc(extra.why)}</div>` : ""}
+      ${extra.needsPin ? `
+        <form class="pin" data-pin-form>
+          <input class="in" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Manager PIN" autocomplete="off" required />
+          <button class="btn primary" type="submit">Approve</button>
+        </form>` : ""}
+    </div>`;
+  el.querySelector("[data-clock]").onclick = () => (open ? clockOut() : clockIn());
+  el.querySelector("[data-pin-form]")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    clockIn(e.target.querySelector("input").value, extra.position);
+  });
+
+  clearInterval(clockTicker);
+  if (open) {
+    clockTicker = setInterval(() => {
+      const span = document.querySelector("#clockCard [data-elapsed]");
+      if (!span) return clearInterval(clockTicker);
+      span.textContent = fmtDuration(Date.now() - since);
+    }, 30000);
+  }
+}
+
+async function clockIn(pin, knownPosition) {
+  const btn = document.querySelector("#clockCard [data-clock]");
+  if (btn) { btn.disabled = true; btn.textContent = "Locating…"; }
+  const position = knownPosition || (await getPosition());
+  try {
+    clockState = await api("/api/staff-clock", { method: "POST", body: { action: "in", ...(position || {}), pin: pin || undefined } });
+    renderClock();
+    toast(clockState.verify_method === "pin" ? "Clocked in (manager approved)." : "Clocked in. Have a good day!");
+  } catch (err) {
+    if (err.data?.needs_pin) {
+      renderClock({ needsPin: true, why: err.message + (position ? "" : " Turn on Location for this site in your browser settings to clock in by GPS."), position });
+      document.querySelector("#clockCard [data-pin-form] input")?.focus();
+    } else {
+      toast(err.message, true);
+      renderClock();
+    }
+  }
+}
+
+async function clockOut() {
+  if (!confirm("Clock out now?")) return;
+  const btn = document.querySelector("#clockCard [data-clock]");
+  if (btn) { btn.disabled = true; btn.textContent = "Clocking out…"; }
+  const position = await getPosition();
+  try {
+    clockState = await api("/api/staff-clock", { method: "POST", body: { action: "out", ...(position || {}) } });
+    renderClock();
+    toast("Clocked out. Thanks!");
+  } catch (err) {
+    toast(err.message, true);
+    loadClock();
   }
 }
 
