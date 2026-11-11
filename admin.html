@@ -3597,7 +3597,7 @@ function renderButtons() {
   viewButtons.innerHTML = "";
 
   const primaryKeys = ["pending", "today", "upcoming"];
-  const menuKeys = ["history", "subscriptions", "waitlist", "team", "timeclock", "checklists", "discount-codes", "book-customer", "availability", "expenses", "bookkeeping"];
+  const menuKeys = ["history", "subscriptions", "waitlist", "team", "schedule", "timeclock", "checklists", "discount-codes", "book-customer", "availability", "expenses", "bookkeeping"];
   const allButtons = [
     { key: "pending", label: "Pending Bookings" },
     { key: "today", label: "Today's Schedule" },
@@ -3606,6 +3606,7 @@ function renderButtons() {
     { key: "subscriptions", label: "Subscriptions" },
     { key: "waitlist", label: "Waitlist" },
     { key: "team", label: "Team" },
+    { key: "schedule", label: "Crew Schedule" },
     { key: "timeclock", label: "Time Clock" },
     { key: "checklists", label: "Job Checklists" },
     { key: "discount-codes", label: "Discount Codes" },
@@ -3630,7 +3631,7 @@ function renderButtons() {
     dropdown.innerHTML = "";
     const sections = [
       { title: "Views", keys: ["history", "subscriptions", "waitlist"] },
-      { title: "Team", keys: ["team", "timeclock", "checklists"] },
+      { title: "Team", keys: ["team", "schedule", "timeclock", "checklists"] },
       { title: "Tools", keys: ["discount-codes", "book-customer", "availability", "expenses", "bookkeeping"] },
       { title: "Account", keys: ["__debug__"] }
     ];
@@ -4886,6 +4887,175 @@ function renderView(viewName) {
   // =========================
   // WAITLIST (off-season sign-ups)
   // =========================
+  // =========================
+  // CREW SCHEDULE (shifts × availability × jobs, publish, time off)
+  // =========================
+  if (viewName === "schedule") {
+    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const inputStyle = "padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:white;font-family:inherit;";
+    const fmt12 = (t) => { if (!t) return ""; const [h, m] = t.split(":").map(Number); return `${((h + 11) % 12) + 1}${m ? ":" + String(m).padStart(2, "0") : ""}${h >= 12 ? "p" : "a"}`; };
+    const dayHead = (d) => new Date(d + "T12:00:00Z").toLocaleDateString([], { timeZone: "UTC", weekday: "short", month: "numeric", day: "numeric" });
+    const AV_STYLE = {
+      available: "background:rgba(111,211,154,0.10);",
+      partial: "background:rgba(111,211,154,0.06);",
+      unavailable: "background:rgba(255,107,107,0.12);",
+      unknown: ""
+    };
+    const avLabel = (a) => a.status === "available" ? "Available"
+      : a.status === "partial" ? `${a.start ? fmt12(a.start) : "…"}–${a.end ? fmt12(a.end) : "…"}`
+      : a.status === "unavailable" ? (a.source === "time_off" ? "Time off" : "Off")
+      : "Not set";
+
+    let weekDate = null;
+    let data = null;
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText = "display:flex;flex-direction:column;gap:14px;";
+    viewContainer.appendChild(wrapper);
+
+    async function call(method, url, body) {
+      const res = await adminFetch(url, { method, headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || "Request failed");
+      return d;
+    }
+
+    // Default shift times: cover the day's jobs with 30 min either side, else 8a–5p.
+    function defaultTimes(day) {
+      if (!day.jobs.length) return ["08:00", "17:00"];
+      const toMin = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+      const toT = (n) => `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
+      const a = Math.max(5 * 60, Math.min(...day.jobs.map(j => toMin(j.start))) - 30);
+      const b = Math.min(23 * 60 + 30, Math.max(...day.jobs.map(j => toMin(j.end))) + 30);
+      return [toT(a), toT(b)];
+    }
+
+    function shiftForm(cell, { day, personId, shift }) {
+      cell.querySelector("[data-form]")?.remove();
+      const [ds, de] = shift ? [shift.start_time, shift.end_time] : defaultTimes(day);
+      const f = document.createElement("form");
+      f.setAttribute("data-form", "");
+      f.style.cssText = "display:flex;flex-direction:column;gap:4px;margin-top:6px;";
+      f.innerHTML = `
+        <div style="display:flex;gap:4px;"><input type="time" name="start" value="${ds}" style="${inputStyle}width:50%;" required><input type="time" name="end" value="${de}" style="${inputStyle}width:50%;" required></div>
+        <input name="notes" placeholder="Note" value="${esc(shift?.notes || "")}" style="${inputStyle}">
+        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+          <button type="submit" class="moon-tab" style="padding:4px 8px;">${shift ? "Save" : "Add"}</button>
+          ${shift ? `<button type="button" class="moon-tab" data-del style="padding:4px 8px;">Delete</button>` : ""}
+          <button type="button" class="moon-tab" data-x style="padding:4px 8px;">✕</button>
+        </div>`;
+      f.querySelector("[data-x]").onclick = (ev) => { ev.stopPropagation(); f.remove(); };
+      f.querySelector("[data-del]")?.addEventListener("click", async (ev) => {
+        ev.stopPropagation();
+        if (!confirm(shift.published ? "Delete this published shift? Tell the crew member directly — deleting doesn't email them." : "Delete this draft shift?")) return;
+        try { await call("DELETE", `/api/admin-schedule?id=${encodeURIComponent(shift.id)}`); load(); } catch (err) { showAdminBanner(err.message, "error"); }
+      });
+      f.onsubmit = async (ev) => {
+        ev.preventDefault();
+        const v = Object.fromEntries(new FormData(f).entries());
+        try {
+          if (shift) await call("PATCH", "/api/admin-schedule", { id: shift.id, start_time: v.start, end_time: v.end, notes: v.notes });
+          else await call("POST", "/api/admin-schedule", { action: "shift", staff_id: personId, shift_date: day.date, start_time: v.start, end_time: v.end, notes: v.notes });
+          load();
+        } catch (err) { showAdminBanner(err.message, "error"); }
+      };
+      f.addEventListener("click", (ev) => ev.stopPropagation());
+      cell.appendChild(f);
+    }
+
+    function render() {
+      const d = data;
+      const shift = (n) => { const x = new Date(d.week.start + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+      wrapper.innerHTML = `
+        <div class="admin-filters" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+          <h3 style="margin:0;flex:1 1 auto;">Crew schedule <span class="booking-summary-meta">· ${esc(d.week.start)} – ${esc(d.week.end)}</span></h3>
+          <button type="button" class="moon-tab" data-prev>‹ Prev</button>
+          <button type="button" class="moon-tab" data-this>This week</button>
+          <button type="button" class="moon-tab" data-next>Next ›</button>
+          <button type="button" class="moon-tab" data-copy title="Copy last week's shifts into this week as drafts">Copy last week</button>
+          <button type="button" class="moon-tab" data-publish ${d.drafts ? "" : "disabled"} style="${d.drafts ? "background:var(--moon-primary);color:#07111d;font-weight:700;" : ""}">Publish ${d.drafts ? `(${d.drafts} draft${d.drafts === 1 ? "" : "s"})` : "— all published"}</button>
+        </div>
+        ${d.time_off.length ? `<div class="discount-code-card expanded" style="padding:14px;"><strong>Time-off requests</strong>${d.time_off.map(t => `
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;">
+            <span style="flex:1;min-width:200px;">${esc(t.full_name)}: <strong>${esc(t.start_date)}${t.end_date !== t.start_date ? " → " + esc(t.end_date) : ""}</strong>${t.reason ? ` <span style="opacity:0.75;">· ${esc(t.reason)}</span>` : ""}</span>
+            <button type="button" class="moon-tab" data-off="${esc(t.id)}" data-status="approved">Approve</button>
+            <button type="button" class="moon-tab" data-off="${esc(t.id)}" data-status="denied">Deny</button>
+          </div>`).join("")}</div>` : ""}
+        <div style="overflow-x:auto;border:1px solid rgba(255,255,255,0.12);border-radius:12px;">
+          <table style="border-collapse:collapse;width:100%;min-width:860px;font-size:13px;">
+            <thead><tr>
+              <th style="text-align:left;padding:8px;width:120px;"></th>
+              ${d.days.map(day => `<th style="text-align:left;padding:8px;vertical-align:top;border-left:1px solid rgba(255,255,255,0.08);${day.date === d.today ? "background:rgba(127,184,230,0.12);" : ""}">
+                <div>${esc(dayHead(day.date))}</div>
+                <div style="font-weight:400;opacity:0.85;margin-top:4px;">${day.jobs.length ? `${day.jobs.length} job${day.jobs.length === 1 ? "" : "s"} · ${esc(fmt12(day.jobs[0].start))}–${esc(fmt12(day.jobs[day.jobs.length - 1].end))}` : '<span style="opacity:0.5;">No jobs</span>'}
+                  ${day.jobs.some(j => j.ceramic) ? '<div style="color:#ffc65c;font-weight:700;">✨ Ceramic</div>' : ""}
+                  ${day.pending_requests ? `<div style="opacity:0.7;">+${day.pending_requests} pending</div>` : ""}</div>
+                ${day.warnings.map(w => `<div style="color:#ffc65c;font-weight:600;margin-top:3px;">⚠ ${esc(w)}</div>`).join("")}
+              </th>`).join("")}
+            </tr></thead>
+            <tbody>${d.people.map(p => `<tr>
+              <td style="padding:8px;font-weight:700;vertical-align:top;border-top:1px solid rgba(255,255,255,0.08);">${esc(p.full_name)}<div style="font-weight:400;opacity:0.6;">${esc(p.role)}</div></td>
+              ${d.days.map(day => {
+                const a = day.availability[p.id] || { status: "unknown" };
+                const mine = day.shifts.filter(s => s.staff_id === p.id);
+                return `<td data-cell="${esc(p.id)}|${esc(day.date)}" style="padding:6px;vertical-align:top;border-top:1px solid rgba(255,255,255,0.08);border-left:1px solid rgba(255,255,255,0.08);${AV_STYLE[a.status] || ""}">
+                  <div style="opacity:0.7;font-size:11px;">${esc(avLabel(a))}${a.pendingTimeOff ? " · TO pending" : ""}${a.note ? ` · ${esc(a.note)}` : ""}</div>
+                  ${mine.map(s => `<div data-shift="${esc(s.id)}" title="${esc(s.warnings.join(" · "))}" style="cursor:pointer;margin-top:4px;padding:4px 6px;border-radius:8px;${s.published ? "background:rgba(127,184,230,0.25);" : "border:1px dashed rgba(127,184,230,0.7);"}">
+                    <strong>${esc(fmt12(s.start_time))}–${esc(fmt12(s.end_time))}</strong>${s.published ? "" : ' <span style="opacity:0.7;">draft</span>'}
+                    ${s.warnings.length ? `<div style="color:#ffc65c;">⚠ ${esc(s.warnings[0])}${s.warnings.length > 1 ? ` +${s.warnings.length - 1}` : ""}</div>` : ""}
+                  </div>`).join("")}
+                  <button type="button" class="moon-tab" data-add style="margin-top:4px;padding:2px 8px;font-size:12px;">+ shift</button>
+                </td>`;
+              }).join("")}
+            </tr>`).join("") || `<tr><td colspan="8" style="padding:14px;opacity:0.7;">No crew yet — add employees under Team.</td></tr>`}</tbody>
+          </table>
+        </div>
+        <p style="margin:0;font-size:12px;opacity:0.65;">Dashed = draft (the crew can't see it). Publishing emails each person their week. Editing a published shift turns it back into a draft until you publish again. Green = available, red = off or time off.</p>`;
+
+      wrapper.querySelector("[data-prev]").onclick = () => { weekDate = shift(-7); load(); };
+      wrapper.querySelector("[data-next]").onclick = () => { weekDate = shift(7); load(); };
+      wrapper.querySelector("[data-this]").onclick = () => { weekDate = null; load(); };
+      wrapper.querySelector("[data-copy]").onclick = async () => {
+        try {
+          const r = await call("POST", "/api/admin-schedule", { action: "copy_week", from_week: shift(-7), to_week: d.week.start });
+          showAdminBanner(`Copied ${r.copied} shift${r.copied === 1 ? "" : "s"} as drafts${r.skipped ? ` (${r.skipped} already there)` : ""}.`, "success");
+          load();
+        } catch (err) { showAdminBanner(err.message, "error"); }
+      };
+      wrapper.querySelector("[data-publish]").onclick = async () => {
+        if (!confirm(`Publish ${d.drafts} draft shift${d.drafts === 1 ? "" : "s"} and email the crew their schedule?`)) return;
+        try {
+          const r = await call("POST", "/api/admin-schedule", { action: "publish", week: d.week.start });
+          showAdminBanner(`Published ${r.published}. Emailed ${r.emailed}${r.email_failed.length ? `; email failed for ${r.email_failed.join(", ")}` : ""}.`, r.email_failed.length ? "error" : "success");
+          load();
+        } catch (err) { showAdminBanner(err.message, "error"); }
+      };
+      wrapper.querySelectorAll("[data-off]").forEach(b => (b.onclick = async () => {
+        const note = b.dataset.status === "denied" ? (prompt("Optional note to the crew member:") || "") : "";
+        try { await call("POST", "/api/admin-schedule", { action: "time_off", id: b.dataset.off, status: b.dataset.status, note }); load(); }
+        catch (err) { showAdminBanner(err.message, "error"); }
+      }));
+      wrapper.querySelectorAll("[data-cell]").forEach(cell => {
+        const [personId, date] = cell.dataset.cell.split("|");
+        const day = d.days.find(x => x.date === date);
+        cell.querySelector("[data-add]").onclick = () => shiftForm(cell, { day, personId });
+        cell.querySelectorAll("[data-shift]").forEach(el => (el.onclick = () => shiftForm(cell, { day, personId, shift: day.shifts.find(s => s.id === el.dataset.shift) })));
+      });
+    }
+
+    async function load() {
+      if (!data) wrapper.innerHTML = "<p style='margin:0;'>Loading…</p>";
+      try {
+        data = await call("GET", `/api/admin-schedule${weekDate ? "?week=" + weekDate : ""}`);
+        weekDate = data.week.start;
+        render();
+      } catch (err) {
+        wrapper.innerHTML = `<p style="margin:0;color:#ff8a8a;">${esc(err.message)}</p>`;
+      }
+    }
+    load();
+    return;
+  }
+
   // =========================
   // TIME CLOCK (weekly hours, corrections, who is on the clock)
   // =========================

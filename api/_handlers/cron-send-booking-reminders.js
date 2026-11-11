@@ -1,6 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { sendBookingReminder48EmailCore } from "../../lib/email/sendBookingReminder48Email.js";
 import { sendBookingReminder8EmailCore } from "../../lib/email/sendBookingReminder8Email.js";
+import { runCrewMorningEmails } from "../_crewMorning.js";
+import { sendMorningEmail } from "../../lib/email/crewEmails.js";
+import { todayNY } from "../_subscriptions/lifecycle.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -108,7 +111,15 @@ export default async function handler(req, res) {
       }
     }
 
-    return res.status(200).json({ ok: true, reminder_48: sent48, reminder_8: sent8 });
+    // Crew "today's jobs" email; never blocks customer reminders.
+    let crew = { sent: 0, failed: 0 };
+    try {
+      crew = await runCrewMorningEmails({ sb: supabase, today: todayNY(), send: sendMorningEmail });
+    } catch (crewErr) {
+      console.error("[CREW_MORNING] failed", crewErr);
+    }
+
+    return res.status(200).json({ ok: true, reminder_48: sent48, reminder_8: sent8, crew_morning: crew.sent });
   } catch (err) {
     console.error("cron-send-booking-reminders error:", err);
     return res.status(500).json({ error: "Internal error" });

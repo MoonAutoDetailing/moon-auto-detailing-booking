@@ -147,6 +147,23 @@ select.in option { color: black; }
 .clock .pin { display: flex; gap: 8px; margin-top: 12px; }
 .clock .pin input { flex: 1; letter-spacing: 0.3em; text-align: center; }
 .clock .why { margin-top: 10px; font-size: 13px; color: var(--warn); }
+.shift { display: flex; gap: 8px; align-items: center; padding: 9px 12px; border-radius: 12px; margin-bottom: 8px; font-size: 14px;
+  background: rgba(255,255,255,0.05); border: 1px dashed rgba(255,255,255,0.18); }
+.shift.mine { background: rgba(127,184,230,0.14); border: 1px solid rgba(127,184,230,0.5); }
+.shift strong { color: var(--moon-primary); }
+.avrow { display: grid; grid-template-columns: 92px 1fr; gap: 6px 10px; align-items: center; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.07); }
+.avrow:last-child { border-bottom: none; }
+.avrow .day { font-weight: 700; }
+.seg { display: flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { flex: 1; padding: 8px 4px; border: none; background: none; color: var(--muted); font-size: 13px; font-weight: 600; cursor: pointer; }
+.seg button.on { background: var(--moon-primary); color: #07111d; }
+.times { grid-column: 2; display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--muted); }
+.times input { flex: 1; min-width: 0; padding: 8px; font-size: 15px; }
+.item { display: flex; gap: 10px; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 14px; }
+.item:last-child { border-bottom: none; }
+.item .grow { flex: 1; }
+.row2 { display: flex; gap: 8px; }
+.row2 > * { flex: 1; min-width: 0; }
 .hidden { display: none !important; }
 </style>
 </head>
@@ -161,6 +178,7 @@ select.in option { color: black; }
 <nav class="tabs" id="tabs">
   <button type="button" data-tab="today" class="active"><span class="ico">🚗</span>Jobs</button>
   <button type="button" data-tab="schedule"><span class="ico">📅</span>Schedule</button>
+  <button type="button" data-tab="availability"><span class="ico">🗓️</span>Availability</button>
   <button type="button" data-tab="account"><span class="ico">👤</span>Account</button>
 </nav>
 
@@ -230,6 +248,7 @@ function render() {
   if (state.job) return renderJob();
   if (state.tab === "today") return renderDay();
   if (state.tab === "schedule") return renderSchedule();
+  if (state.tab === "availability") return renderAvailability();
   return renderAccount();
 }
 
@@ -400,29 +419,180 @@ async function clockOut() {
 
 /* ---------------- Schedule (next 14 days) ---------------- */
 
+const fmt12 = (t) => {
+  const [h, m] = String(t).split(":").map(Number);
+  return `${((h + 11) % 12) + 1}${m ? ":" + String(m).padStart(2, "0") : ""}${h >= 12 ? "pm" : "am"}`;
+};
+
 async function renderSchedule() {
   app.innerHTML = `<div class="empty">Loading schedule…</div>`;
   try {
-    const data = await api("/api/staff-jobs?upcoming=14");
-    app.innerHTML = `<p class="muted" style="margin:0 0 12px;font-size:14px;">Jobs for the next 14 days. Tap one for details.</p>`;
-    if (!data.jobs.length) {
-      app.insertAdjacentHTML("beforeend", `<div class="empty">Nothing booked in the next two weeks.</div>`);
+    const [data, sh] = await Promise.all([api("/api/staff-jobs?upcoming=14"), api("/api/staff-shifts?days=14")]);
+    const nyDay = (iso) => new Date(iso).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+    const days = [...new Set([...sh.shifts.map((s) => s.shift_date), ...data.jobs.map((j) => nyDay(j.scheduled_start))])].sort();
+    const myShifts = sh.shifts.filter((s) => s.mine).length;
+    app.innerHTML = `<p class="muted" style="margin:0 0 12px;font-size:14px;">Next 14 days · you have ${myShifts} shift${myShifts === 1 ? "" : "s"}. Tap a job for details.</p>`;
+    if (!days.length) {
+      app.insertAdjacentHTML("beforeend", `<div class="empty">No shifts or jobs in the next two weeks yet.</div>`);
       return;
     }
-    let lastDay = null;
-    for (const j of data.jobs) {
-      const day = new Date(j.scheduled_start).toLocaleDateString("en-CA", { timeZone: "America/New_York" });
-      if (day !== lastDay) {
-        lastDay = day;
-        const hasCeramic = data.jobs.some((x) => x.job_flag === "ceramic" &&
-          new Date(x.scheduled_start).toLocaleDateString("en-CA", { timeZone: "America/New_York" }) === day);
-        app.insertAdjacentHTML("beforeend", `<div class="daygroup">${esc(day === data.today ? "Today" : dayLabel(day))}${hasCeramic ? ' <span class="chip warn">Ceramic</span>' : ""}</div>`);
+    for (const day of days) {
+      const dayJobs = data.jobs.filter((j) => nyDay(j.scheduled_start) === day);
+      const dayShifts = sh.shifts.filter((s) => s.shift_date === day).sort((a, b) => (b.mine ? 1 : 0) - (a.mine ? 1 : 0));
+      const ceramic = dayJobs.some((j) => j.job_flag === "ceramic");
+      app.insertAdjacentHTML("beforeend", `<div class="daygroup">${esc(day === data.today ? "Today" : dayLabel(day))}${ceramic ? ' <span class="chip warn">Ceramic</span>' : ""}</div>`);
+      for (const s of dayShifts) {
+        app.insertAdjacentHTML("beforeend", `<div class="shift ${s.mine ? "mine" : ""}">${s.mine ? "<strong>Your shift</strong>" : esc(s.full_name)} · ${esc(fmt12(s.start_time))} – ${esc(fmt12(s.end_time))}${s.notes ? ` <span class="muted">· ${esc(s.notes)}</span>` : ""}</div>`);
       }
-      app.appendChild(jobCard(j));
+      if (!dayShifts.some((s) => s.mine) && dayJobs.length) {
+        app.insertAdjacentHTML("beforeend", `<p class="muted" style="margin:0 0 8px;font-size:13px;">You're not scheduled this day.</p>`);
+      }
+      dayJobs.forEach((j) => app.appendChild(jobCard(j)));
     }
   } catch (err) {
     app.innerHTML = `<div class="empty">${esc(err.message)}</div>`;
   }
+}
+
+/* ---------------- Availability ---------------- */
+
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+async function renderAvailability() {
+  app.innerHTML = `<div class="empty">Loading availability…</div>`;
+  let data;
+  try { data = await api("/api/staff-availability"); } catch (err) { app.innerHTML = `<div class="empty">${esc(err.message)}</div>`; return; }
+  drawAvailability(data);
+}
+
+function drawAvailability(data) {
+  const weekly = data.weekly.map((w) => ({ ...w }));
+  // Monday first reads more naturally for a work week.
+  const order = [1, 2, 3, 4, 5, 6, 0];
+  const statusOf = (w) => (w.available === null ? "unset" : w.available ? "yes" : "no");
+  const statusLabel = { approved: "Approved", denied: "Denied", pending: "Waiting for approval" };
+
+  app.innerHTML = `
+    <div class="panel">
+      <h3>Weekly availability</h3>
+      <p class="muted" style="margin:0 0 6px;font-size:13px;">When you can usually work. Leave times blank for all day. Managers see this when they build the schedule.</p>
+      <div id="weekly">${order.map((d) => {
+        const w = weekly[d];
+        const st = statusOf(w);
+        return `<div class="avrow" data-day="${d}">
+          <div class="day">${DAY_NAMES[d].slice(0, 3)}</div>
+          <div class="seg">
+            <button type="button" data-set="yes" class="${st === "yes" ? "on" : ""}">Available</button>
+            <button type="button" data-set="no" class="${st === "no" ? "on" : ""}">Off</button>
+          </div>
+          <div class="times ${st === "yes" ? "" : "hidden"}">
+            <input class="in" type="time" data-start value="${esc(w.start_time || "")}" aria-label="From" />
+            to
+            <input class="in" type="time" data-end value="${esc(w.end_time || "")}" aria-label="Until" />
+          </div>
+        </div>`;
+      }).join("")}</div>
+      <div class="actions"><button class="btn primary" type="button" id="saveWeekly">Save weekly availability</button></div>
+    </div>
+
+    <div class="panel">
+      <h3>One-day changes</h3>
+      <p class="muted" style="margin:0 0 6px;font-size:13px;">A single day that's different from your usual week (appointment, extra day you can work…).</p>
+      <div>${data.exceptions.length ? data.exceptions.map((e) => `
+        <div class="item"><div class="grow"><strong>${esc(dayLabel(e.on_date))}</strong><br>
+          <span class="muted">${e.available ? (e.start_time || e.end_time ? `Available ${esc(e.start_time ? fmt12(e.start_time) : "")}–${esc(e.end_time ? fmt12(e.end_time) : "")}` : "Available all day") : "Not available"}${e.note ? " · " + esc(e.note) : ""}</span></div>
+          <button class="btn small" type="button" data-del-ex="${esc(e.id)}">Remove</button></div>`).join("") : '<p class="muted" style="margin:0;font-size:14px;">None.</p>'}</div>
+      <form id="exForm" style="margin-top:10px;">
+        <div class="row2">
+          <input class="in" type="date" name="on_date" min="${esc(data.today)}" required />
+          <select class="in" name="available"><option value="no">Not available</option><option value="yes">Available</option></select>
+        </div>
+        <div class="row2" style="margin-top:8px;">
+          <input class="in" type="time" name="start_time" aria-label="From (optional)" />
+          <input class="in" type="time" name="end_time" aria-label="Until (optional)" />
+        </div>
+        <input class="in" name="note" placeholder="Note (optional)" style="margin-top:8px;" />
+        <div class="actions"><button class="btn" type="submit">Add day</button></div>
+      </form>
+    </div>
+
+    <div class="panel">
+      <h3>Time off</h3>
+      <div>${data.time_off.length ? data.time_off.map((t) => `
+        <div class="item"><div class="grow"><strong>${esc(dayLabel(t.start_date))}${t.end_date !== t.start_date ? " – " + esc(dayLabel(t.end_date)) : ""}</strong><br>
+          <span class="chip ${t.status === "approved" ? "ok" : t.status === "denied" ? "" : "warn"}">${esc(statusLabel[t.status] || t.status)}</span>
+          ${t.reason ? `<span class="muted">${esc(t.reason)}</span>` : ""}${t.review_note ? `<br><span class="muted">Manager: ${esc(t.review_note)}</span>` : ""}</div>
+          ${t.status === "pending" ? `<button class="btn small" type="button" data-cancel-off="${esc(t.id)}">Cancel</button>` : ""}</div>`).join("") : '<p class="muted" style="margin:0;font-size:14px;">No requests.</p>'}</div>
+      <form id="offForm" style="margin-top:10px;">
+        <div class="row2">
+          <label><span class="muted" style="font-size:12px;">From</span><input class="in" type="date" name="start_date" min="${esc(data.today)}" required /></label>
+          <label><span class="muted" style="font-size:12px;">To</span><input class="in" type="date" name="end_date" min="${esc(data.today)}" required /></label>
+        </div>
+        <input class="in" name="reason" placeholder="Reason (optional)" style="margin-top:8px;" />
+        <div class="actions"><button class="btn" type="submit">Request time off</button></div>
+      </form>
+    </div>`;
+
+  app.querySelectorAll(".avrow").forEach((row) => {
+    const d = Number(row.dataset.day);
+    row.querySelectorAll("[data-set]").forEach((b) => (b.onclick = () => {
+      const on = b.classList.contains("on");
+      row.querySelectorAll("[data-set]").forEach((x) => x.classList.remove("on"));
+      weekly[d].available = on ? null : b.dataset.set === "yes";
+      if (!on) b.classList.add("on");
+      row.querySelector(".times").classList.toggle("hidden", weekly[d].available !== true);
+    }));
+  });
+
+  app.querySelector("#saveWeekly").onclick = async () => {
+    const payload = weekly.map((w) => {
+      const row = app.querySelector(`.avrow[data-day="${w.weekday}"]`);
+      return {
+        weekday: w.weekday,
+        available: w.available,
+        start_time: w.available ? row.querySelector("[data-start]").value || null : null,
+        end_time: w.available ? row.querySelector("[data-end]").value || null : null,
+      };
+    });
+    try {
+      const next = await api("/api/staff-availability", { method: "PUT", body: { weekly: payload } });
+      toast("Weekly availability saved.");
+      drawAvailability(next);
+    } catch (err) { toast(err.message, true); }
+  };
+
+  app.querySelector("#exForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.target).entries());
+    try {
+      const next = await api("/api/staff-availability", {
+        method: "POST",
+        body: { kind: "exception", on_date: f.on_date, available: f.available === "yes", start_time: f.start_time || null, end_time: f.end_time || null, note: f.note },
+      });
+      toast("Day added.");
+      drawAvailability(next);
+    } catch (err) { toast(err.message, true); }
+  };
+
+  app.querySelector("#offForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.target).entries());
+    try {
+      const next = await api("/api/staff-availability", { method: "POST", body: { kind: "time_off", ...f } });
+      toast("Time off requested. A manager will review it.");
+      drawAvailability(next);
+    } catch (err) { toast(err.message, true); }
+  };
+
+  app.querySelectorAll("[data-del-ex]").forEach((b) => (b.onclick = async () => {
+    try { drawAvailability(await api(`/api/staff-availability?exception_id=${encodeURIComponent(b.dataset.delEx)}`, { method: "DELETE" })); }
+    catch (err) { toast(err.message, true); }
+  }));
+  app.querySelectorAll("[data-cancel-off]").forEach((b) => (b.onclick = async () => {
+    if (!confirm("Cancel this time-off request?")) return;
+    try { drawAvailability(await api(`/api/staff-availability?time_off_id=${encodeURIComponent(b.dataset.cancelOff)}`, { method: "DELETE" })); }
+    catch (err) { toast(err.message, true); }
+  }));
 }
 
 /* ---------------- Account ---------------- */
