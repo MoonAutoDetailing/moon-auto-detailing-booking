@@ -4888,28 +4888,84 @@ function renderView(viewName) {
   // WAITLIST (off-season sign-ups)
   // =========================
   // =========================
-  // CREW SCHEDULE (shifts × availability × jobs, publish, time off)
+  // CREW SCHEDULE — drag-and-drop week timeline
+  // Drag a person from the team bar onto a day, drag inside someone's column to paint a
+  // shift, drag shifts to move them (time, day or person) and their edges to change times.
+  // Click a shift to edit. Drafts are invisible to the crew until published.
   // =========================
   if (viewName === "schedule") {
     const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-    const inputStyle = "padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:white;font-family:inherit;";
+    const START_H = 6, END_H = 21, PX_H = 44, SNAP = 15;
+    const COLORS = ["#7fb8e6", "#6fd39a", "#f0a35e", "#c39bf0", "#f07b9b", "#5fd0d0", "#e0d26a"];
+    const toMin = (t) => { const [h, m] = String(t).split(":").map(Number); return h * 60 + m; };
+    const toT = (n) => `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
     const fmt12 = (t) => { if (!t) return ""; const [h, m] = t.split(":").map(Number); return `${((h + 11) % 12) + 1}${m ? ":" + String(m).padStart(2, "0") : ""}${h >= 12 ? "p" : "a"}`; };
+    const minToY = (m) => ((m - START_H * 60) / 60) * PX_H;
+    const yToMin = (y) => Math.max(START_H * 60, Math.min(END_H * 60, START_H * 60 + Math.round(((y / PX_H) * 60) / SNAP) * SNAP));
     const dayHead = (d) => new Date(d + "T12:00:00Z").toLocaleDateString([], { timeZone: "UTC", weekday: "short", month: "numeric", day: "numeric" });
-    const AV_STYLE = {
-      available: "background:rgba(111,211,154,0.10);",
-      partial: "background:rgba(111,211,154,0.06);",
-      unavailable: "background:rgba(255,107,107,0.12);",
-      unknown: ""
-    };
-    const avLabel = (a) => a.status === "available" ? "Available"
-      : a.status === "partial" ? `${a.start ? fmt12(a.start) : "…"}–${a.end ? fmt12(a.end) : "…"}`
-      : a.status === "unavailable" ? (a.source === "time_off" ? "Time off" : "Off")
-      : "Not set";
+    const narrow = () => window.matchMedia("(max-width: 820px)").matches;
+
+    if (!document.getElementById("schStyles")) {
+      const st = document.createElement("style");
+      st.id = "schStyles";
+      st.textContent = `
+        .sch-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+        .sch-bar h3{margin:0;flex:1 1 auto}
+        .sch-btn{padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:#fff;font:inherit;font-size:14px;cursor:pointer}
+        .sch-btn.primary{background:var(--moon-primary);border-color:var(--moon-primary);color:#07111d;font-weight:700}
+        .sch-btn.danger{border-color:rgba(255,107,107,.6);color:#ff9a9a}
+        .sch-btn:disabled{opacity:.45;cursor:default}
+        .sch-panel{border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:12px 14px;background:rgba(111,147,196,.10)}
+        .sch-team{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+        .sch-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);cursor:grab;touch-action:none;user-select:none;font-weight:600;font-size:14px}
+        .sch-chip i{width:12px;height:12px;border-radius:50%;display:inline-block}
+        .sch-wrap{overflow-x:auto;border:1px solid rgba(255,255,255,.12);border-radius:12px;-webkit-overflow-scrolling:touch}
+        .sch-grid{display:flex;min-width:100%}
+        .sch-hours{flex:0 0 44px;position:relative}
+        .sch-hours .hl{position:absolute;right:6px;font-size:11px;opacity:.6;transform:translateY(-50%)}
+        .sch-day{flex:1 1 0;min-width:150px;border-left:1px solid rgba(255,255,255,.08)}
+        .sch-head{height:92px;padding:6px 6px 0;box-sizing:border-box;border-bottom:1px solid rgba(255,255,255,.12);overflow:hidden;font-size:12px;display:flex;flex-direction:column}
+        .sch-head.today{background:rgba(127,184,230,.12)}
+        .sch-head strong{font-size:13px}
+        .sch-warn{color:#ffc65c;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .sch-lanehead{display:flex;margin-top:auto}
+        .sch-lanehead span{flex:1;text-align:center;font-size:11px;font-weight:700;padding:2px 0;border-radius:4px 4px 0 0}
+        .sch-body{position:relative;background-image:repeating-linear-gradient(to bottom,rgba(255,255,255,.07) 0 1px,transparent 1px ${PX_H}px)}
+        .sch-job{position:absolute;left:1px;right:1px;z-index:3;border-radius:6px;border:1.5px dashed rgba(255,255,255,.55);pointer-events:none;box-sizing:border-box;display:flex;align-items:flex-end}
+        .sch-job span{font-size:10px;line-height:1.2;background:rgba(10,14,20,.85);color:#fff;border-radius:4px;padding:1px 4px;margin:2px;max-width:calc(100% - 4px);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+        .sch-job.ceramic{border-color:rgba(255,198,92,.9)}
+        .sch-job.ceramic span{color:#ffc65c}
+        .sch-lane{position:absolute;top:0;bottom:0;touch-action:pan-x pan-y;cursor:crosshair}
+        .sch-lane.off{background:repeating-linear-gradient(135deg,rgba(255,107,107,.16) 0 6px,transparent 6px 12px)}
+        .sch-shade{position:absolute;left:0;right:0;background:rgba(0,0,0,.35);pointer-events:none}
+        .sch-lane.drop{outline:2px solid var(--moon-primary);outline-offset:-2px}
+        .sch-shift{position:absolute;z-index:2;border-radius:7px;font-size:11px;color:#07111d;padding:3px 4px;box-sizing:border-box;overflow:hidden;cursor:grab;touch-action:none;user-select:none;box-shadow:0 2px 6px rgba(0,0,0,.35)}
+        .sch-shift.draft{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.35) 0 6px,transparent 6px 12px);outline:2px dashed rgba(255,255,255,.85);outline-offset:-2px}
+        .sch-shift b{display:block;font-size:11px}
+        .sch-shift .wr{font-weight:700;color:#5a1a00}
+        .sch-h{position:absolute;left:0;right:0;height:9px;cursor:ns-resize}
+        .sch-h.top{top:0}.sch-h.bot{bottom:0}
+        .sch-ghost{position:absolute;border-radius:7px;background:rgba(127,184,230,.45);border:2px solid var(--moon-primary);pointer-events:none;font-size:11px;padding:2px 4px;box-sizing:border-box;color:#fff;font-weight:700}
+        .sch-float{position:fixed;z-index:9999;pointer-events:none;padding:6px 10px;border-radius:999px;font-weight:700;color:#07111d;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+        .sch-pop{position:fixed;z-index:10000;width:290px;max-width:calc(100vw - 32px);background:#141a22;border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:14px;box-shadow:0 16px 40px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:8px}
+        .sch-pop label{font-size:12px;opacity:.75}
+        .sch-pop input,.sch-pop select{padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;font:inherit;width:100%;box-sizing:border-box}
+        .sch-pop select option{color:#000}
+        .sch-row{display:flex;gap:8px}.sch-row>*{flex:1;min-width:0}
+        .sch-days{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
+        .sch-days .sch-btn{flex:0 0 auto}
+        .sch-days .sch-btn.on{background:var(--moon-primary);color:#07111d;font-weight:700}
+      `;
+      document.head.appendChild(st);
+    }
 
     let weekDate = null;
     let data = null;
+    let focusDay = null;          // phones: one day at a time
+    let publishArmed = false;
+    let denyArmed = null;         // time-off id being denied
     const wrapper = document.createElement("div");
-    wrapper.style.cssText = "display:flex;flex-direction:column;gap:14px;";
+    wrapper.style.cssText = "display:flex;flex-direction:column;gap:12px;";
     viewContainer.appendChild(wrapper);
 
     async function call(method, url, body) {
@@ -4918,128 +4974,356 @@ function renderView(viewName) {
       if (!res.ok) throw new Error(d.error || "Request failed");
       return d;
     }
+    const colorOf = (staffId) => {
+      const i = data.people.findIndex(p => p.id === staffId);
+      return COLORS[(i < 0 ? data.people.length : i) % COLORS.length];
+    };
+    const nameOf = (staffId) => data.people.find(p => p.id === staffId)?.full_name || "Former staff";
+    const dayOf = (date) => data.days.find(d => d.date === date);
+    const coverJobs = (day) => {
+      if (!day.jobs.length) return null;
+      const a = Math.max(START_H * 60, Math.min(...day.jobs.map(j => toMin(j.start))) - 30);
+      const b = Math.min(END_H * 60, Math.max(...day.jobs.map(j => toMin(j.end))) + 30);
+      return [a, b];
+    };
 
-    // Default shift times: cover the day's jobs with 30 min either side, else 8a–5p.
-    function defaultTimes(day) {
-      if (!day.jobs.length) return ["08:00", "17:00"];
-      const toMin = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
-      const toT = (n) => `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
-      const a = Math.max(5 * 60, Math.min(...day.jobs.map(j => toMin(j.start))) - 30);
-      const b = Math.min(23 * 60 + 30, Math.max(...day.jobs.map(j => toMin(j.end))) + 30);
-      return [toT(a), toT(b)];
+    async function saveShift(payload, existing) {
+      try {
+        if (existing) await call("PATCH", "/api/admin-schedule", { id: existing.id, ...payload });
+        else await call("POST", "/api/admin-schedule", { action: "shift", ...payload });
+        await load();
+      } catch (err) { showAdminBanner(err.message, "error"); await load(); }
     }
 
-    function shiftForm(cell, { day, personId, shift }) {
-      cell.querySelector("[data-form]")?.remove();
-      const [ds, de] = shift ? [shift.start_time, shift.end_time] : defaultTimes(day);
-      const f = document.createElement("form");
-      f.setAttribute("data-form", "");
-      f.style.cssText = "display:flex;flex-direction:column;gap:4px;margin-top:6px;";
-      f.innerHTML = `
-        <div style="display:flex;gap:4px;"><input type="time" name="start" value="${ds}" style="${inputStyle}width:50%;" required><input type="time" name="end" value="${de}" style="${inputStyle}width:50%;" required></div>
-        <input name="notes" placeholder="Note" value="${esc(shift?.notes || "")}" style="${inputStyle}">
-        <div style="display:flex;gap:4px;flex-wrap:wrap;">
-          <button type="submit" class="moon-tab" style="padding:4px 8px;">${shift ? "Save" : "Add"}</button>
-          ${shift ? `<button type="button" class="moon-tab" data-del style="padding:4px 8px;">Delete</button>` : ""}
-          <button type="button" class="moon-tab" data-x style="padding:4px 8px;">✕</button>
+    /* ---------- popover editor (no browser dialogs) ---------- */
+    function closePop() { document.querySelector(".sch-pop")?.remove(); }
+    function openPop({ x, y, shift, staffId, date, start, end }) {
+      closePop();
+      const pop = document.createElement("div");
+      pop.className = "sch-pop";
+      const sid = shift?.staff_id || staffId;
+      pop.innerHTML = `
+        <strong>${shift ? "Edit shift" : "New shift"}</strong>
+        <label>Who</label>
+        <select name="staff">${data.people.map(p => `<option value="${esc(p.id)}" ${p.id === sid ? "selected" : ""}>${esc(p.full_name)}</option>`).join("")}</select>
+        <label>Day</label>
+        <select name="date">${data.days.map(d => `<option value="${d.date}" ${d.date === (shift?.shift_date || date) ? "selected" : ""}>${esc(dayHead(d.date))}</option>`).join("")}</select>
+        <div class="sch-row"><div><label>Start</label><input type="time" name="start" step="900" value="${shift?.start_time || start}"></div>
+        <div><label>End</label><input type="time" name="end" step="900" value="${shift?.end_time || end}"></div></div>
+        <label>Note (optional)</label><input name="notes" value="${esc(shift?.notes || "")}" placeholder="e.g. ceramic day, bring kit">
+        ${shift?.warnings?.length ? `<div style="color:#ffc65c;font-size:12px;">⚠ ${shift.warnings.map(esc).join("<br>⚠ ")}</div>` : ""}
+        <div class="sch-row" style="margin-top:4px;">
+          <button type="button" class="sch-btn primary" data-save>${shift ? "Save" : "Add shift"}</button>
+          ${shift ? `<button type="button" class="sch-btn danger" data-del>Delete</button>` : ""}
+          <button type="button" class="sch-btn" data-close>Cancel</button>
         </div>`;
-      f.querySelector("[data-x]").onclick = (ev) => { ev.stopPropagation(); f.remove(); };
-      f.querySelector("[data-del]")?.addEventListener("click", async (ev) => {
-        ev.stopPropagation();
-        if (!confirm(shift.published ? "Delete this published shift? Tell the crew member directly — deleting doesn't email them." : "Delete this draft shift?")) return;
-        try { await call("DELETE", `/api/admin-schedule?id=${encodeURIComponent(shift.id)}`); load(); } catch (err) { showAdminBanner(err.message, "error"); }
-      });
-      f.onsubmit = async (ev) => {
-        ev.preventDefault();
-        const v = Object.fromEntries(new FormData(f).entries());
-        try {
-          if (shift) await call("PATCH", "/api/admin-schedule", { id: shift.id, start_time: v.start, end_time: v.end, notes: v.notes });
-          else await call("POST", "/api/admin-schedule", { action: "shift", staff_id: personId, shift_date: day.date, start_time: v.start, end_time: v.end, notes: v.notes });
-          load();
-        } catch (err) { showAdminBanner(err.message, "error"); }
+      document.body.appendChild(pop);
+      const w = pop.offsetWidth, h = pop.offsetHeight;
+      pop.style.left = Math.max(16, Math.min(window.innerWidth - w - 16, x - w / 2)) + "px";
+      pop.style.top = Math.max(16, Math.min(window.innerHeight - h - 16, y + 12)) + "px";
+      const v = (n) => pop.querySelector(`[name="${n}"]`).value;
+      pop.querySelector("[data-close]").onclick = closePop;
+      pop.querySelector("[data-save]").onclick = () => {
+        const payload = { staff_id: v("staff"), shift_date: v("date"), start_time: v("start"), end_time: v("end"), notes: v("notes") };
+        closePop();
+        saveShift(payload, shift);
       };
-      f.addEventListener("click", (ev) => ev.stopPropagation());
-      cell.appendChild(f);
+      const del = pop.querySelector("[data-del]");
+      if (del) del.onclick = async () => {
+        if (!del.dataset.armed) {
+          del.dataset.armed = "1";
+          del.textContent = shift.published ? "Delete (tell them!)" : "Confirm delete";
+          return;
+        }
+        closePop();
+        try { await call("DELETE", `/api/admin-schedule?id=${encodeURIComponent(shift.id)}`); await load(); }
+        catch (err) { showAdminBanner(err.message, "error"); }
+      };
+      setTimeout(() => document.addEventListener("pointerdown", function outside(ev) {
+        if (!pop.contains(ev.target)) { closePop(); document.removeEventListener("pointerdown", outside, true); }
+      }, true), 0);
     }
 
+    /* ---------- drag engine (pointer events: mouse + touch) ---------- */
+    function laneAt(x, y) {
+      const el = document.elementFromPoint(x, y);
+      return el?.closest?.(".sch-lane") || null;
+    }
+    function bodyAt(x, y) {
+      const el = document.elementFromPoint(x, y);
+      return el?.closest?.(".sch-body") || null;
+    }
+    function clearDrop() { wrapper.querySelectorAll(".sch-lane.drop").forEach(l => l.classList.remove("drop")); }
+
+    // Drag a person chip onto a day: covers that day's jobs, or 8 hours from the drop time.
+    function startChipDrag(ev, person) {
+      ev.preventDefault();
+      const fl = document.createElement("div");
+      fl.className = "sch-float";
+      fl.style.background = colorOf(person.id);
+      fl.textContent = person.full_name;
+      document.body.appendChild(fl);
+      const move = (e) => {
+        fl.style.left = e.clientX + 12 + "px";
+        fl.style.top = e.clientY + 12 + "px";
+        clearDrop();
+        const body = bodyAt(e.clientX, e.clientY);
+        body?.querySelector(`.sch-lane[data-staff="${person.id}"]`)?.classList.add("drop");
+      };
+      const up = (e) => {
+        document.removeEventListener("pointermove", move);
+        document.removeEventListener("pointerup", up);
+        fl.remove();
+        clearDrop();
+        const body = bodyAt(e.clientX, e.clientY);
+        if (!body) return;
+        const day = dayOf(body.dataset.date);
+        const dropMin = yToMin(e.clientY - body.getBoundingClientRect().top);
+        const cover = coverJobs(day);
+        const [a, b] = cover || [dropMin, Math.min(END_H * 60, dropMin + 8 * 60)];
+        saveShift({ staff_id: person.id, shift_date: day.date, start_time: toT(a), end_time: toT(b) });
+      };
+      move(ev);
+      document.addEventListener("pointermove", move);
+      document.addEventListener("pointerup", up);
+    }
+
+    // Paint a new shift in someone's column (mouse), or tap to open the editor prefilled.
+    function startPaint(ev, lane) {
+      if (ev.target !== lane && !ev.target.classList.contains("sch-shade")) return;
+      const body = lane.closest(".sch-body");
+      const top = body.getBoundingClientRect().top;
+      const y0 = ev.clientY;
+      const m0 = yToMin(y0 - top);
+      const day = dayOf(lane.dataset.date);
+      const staffId = lane.dataset.staff;
+      if (ev.pointerType !== "mouse") {
+        // Touch: let the page scroll; a tap opens the editor.
+        const upT = (e) => {
+          lane.removeEventListener("pointerup", upT);
+          if (Math.abs(e.clientY - y0) > 8) return;
+          const cover = coverJobs(day);
+          const [a, b] = cover || [m0, Math.min(END_H * 60, m0 + 8 * 60)];
+          openPop({ x: e.clientX, y: e.clientY, staffId, date: day.date, start: toT(a), end: toT(b) });
+        };
+        lane.addEventListener("pointerup", upT);
+        return;
+      }
+      ev.preventDefault();
+      const ghost = document.createElement("div");
+      ghost.className = "sch-ghost";
+      ghost.style.left = lane.style.left;
+      ghost.style.width = lane.style.width;
+      body.appendChild(ghost);
+      let m1 = m0;
+      const draw = () => {
+        const a = Math.min(m0, m1), b = Math.max(m0, m1);
+        ghost.style.top = minToY(a) + "px";
+        ghost.style.height = Math.max(4, minToY(b) - minToY(a)) + "px";
+        ghost.textContent = b - a >= 30 ? `${fmt12(toT(a))}–${fmt12(toT(b))}` : "";
+      };
+      const move = (e) => { m1 = yToMin(e.clientY - top); draw(); };
+      const up = (e) => {
+        document.removeEventListener("pointermove", move);
+        document.removeEventListener("pointerup", up);
+        ghost.remove();
+        const a = Math.min(m0, m1), b = Math.max(m0, m1);
+        if (b - a < 30) {
+          const cover = coverJobs(day);
+          const [ca, cb] = cover || [m0, Math.min(END_H * 60, m0 + 8 * 60)];
+          openPop({ x: e.clientX, y: e.clientY, staffId, date: day.date, start: toT(ca), end: toT(cb) });
+          return;
+        }
+        saveShift({ staff_id: staffId, shift_date: day.date, start_time: toT(a), end_time: toT(b) });
+      };
+      draw();
+      document.addEventListener("pointermove", move);
+      document.addEventListener("pointerup", up);
+    }
+
+    // Move a shift (time / day / person) or resize it from its top or bottom edge.
+    function startShiftDrag(ev, el, shift) {
+      ev.preventDefault();
+      ev.stopPropagation();
+      const mode = ev.target.classList.contains("top") ? "top" : ev.target.classList.contains("bot") ? "bot" : "move";
+      const x0 = ev.clientX, y0 = ev.clientY;
+      const s0 = toMin(shift.start_time), e0 = toMin(shift.end_time);
+      let moved = false, ns = s0, ne = e0, targetLane = null;
+      const move = (e) => {
+        const dy = e.clientY - y0, dx = e.clientX - x0;
+        if (!moved && Math.abs(dy) < 5 && Math.abs(dx) < 5) return;
+        moved = true;
+        const dMin = Math.round(((dy / PX_H) * 60) / SNAP) * SNAP;
+        if (mode === "move") {
+          const len = e0 - s0;
+          ns = Math.max(START_H * 60, Math.min(END_H * 60 - len, s0 + dMin));
+          ne = ns + len;
+          clearDrop();
+          targetLane = laneAt(e.clientX, e.clientY);
+          targetLane?.classList.add("drop");
+          if (targetLane && targetLane.closest(".sch-body") !== el.closest(".sch-body")) el.style.opacity = "0.35";
+          else el.style.opacity = "";
+        } else if (mode === "top") {
+          ns = Math.max(START_H * 60, Math.min(e0 - 30, s0 + dMin));
+        } else {
+          ne = Math.min(END_H * 60, Math.max(s0 + 30, e0 + dMin));
+        }
+        el.style.top = minToY(ns) + "px";
+        el.style.height = minToY(ne) - minToY(ns) + "px";
+        el.querySelector("b").textContent = `${fmt12(toT(ns))}–${fmt12(toT(ne))}`;
+      };
+      const up = (e) => {
+        document.removeEventListener("pointermove", move);
+        document.removeEventListener("pointerup", up);
+        clearDrop();
+        if (!moved) { openPop({ x: e.clientX, y: e.clientY, shift }); return; }
+        const payload = { start_time: toT(ns), end_time: toT(ne) };
+        if (mode === "move" && targetLane) {
+          payload.shift_date = targetLane.dataset.date;
+          payload.staff_id = targetLane.dataset.staff;
+        }
+        saveShift(payload, shift);
+      };
+      document.addEventListener("pointermove", move);
+      document.addEventListener("pointerup", up);
+    }
+
+    /* ---------- rendering ---------- */
     function render() {
       const d = data;
-      const shift = (n) => { const x = new Date(d.week.start + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
-      wrapper.innerHTML = `
-        <div class="admin-filters" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-          <h3 style="margin:0;flex:1 1 auto;">Crew schedule <span class="booking-summary-meta">· ${esc(d.week.start)} – ${esc(d.week.end)}</span></h3>
-          <button type="button" class="moon-tab" data-prev>‹ Prev</button>
-          <button type="button" class="moon-tab" data-this>This week</button>
-          <button type="button" class="moon-tab" data-next>Next ›</button>
-          <button type="button" class="moon-tab" data-copy title="Copy last week's shifts into this week as drafts">Copy last week</button>
-          <button type="button" class="moon-tab" data-publish ${d.drafts ? "" : "disabled"} style="${d.drafts ? "background:var(--moon-primary);color:#07111d;font-weight:700;" : ""}">Publish ${d.drafts ? `(${d.drafts} draft${d.drafts === 1 ? "" : "s"})` : "— all published"}</button>
-        </div>
-        ${d.time_off.length ? `<div class="discount-code-card expanded" style="padding:14px;"><strong>Time-off requests</strong>${d.time_off.map(t => `
-          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;">
-            <span style="flex:1;min-width:200px;">${esc(t.full_name)}: <strong>${esc(t.start_date)}${t.end_date !== t.start_date ? " → " + esc(t.end_date) : ""}</strong>${t.reason ? ` <span style="opacity:0.75;">· ${esc(t.reason)}</span>` : ""}</span>
-            <button type="button" class="moon-tab" data-off="${esc(t.id)}" data-status="approved">Approve</button>
-            <button type="button" class="moon-tab" data-off="${esc(t.id)}" data-status="denied">Deny</button>
-          </div>`).join("")}</div>` : ""}
-        <div style="overflow-x:auto;border:1px solid rgba(255,255,255,0.12);border-radius:12px;">
-          <table style="border-collapse:collapse;width:100%;min-width:860px;font-size:13px;">
-            <thead><tr>
-              <th style="text-align:left;padding:8px;width:120px;"></th>
-              ${d.days.map(day => `<th style="text-align:left;padding:8px;vertical-align:top;border-left:1px solid rgba(255,255,255,0.08);${day.date === d.today ? "background:rgba(127,184,230,0.12);" : ""}">
-                <div>${esc(dayHead(day.date))}</div>
-                <div style="font-weight:400;opacity:0.85;margin-top:4px;">${day.jobs.length ? `${day.jobs.length} job${day.jobs.length === 1 ? "" : "s"} · ${esc(fmt12(day.jobs[0].start))}–${esc(fmt12(day.jobs[day.jobs.length - 1].end))}` : '<span style="opacity:0.5;">No jobs</span>'}
-                  ${day.jobs.some(j => j.ceramic) ? '<div style="color:#ffc65c;font-weight:700;">✨ Ceramic</div>' : ""}
-                  ${day.pending_requests ? `<div style="opacity:0.7;">+${day.pending_requests} pending</div>` : ""}</div>
-                ${day.warnings.map(w => `<div style="color:#ffc65c;font-weight:600;margin-top:3px;">⚠ ${esc(w)}</div>`).join("")}
-              </th>`).join("")}
-            </tr></thead>
-            <tbody>${d.people.map(p => `<tr>
-              <td style="padding:8px;font-weight:700;vertical-align:top;border-top:1px solid rgba(255,255,255,0.08);">${esc(p.full_name)}<div style="font-weight:400;opacity:0.6;">${esc(p.role)}</div></td>
-              ${d.days.map(day => {
-                const a = day.availability[p.id] || { status: "unknown" };
-                const mine = day.shifts.filter(s => s.staff_id === p.id);
-                return `<td data-cell="${esc(p.id)}|${esc(day.date)}" style="padding:6px;vertical-align:top;border-top:1px solid rgba(255,255,255,0.08);border-left:1px solid rgba(255,255,255,0.08);${AV_STYLE[a.status] || ""}">
-                  <div style="opacity:0.7;font-size:11px;">${esc(avLabel(a))}${a.pendingTimeOff ? " · TO pending" : ""}${a.note ? ` · ${esc(a.note)}` : ""}</div>
-                  ${mine.map(s => `<div data-shift="${esc(s.id)}" title="${esc(s.warnings.join(" · "))}" style="cursor:pointer;margin-top:4px;padding:4px 6px;border-radius:8px;${s.published ? "background:rgba(127,184,230,0.25);" : "border:1px dashed rgba(127,184,230,0.7);"}">
-                    <strong>${esc(fmt12(s.start_time))}–${esc(fmt12(s.end_time))}</strong>${s.published ? "" : ' <span style="opacity:0.7;">draft</span>'}
-                    ${s.warnings.length ? `<div style="color:#ffc65c;">⚠ ${esc(s.warnings[0])}${s.warnings.length > 1 ? ` +${s.warnings.length - 1}` : ""}</div>` : ""}
-                  </div>`).join("")}
-                  <button type="button" class="moon-tab" data-add style="margin-top:4px;padding:2px 8px;font-size:12px;">+ shift</button>
-                </td>`;
-              }).join("")}
-            </tr>`).join("") || `<tr><td colspan="8" style="padding:14px;opacity:0.7;">No crew yet — add employees under Team.</td></tr>`}</tbody>
-          </table>
-        </div>
-        <p style="margin:0;font-size:12px;opacity:0.65;">Dashed = draft (the crew can't see it). Publishing emails each person their week. Editing a published shift turns it back into a draft until you publish again. Green = available, red = off or time off.</p>`;
+      // Columns per day: every employee, plus managers only once they have a shift this week.
+      const lanes = d.people.filter(p => p.role === "employee" || d.days.some(x => x.shifts.some(s => s.staff_id === p.id)));
+      if (!lanes.length) lanes.push(...d.people);
+      const N = Math.max(1, lanes.length);
+      const lanePct = 100 / N;
+      const hoursH = (END_H - START_H) * PX_H;
+      const visibleDays = narrow() ? d.days.filter(x => x.date === (focusDay || d.today)).concat([]) : d.days;
+      const shownDays = visibleDays.length ? visibleDays : [d.days[0]];
+      const shiftWeek = (n) => { const x = new Date(d.week.start + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
 
-      wrapper.querySelector("[data-prev]").onclick = () => { weekDate = shift(-7); load(); };
-      wrapper.querySelector("[data-next]").onclick = () => { weekDate = shift(7); load(); };
-      wrapper.querySelector("[data-this]").onclick = () => { weekDate = null; load(); };
+      wrapper.innerHTML = `
+        <div class="sch-bar">
+          <h3>Crew schedule <span class="booking-summary-meta">· ${esc(d.week.start)} – ${esc(d.week.end)}</span></h3>
+          <button type="button" class="sch-btn" data-prev>‹</button>
+          <button type="button" class="sch-btn" data-this>This week</button>
+          <button type="button" class="sch-btn" data-next>›</button>
+        </div>
+        <div class="sch-bar">
+          <button type="button" class="sch-btn" data-auto title="Draft a shift covering each day's jobs for everyone who's available">⚡ Auto-fill from jobs</button>
+          <button type="button" class="sch-btn" data-copy title="Copy last week's shifts into this week as drafts">Copy last week</button>
+          <span style="flex:1"></span>
+          ${publishArmed
+            ? `<span style="font-size:14px;">Email the crew their schedule?</span>
+               <button type="button" class="sch-btn primary" data-publish-yes>Yes, publish ${d.drafts}</button>
+               <button type="button" class="sch-btn" data-publish-no>Cancel</button>`
+            : `<button type="button" class="sch-btn ${d.drafts ? "primary" : ""}" data-publish ${d.drafts ? "" : "disabled"}>${d.drafts ? `Publish ${d.drafts} draft${d.drafts === 1 ? "" : "s"}` : "✓ All published"}</button>`}
+        </div>
+        ${d.time_off.length ? `<div class="sch-panel"><strong>Time-off requests</strong>${d.time_off.map(t => `
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;">
+            <span style="flex:1;min-width:200px;">${esc(t.full_name)}: <strong>${esc(dayHead(t.start_date))}${t.end_date !== t.start_date ? " → " + esc(dayHead(t.end_date)) : ""}</strong>${t.reason ? ` <span style="opacity:.75;">· ${esc(t.reason)}</span>` : ""}</span>
+            ${denyArmed === t.id
+              ? `<input data-deny-note placeholder="Note to ${esc(t.full_name.split(" ")[0])} (optional)" style="padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;font:inherit;min-width:180px;">
+                 <button type="button" class="sch-btn danger" data-deny-yes="${esc(t.id)}">Deny request</button>
+                 <button type="button" class="sch-btn" data-deny-no>Cancel</button>`
+              : `<button type="button" class="sch-btn primary" data-approve="${esc(t.id)}">Approve</button>
+                 <button type="button" class="sch-btn danger" data-deny="${esc(t.id)}">Deny</button>`}
+          </div>`).join("")}</div>` : ""}
+        <div class="sch-panel">
+          <div class="sch-team"><span style="font-size:13px;opacity:.8;margin-right:4px;">Drag onto a day →</span>
+            ${d.people.map(p => `<span class="sch-chip" data-chip="${esc(p.id)}"><i style="background:${colorOf(p.id)}"></i>${esc(p.full_name)}</span>`).join("") || '<span style="opacity:.7;">Add employees under Team first.</span>'}
+          </div>
+          <div style="font-size:12px;opacity:.65;margin-top:8px;">Or drag down inside a person's column to paint a shift. Drag a shift to move it, drag its top/bottom edge to change times, click it to edit. Striped = draft (crew can't see it yet). Red hatching = off / time off; dark = outside their hours.</div>
+        </div>
+        ${narrow() ? `<div class="sch-days">${d.days.map(x => `<button type="button" class="sch-btn ${x.date === (focusDay || d.today) || (!d.days.some(y => y.date === (focusDay || d.today)) && x === d.days[0]) ? "on" : ""}" data-focus="${x.date}">${esc(dayHead(x.date))}${x.jobs.length ? ` · ${x.jobs.length}` : ""}</button>`).join("")}</div>` : ""}
+        <div class="sch-wrap"><div class="sch-grid">
+          <div class="sch-hours" style="padding-top:92px;"><div style="position:relative;height:${hoursH}px;">${Array.from({ length: END_H - START_H + 1 }, (_, i) => `<div class="hl" style="top:${i * PX_H}px">${fmt12(toT((START_H + i) * 60))}</div>`).join("")}</div></div>
+          ${shownDays.map(day => `
+            <div class="sch-day">
+              <div class="sch-head ${day.date === d.today ? "today" : ""}" title="${esc(day.warnings.join(" · "))}">
+                <strong>${esc(dayHead(day.date))}</strong>
+                <span style="opacity:.8;">${day.jobs.length ? `${day.jobs.length} job${day.jobs.length === 1 ? "" : "s"}` : "No jobs"}${day.jobs.some(j => j.ceramic) ? ' · <b style="color:#ffc65c;">✨ Ceramic</b>' : ""}${day.pending_requests ? ` · +${day.pending_requests} pending` : ""}</span>
+                ${day.warnings.slice(0, 1).map(w => `<span class="sch-warn">⚠ ${esc(w)}</span>`).join("")}
+                <div class="sch-lanehead">${lanes.map(p => `<span style="background:${colorOf(p.id)}33;color:${colorOf(p.id)}" title="${esc(p.full_name)}">${esc(p.full_name.split(" ").map(w => w[0]).join("").slice(0, 2))}</span>`).join("")}</div>
+              </div>
+              <div class="sch-body" data-date="${day.date}" style="height:${hoursH}px;">
+                ${day.jobs.map(j => `<div class="sch-job ${j.ceramic ? "ceramic" : ""}" style="top:${minToY(toMin(j.start))}px;height:${Math.max(14, minToY(toMin(j.end)) - minToY(toMin(j.start)))}px;" title="${esc(j.customer)} · ${esc(j.service)}"><span>${j.ceramic ? "✨ " : ""}Job ${esc(fmt12(j.start))}–${esc(fmt12(j.end))} · ${esc(j.customer)}</span></div>`).join("")}
+                ${lanes.map((p, i) => {
+                  const a = day.availability[p.id] || { status: "unknown" };
+                  const shades = a.status === "partial"
+                    ? `${a.start ? `<div class="sch-shade" style="top:0;height:${Math.max(0, minToY(toMin(a.start)))}px"></div>` : ""}${a.end ? `<div class="sch-shade" style="top:${minToY(toMin(a.end))}px;bottom:0"></div>` : ""}`
+                    : "";
+                  return `<div class="sch-lane ${a.status === "unavailable" ? "off" : ""}" data-staff="${esc(p.id)}" data-date="${day.date}" style="left:${i * lanePct}%;width:${lanePct}%;" title="${esc(p.full_name)} · ${esc(a.status === "unavailable" ? (a.source === "time_off" ? "Time off" : "Off") : a.status === "partial" ? `Available ${fmt12(a.start)}–${fmt12(a.end)}` : a.status === "available" ? "Available" : "Availability not set")}">${shades}</div>`;
+                }).join("")}
+                ${day.shifts.map(s => {
+                  const i = Math.max(0, lanes.findIndex(p => p.id === s.staff_id));
+                  return `<div class="sch-shift ${s.published ? "" : "draft"}" data-shift="${esc(s.id)}" style="left:calc(${i * lanePct}% + 2px);width:calc(${lanePct}% - 4px);top:${minToY(toMin(s.start_time))}px;height:${minToY(toMin(s.end_time)) - minToY(toMin(s.start_time))}px;background-color:${colorOf(s.staff_id)};" title="${esc(nameOf(s.staff_id))}${s.warnings.length ? " · ⚠ " + esc(s.warnings.join(" · ")) : ""}">
+                    <div class="sch-h top"></div><b>${esc(fmt12(s.start_time))}–${esc(fmt12(s.end_time))}</b>${esc(nameOf(s.staff_id).split(" ")[0])}${s.published ? "" : " · draft"}${s.warnings.length ? `<div class="wr">⚠ ${esc(s.warnings[0])}</div>` : ""}<div class="sch-h bot"></div></div>`;
+                }).join("")}
+              </div>
+            </div>`).join("")}
+        </div></div>`;
+
+      // toolbar
+      wrapper.querySelector("[data-prev]").onclick = () => { weekDate = shiftWeek(-7); focusDay = shiftWeek(-7); load(); };
+      wrapper.querySelector("[data-next]").onclick = () => { weekDate = shiftWeek(7); focusDay = shiftWeek(7); load(); };
+      wrapper.querySelector("[data-this]").onclick = () => { weekDate = null; focusDay = null; load(); };
+      wrapper.querySelectorAll("[data-focus]").forEach(b => (b.onclick = () => { focusDay = b.dataset.focus; render(); }));
+      wrapper.querySelector("[data-auto]").onclick = async (ev) => {
+        ev.target.disabled = true;
+        try {
+          const r = await call("POST", "/api/admin-schedule", { action: "auto_fill", week: d.week.start });
+          const skippedTxt = r.skipped.length ? ` Skipped: ${r.skipped.map(k => `${k.full_name} ${dayHead(k.date)} (${k.reason})`).join(", ")}.` : "";
+          showAdminBanner(r.created ? `Drafted ${r.created} shift${r.created === 1 ? "" : "s"} around the jobs.${skippedTxt}` : `Nothing to add — every job day is already covered.${skippedTxt}`, "success");
+          await load();
+        } catch (err) { showAdminBanner(err.message, "error"); ev.target.disabled = false; }
+      };
       wrapper.querySelector("[data-copy]").onclick = async () => {
         try {
-          const r = await call("POST", "/api/admin-schedule", { action: "copy_week", from_week: shift(-7), to_week: d.week.start });
+          const r = await call("POST", "/api/admin-schedule", { action: "copy_week", from_week: shiftWeek(-7), to_week: d.week.start });
           showAdminBanner(`Copied ${r.copied} shift${r.copied === 1 ? "" : "s"} as drafts${r.skipped ? ` (${r.skipped} already there)` : ""}.`, "success");
-          load();
+          await load();
         } catch (err) { showAdminBanner(err.message, "error"); }
       };
-      wrapper.querySelector("[data-publish]").onclick = async () => {
-        if (!confirm(`Publish ${d.drafts} draft shift${d.drafts === 1 ? "" : "s"} and email the crew their schedule?`)) return;
+      wrapper.querySelector("[data-publish]")?.addEventListener("click", () => { publishArmed = true; render(); });
+      wrapper.querySelector("[data-publish-no]")?.addEventListener("click", () => { publishArmed = false; render(); });
+      wrapper.querySelector("[data-publish-yes]")?.addEventListener("click", async (ev) => {
+        ev.target.disabled = true;
         try {
           const r = await call("POST", "/api/admin-schedule", { action: "publish", week: d.week.start });
-          showAdminBanner(`Published ${r.published}. Emailed ${r.emailed}${r.email_failed.length ? `; email failed for ${r.email_failed.join(", ")}` : ""}.`, r.email_failed.length ? "error" : "success");
-          load();
-        } catch (err) { showAdminBanner(err.message, "error"); }
-      };
-      wrapper.querySelectorAll("[data-off]").forEach(b => (b.onclick = async () => {
-        const note = b.dataset.status === "denied" ? (prompt("Optional note to the crew member:") || "") : "";
-        try { await call("POST", "/api/admin-schedule", { action: "time_off", id: b.dataset.off, status: b.dataset.status, note }); load(); }
+          publishArmed = false;
+          showAdminBanner(`Published ${r.published} shift${r.published === 1 ? "" : "s"}. Emailed ${r.emailed} ${r.emailed === 1 ? "person" : "people"}${r.email_failed.length ? `; email failed for ${r.email_failed.join(", ")}` : ""}.`, r.email_failed.length ? "error" : "success");
+          await load();
+        } catch (err) { publishArmed = false; showAdminBanner(err.message, "error"); render(); }
+      });
+
+      // time off
+      wrapper.querySelectorAll("[data-approve]").forEach(b => (b.onclick = async () => {
+        try { await call("POST", "/api/admin-schedule", { action: "time_off", id: b.dataset.approve, status: "approved" }); await load(); }
         catch (err) { showAdminBanner(err.message, "error"); }
       }));
-      wrapper.querySelectorAll("[data-cell]").forEach(cell => {
-        const [personId, date] = cell.dataset.cell.split("|");
-        const day = d.days.find(x => x.date === date);
-        cell.querySelector("[data-add]").onclick = () => shiftForm(cell, { day, personId });
-        cell.querySelectorAll("[data-shift]").forEach(el => (el.onclick = () => shiftForm(cell, { day, personId, shift: day.shifts.find(s => s.id === el.dataset.shift) })));
+      wrapper.querySelectorAll("[data-deny]").forEach(b => (b.onclick = () => { denyArmed = b.dataset.deny; render(); wrapper.querySelector("[data-deny-note]")?.focus(); }));
+      wrapper.querySelector("[data-deny-no]")?.addEventListener("click", () => { denyArmed = null; render(); });
+      wrapper.querySelector("[data-deny-yes]")?.addEventListener("click", async (ev) => {
+        const note = wrapper.querySelector("[data-deny-note]")?.value || "";
+        try {
+          await call("POST", "/api/admin-schedule", { action: "time_off", id: ev.target.dataset.denyYes, status: "denied", note });
+          denyArmed = null;
+          showAdminBanner("Request denied.", "success");
+          await load();
+        } catch (err) { showAdminBanner(err.message, "error"); }
       });
+
+      // drag & drop
+      wrapper.querySelectorAll("[data-chip]").forEach(chip => {
+        const person = d.people.find(p => p.id === chip.dataset.chip);
+        chip.addEventListener("pointerdown", (ev) => startChipDrag(ev, person));
+      });
+      wrapper.querySelectorAll(".sch-lane").forEach(lane => lane.addEventListener("pointerdown", (ev) => startPaint(ev, lane)));
+      wrapper.querySelectorAll(".sch-shift").forEach(el => {
+        const shift = d.days.flatMap(x => x.shifts).find(s => s.id === el.dataset.shift);
+        el.addEventListener("pointerdown", (ev) => startShiftDrag(ev, el, shift));
+      });
+
     }
 
     async function load() {
@@ -5047,11 +5331,19 @@ function renderView(viewName) {
       try {
         data = await call("GET", `/api/admin-schedule${weekDate ? "?week=" + weekDate : ""}`);
         weekDate = data.week.start;
+        if (!focusDay || !data.days.some(x => x.date === focusDay)) {
+          focusDay = data.days.some(x => x.date === data.today) ? data.today : data.days[0].date;
+        }
         render();
       } catch (err) {
         wrapper.innerHTML = `<p style="margin:0;color:#ff8a8a;">${esc(err.message)}</p>`;
       }
     }
+    let lastNarrow = narrow();
+    window.addEventListener("resize", function onResize() {
+      if (!wrapper.isConnected) return window.removeEventListener("resize", onResize);
+      if (narrow() !== lastNarrow && data) { lastNarrow = narrow(); render(); }
+    });
     load();
     return;
   }
@@ -5084,10 +5376,6 @@ function renderView(viewName) {
       if (!res.ok) throw new Error(data.error || "Request failed");
       return data;
     }
-    const askReason = (what) => {
-      const r = prompt(`Reason for ${what} (kept in the edit history):`);
-      return r && r.trim() ? r.trim() : null;
-    };
 
     function entryRow(e) {
       const row = document.createElement("div");
@@ -5105,6 +5393,7 @@ function renderView(viewName) {
           <input name="notes" placeholder="Note" value="${esc(e.notes || "")}" style="${inputStyle}flex:1;min-width:120px;">
           <input name="reason" placeholder="Reason for change (required)" style="${inputStyle}flex:1;min-width:160px;" required>
           <button type="submit" class="moon-tab">Save</button>
+          <button type="button" class="moon-tab" data-void-go style="border-color:rgba(255,107,107,0.6);color:#ff9a9a;">Void entry</button>
         </form>`;
       const form = row.querySelector("[data-form]");
       row.querySelector("[data-edit]").onclick = () => { form.style.display = form.style.display === "none" ? "flex" : "none"; };
@@ -5117,9 +5406,14 @@ function renderView(viewName) {
           load();
         } catch (err) { showAdminBanner(err.message, "error"); }
       };
-      row.querySelector("[data-void]").onclick = async () => {
-        const reason = askReason("voiding this entry");
-        if (!reason) return;
+      // Voiding uses the same form so the reason is typed on the page (no browser pop-ups).
+      row.querySelector("[data-void]").onclick = () => {
+        form.style.display = "flex";
+        form.elements.reason.focus();
+      };
+      form.querySelector("[data-void-go]").onclick = async () => {
+        const reason = form.elements.reason.value.trim();
+        if (!reason) { showAdminBanner("Type a reason first, then press Void entry.", "error"); form.elements.reason.focus(); return; }
         try { await call("DELETE", `/api/admin-time?id=${encodeURIComponent(e.id)}&reason=${encodeURIComponent(reason)}`); load(); }
         catch (err) { showAdminBanner(err.message, "error"); }
       };
@@ -5251,8 +5545,9 @@ function renderView(viewName) {
         try { await call("PATCH", "/api/admin-checklists", val()); showAdminBanner("Step saved.", "success"); load(); }
         catch (err) { showAdminBanner(err.message, "error"); }
       };
-      row.querySelector("[data-del]").onclick = async () => {
-        if (!confirm(`Remove “${s.text}”?`)) return;
+      row.querySelector("[data-del]").onclick = async (ev) => {
+        const btn = ev.currentTarget;
+        if (!btn.dataset.armed) { btn.dataset.armed = "1"; btn.textContent = "Remove?"; return; }
         try { await call("DELETE", `/api/admin-checklists?id=${encodeURIComponent(s.id)}`); load(); }
         catch (err) { showAdminBanner(err.message, "error"); }
       };
@@ -5419,7 +5714,11 @@ function renderView(viewName) {
         const toggleBtn = card.querySelector("[data-toggle-active]");
         if (toggleBtn) toggleBtn.onclick = async (ev) => {
           ev.stopPropagation();
-          if (p.active && !confirm(`Deactivate ${p.full_name}? They will be signed out and can no longer log in.`)) return;
+          if (p.active && !toggleBtn.dataset.armed) {
+            toggleBtn.dataset.armed = "1";
+            toggleBtn.textContent = `Confirm: sign ${p.full_name.split(" ")[0]} out for good`;
+            return;
+          }
           try {
             const r = await adminFetch("/api/admin-staff", {
               method: "PATCH",

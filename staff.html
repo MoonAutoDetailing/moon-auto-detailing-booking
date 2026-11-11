@@ -164,6 +164,18 @@ select.in option { color: black; }
 .item .grow { flex: 1; }
 .row2 { display: flex; gap: 8px; }
 .row2 > * { flex: 1; min-width: 0; }
+.wk { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.wkd { border-radius: 10px; padding: 7px 2px; text-align: center; font-size: 11px; background: rgba(255,255,255,0.05); }
+.wkd b { display: block; font-size: 12px; }
+.wkd span { color: var(--muted); }
+.wkd.yes { background: rgba(111,211,154,0.16); }
+.wkd.yes span { color: var(--ok); }
+.wkd.no { background: rgba(255,107,107,0.12); }
+.wkd.no span { color: var(--bad); }
+.linkbtn { background: none; border: none; color: var(--moon-primary); font: inherit; font-size: 13px; padding: 4px 0; cursor: pointer; text-align: left; }
+.times-link { grid-column: 2; }
+.chip.bad { background: rgba(255,107,107,0.18); color: var(--bad); }
+form.mini { margin-top: 8px; padding-top: 4px; }
 .hidden { display: none !important; }
 </style>
 </head>
@@ -455,142 +467,196 @@ async function renderSchedule() {
 }
 
 /* ---------------- Availability ---------------- */
+// The usual week is asked for once, then shown as a one-line summary with an Edit button.
+// One-day changes and time off live behind small "+" buttons; only one form is open at a time.
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];
+const avState = { editingWeek: false, openForm: null, armed: null };
 
 async function renderAvailability() {
   app.innerHTML = `<div class="empty">Loading availability…</div>`;
   let data;
   try { data = await api("/api/staff-availability"); } catch (err) { app.innerHTML = `<div class="empty">${esc(err.message)}</div>`; return; }
+  avState.openForm = null;
+  avState.armed = null;
+  avState.editingWeek = !data.weekly.some((w) => w.set);
   drawAvailability(data);
 }
 
+function weekSummaryHtml(weekly) {
+  return `<div class="wk">${WEEK_ORDER.map((d) => {
+    const w = weekly[d];
+    const cls = !w.set ? "unset" : w.available ? "yes" : "no";
+    const sub = !w.set ? "—" : !w.available ? "Off" : w.start_time || w.end_time ? `${w.start_time ? fmt12(w.start_time) : "…"}–${w.end_time ? fmt12(w.end_time) : "…"}` : "All day";
+    return `<div class="wkd ${cls}"><b>${DAY_NAMES[d].slice(0, 3)}</b><span>${esc(sub)}</span></div>`;
+  }).join("")}</div>`;
+}
+
 function drawAvailability(data) {
-  const weekly = data.weekly.map((w) => ({ ...w }));
-  // Monday first reads more naturally for a work week.
-  const order = [1, 2, 3, 4, 5, 6, 0];
-  const statusOf = (w) => (w.available === null ? "unset" : w.available ? "yes" : "no");
+  const weekly = data.weekly.map((w) => ({ ...w, hours: !!(w.start_time || w.end_time) }));
   const statusLabel = { approved: "Approved", denied: "Denied", pending: "Waiting for approval" };
+  const firstTime = !data.weekly.some((w) => w.set);
+
+  // Upcoming changes: one-day changes and time off together, by date.
+  const items = [
+    ...data.exceptions.map((e) => ({ kind: "ex", date: e.on_date, e })),
+    ...data.time_off.filter((t) => t.end_date >= data.today).map((t) => ({ kind: "off", date: t.start_date, t })),
+  ].sort((a, b) => (a.date < b.date ? -1 : 1));
+
+  const itemHtml = (it) => {
+    if (it.kind === "ex") {
+      const e = it.e;
+      const what = e.available ? (e.start_time || e.end_time ? `Can work ${fmt12(e.start_time || "00:00")}–${fmt12(e.end_time || "23:59")}` : "Can work all day") : "Can't work";
+      return `<div class="item"><div class="grow"><strong>${esc(dayLabel(e.on_date))}</strong><br><span class="muted">${esc(what)}${e.note ? " · " + esc(e.note) : ""}</span></div>
+        <button class="btn small" type="button" data-del-ex="${esc(e.id)}">${avState.armed === "ex" + e.id ? "Remove?" : "✕"}</button></div>`;
+    }
+    const t = it.t;
+    return `<div class="item"><div class="grow"><strong>Time off · ${esc(dayLabel(t.start_date))}${t.end_date !== t.start_date ? " – " + esc(dayLabel(t.end_date)) : ""}</strong><br>
+      <span class="chip ${t.status === "approved" ? "ok" : t.status === "denied" ? "bad" : "warn"}">${esc(statusLabel[t.status] || t.status)}</span>
+      ${t.reason ? `<span class="muted">${esc(t.reason)}</span>` : ""}${t.review_note ? `<br><span class="muted">Manager: ${esc(t.review_note)}</span>` : ""}</div>
+      ${t.status === "pending" ? `<button class="btn small" type="button" data-cancel-off="${esc(t.id)}">${avState.armed === "off" + t.id ? "Cancel request?" : "✕"}</button>` : ""}</div>`;
+  };
+
+  const forms = {
+    cant: `<form class="mini" data-form="cant">
+        <label class="field">Day you can't work</label>
+        <input class="in" type="date" name="on_date" min="${esc(data.today)}" required />
+        <input class="in" name="note" placeholder="Reason (optional)" style="margin-top:8px;" />
+        <div class="actions"><button class="btn primary" type="submit">Save</button><button class="btn" type="button" data-close>Cancel</button></div>
+      </form>`,
+    can: `<form class="mini" data-form="can">
+        <label class="field">Extra day you can work</label>
+        <input class="in" type="date" name="on_date" min="${esc(data.today)}" required />
+        <div class="row2" style="margin-top:8px;"><input class="in" type="time" name="start_time" aria-label="From (optional)" /><input class="in" type="time" name="end_time" aria-label="Until (optional)" /></div>
+        <p class="muted" style="margin:6px 0 0;font-size:12px;">Leave the times empty if you can work all day.</p>
+        <div class="actions"><button class="btn primary" type="submit">Save</button><button class="btn" type="button" data-close>Cancel</button></div>
+      </form>`,
+    off: `<form class="mini" data-form="off">
+        <label class="field">Time off</label>
+        <div class="row2"><input class="in" type="date" name="start_date" min="${esc(data.today)}" required aria-label="From" /><input class="in" type="date" name="end_date" min="${esc(data.today)}" aria-label="To (optional)" /></div>
+        <p class="muted" style="margin:6px 0 0;font-size:12px;">Leave the second date empty for a single day.</p>
+        <input class="in" name="reason" placeholder="Reason (optional)" style="margin-top:8px;" />
+        <div class="actions"><button class="btn primary" type="submit">Send request</button><button class="btn" type="button" data-close>Cancel</button></div>
+      </form>`,
+  };
 
   app.innerHTML = `
     <div class="panel">
-      <h3>Weekly availability</h3>
-      <p class="muted" style="margin:0 0 6px;font-size:13px;">When you can usually work. Leave times blank for all day. Managers see this when they build the schedule.</p>
-      <div id="weekly">${order.map((d) => {
-        const w = weekly[d];
-        const st = statusOf(w);
-        return `<div class="avrow" data-day="${d}">
-          <div class="day">${DAY_NAMES[d].slice(0, 3)}</div>
-          <div class="seg">
-            <button type="button" data-set="yes" class="${st === "yes" ? "on" : ""}">Available</button>
-            <button type="button" data-set="no" class="${st === "no" ? "on" : ""}">Off</button>
-          </div>
-          <div class="times ${st === "yes" ? "" : "hidden"}">
-            <input class="in" type="time" data-start value="${esc(w.start_time || "")}" aria-label="From" />
-            to
-            <input class="in" type="time" data-end value="${esc(w.end_time || "")}" aria-label="Until" />
-          </div>
-        </div>`;
-      }).join("")}</div>
-      <div class="actions"><button class="btn primary" type="button" id="saveWeekly">Save weekly availability</button></div>
+      <h3>My usual week ${!avState.editingWeek ? `<button class="btn small" type="button" id="editWeek" style="margin-left:auto;">Edit</button>` : ""}</h3>
+      ${avState.editingWeek ? `
+        ${firstTime ? `<p class="muted" style="margin:0 0 8px;font-size:14px;">Set this once — tap each day you can usually work. Managers see it when they build the schedule. You can change it anytime.</p>` : ""}
+        <div id="weekly">${WEEK_ORDER.map((d) => {
+          const w = weekly[d];
+          return `<div class="avrow" data-day="${d}">
+            <div class="day">${DAY_NAMES[d].slice(0, 3)}</div>
+            <div class="seg">
+              <button type="button" data-set="yes" class="${w.available === true ? "on" : ""}">Can work</button>
+              <button type="button" data-set="no" class="${w.available === false ? "on" : ""}">Off</button>
+            </div>
+            <div class="times-link ${w.available === true ? "" : "hidden"}">
+              ${w.hours
+                ? `<div class="times"><input class="in" type="time" data-start value="${esc(w.start_time || "")}" aria-label="From" /> to <input class="in" type="time" data-end value="${esc(w.end_time || "")}" aria-label="Until" /></div>`
+                : `<button type="button" class="linkbtn" data-hours>All day · set hours</button>`}
+            </div>
+          </div>`;
+        }).join("")}</div>
+        <div class="actions">
+          <button class="btn primary" type="button" id="saveWeekly">Save my week</button>
+          ${firstTime ? "" : `<button class="btn" type="button" id="cancelWeek">Cancel</button>`}
+        </div>`
+        : weekSummaryHtml(weekly)}
     </div>
 
     <div class="panel">
-      <h3>One-day changes</h3>
-      <p class="muted" style="margin:0 0 6px;font-size:13px;">A single day that's different from your usual week (appointment, extra day you can work…).</p>
-      <div>${data.exceptions.length ? data.exceptions.map((e) => `
-        <div class="item"><div class="grow"><strong>${esc(dayLabel(e.on_date))}</strong><br>
-          <span class="muted">${e.available ? (e.start_time || e.end_time ? `Available ${esc(e.start_time ? fmt12(e.start_time) : "")}–${esc(e.end_time ? fmt12(e.end_time) : "")}` : "Available all day") : "Not available"}${e.note ? " · " + esc(e.note) : ""}</span></div>
-          <button class="btn small" type="button" data-del-ex="${esc(e.id)}">Remove</button></div>`).join("") : '<p class="muted" style="margin:0;font-size:14px;">None.</p>'}</div>
-      <form id="exForm" style="margin-top:10px;">
-        <div class="row2">
-          <input class="in" type="date" name="on_date" min="${esc(data.today)}" required />
-          <select class="in" name="available"><option value="no">Not available</option><option value="yes">Available</option></select>
-        </div>
-        <div class="row2" style="margin-top:8px;">
-          <input class="in" type="time" name="start_time" aria-label="From (optional)" />
-          <input class="in" type="time" name="end_time" aria-label="Until (optional)" />
-        </div>
-        <input class="in" name="note" placeholder="Note (optional)" style="margin-top:8px;" />
-        <div class="actions"><button class="btn" type="submit">Add day</button></div>
-      </form>
-    </div>
-
-    <div class="panel">
-      <h3>Time off</h3>
-      <div>${data.time_off.length ? data.time_off.map((t) => `
-        <div class="item"><div class="grow"><strong>${esc(dayLabel(t.start_date))}${t.end_date !== t.start_date ? " – " + esc(dayLabel(t.end_date)) : ""}</strong><br>
-          <span class="chip ${t.status === "approved" ? "ok" : t.status === "denied" ? "" : "warn"}">${esc(statusLabel[t.status] || t.status)}</span>
-          ${t.reason ? `<span class="muted">${esc(t.reason)}</span>` : ""}${t.review_note ? `<br><span class="muted">Manager: ${esc(t.review_note)}</span>` : ""}</div>
-          ${t.status === "pending" ? `<button class="btn small" type="button" data-cancel-off="${esc(t.id)}">Cancel</button>` : ""}</div>`).join("") : '<p class="muted" style="margin:0;font-size:14px;">No requests.</p>'}</div>
-      <form id="offForm" style="margin-top:10px;">
-        <div class="row2">
-          <label><span class="muted" style="font-size:12px;">From</span><input class="in" type="date" name="start_date" min="${esc(data.today)}" required /></label>
-          <label><span class="muted" style="font-size:12px;">To</span><input class="in" type="date" name="end_date" min="${esc(data.today)}" required /></label>
-        </div>
-        <input class="in" name="reason" placeholder="Reason (optional)" style="margin-top:8px;" />
-        <div class="actions"><button class="btn" type="submit">Request time off</button></div>
-      </form>
+      <h3>Changes & time off</h3>
+      ${items.length ? items.map(itemHtml).join("") : `<p class="muted" style="margin:0 0 4px;font-size:14px;">Nothing coming up.</p>`}
+      ${avState.openForm ? forms[avState.openForm] : `
+        <div class="actions">
+          <button class="btn small" type="button" data-open="cant">+ Can't work a day</button>
+          <button class="btn small" type="button" data-open="can">+ Extra day I can work</button>
+          <button class="btn small" type="button" data-open="off">+ Request time off</button>
+        </div>`}
     </div>`;
+
+  const redraw = () => drawAvailability(data);
+  const apply = (next) => { data = next; avState.openForm = null; avState.armed = null; drawAvailability(data); };
+
+  app.querySelector("#editWeek")?.addEventListener("click", () => { avState.editingWeek = true; redraw(); });
+  app.querySelector("#cancelWeek")?.addEventListener("click", () => { avState.editingWeek = false; redraw(); });
 
   app.querySelectorAll(".avrow").forEach((row) => {
     const d = Number(row.dataset.day);
     row.querySelectorAll("[data-set]").forEach((b) => (b.onclick = () => {
-      const on = b.classList.contains("on");
-      row.querySelectorAll("[data-set]").forEach((x) => x.classList.remove("on"));
-      weekly[d].available = on ? null : b.dataset.set === "yes";
-      if (!on) b.classList.add("on");
-      row.querySelector(".times").classList.toggle("hidden", weekly[d].available !== true);
+      weekly[d].available = b.dataset.set === "yes";
+      row.querySelectorAll("[data-set]").forEach((x) => x.classList.toggle("on", x === b));
+      row.querySelector(".times-link").classList.toggle("hidden", !weekly[d].available);
     }));
+    row.querySelector("[data-hours]")?.addEventListener("click", () => {
+      captureTimes();
+      weekly[d].hours = true;
+      weekly[d].start_time = weekly[d].start_time || "08:00";
+      weekly[d].end_time = weekly[d].end_time || "17:00";
+      data = { ...data, weekly };
+      redraw();
+    });
   });
 
-  app.querySelector("#saveWeekly").onclick = async () => {
-    const payload = weekly.map((w) => {
-      const row = app.querySelector(`.avrow[data-day="${w.weekday}"]`);
-      return {
-        weekday: w.weekday,
-        available: w.available,
-        start_time: w.available ? row.querySelector("[data-start]").value || null : null,
-        end_time: w.available ? row.querySelector("[data-end]").value || null : null,
-      };
+  // Keeps typed hours when the list redraws.
+  function captureTimes() {
+    app.querySelectorAll(".avrow").forEach((row) => {
+      const w = weekly[Number(row.dataset.day)];
+      const s = row.querySelector("[data-start]");
+      const e = row.querySelector("[data-end]");
+      if (s) w.start_time = s.value || null;
+      if (e) w.end_time = e.value || null;
     });
+  }
+
+  app.querySelector("#saveWeekly")?.addEventListener("click", async () => {
+    captureTimes();
+    if (!weekly.some((w) => w.available !== null)) { toast("Tap Can work or Off for at least one day.", true); return; }
+    const payload = weekly.map((w) => ({
+      weekday: w.weekday,
+      available: w.available,
+      start_time: w.available && w.hours ? w.start_time || null : null,
+      end_time: w.available && w.hours ? w.end_time || null : null,
+    }));
     try {
       const next = await api("/api/staff-availability", { method: "PUT", body: { weekly: payload } });
-      toast("Weekly availability saved.");
-      drawAvailability(next);
+      avState.editingWeek = false;
+      toast("Your week is saved.");
+      apply(next);
     } catch (err) { toast(err.message, true); }
-  };
+  });
 
-  app.querySelector("#exForm").onsubmit = async (e) => {
-    e.preventDefault();
-    const f = Object.fromEntries(new FormData(e.target).entries());
-    try {
-      const next = await api("/api/staff-availability", {
-        method: "POST",
-        body: { kind: "exception", on_date: f.on_date, available: f.available === "yes", start_time: f.start_time || null, end_time: f.end_time || null, note: f.note },
-      });
-      toast("Day added.");
-      drawAvailability(next);
-    } catch (err) { toast(err.message, true); }
-  };
+  app.querySelectorAll("[data-open]").forEach((b) => (b.onclick = () => { avState.openForm = b.dataset.open; redraw(); app.querySelector("[data-form] input")?.focus(); }));
+  app.querySelector("[data-close]")?.addEventListener("click", () => { avState.openForm = null; redraw(); });
 
-  app.querySelector("#offForm").onsubmit = async (e) => {
+  app.querySelector("[data-form]")?.addEventListener("submit", async (e) => {
     e.preventDefault();
+    const kind = e.target.dataset.form;
     const f = Object.fromEntries(new FormData(e.target).entries());
+    const body = kind === "off"
+      ? { kind: "time_off", start_date: f.start_date, end_date: f.end_date || f.start_date, reason: f.reason }
+      : { kind: "exception", on_date: f.on_date, available: kind === "can", start_time: f.start_time || null, end_time: f.end_time || null, note: f.note };
     try {
-      const next = await api("/api/staff-availability", { method: "POST", body: { kind: "time_off", ...f } });
-      toast("Time off requested. A manager will review it.");
-      drawAvailability(next);
+      const next = await api("/api/staff-availability", { method: "POST", body });
+      toast(kind === "off" ? "Time off requested. A manager will review it." : "Saved.");
+      apply(next);
     } catch (err) { toast(err.message, true); }
-  };
+  });
 
   app.querySelectorAll("[data-del-ex]").forEach((b) => (b.onclick = async () => {
-    try { drawAvailability(await api(`/api/staff-availability?exception_id=${encodeURIComponent(b.dataset.delEx)}`, { method: "DELETE" })); }
+    const key = "ex" + b.dataset.delEx;
+    if (avState.armed !== key) { avState.armed = key; redraw(); return; }
+    try { apply(await api(`/api/staff-availability?exception_id=${encodeURIComponent(b.dataset.delEx)}`, { method: "DELETE" })); }
     catch (err) { toast(err.message, true); }
   }));
   app.querySelectorAll("[data-cancel-off]").forEach((b) => (b.onclick = async () => {
-    if (!confirm("Cancel this time-off request?")) return;
-    try { drawAvailability(await api(`/api/staff-availability?time_off_id=${encodeURIComponent(b.dataset.cancelOff)}`, { method: "DELETE" })); }
+    const key = "off" + b.dataset.cancelOff;
+    if (avState.armed !== key) { avState.armed = key; redraw(); return; }
+    try { apply(await api(`/api/staff-availability?time_off_id=${encodeURIComponent(b.dataset.cancelOff)}`, { method: "DELETE" })); }
     catch (err) { toast(err.message, true); }
   }));
 }

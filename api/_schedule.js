@@ -135,3 +135,49 @@ export function parseAvailabilityRow(row) {
     },
   };
 }
+
+const toHHMM = (n) => `${String(Math.floor(n / 60)).padStart(2, "0")}:${String(n % 60).padStart(2, "0")}`;
+
+/** Shift times that cover a day's jobs with `padMin` either side (clamped to 5:00–23:30). */
+export function coverTimes(jobs, padMin = 30) {
+  if (!jobs?.length) return null;
+  const start = Math.max(5 * 60, Math.min(...jobs.map((j) => minutes(j.start))) - padMin);
+  const end = Math.min(23 * 60 + 30, Math.max(...jobs.map((j) => minutes(j.end))) + padMin);
+  return { start: toHHMM(start), end: toHHMM(end) };
+}
+
+/**
+ * Draft shifts for a week: on every day with jobs, each person who isn't off and has no
+ * shift yet gets one covering the jobs, trimmed to their available hours.
+ * days: [{ date, jobs: [{start,end}] }]; people: [{ id }]; availabilityFor(staffId, date);
+ * existing: [{ staff_id, shift_date }]. Returns { shifts: [...], skipped: [{ staff_id, date, reason }] }.
+ */
+export function planAutoFill({ days, people, availabilityFor, existing = [] }) {
+  const has = new Set(existing.map((s) => `${s.staff_id}|${s.shift_date}`));
+  const shifts = [];
+  const skipped = [];
+  for (const day of days) {
+    const cover = coverTimes(day.jobs);
+    if (!cover) continue;
+    for (const p of people) {
+      if (has.has(`${p.id}|${day.date}`)) continue;
+      const a = availabilityFor(p.id, day.date);
+      if (a.status === "unavailable") {
+        skipped.push({ staff_id: p.id, date: day.date, reason: a.source === "time_off" ? "time off" : "off" });
+        continue;
+      }
+      let start = cover.start;
+      let end = cover.end;
+      if (a.status === "partial") {
+        if (a.start && minutes(a.start) > minutes(start)) start = a.start;
+        if (a.end && minutes(a.end) < minutes(end)) end = a.end;
+      }
+      if (minutes(end) <= minutes(start)) {
+        skipped.push({ staff_id: p.id, date: day.date, reason: "available hours don't overlap the jobs" });
+        continue;
+      }
+      shifts.push({ staff_id: p.id, shift_date: day.date, start_time: start, end_time: end });
+    }
+  }
+  return { shifts, skipped };
+}

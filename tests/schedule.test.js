@@ -156,3 +156,43 @@ test("morning crew emails go out once per published shift and retry after a fail
   // Third run: nothing left.
   assert.deepEqual(await runCrewMorningEmails({ sb, today, send: flaky }), { sent: 0, failed: 0 });
 });
+
+test("auto-fill drafts shifts around each day's jobs, respecting availability", () => {
+  assert.deepEqual(sched.coverTimes([{ start: "09:00", end: "12:00" }, { start: "13:00", end: "16:30" }]), { start: "08:30", end: "17:00" });
+  assert.equal(sched.coverTimes([]), null);
+
+  const days = [
+    { date: "2026-11-16", jobs: [{ start: "09:00", end: "15:00" }] }, // Monday: Ann 08:00–16:00, Bob all day
+    { date: "2026-11-18", jobs: [{ start: "10:00", end: "12:00" }] }, // Wednesday: Ann off
+    { date: "2026-11-19", jobs: [] },                                  // no jobs → no shifts
+  ];
+  const people = [{ id: "ann" }, { id: "bob" }];
+  const avail = {
+    ann: { weekly, exceptions: [], timeOff: [] },
+    bob: { weekly: [], exceptions: [], timeOff: [{ start_date: "2026-11-18", end_date: "2026-11-18", status: "approved" }] },
+  };
+  const availabilityFor = (id, date) => sched.availabilityOn(date, avail[id]);
+
+  const plan = sched.planAutoFill({ days, people, availabilityFor, existing: [{ staff_id: "bob", shift_date: "2026-11-16" }] });
+  assert.deepEqual(plan.shifts, [
+    // Monday: the 08:30–15:30 cover already fits inside Ann's 08:00–16:00 hours.
+    { staff_id: "ann", shift_date: "2026-11-16", start_time: "08:30", end_time: "15:30" },
+  ]);
+  assert.deepEqual(plan.skipped, [
+    { staff_id: "ann", date: "2026-11-18", reason: "off" },
+    { staff_id: "bob", date: "2026-11-18", reason: "time off" },
+  ]);
+});
+
+test("auto-fill trims to partial availability and skips when hours don't overlap", () => {
+  const partial = (start, end) => () => ({ status: "partial", start, end, source: "weekly" });
+  const day = [{ date: "2026-11-16", jobs: [{ start: "07:00", end: "17:00" }] }];
+  assert.deepEqual(
+    sched.planAutoFill({ days: day, people: [{ id: "a" }], availabilityFor: partial("09:00", "13:00") }).shifts,
+    [{ staff_id: "a", shift_date: "2026-11-16", start_time: "09:00", end_time: "13:00" }]
+  );
+  const late = [{ date: "2026-11-16", jobs: [{ start: "08:00", end: "10:00" }] }];
+  const r = sched.planAutoFill({ days: late, people: [{ id: "a" }], availabilityFor: partial("12:00", "18:00") });
+  assert.deepEqual(r.shifts, []);
+  assert.equal(r.skipped[0].reason, "available hours don't overlap the jobs");
+});
