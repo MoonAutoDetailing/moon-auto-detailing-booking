@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Moon Auto Detailing — Team Sign In</title>
+<link rel="icon" href="/NewLogoColor.png" type="image/png" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#0e0e0e" />
+<meta name="robots" content="noindex" />
+<style>
+:root {
+  --moon-primary: #7fb8e6;
+  --moon-primary-dark: #4f95cf;
+}
+* { box-sizing: border-box; }
+body {
+  font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  background: radial-gradient(circle at center, #0e0e0e 0%, #000 100%);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+.card {
+  width: 100%;
+  max-width: 380px;
+  padding: 36px 28px;
+  border-radius: 18px;
+  background: rgba(111,147,196,0.12);
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  text-align: center;
+}
+.logo { width: 130px; margin-bottom: 14px; }
+h1 { color: var(--moon-primary); font-size: 22px; margin: 0 0 6px; }
+p.sub { margin: 0 0 22px; opacity: 0.75; font-size: 14px; }
+input {
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.08);
+  color: white;
+  font-size: 16px; /* 16px keeps iOS from zooming */
+  margin-bottom: 12px;
+  outline: none;
+}
+input::placeholder { color: rgba(255,255,255,0.6); }
+input:focus { border-color: var(--moon-primary); }
+button {
+  width: 100%;
+  padding: 13px;
+  border: none;
+  border-radius: 10px;
+  background: var(--moon-primary);
+  color: #07111d;
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.6; cursor: default; }
+.msg { margin-top: 14px; font-size: 14px; min-height: 20px; }
+.msg.error { color: #ff6b6b; }
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<form class="card" id="loginForm" autocomplete="on">
+  <img src="/NewLogoColor.png" class="logo" alt="Moon Auto Detailing" />
+  <h1>Team sign in</h1>
+  <p class="sub" id="subtitle">Crew, managers and owners</p>
+
+  <div id="loginFields">
+    <input id="email" type="email" placeholder="Email" autocomplete="username" autocapitalize="off" required />
+    <input id="password" type="password" placeholder="Password" autocomplete="current-password" required />
+  </div>
+  <div id="changeFields" class="hidden">
+    <input id="newPassword" type="password" placeholder="New password (8+ characters)" autocomplete="new-password" />
+    <input id="newPassword2" type="password" placeholder="Repeat new password" autocomplete="new-password" />
+  </div>
+
+  <button id="submitBtn" type="submit">Sign in</button>
+  <div class="msg" id="msg"></div>
+</form>
+
+<script type="module">
+const form = document.getElementById("loginForm");
+const msg = document.getElementById("msg");
+const btn = document.getElementById("submitBtn");
+let session = null; // { token, staff } after a successful sign-in
+let currentPassword = "";
+
+function showMessage(text, isError) {
+  msg.textContent = text || "";
+  msg.className = "msg" + (isError ? " error" : "");
+}
+
+// Employees use the crew app (token kept on the phone); owners/managers use the admin page
+// (token in sessionStorage, same as the existing admin login).
+function goHome({ token, staff }) {
+  if (staff.role === "employee") {
+    try { localStorage.setItem("moon_staff_session", token); } catch {}
+    window.location.replace("/staff.html");
+  } else {
+    sessionStorage.setItem("moon_admin_session", token);
+    sessionStorage.setItem("moon_admin_staff", JSON.stringify(staff));
+    window.location.replace("/admin.html");
+  }
+}
+
+async function signIn() {
+  const email = document.getElementById("email").value.trim();
+  currentPassword = document.getElementById("password").value;
+  const res = await fetch("/api/staff-login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password: currentPassword })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Sign in failed");
+  session = data;
+
+  if (data.staff.must_change_password) {
+    document.getElementById("loginFields").classList.add("hidden");
+    document.getElementById("changeFields").classList.remove("hidden");
+    document.getElementById("subtitle").textContent = `Welcome, ${data.staff.full_name.split(" ")[0]}! Choose your own password.`;
+    btn.textContent = "Save password";
+    document.getElementById("newPassword").focus();
+    return;
+  }
+  goHome(data);
+}
+
+async function changePassword() {
+  const pw = document.getElementById("newPassword").value;
+  if (pw !== document.getElementById("newPassword2").value) throw new Error("Passwords don't match");
+  const res = await fetch("/api/staff-me", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-staff-session": session.token },
+    body: JSON.stringify({ current_password: currentPassword, new_password: pw })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not save password");
+  goHome({ token: session.token, staff: { ...session.staff, must_change_password: false } });
+}
+
+form.onsubmit = async (e) => {
+  e.preventDefault();
+  btn.disabled = true;
+  showMessage("");
+  try {
+    if (session) await changePassword();
+    else await signIn();
+  } catch (err) {
+    showMessage(err.message, true);
+  } finally {
+    btn.disabled = false;
+  }
+};
+</script>
+</body>
+</html>

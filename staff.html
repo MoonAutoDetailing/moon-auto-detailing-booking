@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Moon Auto Detailing — Crew</title>
+<link rel="icon" href="/NewLogoColor.png" type="image/png" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<meta name="theme-color" content="#0e0e0e" />
+<meta name="robots" content="noindex" />
+<style>
+:root {
+  --moon-primary: #7fb8e6;
+  --moon-primary-dark: #4f95cf;
+}
+* { box-sizing: border-box; }
+body {
+  font-family: "Poppins", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  margin: 0;
+  min-height: 100vh;
+  background: #0e0e0e;
+  color: white;
+  padding: 16px;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+header img { width: 44px; }
+header .who { flex: 1; }
+header .who strong { display: block; color: var(--moon-primary); }
+header .who span { font-size: 13px; opacity: 0.7; }
+.btn {
+  padding: 9px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.25);
+  background: rgba(255,255,255,0.06);
+  color: white;
+  font-size: 14px;
+  cursor: pointer;
+}
+.panel {
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  background: rgba(111,147,196,0.14);
+  padding: 18px;
+  margin-bottom: 14px;
+}
+.panel h2 { margin: 0 0 8px; font-size: 18px; }
+.panel p { margin: 0; opacity: 0.85; line-height: 1.5; }
+</style>
+</head>
+<body>
+<header>
+  <img src="/NewLogoColor.png" alt="" />
+  <div class="who"><strong id="name">Loading…</strong><span>Moon Auto Detailing crew</span></div>
+  <button class="btn" id="signOut" type="button">Sign out</button>
+</header>
+
+<main id="app">
+  <section class="panel">
+    <h2>You're signed in</h2>
+    <p>Your schedule, time clock, jobs, photos, expenses and pay will appear here.</p>
+  </section>
+</main>
+
+<script type="module">
+// Crew app shell. Phase 0 only verifies the session; later phases add Today, Schedule,
+// Availability, Expenses and Pay tabs that call /api/staff-* with x-staff-session.
+const TOKEN_KEY = "moon_staff_session";
+let token = null;
+try { token = localStorage.getItem(TOKEN_KEY); } catch {}
+
+function signOut() {
+  try { localStorage.removeItem(TOKEN_KEY); } catch {}
+  window.location.replace("/staff-login.html");
+}
+
+export async function staffFetch(url, options = {}) {
+  options.headers = { ...(options.headers || {}), "x-staff-session": token };
+  const res = await fetch(url, options);
+  if (res.status === 401) signOut();
+  return res;
+}
+
+document.getElementById("signOut").onclick = signOut;
+
+if (!token) {
+  signOut();
+} else {
+  const res = await staffFetch("/api/staff-me");
+  if (res.ok) {
+    const { staff } = await res.json();
+    if (staff.must_change_password) signOut(); // finish the first-login step on the sign-in page
+    document.getElementById("name").textContent = staff.full_name;
+  }
+}
+</script>
+</body>
+</html>

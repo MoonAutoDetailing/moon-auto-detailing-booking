@@ -753,7 +753,7 @@ a.mobile-top-chip {
   font-weight: 700;
 }
 
-#loginPassword {
+#loginPassword, #loginEmail, #loginNewPassword {
   width: 100%;
   padding: 12px 14px;
   border-radius: 10px;
@@ -765,7 +765,7 @@ a.mobile-top-chip {
   font-size: 15px;
 }
 
-#loginPassword::placeholder {
+#loginPassword::placeholder, #loginEmail::placeholder, #loginNewPassword::placeholder {
   color: rgba(255,255,255,0.6);
 }
 
@@ -1338,7 +1338,7 @@ body {
   line-height: 1.45;
 }
 
-#loginPassword {
+#loginPassword, #loginEmail, #loginNewPassword {
   min-height: 48px;
   border-radius: 14px;
   border-color: rgba(127,184,230,0.36);
@@ -1897,7 +1897,7 @@ body {
   box-shadow: none;
 }
 
-#loginPassword {
+#loginPassword, #loginEmail, #loginNewPassword {
   min-height: 44px;
   margin-bottom: 10px;
 }
@@ -2031,15 +2031,32 @@ style="
 <input type="password" style="display:none">
 
 <input
-  id="loginPassword"
-  type="password"
-  placeholder="Password"
-  autocomplete="new-password"
+  id="loginEmail"
+  type="email"
+  placeholder="Email (leave blank for the shared owner password)"
+  autocomplete="username"
   autocapitalize="off"
   autocorrect="off"
   spellcheck="false"
 />
 
+<input
+  id="loginPassword"
+  type="password"
+  placeholder="Password"
+  autocomplete="current-password"
+  autocapitalize="off"
+  autocorrect="off"
+  spellcheck="false"
+/>
+
+<input
+  id="loginNewPassword"
+  type="password"
+  placeholder="Choose a new password (8+ characters)"
+  autocomplete="new-password"
+  style="display:none"
+/>
 
     <button id="loginButton" class="act-primary" type="submit">Unlock Admin Portal</button>
 
@@ -2221,19 +2238,55 @@ function isLoggedIn() {
   return !!ADMIN_SESSION;
 }
 
-async function performLogin(password) {
-  const res = await fetch("/api/admin-login", {
+// Team accounts sign in with email + password (/api/staff-login). Leaving the email blank
+// uses the legacy shared owner password (/api/admin-login) until it is retired.
+// Employees are sent to the crew app; must_change_password asks for a new password first.
+async function performLogin(email, password) {
+  if (!email) {
+    const res = await fetch("/api/admin-login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error("Wrong password");
+    ADMIN_SESSION = data.token;
+    sessionStorage.setItem("moon_admin_session", ADMIN_SESSION);
+    return { staff: null };
+  }
+
+  const res = await fetch("/api/staff-login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ password })
+    body: JSON.stringify({ email, password })
   });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Incorrect email or password");
 
-  const data = await res.json();
-
-  if (!res.ok) throw new Error("Unauthorized");
+  if (data.staff.role === "employee") {
+    try { localStorage.setItem("moon_staff_session", data.token); } catch {}
+    window.location.href = "/staff.html";
+    return new Promise(() => {}); // navigating away
+  }
 
   ADMIN_SESSION = data.token;
   sessionStorage.setItem("moon_admin_session", ADMIN_SESSION);
+  sessionStorage.setItem("moon_admin_staff", JSON.stringify(data.staff));
+  return { staff: data.staff };
+}
+
+async function changeOwnPassword(currentPassword, newPassword) {
+  const res = await fetch("/api/staff-me", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-admin-session": ADMIN_SESSION },
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not change password");
+}
+
+function getAdminStaff() {
+  try { return JSON.parse(sessionStorage.getItem("moon_admin_staff") || "null"); } catch { return null; }
 }
 
 async function requireLoginUI() {
@@ -2244,17 +2297,49 @@ async function requireLoginUI() {
   const newForm = oldForm.cloneNode(true);
   oldForm.parentNode.replaceChild(newForm, oldForm);
 
+  const emailInput = document.getElementById("loginEmail");
   const input = document.getElementById("loginPassword");
+  const newPwInput = document.getElementById("loginNewPassword");
   const error = document.getElementById("loginError");
+  const button = document.getElementById("loginButton");
+  let pendingPasswordChange = null;
 
   return new Promise(resolve => {
     async function attemptLogin() {
       error.style.display = "none";
 
+      if (pendingPasswordChange) {
+        try {
+          await changeOwnPassword(pendingPasswordChange, newPwInput.value);
+          newPwInput.style.display = "none";
+          newPwInput.value = "";
+          button.textContent = "Unlock Admin Portal";
+          pendingPasswordChange = null;
+          resolve();
+        } catch (e) {
+          error.textContent = e.message;
+          error.style.display = "block";
+        }
+        return;
+      }
+
       try {
-        await performLogin(input.value);
+        const email = emailInput.value.trim();
+        const password = input.value;
+        const { staff } = await performLogin(email, password);
+        if (staff?.must_change_password) {
+          pendingPasswordChange = password;
+          input.value = "";
+          newPwInput.style.display = "block";
+          newPwInput.focus();
+          button.textContent = "Save new password";
+          error.textContent = "Welcome! Please choose your own password to continue.";
+          error.style.display = "block";
+          return;
+        }
         resolve();
-      } catch {
+      } catch (e) {
+        error.textContent = e.message || "Wrong password";
         error.style.display = "block";
         input.value = "";
       }
@@ -2271,6 +2356,7 @@ async function requireLoginUI() {
 function clearAdminSession() {
   ADMIN_SESSION = null;
   sessionStorage.removeItem("moon_admin_session");
+  sessionStorage.removeItem("moon_admin_staff");
 }
 
 function showLoginOverlay() {
@@ -2379,7 +2465,6 @@ async function bootAdminApp() {
 
 
 /* ===================== IMPORTS ===================== */
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 /* ===================== HARD LOG ===================== */
 function hardLog(message) {
@@ -2451,14 +2536,12 @@ async function adminFetch(url, options = {}, retry = true) {
   return res;
 }
 
-/* ===================== SUPABASE ===================== */
-const SUPABASE_URL = "https://qgmhugztrpiprnqmcyan.supabase.co";
-const SUPABASE_ANON_KEY =
-"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFnbWh1Z3p0cnBpcHJucW1jeWFuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1MDk1NjMsImV4cCI6MjA4NjA4NTU2M30.Mo0uRGWCjU1fOa1br2P8j1ogEZf7mDm2JseV8DFnPwI";
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-/* ===================== REALTIME BOOKINGS ===================== */
-let realtimeChannel = null;
+/* ===================== LIVE BOOKINGS (polling) ===================== */
+// The page used to subscribe to Supabase realtime with the public key, which required
+// anon read access to every booking. It now polls the admin API instead.
+const BOOKING_POLL_MS = 30000;
+let bookingPollTimer = null;
+let bookingPollSignature = "";
 
 function showAdminBanner(message, type) {
   type = type || "success";
@@ -2475,58 +2558,62 @@ function showToast(message) {
   showAdminBanner(message, "success");
 }
 
-function startRealtimeBookings() {
-  if (realtimeChannel) return; // prevent duplicate subscriptions
-
-  hardLog("STARTING REALTIME BOOKINGS SUBSCRIPTION");
-
-  realtimeChannel = supabase
-    .channel("admin-bookings-live")
-    .on(
-      "postgres_changes",
-      { event: "*", schema: "public", table: "bookings" },
-      async (payload) => {
-        try {
-          hardLog("REALTIME BOOKING CHANGE DETECTED");
-
-          // Detect NEW booking inserts only
-          if (payload.eventType === "INSERT") {
-            const booking = payload.new;
-
-            if (booking && !knownBookingIds.has(booking.id)) {
-              knownBookingIds.add(booking.id);
-
-              bookingSound.play().catch(() => {});
-              showToast("New booking received!");
-
-              document.title = "• New Booking!";
-              setTimeout(() => {
-                document.title = "Moon Auto Detailing — Admin";
-              }, 5000);
-            }
-          }
-
-          const ok = await loadAdminData({ silentUnauthorized: true });
-          if (ok && currentView) renderView(currentView);
-        } catch (err) {
-          console.error(err);
-          hardLog("REALTIME ERROR " + (err?.message || err));
-        }
-      }
-    )
-    .subscribe();
+function bookingsSignature(bookings) {
+  return bookings
+    .map(b => `${b.id}:${b.status}:${b.scheduled_start}`)
+    .sort()
+    .join("|");
 }
 
-     
-function stopRealtimeBookings() {
+async function pollBookingsOnce() {
+  if (document.hidden || !ADMIN_SESSION) return;
   try {
-    if (realtimeChannel) {
-      hardLog("STOPPING REALTIME BOOKINGS SUBSCRIPTION");
-      supabase.removeChannel(realtimeChannel);
-      realtimeChannel = null;
+    const res = await adminFetch("/api/admin-bookings", {}, false);
+    if (!res.ok) return;
+    const data = await res.json();
+    const bookings = Array.isArray(data) ? data : (data.bookings || data.rows || data.data || []);
+    const signature = bookingsSignature(bookings);
+    if (signature === bookingPollSignature) return;
+
+    const isFirstPoll = bookingPollSignature === "";
+    bookingPollSignature = signature;
+    if (isFirstPoll) return;
+
+    const newPending = bookings.filter(b => b.status === "pending" && !knownBookingIds.has(b.id));
+    if (newPending.length) {
+      hardLog("NEW BOOKING DETECTED BY POLL");
+      bookingSound.play().catch(() => {});
+      showToast("New booking received!");
+      document.title = "• New Booking!";
+      setTimeout(() => {
+        document.title = "Moon Auto Detailing — Admin";
+      }, 5000);
     }
-  } catch (e) {
-    hardLog("STOP REALTIME ERROR " + (e?.message || e));
+
+    // Only redraw the booking lists; tool views (team, expenses, ...) may have forms open.
+    const bookingViews = [null, "pending", "today", "upcoming"];
+    if (bookingViews.includes(currentView)) {
+      await loadAdminData({ silentUnauthorized: true });
+    }
+  } catch (err) {
+    console.error(err);
+    hardLog("BOOKING POLL ERROR " + (err?.message || err));
+  }
+}
+
+function startRealtimeBookings() {
+  if (bookingPollTimer) return; // prevent duplicate pollers
+  hardLog("STARTING BOOKING POLLING");
+  bookingPollSignature = "";
+  pollBookingsOnce();
+  bookingPollTimer = setInterval(pollBookingsOnce, BOOKING_POLL_MS);
+}
+
+function stopRealtimeBookings() {
+  if (bookingPollTimer) {
+    hardLog("STOPPING BOOKING POLLING");
+    clearInterval(bookingPollTimer);
+    bookingPollTimer = null;
   }
 }
 
@@ -3260,12 +3347,13 @@ if (b.google_event_id) {
 }
 
 
-      const { error } = await supabase
-        .from("bookings")
-        .update({ status: "reschedule_requested" })
-        .eq("id", b.id);
-
-      if (error) throw error;
+      const statusRes = await adminFetch("/api/admin-request-reschedule", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bookingId: b.id })
+      });
+      const statusData = await statusRes.json().catch(() => ({}));
+      if (!statusRes.ok) throw new Error(statusData.error || "Status update failed");
 
       const emailRes = await adminFetch("/api/send-reschedule-link-email", {
   method: "POST",
@@ -3393,18 +3481,9 @@ return;
 card.remove();
 return;
 }
-const { error } = await supabase
-.from("bookings")
-.update({ status })
-.eq("id", id);
-
-if (error) {
-showAdminBanner("Failed to update booking status.", "error");
-console.error(error);
-return;
-}
-
-card.remove();
+// Other status changes go through their dedicated admin endpoints
+// (confirm-booking, admin-deny-booking, admin-complete-booking, ...).
+showAdminBanner("Unsupported status change: " + status, "error");
 }
 // ===================== DASHBOARD RENDERING =====================
 
@@ -3427,7 +3506,7 @@ function renderButtons() {
   viewButtons.innerHTML = "";
 
   const primaryKeys = ["pending", "today", "upcoming"];
-  const menuKeys = ["history", "subscriptions", "waitlist", "discount-codes", "book-customer", "availability", "expenses", "bookkeeping"];
+  const menuKeys = ["history", "subscriptions", "waitlist", "team", "discount-codes", "book-customer", "availability", "expenses", "bookkeeping"];
   const allButtons = [
     { key: "pending", label: "Pending Bookings" },
     { key: "today", label: "Today's Schedule" },
@@ -3435,6 +3514,7 @@ function renderButtons() {
     { key: "history", label: "History" },
     { key: "subscriptions", label: "Subscriptions" },
     { key: "waitlist", label: "Waitlist" },
+    { key: "team", label: "Team" },
     { key: "discount-codes", label: "Discount Codes" },
     { key: "book-customer", label: "Book Customer" },
     { key: "availability", label: "Availability" },
@@ -3457,6 +3537,7 @@ function renderButtons() {
     dropdown.innerHTML = "";
     const sections = [
       { title: "Views", keys: ["history", "subscriptions", "waitlist"] },
+      { title: "Team", keys: ["team"] },
       { title: "Tools", keys: ["discount-codes", "book-customer", "availability", "expenses", "bookkeeping"] },
       { title: "Account", keys: ["__debug__"] }
     ];
@@ -4712,6 +4793,167 @@ function renderView(viewName) {
   // =========================
   // WAITLIST (off-season sign-ups)
   // =========================
+  // =========================
+  // TEAM (staff logins, roles, pay rates, clock-in PINs)
+  // =========================
+  if (viewName === "team") {
+    const wrapper = document.createElement("div");
+    wrapper.style.display = "flex";
+    wrapper.style.flexDirection = "column";
+    wrapper.style.gap = "14px";
+    viewContainer.appendChild(wrapper);
+
+    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const roleLabel = { owner: "Owner", manager: "Manager", employee: "Employee" };
+    const inputStyle = "padding:8px 12px;border-radius:8px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:white;min-width:0;";
+    let me = getAdminStaff() || { role: "owner" };
+    let staffList = [];
+
+    const toolbar = document.createElement("div");
+    toolbar.className = "admin-filters";
+    toolbar.style.display = "flex";
+    toolbar.style.flexWrap = "wrap";
+    toolbar.style.gap = "10px";
+    toolbar.style.alignItems = "center";
+    toolbar.innerHTML = `
+      <h3 style="margin:0;flex:1 1 auto;">Team <span id="teamCount" class="booking-summary-meta"></span></h3>
+      <button type="button" id="teamAddBtn" class="moon-tab">Add team member</button>
+    `;
+    wrapper.appendChild(toolbar);
+
+    const formCard = document.createElement("div");
+    formCard.className = "discount-code-card expanded";
+    formCard.style.display = "none";
+    wrapper.appendChild(formCard);
+
+    const list = document.createElement("div");
+    list.style.display = "flex";
+    list.style.flexDirection = "column";
+    list.style.gap = "10px";
+    wrapper.appendChild(list);
+
+    // One form for add + edit. Managers can only add/edit employees and cannot set pay.
+    function openForm(person) {
+      const isEdit = !!person;
+      const canSetPay = me.role === "owner";
+      const roleOptions = (me.role === "owner" ? ["employee", "manager", "owner"] : ["employee"])
+        .map(r => `<option value="${r}" ${person?.role === r ? "selected" : ""}>${roleLabel[r]}</option>`).join("");
+      formCard.style.display = "block";
+      formCard.innerHTML = `
+        <form id="teamForm" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;padding:14px;">
+          <h4 style="grid-column:1/-1;margin:0;">${isEdit ? "Edit " + esc(person.full_name) : "Add team member"}</h4>
+          <input name="full_name" placeholder="Full name" value="${esc(person?.full_name || "")}" style="${inputStyle}" required />
+          <input name="email" type="email" placeholder="Email (their login)" value="${esc(person?.email || "")}" style="${inputStyle}" required />
+          <input name="phone" type="tel" placeholder="Mobile phone" value="${esc(person?.phone || "")}" style="${inputStyle}" />
+          <select name="role" style="${inputStyle}">${roleOptions}</select>
+          ${canSetPay ? `<input name="hourly_rate" type="number" min="0" step="0.25" placeholder="Hourly rate ($)" value="${person?.hourly_rate ?? ""}" style="${inputStyle}" />` : ""}
+          <input name="temp_password" type="text" autocomplete="off" placeholder="${isEdit ? "New temporary password (optional)" : "Temporary password (8+ chars)"}" style="${inputStyle}" ${isEdit ? "" : "required"} />
+          <input name="pin" type="text" inputmode="numeric" autocomplete="off" placeholder="${isEdit ? "New clock-in PIN (optional)" : "Clock-in approval PIN (managers, 4–6 digits)"}" style="${inputStyle}" />
+          <div style="grid-column:1/-1;display:flex;gap:10px;flex-wrap:wrap;">
+            <button type="submit" class="moon-tab">${isEdit ? "Save changes" : "Create login"}</button>
+            <button type="button" class="moon-tab" data-cancel>Cancel</button>
+          </div>
+          <p style="grid-column:1/-1;margin:0;font-size:13px;opacity:0.75;">
+            They sign in at <strong>${esc(location.origin)}/staff-login.html</strong> and must choose their own password the first time.
+            The PIN is only used by managers/owners to approve a crew clock-in away from the job site.
+          </p>
+        </form>`;
+      const form = formCard.querySelector("#teamForm");
+      formCard.querySelector("[data-cancel]").onclick = () => { formCard.style.display = "none"; };
+      form.onsubmit = async (ev) => {
+        ev.preventDefault();
+        const fd = Object.fromEntries(new FormData(form).entries());
+        const payload = { full_name: fd.full_name, email: fd.email, phone: fd.phone, role: fd.role };
+        if (canSetPay) payload.hourly_rate = fd.hourly_rate;
+        if (fd.temp_password) payload.temp_password = fd.temp_password;
+        if (fd.pin) payload.pin = fd.pin;
+        if (isEdit) payload.id = person.id;
+        try {
+          const r = await adminFetch("/api/admin-staff", {
+            method: isEdit ? "PATCH" : "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          const data = await r.json();
+          if (!r.ok) throw new Error(data.error || "Save failed");
+          formCard.style.display = "none";
+          showAdminBanner(isEdit ? "Saved." : "Login created.", "success");
+          await loadTeam();
+        } catch (err) { showAdminBanner(err.message || "Save failed.", "error"); }
+      };
+    }
+
+    function renderTeam() {
+      const active = staffList.filter(p => p.active).length;
+      toolbar.querySelector("#teamCount").textContent = `· ${active} active`;
+      list.innerHTML = "";
+      if (staffList.length === 0) {
+        list.innerHTML = "<p style='margin:0;color:rgba(255,255,255,0.6);'>No team accounts yet. Start by adding yourself as Owner, then your managers and crew.</p>";
+        return;
+      }
+      staffList.forEach(p => {
+        const canEdit = me.role === "owner" || p.role === "employee";
+        const card = document.createElement("div");
+        card.className = "discount-code-card";
+        if (!p.active) card.style.opacity = "0.55";
+        card.innerHTML = `
+          <div class="discount-code-header">
+            <span><strong>${esc(p.full_name)}</strong></span>
+            <span class="booking-summary-meta">${esc(roleLabel[p.role] || p.role)}${p.active ? "" : " · Inactive"}</span>
+            <span class="booking-summary-meta">${p.hourly_rate != null ? "$" + Number(p.hourly_rate).toFixed(2) + "/hr" : ""}</span>
+            <span class="chevron" aria-hidden="true">▼</span>
+          </div>
+          <div class="discount-code-detail">
+            <p style="margin:0 0 6px;"><strong>Email:</strong> ${esc(p.email)}</p>
+            <p style="margin:0 0 6px;"><strong>Phone:</strong> ${p.phone ? `<a href="tel:${esc(p.phone)}" style="color:inherit;">${esc(p.phone)}</a>` : "—"}</p>
+            <p style="margin:0 0 6px;"><strong>Last sign-in:</strong> ${p.last_login_at ? esc(new Date(p.last_login_at).toLocaleString()) : "Never"}${p.must_change_password ? " · Needs to set password" : ""}</p>
+            <p style="margin:0 0 10px;"><strong>Clock-in PIN:</strong> ${p.has_pin ? "Set" : "Not set"}</p>
+            ${canEdit ? `<div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button type="button" class="moon-tab" data-edit>Edit / reset password</button>
+              ${p.id !== me.id ? `<button type="button" class="moon-tab" data-toggle-active>${p.active ? "Deactivate" : "Reactivate"}</button>` : ""}
+            </div>` : ""}
+          </div>`;
+        card.querySelector(".discount-code-header").onclick = () => card.classList.toggle("expanded");
+        const editBtn = card.querySelector("[data-edit]");
+        if (editBtn) editBtn.onclick = (ev) => { ev.stopPropagation(); openForm(p); formCard.scrollIntoView({ behavior: "smooth" }); };
+        const toggleBtn = card.querySelector("[data-toggle-active]");
+        if (toggleBtn) toggleBtn.onclick = async (ev) => {
+          ev.stopPropagation();
+          if (p.active && !confirm(`Deactivate ${p.full_name}? They will be signed out and can no longer log in.`)) return;
+          try {
+            const r = await adminFetch("/api/admin-staff", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id: p.id, active: !p.active })
+            });
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.error || "Update failed");
+            await loadTeam();
+          } catch (err) { showAdminBanner(err.message || "Update failed.", "error"); }
+        };
+        list.appendChild(card);
+      });
+    }
+
+    toolbar.querySelector("#teamAddBtn").onclick = () => openForm(null);
+
+    async function loadTeam() {
+      list.innerHTML = "<p style='margin:0;'>Loading…</p>";
+      try {
+        const res = await adminFetch("/api/admin-staff");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to load");
+        staffList = data.staff || [];
+        if (data.me) me = data.me;
+        renderTeam();
+      } catch (err) {
+        list.innerHTML = `<p style="margin:0;color:#ff8a8a;">${esc(err.message || "Failed to load team.")}</p>`;
+      }
+    }
+    loadTeam();
+    return;
+  }
+
   if (viewName === "waitlist") {
     const wrapper = document.createElement("div");
     wrapper.style.display = "flex";
