@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { rememberCustomerAddress } from "../_customerAddresses.js";
 import verifyAdmin from "../_verifyAdmin.js";
 import { createBookingCore } from "../_createBookingCore.js";
 import { confirmBookingCore } from "../_confirmBookingCore.js";
@@ -151,12 +152,17 @@ export default async function handler(req, res) {
       return res.status(result.statusCode).json(result.body);
     }
 
-    const booking = result.booking;
-    await syncCrmProfileStage(supabase, booking.customer_id, {
+    const booking = { ...result.booking, customer_id: customerId };
+    await syncCrmProfileStage(supabase, customerId, {
       lifecycle_stage: "booked",
       status: "active"
     });
-    await reconcileCustomerLifecycle(supabase, booking.customer_id);
+    await reconcileCustomerLifecycle(supabase, customerId);
+    try {
+      await rememberCustomerAddress(supabase, customerId, bookingBody.service_address);
+    } catch (addrErr) {
+      console.error("admin-create-booking: saving customer address failed", addrErr);
+    }
 
     if (requestedStatus === "pending") {
       if (sendCustomerEmail) {

@@ -55,3 +55,26 @@ test("weekly revenue: collected, tips, methods, under-price jobs, still to colle
   assert.deepEqual(s.by_method, { Cash: 200, Venmo: 170 });
   assert.deepEqual(s.jobs.map((j) => [j.id, j.short, j.unpaid]), [["a", 0, false], ["b", 15.5, false], ["c", 90, true]]);
 });
+
+test("saved addresses: newest first, profile address included, near-duplicates and placeholders dropped", async () => {
+  const { savedAddresses, isPlaceholderAddress } = await import("../api/_customerAddresses.js");
+  assert.deepEqual(
+    savedAddresses({
+      bookingAddresses: ["88 Elm St, Cranford, NJ 07016", "1234 Maple Ave, Westfield, NJ 07090, USA", "88 elm st,  Cranford, NJ 07016", "", null],
+      profileAddress: "1234 Maple Ave, Westfield, NJ 07090",
+    }),
+    ["88 Elm St, Cranford, NJ 07016", "1234 Maple Ave, Westfield, NJ 07090, USA"]
+  );
+  assert.deepEqual(savedAddresses({ bookingAddresses: [], profileAddress: "Address not provided" }), []);
+  assert.equal(isPlaceholderAddress(" Address not provided "), true);
+  assert.equal(isPlaceholderAddress("5 Oak Rd"), false);
+});
+
+test("history search matches name, email and phone digits safely", async () => {
+  const { customerSearchFilter, STATUS_GROUPS } = await import("../api/_handlers/admin-history.js");
+  assert.equal(customerSearchFilter("Jo"), "full_name.ilike.%Jo%,email.ilike.%Jo%");
+  assert.equal(customerSearchFilter("(908) 555"), "full_name.ilike.%908  555%,email.ilike.%908  555%,phone.ilike.%9%0%8%5%5%5%");
+  assert.equal(customerSearchFilter("a,b(c)"), "full_name.ilike.%a b c%,email.ilike.%a b c%");
+  assert.equal(customerSearchFilter("  "), null);
+  assert.deepEqual(STATUS_GROUPS.cancelled, ["cancelled", "denied", "no_show"]);
+});

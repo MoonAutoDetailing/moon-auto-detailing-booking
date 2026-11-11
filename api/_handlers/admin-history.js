@@ -18,6 +18,24 @@ const HISTORY_STATUSES = [
   "denied"
 ];
 
+// ?status= filter groups for the History tab.
+export const STATUS_GROUPS = {
+  all: HISTORY_STATUSES,
+  completed: ["completed"],
+  cancelled: ["cancelled", "denied", "no_show"],
+  rescheduled: ["reschedule_requested", "rescheduled"]
+};
+
+/** Customer search terms are matched against name, email and phone; PostgREST-safe. */
+export function customerSearchFilter(q) {
+  const safe = String(q || "").replace(/[%,()*]/g, " ").trim();
+  if (!safe) return null;
+  const digits = safe.replace(/\D/g, "");
+  const parts = [`full_name.ilike.%${safe}%`, `email.ilike.%${safe}%`];
+  if (digits.length >= 3) parts.push(`phone.ilike.%${digits.split("").join("%")}%`);
+  return parts.join(",");
+}
+
 
 export default async function handler(req, res) {
    try {
@@ -46,12 +64,21 @@ export default async function handler(req, res) {
 
     const q = (req.query.q || "").toString().trim();
     const date = (req.query.date || "").toString().trim();
+    const statuses = STATUS_GROUPS[(req.query.status || "all").toString()] || STATUS_GROUPS.all;
+    const fromDate = /^\d{4}-\d{2}-\d{2}$/.test(req.query.from || "") ? req.query.from : null;
+    const toDate = /^\d{4}-\d{2}-\d{2}$/.test(req.query.to || "") ? req.query.to : null;
 
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
 
     let dayStartISO = null;
     let dayEndISO = null;
+
+    // ?from=&to= (inclusive New York dates) — used by the History range picker.
+    if (!date && (fromDate || toDate)) {
+      if (fromDate) dayStartISO = DateTime.fromISO(fromDate, { zone: "America/New_York" }).startOf("day").toUTC().toISO();
+      if (toDate) dayEndISO = DateTime.fromISO(toDate, { zone: "America/New_York" }).startOf("day").plus({ days: 1 }).toUTC().toISO();
+    }
 
     if (date) {
       const dt = DateTime.fromISO(date, { zone: "America/New_York" });
@@ -69,11 +96,10 @@ export default async function handler(req, res) {
     let customerIds = null;
 
     if (q) {
-      const { data: customers, error: custErr } = await supabase
-        .from("customers")
-        .select("id")
-        .ilike("full_name", `%${q}%`)
-        .limit(500);
+      const filter = customerSearchFilter(q);
+      const { data: customers, error: custErr } = filter
+        ? await supabase.from("customers").select("id").or(filter).limit(500)
+        : { data: [], error: null };
 
       if (custErr) throw custErr;
 
@@ -122,10 +148,15 @@ export default async function handler(req, res) {
       category,
       level
     )
+  ),
+  job_payments (
+    amount_collected,
+    tip_amount,
+    payment_method
   )
 `, { count: "exact" })
 
-      .in("status", HISTORY_STATUSES)
+      .in("status", statuses)
       .order("scheduled_start", { ascending: false })
       .range(from, to);
 
@@ -133,20 +164,34 @@ export default async function handler(req, res) {
       query = query.in("customer_id", customerIds);
     }
 
-    if (dayStartISO && dayEndISO) {
-      query = query
-        .gte("scheduled_start", dayStartISO)
-        .lt("scheduled_start", dayEndISO);
-    }
+    if (dayStartISO) query = query.gte("scheduled_start", dayStartISO);
+    if (dayEndISO) query = query.lt("scheduled_start", dayEndISO);
 
     const { data, count, error } = await query;
     if (error) throw error;
+
+    // Total collected across every matching booking (not just this page).
+    let sumQuery = supabase
+      .from("bookings")
+      .select("id, job_payments ( amount_collected )")
+      .in("status", statuses)
+      .limit(5000);
+    if (customerIds) sumQuery = sumQuery.in("customer_id", customerIds);
+    if (dayStartISO) sumQuery = sumQuery.gte("scheduled_start", dayStartISO);
+    if (dayEndISO) sumQuery = sumQuery.lt("scheduled_start", dayEndISO);
+    const { data: sumRows, error: sumErr } = await sumQuery;
+    if (sumErr) throw sumErr;
+    const collected = (sumRows || []).reduce(
+      (t, b) => t + (b.job_payments || []).reduce((s, p) => s + Number(p.amount_collected || 0), 0),
+      0
+    );
 
     return res.status(200).json({
       rows: data || [],
       totalCount: count || 0,
       page,
-      pageSize
+      pageSize,
+      collected: Math.round(collected * 100) / 100
     });
 
   } catch (e) {

@@ -1985,6 +1985,249 @@ details.sub-block summary { cursor: pointer; }
 .sub-inline-form select, .sub-inline-form input[type="date"] { padding: 6px 8px; border-radius: 6px; background: rgba(255,255,255,0.08); color: white; border: 1px solid rgba(255,255,255,0.25); margin-left: 4px; }
 .sub-check { display: flex; align-items: center; gap: 6px; }
 .sub-audit { margin: 6px 0 0; padding-left: 18px; font-size: 13px; }
+
+/* =====================================================================
+   UX LAYER (Nov 2026 overhaul) — one design system for Booking Operations.
+   Everything below is scoped to body.ux and wins over the older rules above.
+   ===================================================================== */
+body.ux {
+  --ux-bg: #0d0f12;
+  --ux-surface: #151a21;
+  --ux-surface-2: #1b222b;
+  --ux-line: rgba(255,255,255,0.10);
+  --ux-line-strong: rgba(255,255,255,0.18);
+  --ux-text: #f3f6fa;
+  --ux-muted: rgba(243,246,250,0.62);
+  --ux-primary: #7fb8e6;
+  --ux-primary-ink: #07111d;
+  --ux-ok: #6fd39a;
+  --ux-warn: #ffc65c;
+  --ux-bad: #ff7b7b;
+  --ux-radius: 14px;
+  --ux-gap: 12px;
+  --ux-tabbar-h: 64px;
+  background: var(--ux-bg);
+  color: var(--ux-text);
+  padding: 0;
+  font-size: 15px;
+  line-height: 1.45;
+}
+body.ux #watermarkLogo, body.ux #watermarkUnderlay { display: none !important; }
+
+/* ---------- shell ---------- */
+body.ux #bookingAdminSection.open { display: block; padding: 0; max-width: none; margin: 0; }
+body.ux .ux-header {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; gap: 10px;
+  padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+  background: rgba(13,15,18,0.96); backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--ux-line);
+}
+body.ux .ux-header .ux-title { flex: 1; min-width: 0; }
+body.ux .ux-eyebrow { display: block; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ux-muted); }
+body.ux .ux-header h1 { margin: 0; font-size: 20px; font-weight: 700; color: var(--ux-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.ux #refreshNow { font-size: 22px; font-weight: 700; }
+body.ux .ux-icon, body.ux .ux-back, body.ux .ux-avatar {
+  width: 40px; height: 40px; flex: none; border-radius: 12px; border: 1px solid var(--ux-line-strong);
+  background: var(--ux-surface); color: var(--ux-text); font-size: 18px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0;
+}
+body.ux .ux-avatar { border-radius: 50%; font-size: 13px; font-weight: 700; background: rgba(127,184,230,.18); color: var(--ux-primary); }
+body.ux .ux-back[hidden] { display: none; }
+body.ux .ux-popover {
+  position: absolute; right: 16px; top: calc(100% + 6px); min-width: 220px; z-index: 60;
+  background: var(--ux-surface-2); border: 1px solid var(--ux-line-strong); border-radius: var(--ux-radius);
+  box-shadow: 0 16px 40px rgba(0,0,0,.55); padding: 6px;
+}
+body.ux .ux-popover[hidden] { display: none; }
+body.ux .ux-popover [data-who] { display: flex; flex-direction: column; padding: 10px 12px; border-bottom: 1px solid var(--ux-line); margin-bottom: 4px; }
+body.ux .ux-popover [data-who] span { font-size: 12px; color: var(--ux-muted); text-transform: capitalize; }
+body.ux .ux-popover button, body.ux .ux-popover a {
+  display: block; width: 100%; text-align: left; padding: 10px 12px; border: none; border-radius: 10px;
+  background: none; color: var(--ux-text); font: inherit; cursor: pointer; text-decoration: none;
+}
+body.ux .ux-popover button:hover, body.ux .ux-popover a:hover { background: rgba(255,255,255,.06); }
+
+body.ux .ux-layout { display: block; }
+body.ux #viewContainer {
+  padding: 16px 16px calc(var(--ux-tabbar-h) + 24px + env(safe-area-inset-bottom));
+  max-width: 1100px; margin: 0 auto; box-sizing: border-box;
+}
+body.ux #topBar, body.ux #adminToolsDrawer, body.ux #adminMenuBackdrop, body.ux .booking-app-header { display: none !important; }
+body.ux #pageOverlay { max-width: none; padding: 0; margin: 0; }
+body.ux .ux-layout > #viewContainer { width: 100%; }
+body.ux .ux-day, body.ux .ux-seg, body.ux .ux-stats, body.ux .ux-banner { max-width: 860px; margin-left: auto; margin-right: auto; }
+body.ux .ux-day { margin-bottom: 20px; }
+
+/* phone tab bar */
+body.ux .ux-tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+  display: flex; align-items: stretch; height: var(--ux-tabbar-h);
+  padding-bottom: env(safe-area-inset-bottom);
+  background: #12161c; border-top: 1px solid var(--ux-line);
+}
+body.ux .ux-tab {
+  position: relative; flex: 1; min-width: 0; border: none; background: none; color: var(--ux-muted);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
+  font: inherit; font-size: 11px; font-weight: 600; cursor: pointer; padding: 6px 0;
+}
+body.ux .ux-tab-icon { font-size: 19px; line-height: 1; }
+body.ux .ux-tab.active { color: var(--ux-primary); }
+body.ux .ux-tab-center .ux-tab-icon {
+  width: 40px; height: 40px; border-radius: 50%; background: var(--ux-primary); color: var(--ux-primary-ink);
+  display: inline-flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; margin-top: -4px;
+}
+body.ux .ux-badge {
+  display: inline-flex; align-items: center; justify-content: center; min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 9px; background: var(--ux-warn); color: #1d1300; font-size: 11px; font-weight: 800; line-height: 1;
+}
+body.ux .ux-tab .ux-badge { position: absolute; top: 4px; left: calc(50% + 6px); }
+
+/* desktop sidebar */
+body.ux .ux-sidebar { display: none; }
+@media (min-width: 900px) {
+  body.ux .ux-tabbar { display: none; }
+  body.ux .ux-layout { display: grid; grid-template-columns: 236px minmax(0, 1fr); min-height: calc(100vh - 62px); }
+  body.ux .ux-sidebar {
+    display: block; position: sticky; top: 62px; align-self: start; height: calc(100vh - 62px); overflow-y: auto;
+    padding: 14px 10px; border-right: 1px solid var(--ux-line); box-sizing: border-box;
+  }
+  body.ux #viewContainer { padding: 24px 28px 48px; }
+  body.ux .ux-back { display: none !important; }
+}
+body.ux .ux-side-group { margin-bottom: 14px; }
+body.ux .ux-side-title { font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ux-muted); padding: 6px 10px; }
+body.ux .ux-side-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 9px 10px; border: none; border-radius: 10px;
+  background: none; color: var(--ux-text); font: inherit; font-size: 14px; text-align: left; cursor: pointer;
+}
+body.ux .ux-side-item:hover { background: rgba(255,255,255,.05); }
+body.ux .ux-side-item.active { background: rgba(127,184,230,.16); color: var(--ux-primary); font-weight: 600; }
+body.ux .ux-side-item .ux-badge { margin-left: auto; }
+
+/* ---------- building blocks ---------- */
+body.ux .ux-stack { display: flex; flex-direction: column; gap: 18px; }
+body.ux .ux-list-title, body.ux .ux-day-title {
+  font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--ux-muted); font-weight: 700; margin: 0 4px 8px;
+  display: flex; justify-content: space-between; border: none; padding: 0;
+}
+body.ux .ux-day-title span { text-transform: none; letter-spacing: 0; font-weight: 500; }
+body.ux .ux-day { margin-bottom: 20px; }
+body.ux .ux-list { background: var(--ux-surface); border: 1px solid var(--ux-line); border-radius: var(--ux-radius); overflow: hidden; }
+body.ux .ux-list-item {
+  display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 14px; border: none; border-bottom: 1px solid var(--ux-line);
+  background: none; color: var(--ux-text); font: inherit; font-size: 15px; text-align: left; cursor: pointer; text-decoration: none; box-sizing: border-box;
+}
+body.ux .ux-list-item:last-child { border-bottom: none; }
+body.ux .ux-list-item:active { background: rgba(255,255,255,.05); }
+body.ux .ux-list-icon { width: 28px; text-align: center; font-size: 18px; }
+body.ux .ux-list-label { flex: 1; }
+body.ux .ux-chev { color: var(--ux-muted); font-size: 20px; }
+body.ux .ux-danger-text { color: var(--ux-bad); }
+body.ux .ux-empty { text-align: center; color: var(--ux-muted); padding: 28px 12px; }
+body.ux .ux-banner { border-radius: var(--ux-radius); padding: 12px 14px; margin-bottom: 14px; font-weight: 600; color: var(--ux-warn); background: rgba(255,198,92,.12); border: 1px solid rgba(255,198,92,.45); }
+body.ux .ux-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 16px; }
+body.ux .ux-stat {
+  background: var(--ux-surface); border: 1px solid var(--ux-line); border-radius: var(--ux-radius); padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 2px; text-align: left; color: var(--ux-text); font: inherit;
+}
+body.ux .ux-stat span { font-size: 12px; color: var(--ux-muted); }
+body.ux .ux-stat strong { font-size: 22px; }
+body.ux .ux-stat-link { cursor: pointer; }
+body.ux .ux-stat-warn { border-color: rgba(255,198,92,.55); }
+body.ux .ux-stat-warn strong { color: var(--ux-warn); }
+body.ux .ux-seg { display: flex; gap: 4px; padding: 4px; background: var(--ux-surface); border: 1px solid var(--ux-line); border-radius: 12px; margin-bottom: 16px; }
+body.ux .ux-seg button { flex: 1; padding: 10px 8px; border: none; border-radius: 9px; background: none; color: var(--ux-muted); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+body.ux .ux-seg button b { margin-left: 4px; color: inherit; opacity: .8; }
+body.ux .ux-seg button.on { background: var(--ux-surface-2); color: var(--ux-text); box-shadow: 0 1px 0 rgba(255,255,255,.06) inset; }
+
+/* ---------- buttons & inputs (all views) ---------- */
+body.ux .moon-tab, body.ux .actions button, body.ux .sch-btn, body.ux .ux-btn {
+  min-height: 40px; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--ux-line-strong);
+  background: var(--ux-surface-2); color: var(--ux-text); font: inherit; font-size: 14px; font-weight: 600;
+  box-shadow: none; text-transform: none; letter-spacing: 0; cursor: pointer; transform: none; width: auto;
+}
+body.ux .moon-tab:hover, body.ux .actions button:hover { background: #222b36; }
+body.ux .moon-tab.active { background: rgba(127,184,230,.18); border-color: rgba(127,184,230,.6); color: var(--ux-primary); }
+body.ux .actions button.confirm, body.ux .ux-btn-primary, body.ux .sch-btn.primary {
+  background: var(--ux-primary); border-color: var(--ux-primary); color: var(--ux-primary-ink);
+}
+body.ux .actions button.confirm:hover { background: #95c5ec; }
+body.ux .actions button.cancel, body.ux .ux-btn-danger { background: transparent; border-color: rgba(255,123,123,.55); color: var(--ux-bad); }
+body.ux .actions button.delay { background: var(--ux-surface-2); color: var(--ux-text); }
+body.ux button:disabled { opacity: .5; cursor: default; }
+body.ux #viewContainer input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+body.ux #viewContainer select, body.ux #viewContainer textarea {
+  min-height: 42px; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--ux-line-strong);
+  background: #0f1318; color: var(--ux-text); font: inherit; font-size: 16px; box-sizing: border-box; max-width: 100%;
+}
+body.ux #viewContainer select option { color: #000; }
+body.ux #viewContainer input:focus, body.ux #viewContainer select:focus, body.ux #viewContainer textarea:focus { outline: 2px solid rgba(127,184,230,.6); outline-offset: 1px; }
+body.ux #viewContainer h2, body.ux #viewContainer h3 { color: var(--ux-text); }
+body.ux .discount-code-card, body.ux .admin-book-card, body.ux .admin-section {
+  background: var(--ux-surface); border: 1px solid var(--ux-line); border-radius: var(--ux-radius); box-shadow: none;
+}
+body.ux .admin-filters { background: none; border: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; text-align: left; }
+body.ux .admin-filters h3, body.ux #viewContainer > div > h3:first-child { text-align: left; font-size: 17px; }
+body.ux .admin-book-title { display: none; }
+body.ux .admin-book-view { max-width: 760px; margin: 0 auto; }
+
+/* ---------- booking cards ---------- */
+body.ux .card {
+  background: var(--ux-surface); border: 1px solid var(--ux-line); border-left: 1px solid var(--ux-line);
+  border-radius: var(--ux-radius); padding: 0; margin: 0 0 10px; box-shadow: none; overflow: hidden;
+}
+body.ux .card[data-today-accent] { border-left: 1px solid var(--ux-line); }
+body.ux .card .booking-header {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto; gap: 2px 12px;
+  align-items: center; padding: 12px 14px; cursor: pointer; background: none;
+}
+body.ux .ux-time { grid-row: 1 / span 2; font-weight: 700; font-size: 15px; color: var(--ux-primary); min-width: 64px; }
+body.ux .ux-time small { display: block; font-weight: 500; font-size: 12px; color: var(--ux-muted); }
+body.ux .ux-who { font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.ux .ux-what { grid-column: 2; font-size: 13px; color: var(--ux-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body.ux .ux-right { grid-row: 1 / span 2; grid-column: 3; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+body.ux .ux-price { font-weight: 700; }
+body.ux .ux-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; text-transform: capitalize; background: rgba(255,255,255,.1); color: var(--ux-text); }
+body.ux .ux-pill.pending { background: rgba(255,198,92,.18); color: var(--ux-warn); }
+body.ux .ux-pill.confirmed { background: rgba(127,184,230,.18); color: var(--ux-primary); }
+body.ux .ux-pill.completed { background: rgba(111,211,154,.16); color: var(--ux-ok); }
+body.ux .ux-pill.cancelled, body.ux .ux-pill.denied { background: rgba(255,123,123,.16); color: var(--ux-bad); }
+body.ux .ux-pill.ceramic { background: rgba(255,198,92,.18); color: var(--ux-warn); }
+body.ux .card .booking-header .status-badge, body.ux .card .booking-header .booking-summary-meta, body.ux .card .booking-header .chevron { display: none; }
+body.ux .card .booking-content { display: none; padding: 0 14px 14px; border-top: 1px solid var(--ux-line); }
+body.ux .card.expanded .booking-content { display: block; }
+body.ux .ux-quick { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+body.ux .ux-quick a { flex: 1 1 0; min-width: 90px; text-align: center; padding: 9px 8px; border-radius: 10px; border: 1px solid var(--ux-line-strong); color: var(--ux-text); text-decoration: none; font-weight: 600; font-size: 14px; background: var(--ux-surface-2); }
+body.ux .ux-facts { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 6px 10px; font-size: 14px; margin: 4px 0 8px; }
+body.ux .ux-facts dt { color: var(--ux-muted); }
+body.ux .ux-facts dd { margin: 0; }
+body.ux .ux-note { background: rgba(255,255,255,.05); border-radius: 10px; padding: 10px 12px; font-size: 14px; margin: 8px 0; white-space: pre-wrap; }
+body.ux .card .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; padding: 0; border: none; }
+body.ux .card .actions button { flex: 1 1 140px; }
+body.ux .card .actions button.confirm { flex-basis: 100%; order: -1; min-height: 46px; font-size: 15px; }
+body.ux .ux-more { margin-top: 10px; border-top: 1px solid var(--ux-line); padding-top: 8px; }
+body.ux .ux-more > summary { cursor: pointer; font-weight: 600; color: var(--ux-muted); padding: 6px 0; list-style: none; }
+body.ux .ux-more > summary::-webkit-details-marker { display: none; }
+body.ux .ux-more > summary::after { content: " ▸"; }
+body.ux .ux-more[open] > summary::after { content: " ▾"; }
+
+body.ux .ux-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
+body.ux .ux-chips:empty { display: none; }
+body.ux .ux-chip { padding: 7px 12px; border-radius: 999px; border: 1px solid var(--ux-line-strong); background: var(--ux-surface-2); color: var(--ux-text); font: inherit; font-size: 13px; text-align: left; cursor: pointer; max-width: 100%; }
+body.ux .ux-chip.on { border-color: var(--ux-primary); background: rgba(127,184,230,.16); color: var(--ux-primary); }
+body.ux .admin-book-card { padding: 16px; margin-bottom: 12px; }
+body.ux .admin-book-card h3 { margin: 0 0 10px; font-size: 17px; }
+body.ux .admin-book-toggle { display: flex; gap: 4px; padding: 4px; background: #0f1318; border: 1px solid var(--ux-line); border-radius: 12px; margin: 4px 0 12px; }
+body.ux .admin-book-toggle .moon-tab { flex: 1; border: none; background: none; color: var(--ux-muted); min-height: 38px; }
+body.ux .admin-book-toggle .moon-tab.active, body.ux .admin-book-toggle .moon-tab.selected { background: var(--ux-surface-2); color: var(--ux-text); }
+body.ux .admin-book-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 14px; }
+body.ux .admin-book-actions .ux-btn-primary { min-height: 48px; font-size: 16px; }
+body.ux .admin-book-summary { background: #0f1318; border: 1px solid var(--ux-line); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+body.ux .admin-book-option { border-radius: 12px; }
+@media (max-width: 420px) {
+  body.ux .ux-stats strong { font-size: 19px; }
+  body.ux .ux-facts { grid-template-columns: 84px minmax(0, 1fr); }
+}
 </style>
 </head>
 
@@ -2088,15 +2331,16 @@ style="
   </section>
 
   <section id="bookingAdminSection" aria-label="Booking Admin">
-    <header class="app-header booking-app-header">
-      <div class="app-header-brand">
-        <p class="app-eyebrow">Moon Auto Detailing Admin</p>
-        <h1>Booking Operations</h1>
-      </div>
-      <div class="app-header-actions mobile-action-chips">
-        <button id="backToPortalBtn" class="act-secondary mobile-top-chip" type="button">Portal</button>
-        <button id="refreshNow" class="act-quiet mobile-top-chip" type="button">Refresh</button>
-        <button id="logoutBtn" class="act-danger mobile-top-chip" type="button">Logout</button>
+    <header class="ux-header">
+      <button type="button" id="uxBack" class="ux-back" aria-label="Back to More" hidden>‹</button>
+      <div class="ux-title"><span class="ux-eyebrow">Moon Auto Detailing</span><h1 id="uxTitle">Today</h1></div>
+      <button id="refreshNow" class="ux-icon" type="button" aria-label="Refresh">↻</button>
+      <button id="uxAccountBtn" class="ux-avatar" type="button" aria-label="Account menu">·</button>
+      <div id="uxAccountMenu" class="ux-popover" hidden>
+        <div data-who></div>
+        <a href="/staff.html">Open the crew app</a>
+        <button id="backToPortalBtn" type="button">Admin portal</button>
+        <button id="logoutBtn" type="button" class="ux-danger-text">Sign out</button>
       </div>
     </header>
 
@@ -2120,7 +2364,11 @@ style="
       <div id="adminMenuDropdown" class="admin-tools-drawer-body" role="menu"></div>
     </aside>
 
-    <div id="viewContainer"></div>
+    <div class="ux-layout">
+      <nav id="uxSidebar" class="ux-sidebar" aria-label="Sections"></nav>
+      <div id="viewContainer"></div>
+    </div>
+    <nav id="uxTabbar" class="ux-tabbar" aria-label="Main"></nav>
   </section>
 </div>
 
@@ -2236,6 +2484,7 @@ style="
 <div id="toastContainer"></div>
 <script type="module">
 // ================= ADMIN LOGIN UI =================
+document.body.classList.add("ux");
 let ADMIN_SESSION = sessionStorage.getItem("moon_admin_session");
 function isLoggedIn() {
   return !!ADMIN_SESSION;
@@ -2427,6 +2676,20 @@ async function showBookingAdmin() {
   }
 
   startRealtimeBookings();
+  setupUxShell();
+  if (!currentView || currentView === "pending" || currentView === "today" || currentView === "upcoming") handleViewSwitch(currentView || "today");
+}
+
+// Header buttons for the new shell (account menu, back to More, initials).
+function setupUxShell() {
+  const staff = getAdminStaff();
+  const avatar = document.getElementById("uxAccountBtn");
+  if (avatar) {
+    avatar.textContent = staff?.full_name ? staff.full_name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() : "★";
+    avatar.onclick = toggleAccountMenu;
+  }
+  const back = document.getElementById("uxBack");
+  if (back) back.onclick = () => handleViewSwitch("more");
 }
 
 document.getElementById("openBookingAdminBtn").onclick = () => {
@@ -2625,7 +2888,7 @@ async function pollBookingsOnce() {
     }
 
     // Only redraw the booking lists; tool views (team, expenses, ...) may have forms open.
-    const bookingViews = [null, "pending", "today", "upcoming"];
+    const bookingViews = [null, "pending", "today", "upcoming", "bookings"];
     if (bookingViews.includes(currentView)) {
       await loadAdminData({ silentUnauthorized: true });
     }
@@ -3265,37 +3528,50 @@ card.style.borderLeft = "4px solid var(--moon-primary)";
   }
 }
 
+  // Compact row: time · who · service/vehicle · price + status. Details open on tap.
+  const escC = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const svc = b.service_variants?.services;
+  const serviceShort = svc ? `${String(svc.category || "").replace(/ Detail$/, "")} · Level ${svc.level}` : "Service";
+  const vehicleShort = v ? `${v.vehicle_year ?? ""} ${v.vehicle_make ?? ""} ${v.vehicle_model ?? ""}`.replace(/\s+/g, " ").trim() : "";
+  const mins = Math.round((end - start) / 60000);
+  const durStr = mins > 0 ? (mins >= 60 ? `${Math.floor(mins / 60)}h${mins % 60 ? " " + (mins % 60) + "m" : ""}` : `${mins}m`) : "";
+  const timeShort = start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  const phoneDigits = String(b.customers?.phone || "").replace(/[^\d+]/g, "");
+  const mapsUrl = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(b.service_address || "");
+  const statusKey = String(b.status || "").toLowerCase();
+  const statusLabel = (b.status ?? "").replace(/_/g, " ");
+  const money = (n) => n != null ? "$" + Number(n).toFixed(2) : "—";
+
   card.innerHTML = `
-  <div class="booking-header">
-    <span class="booking-summary-line">${customerName}</span>
-    <span class="booking-summary-meta">${dateStr}</span>
-    <span class="booking-summary-meta">${serviceText}</span>
-    <span class="status-badge status-${b.status}">${(b.status ?? "").replace("_"," ")}</span>
-    <span class="booking-summary-meta">${totalStr}</span>
-    <span class="chevron" aria-hidden="true">▼</span>
+  <div class="booking-header" role="button" aria-expanded="false">
+    <div class="ux-time">${escC(timeShort)}<small>${escC(durStr)}</small></div>
+    <div class="ux-who">${escC(customerName)}</div>
+    <div class="ux-what">${escC(serviceShort)}${vehicleShort ? " · " + escC(vehicleShort) : ""}</div>
+    <div class="ux-right">
+      <span class="ux-price">${escC(totalStr)}</span>
+      <span class="ux-pill ${escC(statusKey)}">${escC(statusLabel)}</span>
+      ${b.job_flag === "ceramic" ? '<span class="ux-pill ceramic">✨ Ceramic</span>' : ""}
+    </div>
   </div>
 
   <div class="booking-content">
-    <div class="row"><span class="label">Phone:</span> ${customerPhone}</div>
-    <div class="row"><span class="label">Address:</span> ${b.service_address ?? "—"}</div>
-    ${(b.customer_notes != null && String(b.customer_notes).trim() !== "") ? `<div class="row"><span class="label">Notes:</span> <span style="color:rgba(255,255,255,0.75);">${String(b.customer_notes).trim().replace(/</g, "&lt;").replace(/>/g, "&gt;")}</span></div>` : ""}
-    <div class="row"><span class="label">Vehicle:</span> ${vehicleText}</div>
-    <div class="row"><span class="label">Service:</span> ${serviceText}</div>
-    <div class="row"><span class="label">Time:</span> ${formatTime(start)} → ${formatTime(end)}</div>
-    <div class="row">
-  <span class="label">Status:</span>
-  <span class="status-badge status-${b.status}">
-    ${(b.status ?? "").replace("_"," ")}
-  </span>
-</div>
-    <div class="row"><span class="label">Service / base:</span> $${(b.base_price != null ? Number(b.base_price).toFixed(2) : "—")}</div>
-    <div class="row"><span class="label">Travel fee:</span> $${(b.travel_fee != null ? Number(b.travel_fee).toFixed(2) : "0.00")}</div>
-    ${(b.discount_code != null && (b.discount_amount != null ? b.discount_amount > 0 : true)) ? `<div class="row"><span class="label">Discount (${(b.discount_code || "").replace(/</g, "&lt;")}):</span> -$${(b.discount_amount != null ? Number(b.discount_amount).toFixed(2) : "0.00")}</div>` : ""}
-    <div class="row"><span class="label">Total:</span> $${(b.total_price != null ? Number(b.total_price).toFixed(2) : "—")}</div>
-
+    <div class="ux-quick">
+      ${phoneDigits ? `<a href="tel:${escC(phoneDigits)}">📞 Call</a><a href="sms:${escC(phoneDigits)}">💬 Text</a>` : ""}
+      ${b.service_address ? `<a href="${escC(mapsUrl)}" target="_blank" rel="noopener">🧭 Map</a>` : ""}
+    </div>
+    <dl class="ux-facts">
+      <dt>When</dt><dd>${escC(formatDay(start))}, ${escC(formatTime(start))} → ${escC(formatTime(end))}</dd>
+      <dt>Service</dt><dd>${escC(serviceShort)}</dd>
+      <dt>Vehicle</dt><dd>${escC(vehicleText)}</dd>
+      <dt>Address</dt><dd>${escC(b.service_address ?? "—")}</dd>
+      <dt>Phone</dt><dd>${escC(customerPhone)}</dd>
+      <dt>Price</dt><dd>${money(b.base_price)} service + ${money(b.travel_fee ?? 0)} travel${(b.discount_code != null && (b.discount_amount == null || b.discount_amount > 0)) ? ` − ${money(b.discount_amount ?? 0)} (${escC(b.discount_code)})` : ""} = <strong>${money(b.total_price)}</strong></dd>
+    </dl>
+    ${Array.isArray(b.job_payments) && b.job_payments.length ? `<div class="ux-note"><strong>Collected:</strong> ${money(b.job_payments.reduce((t, p) => t + Number(p.amount_collected || 0), 0))}${b.job_payments[0].payment_method ? " via " + escC(b.job_payments[0].payment_method) : ""}${b.job_payments.some(p => Number(p.tip_amount) > 0) ? ` · tip ${money(b.job_payments.reduce((t, p) => t + Number(p.tip_amount || 0), 0))}` : ""}</div>` : ""}
+    ${(b.customer_notes != null && String(b.customer_notes).trim() !== "") ? `<div class="ux-note"><strong>Customer note:</strong> ${escC(String(b.customer_notes).trim())}</div>` : ""}
   </div>
 `;
-     
+
 // ===== Google Calendar quick link =====
 // Prefer a stored htmlLink if you have it. Otherwise use a Calendar search link.
 if (b.google_event_html_link) {
@@ -3332,16 +3608,17 @@ if (b.google_event_html_link) {
 
 
 // ===== Crew & QC: ceramic flag, crew notes, job photos/checklist review =====
-if (b.job_flag === "ceramic") {
-  card.querySelector(".booking-header .booking-summary-line")
-    .insertAdjacentHTML("afterend", '<span class="status-badge" style="background:rgba(255,198,92,0.2);color:#ffc65c;">Ceramic</span>');
-}
-card.querySelector(".booking-content").appendChild(buildCrewQcPanel(b));
+const moreBox = document.createElement("details");
+moreBox.className = "ux-more";
+moreBox.innerHTML = `<summary>Crew notes, ceramic & job photos${b.crew_notes ? " · has notes" : ""}</summary>`;
+moreBox.appendChild(buildCrewQcPanel(b));
+card.querySelector(".booking-content").appendChild(moreBox);
 
 const header = card.querySelector(".booking-header");
 
 header.onclick = () => {
   card.classList.toggle("expanded");
+  header.setAttribute("aria-expanded", card.classList.contains("expanded") ? "true" : "false");
 };
 
   const actions = document.createElement("div");
@@ -3350,7 +3627,7 @@ header.onclick = () => {
   const adminReschedulePanel = canAdminReschedule ? createAdminReschedulePanel(b, card) : null;
   const adminRescheduleBtn = canAdminReschedule ? document.createElement("button") : null;
   if (adminRescheduleBtn) {
-    adminRescheduleBtn.textContent = "Admin Reschedule";
+    adminRescheduleBtn.textContent = "Reschedule";
     adminRescheduleBtn.className = "delay";
     adminRescheduleBtn.onclick = () => {
       adminReschedulePanel.hidden = !adminReschedulePanel.hidden;
@@ -3365,7 +3642,7 @@ header.onclick = () => {
   if (b.status === "pending") {
 
     const confirmBtn = document.createElement("button");
-    confirmBtn.textContent = "Confirm";
+    confirmBtn.textContent = "Confirm booking";
     confirmBtn.className = "confirm";
     confirmBtn.onclick = async () => {
 
@@ -3445,7 +3722,7 @@ denyBtn.className = "cancel";
   else if (b.status === "confirmed") {
 
   const rescheduleBtn = document.createElement("button");
-  rescheduleBtn.textContent = "Send Reschedule Link";
+  rescheduleBtn.textContent = "Send reschedule link";
   rescheduleBtn.className = "delay";
   rescheduleBtn.onclick = async () => {
 
@@ -3505,7 +3782,7 @@ if (b.google_event_id) {
   };
 
   const completeBtn = document.createElement("button");
-  completeBtn.textContent = "Job Completed";
+  completeBtn.textContent = "Complete job & take payment";
   completeBtn.className = "confirm";
   completeBtn.onclick = async () => {
     if (!lockBookingAction(b.id, "complete")) return;
@@ -3539,7 +3816,7 @@ if (b.google_event_id) {
   };
 
   const cancelBtn = document.createElement("button");
-  cancelBtn.textContent = "Cancel";
+  cancelBtn.textContent = "Cancel booking";
   cancelBtn.className = "cancel";
   cancelBtn.onclick = async () => {
 
@@ -3586,7 +3863,13 @@ if (b.google_event_id) {
      if (adminReschedulePanel) {
        card.querySelector(".booking-content").appendChild(adminReschedulePanel);
      }
-      
+  // Actions first (what you came to do), then the reschedule panel, then "More" and the calendar link.
+  const contentEl = card.querySelector(".booking-content");
+  const anchorEl = contentEl.querySelector(".ux-note") || contentEl.querySelector(".ux-facts");
+  if (anchorEl && actions.parentNode === contentEl) {
+    anchorEl.after(actions);
+    if (adminReschedulePanel) actions.after(adminReschedulePanel);
+  }
   return card;
 }
 
@@ -3612,113 +3895,175 @@ showAdminBanner("Unsupported status change: " + status, "error");
 }
 // ===================== DASHBOARD RENDERING =====================
 
-function renderDashboard() {
-  viewContainer.innerHTML = `
-  <div style="
-    text-align: center;
-    margin-top: 60px;
-    color: #4f8de6;
-  ">
-    <h1 style="margin: 0; font-weight: 800;">
-      Moon Auto Detailing Dashboard
-    </h1>
-  </div>
-`;
+// ===================== APP SHELL: navigation =====================
+// Phones: bottom tab bar (Today · Bookings · + Book · Schedule · More). Desktop: sidebar
+// with every section in groups. Owner-only sections are left out for managers.
+const NAV_GROUPS = [
+  { title: "Daily", items: [
+    { key: "today", label: "Today", icon: "☀️" },
+    { key: "bookings", label: "Bookings", icon: "📋" },
+    { key: "book-customer", label: "Book a customer", icon: "➕" },
+    { key: "schedule", label: "Crew schedule", icon: "🗓️" }
+  ] },
+  { title: "Crew", items: [
+    { key: "timeclock", label: "Time clock", icon: "⏱️" },
+    { key: "team", label: "Team", icon: "👥" },
+    { key: "checklists", label: "Job checklists", icon: "✅" }
+  ] },
+  { title: "Money", items: [
+    { key: "revenue", label: "Weekly revenue", icon: "💵" },
+    { key: "payroll", label: "Payroll", icon: "🧾" },
+    { key: "expenses", label: "Expenses", icon: "🧴" },
+    { key: "business", label: "Business", icon: "📈" },
+    { key: "bookkeeping", label: "Bookkeeping export", icon: "📒" }
+  ] },
+  { title: "Customers", items: [
+    { key: "history", label: "Booking history", icon: "🕘" },
+    { key: "subscriptions", label: "Maintenance plans", icon: "🔁" },
+    { key: "waitlist", label: "Waitlist", icon: "📝" },
+    { key: "discount-codes", label: "Discount codes", icon: "🏷️" }
+  ] },
+  { title: "Settings", items: [
+    { key: "availability", label: "Availability & solo mode", icon: "🕑" }
+  ] }
+];
+const TABBAR = [
+  { key: "today", label: "Today", icon: "☀️" },
+  { key: "bookings", label: "Bookings", icon: "📋" },
+  { key: "book-customer", label: "Book", icon: "＋", center: true },
+  { key: "schedule", label: "Schedule", icon: "🗓️" },
+  { key: "more", label: "More", icon: "☰" }
+];
+const VIEW_TITLES = { more: "More", pending: "Bookings", upcoming: "Bookings" };
+NAV_GROUPS.forEach(g => g.items.forEach(i => { VIEW_TITLES[i.key] = i.label; }));
+const TABBAR_KEYS = TABBAR.map(t => t.key);
+let bookingsSegment = "pending";
 
+function visibleNavGroups() {
+  const hidden = adminRole() === "owner" ? [] : OWNER_ONLY_VIEWS;
+  return NAV_GROUPS
+    .map(g => ({ ...g, items: g.items.filter(i => !hidden.includes(i.key)) }))
+    .filter(g => g.items.length);
+}
+
+// Today/Bookings/Book/Schedule live on the tab bar; everything else is reached from More.
+function tabForView(view) {
+  if (view === "pending" || view === "upcoming") return "bookings";
+  return TABBAR_KEYS.includes(view) ? view : "more";
+}
+
+function renderDashboard() {
+  handleViewSwitch("today");
 }
 
 function renderButtons() {
   viewButtons.innerHTML = "";
+  const pendingCount = (cachedViews.pending || []).length;
+  const badge = (key) => key === "bookings" && pendingCount ? `<span class="ux-badge">${pendingCount}</span>` : "";
 
-  const primaryKeys = ["pending", "today", "upcoming"];
-  const menuKeys = ["revenue", "business", "history", "subscriptions", "waitlist", "team", "schedule", "timeclock", "payroll", "checklists", "discount-codes", "book-customer", "availability", "expenses", "bookkeeping"];
-  const allButtons = [
-    { key: "pending", label: "Pending Bookings" },
-    { key: "today", label: "Today's Schedule" },
-    { key: "upcoming", label: "Upcoming Bookings" },
-    { key: "history", label: "History" },
-    { key: "subscriptions", label: "Subscriptions" },
-    { key: "waitlist", label: "Waitlist" },
-    { key: "team", label: "Team" },
-    { key: "schedule", label: "Crew Schedule" },
-    { key: "timeclock", label: "Time Clock" },
-    { key: "payroll", label: "Payroll" },
-    { key: "revenue", label: "Weekly Revenue" },
-    { key: "business", label: "Business" },
-    { key: "checklists", label: "Job Checklists" },
-    { key: "discount-codes", label: "Discount Codes" },
-    { key: "book-customer", label: "Book Customer" },
-    { key: "availability", label: "Availability" },
-    { key: "expenses", label: "Expenses" },
-    { key: "bookkeeping", label: "Bookkeeping" }
-  ];
+  const bar = document.getElementById("uxTabbar");
+  if (bar) {
+    bar.innerHTML = TABBAR.map(t => `
+      <button type="button" class="ux-tab${t.center ? " ux-tab-center" : ""}" data-view="${t.key}">
+        <span class="ux-tab-icon" aria-hidden="true">${t.icon}</span><span class="ux-tab-label">${t.label}</span>${badge(t.key)}
+      </button>`).join("");
+    bar.querySelectorAll("[data-view]").forEach(b => (b.onclick = () => handleViewSwitch(b.dataset.view)));
+  }
 
-  const hidden = adminRole() === "owner" ? [] : OWNER_ONLY_VIEWS;
-  for (let i = allButtons.length - 1; i >= 0; i--) if (hidden.includes(allButtons[i].key)) allButtons.splice(i, 1);
+  const side = document.getElementById("uxSidebar");
+  if (side) {
+    side.innerHTML = visibleNavGroups().map(g => `
+      <div class="ux-side-group">
+        <div class="ux-side-title">${g.title}</div>
+        ${g.items.map(i => `<button type="button" class="ux-side-item" data-view="${i.key}"><span aria-hidden="true">${i.icon}</span>${i.label}${badge(i.key)}</button>`).join("")}
+      </div>`).join("");
+    side.querySelectorAll("[data-view]").forEach(b => (b.onclick = () => handleViewSwitch(b.dataset.view)));
+  }
+  highlightActiveButton(currentView);
+}
 
-  allButtons.forEach(btn => {
-    const button = document.createElement("button");
-    button.textContent = btn.label;
-    button.className = "moon-tab";
-    button.dataset.view = btn.key;
-    if (menuKeys.indexOf(btn.key) !== -1) button.classList.add("admin-nav-secondary");
-    button.onclick = () => { handleViewSwitch(btn.key); };
-    viewButtons.appendChild(button);
+function renderMoreView() {
+  const wrap = document.createElement("div");
+  wrap.className = "ux-stack";
+  visibleNavGroups().forEach(g => {
+    const items = g.items.filter(i => !TABBAR_KEYS.includes(i.key));
+    if (!items.length) return;
+    wrap.insertAdjacentHTML("beforeend", `
+      <section class="ux-list-group">
+        <div class="ux-list-title">${g.title}</div>
+        <div class="ux-list">${items.map(i => `<button type="button" class="ux-list-item" data-view="${i.key}"><span class="ux-list-icon" aria-hidden="true">${i.icon}</span><span class="ux-list-label">${i.label}</span><span class="ux-chev" aria-hidden="true">›</span></button>`).join("")}</div>
+      </section>`);
   });
+  wrap.insertAdjacentHTML("beforeend", `
+    <section class="ux-list-group">
+      <div class="ux-list-title">Account</div>
+      <div class="ux-list">
+        <a class="ux-list-item" href="/staff.html"><span class="ux-list-icon">📱</span><span class="ux-list-label">Open the crew app</span><span class="ux-chev">›</span></a>
+        <button type="button" class="ux-list-item" data-act="portal"><span class="ux-list-icon">🏠</span><span class="ux-list-label">Admin portal</span><span class="ux-chev">›</span></button>
+        <button type="button" class="ux-list-item ux-danger-text" data-act="logout"><span class="ux-list-icon">⎋</span><span class="ux-list-label">Sign out</span></button>
+      </div>
+    </section>`);
+  wrap.querySelectorAll("[data-view]").forEach(b => (b.onclick = () => handleViewSwitch(b.dataset.view)));
+  wrap.querySelector('[data-act="portal"]').onclick = () => document.getElementById("backToPortalBtn").click();
+  wrap.querySelector('[data-act="logout"]').onclick = () => document.getElementById("logoutBtn").click();
+  viewContainer.appendChild(wrap);
+}
 
-  const dropdown = document.getElementById("adminMenuDropdown");
-  if (dropdown) {
-    dropdown.innerHTML = "";
-    const sections = [
-      { title: "Views", keys: ["revenue", "business", "history", "subscriptions", "waitlist"] },
-      { title: "Team", keys: ["team", "schedule", "timeclock", "payroll", "checklists"] },
-      { title: "Tools", keys: ["discount-codes", "book-customer", "availability", "expenses", "bookkeeping"] },
-      { title: "Account", keys: ["__debug__"] }
-    ];
-    sections.forEach((section) => {
-      const label = document.createElement("div");
-      label.className = "admin-menu-section-label";
-      label.textContent = section.title;
-      dropdown.appendChild(label);
-      section.keys.forEach((key) => {
-        if (key === "__debug__") {
-          const debugBtn = document.createElement("button");
-          debugBtn.type = "button";
-          debugBtn.className = "admin-menu-item";
-          debugBtn.textContent = "Toggle Debug";
-          debugBtn.onclick = () => {
-            closeAdminMenu();
-            const dt = document.getElementById("debugToggle");
-            if (dt) dt.click();
-          };
-          dropdown.appendChild(debugBtn);
-          return;
-        }
-        const item = allButtons.find(b => b.key === key);
-        if (!item) return;
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "admin-menu-item";
-        btn.textContent = item.label;
-        btn.dataset.view = key;
-        btn.onclick = () => {
-          handleViewSwitch(key);
-          closeAdminMenu();
-        };
-        dropdown.appendChild(btn);
-      });
-    });
+// Day-grouped booking cards (Today and Bookings use this instead of the old collapsible box).
+function renderBookingList(bookings, emptyMessage) {
+  if (!bookings.length) {
+    viewContainer.insertAdjacentHTML("beforeend", `<div class="ux-empty">${emptyMessage}</div>`);
+    return;
   }
+  const groups = {};
+  bookings.forEach(b => {
+    const dayKey = new Date(b.scheduled_start).toDateString();
+    (groups[dayKey] = groups[dayKey] || []).push(b);
+  });
+  Object.entries(groups).forEach(([day, items]) => {
+    const g = document.createElement("section");
+    g.className = "ux-day";
+    g.innerHTML = `<h3 class="ux-day-title">${formatDay(new Date(day))}<span>${items.length} job${items.length === 1 ? "" : "s"}</span></h3>`;
+    items.forEach(b => g.appendChild(buildCard(b)));
+    viewContainer.appendChild(g);
+  });
+}
 
-  const menuBtn = document.getElementById("adminMenuBtn");
-  if (menuBtn) {
-    menuBtn.onclick = (e) => {
-      e.stopPropagation();
-      openAdminMenu();
-    };
+function renderTodayView() {
+  const today = cachedViews.today || [];
+  const pending = cachedViews.pending || [];
+  const upcoming = cachedViews.upcoming || [];
+  const total = today.reduce((t, b) => t + (Number(b.total_price) || 0), 0);
+  const ceramic = today.some(b => b.job_flag === "ceramic");
+  const strip = document.createElement("div");
+  strip.className = "ux-stats";
+  strip.innerHTML = `
+    <div class="ux-stat"><span>Jobs today</span><strong>${today.length}</strong></div>
+    <div class="ux-stat"><span>Booked value</span><strong>$${total.toFixed(0)}</strong></div>
+    <button type="button" class="ux-stat ux-stat-link${pending.length ? " ux-stat-warn" : ""}" data-go="pending"><span>Needs confirming</span><strong>${pending.length}</strong></button>`;
+  strip.querySelector("[data-go]").onclick = () => { bookingsSegment = "pending"; handleViewSwitch("bookings"); };
+  viewContainer.appendChild(strip);
+  if (ceramic) viewContainer.insertAdjacentHTML("beforeend", `<div class="ux-banner">✨ Ceramic coating job today — make sure the crew has the kit and cure time is planned.</div>`);
+  if (today.length) {
+    renderBookingList(today, "");
+  } else {
+    viewContainer.insertAdjacentHTML("beforeend", `<div class="ux-empty">No jobs today.${upcoming.length ? " Next up:" : ""}</div>`);
+    if (upcoming.length) renderBookingList(upcoming.slice(0, 3), "");
   }
-  document.getElementById("adminMenuCloseBtn")?.addEventListener("click", closeAdminMenu);
-  document.getElementById("adminMenuBackdrop")?.addEventListener("click", closeAdminMenu);
+}
+
+function renderBookingsView() {
+  const pending = cachedViews.pending || [];
+  const upcoming = cachedViews.upcoming || [];
+  const seg = document.createElement("div");
+  seg.className = "ux-seg";
+  seg.innerHTML = `
+    <button type="button" data-seg="pending" class="${bookingsSegment === "pending" ? "on" : ""}">Needs confirming <b>${pending.length}</b></button>
+    <button type="button" data-seg="upcoming" class="${bookingsSegment === "upcoming" ? "on" : ""}">Upcoming <b>${upcoming.length}</b></button>`;
+  seg.querySelectorAll("[data-seg]").forEach(b => (b.onclick = () => { bookingsSegment = b.dataset.seg; renderView("bookings"); }));
+  viewContainer.appendChild(seg);
+  if (bookingsSegment === "pending") renderBookingList(pending, "Nothing waiting for confirmation. New booking requests show up here.");
+  else renderBookingList(upcoming, "No upcoming confirmed jobs.");
 }
 
 function openAdminMenu() {
@@ -3744,38 +4089,45 @@ function closeAdminMenu() {
 }
 
 function handleViewSwitch(viewName) {
-  if (currentView === viewName) {
-    currentView = null;
-    renderDashboard();
-    highlightActiveButton(null);
-    return;
+  if (viewName === "pending" || viewName === "upcoming") {
+    bookingsSegment = viewName;
+    viewName = "bookings";
   }
-
   currentView = viewName;
-renderView(viewName);
-highlightActiveButton(viewName);
+  closeAccountMenu();
+  const title = document.getElementById("uxTitle");
+  if (title) title.textContent = VIEW_TITLES[viewName] || "Booking Operations";
+  const back = document.getElementById("uxBack");
+  if (back) back.hidden = tabForView(viewName) !== "more" || viewName === "more";
+  renderView(viewName);
+  highlightActiveButton(viewName);
+  window.scrollTo(0, 0);
 }
 
 function highlightActiveButton(activeKey) {
-  const all = viewButtons.querySelectorAll("button");
-  all.forEach(btn => {
-    if (btn.dataset.view === activeKey) {
-      btn.classList.add("active");
-    } else {
-      btn.classList.remove("active");
-    }
-  });
-  const dropdown = document.getElementById("adminMenuDropdown");
-  if (dropdown) {
-    dropdown.querySelectorAll("button").forEach(btn => {
-      if (btn.dataset.view === activeKey) {
-        btn.classList.add("active");
-      } else {
-        btn.classList.remove("active");
-      }
-    });
-  }
+  const tab = tabForView(activeKey);
+  document.querySelectorAll("#uxTabbar [data-view]").forEach(b => b.classList.toggle("active", b.dataset.view === tab));
+  document.querySelectorAll("#uxSidebar [data-view]").forEach(b => b.classList.toggle("active", b.dataset.view === activeKey));
 }
+
+function toggleAccountMenu(ev) {
+  ev?.stopPropagation();
+  const m = document.getElementById("uxAccountMenu");
+  if (!m) return;
+  const staff = getAdminStaff();
+  m.querySelector("[data-who]").innerHTML = staff
+    ? `<strong>${adminBookEscapeHtml(staff.full_name)}</strong><span>${adminBookEscapeHtml(staff.role)}</span>`
+    : `<strong>Owner</strong><span>shared password login</span>`;
+  m.hidden = !m.hidden;
+}
+function closeAccountMenu() {
+  const m = document.getElementById("uxAccountMenu");
+  if (m) m.hidden = true;
+}
+document.addEventListener("click", (e) => {
+  const m = document.getElementById("uxAccountMenu");
+  if (m && !m.hidden && !m.contains(e.target)) closeAccountMenu();
+});
 
 function adminBookEscapeHtml(value) {
   return String(value == null ? "" : value).replace(/[&<>"']/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[ch]));
@@ -3847,6 +4199,7 @@ function renderBookCustomerView() {
         <p class="admin-book-muted">Select a customer first, then choose an existing vehicle or add one.</p>
         <div id="bookVehicleResults" class="admin-book-options"></div>
         <div class="admin-book-summary" id="bookSelectedVehicle">No vehicle selected.</div>
+        <details class="ux-more" id="bookAddVehicleBox"><summary>Add a new vehicle</summary>
         <div class="admin-book-grid" style="margin-top:12px;">
           <div class="admin-book-field"><label>Year</label><input id="bookVehicleYear" type="number" inputmode="numeric" /></div>
           <div class="admin-book-field"><label>Make</label><input id="bookVehicleMake" type="text" /></div>
@@ -3862,6 +4215,7 @@ function renderBookCustomerView() {
           </div>
         </div>
         <div class="admin-book-actions"><button id="bookCreateVehicleBtn" type="button" class="moon-tab">Add Vehicle</button></div>
+        </details>
       </div>
 
       <div class="admin-book-card">
@@ -3874,7 +4228,7 @@ function renderBookCustomerView() {
       </div>
 
       <div class="admin-book-card">
-        <h3>4. Custom Pricing (optional)</h3>
+        <details class="ux-more" style="margin:0;border:none;padding:0;"><summary style="color:var(--ux-text,#fff);font-size:17px;">4. Custom price (optional)</summary>
         <label class="admin-book-check">
           <input id="bookUseCustomPrice" type="checkbox" />
           <span>Use custom price</span>
@@ -3887,14 +4241,14 @@ function renderBookCustomerView() {
             </div>
           </div>
         </div>
-        <p class="admin-book-muted" style="margin:8px 0 0;">Admin-only. This price becomes the official price for this booking while keeping the selected service as the database category.</p>
-        <p class="admin-book-muted" style="margin:4px 0 0;">Custom service labels are not available in this phase because there is no safe booking column for them.</p>
+        <p class="admin-book-muted" style="margin:8px 0 0;">Replaces the service price for this booking (travel fee is still added). Use for ceramic coatings, quotes and special jobs.</p>
+        </details>
       </div>
 
       <div class="admin-book-card">
         <h3>5. Location & Time</h3>
         <div class="admin-book-grid">
-          <div class="admin-book-field"><label>Service address</label><input id="bookServiceAddress" type="text" placeholder="Start typing service address..." autocomplete="street-address" /><p class="admin-book-muted" style="margin:4px 0 0;">Choose a Google result when available, or type the address manually.</p></div>
+          <div class="admin-book-field"><label>Service address</label><div id="bookSavedAddresses" class="ux-chips"></div><input id="bookServiceAddress" type="text" placeholder="Start typing service address..." autocomplete="street-address" /><p class="admin-book-muted" style="margin:4px 0 0;">Tap a saved address, choose a Google result, or type it manually.</p></div>
         </div>
         <div class="admin-book-toggle" aria-label="Time mode">
           <button id="bookUseSlotsModeBtn" type="button" class="moon-tab">Use available slots</button>
@@ -3925,8 +4279,8 @@ function renderBookCustomerView() {
           <div class="admin-book-field">
             <label>Status</label>
             <select id="bookStatus">
-              <option value="confirmed" selected>confirmed</option>
-              <option value="pending">pending</option>
+              <option value="confirmed" selected>Confirmed — on the schedule now</option>
+              <option value="pending">Pending — confirm later</option>
             </select>
           </div>
           <label class="admin-book-check">
@@ -3939,8 +4293,8 @@ function renderBookCustomerView() {
           <textarea id="bookCustomerNotes" placeholder="Optional notes for this booking"></textarea>
         </div>
         <div class="admin-book-actions">
-          <button id="bookSubmitBtn" type="button" class="confirm" style="border-radius:10px;padding:11px 16px;">Create Booking</button>
-          <button id="bookResetBtn" type="button" class="delay" style="border-radius:10px;padding:11px 16px;">Book Another Customer</button>
+          <button id="bookSubmitBtn" type="button" class="confirm ux-btn ux-btn-primary" style="border-radius:10px;padding:11px 16px;">Create booking</button>
+          <button id="bookResetBtn" type="button" class="delay ux-btn" style="border-radius:10px;padding:11px 16px;">Start over</button>
         </div>
       </div>
     </div>
@@ -4104,6 +4458,9 @@ function renderBookCustomerView() {
         state.customer = state.customers[Number(btn.dataset.customerIdx)];
         state.vehicle = null;
         state.vehicles = [];
+        if (state.addressAutoFilled) $("bookServiceAddress").value = "";
+        state.addresses = [];
+        renderSavedAddresses();
         updateSummaries();
         renderCustomerResults();
         await loadVehicles();
@@ -4174,9 +4531,42 @@ function renderBookCustomerView() {
       if (!res.ok || !data.ok) throw new Error(data.error || "Failed to load vehicles");
       state.vehicles = data.vehicles || [];
       renderVehicles();
+      // New customers / no vehicles: open the add-vehicle form straight away.
+      const addBox = $("bookAddVehicleBox");
+      if (addBox) addBox.open = state.vehicles.length === 0;
+      state.addresses = data.addresses || [];
+      const addrInput = $("bookServiceAddress");
+      if (state.addresses.length && (!addrInput.value.trim() || state.addressAutoFilled)) {
+        addrInput.value = state.addresses[0];
+        state.addressFromPlaces = true;
+        state.addressAutoFilled = true;
+      }
+      renderSavedAddresses();
+      updateSummaries();
     } catch (err) {
       showAdminBanner(err.message || "Vehicle load failed.", "error");
     }
+  }
+
+  // Previously used addresses for the selected customer, newest first; tap to use one.
+  function renderSavedAddresses() {
+    const el = $("bookSavedAddresses");
+    if (!el) return;
+    const list = state.customer ? (state.addresses || []) : [];
+    const current = $("bookServiceAddress").value.trim();
+    el.innerHTML = list.length
+      ? `<span class="admin-book-muted" style="width:100%;">Saved addresses</span>` + list.map((a, i) =>
+          `<button type="button" class="ux-chip${a === current ? " on" : ""}" data-addr="${i}">📍 ${adminBookEscapeHtml(a)}</button>`).join("")
+      : "";
+    el.querySelectorAll("[data-addr]").forEach(btn => {
+      btn.onclick = () => {
+        $("bookServiceAddress").value = state.addresses[Number(btn.dataset.addr)];
+        state.addressFromPlaces = true;
+        state.addressAutoFilled = false;
+        renderSavedAddresses();
+        updateSummaries();
+      };
+    });
   }
 
   async function loadServices() {
@@ -4443,6 +4833,8 @@ function renderBookCustomerView() {
   $("bookManualStart").addEventListener("input", () => updateSummaries());
   $("bookServiceAddress").addEventListener("input", () => {
     state.addressFromPlaces = false;
+    state.addressAutoFilled = false;
+    renderSavedAddresses();
     updateSummaries();
   });
   setCustomerMode(null);
@@ -4472,136 +4864,100 @@ function renderView(viewName) {
   // HISTORY (SERVER-SIDE)
   // =========================
   if (viewName === "history") {
-    const wrapper = document.createElement("div");
-
-    const filterRow = document.createElement("div");
-    filterRow.className = "admin-filters";
-    const searchInput = document.createElement("input");
-    searchInput.type = "text";
-    searchInput.placeholder = "Search by client name";
-    searchInput.style.padding = "8px 12px";
-    searchInput.style.borderRadius = "8px";
-    searchInput.style.border = "1px solid rgba(255,255,255,0.25)";
-    searchInput.style.background = "rgba(255,255,255,0.08)";
-    searchInput.style.color = "white";
-
-    const dateInput = document.createElement("input");
-    dateInput.type = "date";
-    dateInput.style.padding = "8px 12px";
-    dateInput.style.borderRadius = "8px";
-    dateInput.style.border = "1px solid rgba(255,255,255,0.25)";
-    dateInput.style.background = "rgba(255,255,255,0.08)";
-    dateInput.style.color = "white";
-
-    filterRow.appendChild(searchInput);
-    filterRow.appendChild(dateInput);
-    wrapper.appendChild(filterRow);
-
-    const section = document.createElement("div");
-    section.className = "admin-section";
-    const sectionHeader = document.createElement("div");
-    sectionHeader.className = "admin-section-header";
-    sectionHeader.setAttribute("role", "button");
-    sectionHeader.setAttribute("aria-expanded", "true");
-    sectionHeader.innerHTML = '<span>History</span><span class="chevron" aria-hidden="true">▼</span>';
-    sectionHeader.onclick = () => {
-      section.classList.toggle("collapsed");
-      sectionHeader.setAttribute("aria-expanded", section.classList.contains("collapsed") ? "false" : "true");
+    // Search (name, phone or email) · status · date range, with a running total and "Load more".
+    const nyToday = () => new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" });
+    const daysAgo = (n) => { const d = new Date(nyToday() + "T12:00:00Z"); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10); };
+    const RANGES = {
+      "30": { label: "Last 30 days", from: () => daysAgo(30) },
+      "90": { label: "Last 90 days", from: () => daysAgo(90) },
+      "year": { label: "This year", from: () => nyToday().slice(0, 4) + "-01-01" },
+      "all": { label: "All time", from: () => null },
+      "day": { label: "One day…", from: () => null }
     };
-    section.appendChild(sectionHeader);
-    const sectionBody = document.createElement("div");
-    sectionBody.className = "admin-section-body";
-    const resultsContainer = document.createElement("div");
-    sectionBody.appendChild(resultsContainer);
-    const paginationContainer = document.createElement("div");
-    paginationContainer.style.display = "flex";
-    paginationContainer.style.flexWrap = "wrap";
-    paginationContainer.style.justifyContent = "center";
-    paginationContainer.style.gap = "8px";
-    paginationContainer.style.marginTop = "16px";
-    sectionBody.appendChild(paginationContainer);
-    section.appendChild(sectionBody);
-    wrapper.appendChild(section);
-    viewContainer.appendChild(wrapper);
+    const f = { q: "", status: "all", range: "90", day: "" };
+    let page = 1;
+    let shown = 0;
 
-    let currentPage = 1;
-    const PAGE_SIZE = 10;
+    const wrap = document.createElement("div");
+    wrap.className = "ux-stack";
+    wrap.style.gap = "12px";
+    wrap.innerHTML = `
+      <input type="search" data-q placeholder="Search name, phone or email" aria-label="Search customers" style="width:100%;">
+      <div class="ux-seg" style="margin:0;">
+        <button type="button" data-status="all" class="on">All</button>
+        <button type="button" data-status="completed">Completed</button>
+        <button type="button" data-status="cancelled">Cancelled</button>
+        <button type="button" data-status="rescheduled">Rescheduled</button>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <select data-range aria-label="Date range" style="flex:1 1 160px;">${Object.entries(RANGES).map(([k, r]) => `<option value="${k}" ${k === f.range ? "selected" : ""}>${r.label}</option>`).join("")}</select>
+        <input type="date" data-day aria-label="Day" style="flex:1 1 160px;display:none;">
+      </div>
+      <div data-summary class="admin-book-muted" style="margin:0 4px;"></div>
+      <div data-results></div>
+      <button type="button" class="moon-tab" data-more style="display:none;width:100%;">Load more</button>`;
+    viewContainer.appendChild(wrap);
+    const results = wrap.querySelector("[data-results]");
+    const summary = wrap.querySelector("[data-summary]");
+    const moreBtn = wrap.querySelector("[data-more]");
+    const dayInput = wrap.querySelector("[data-day]");
 
-    async function loadHistoryPage(page = 1) {
-      currentPage = page;
-      resultsContainer.innerHTML = "Loading...";
-      paginationContainer.innerHTML = "";
-
-      const params = new URLSearchParams({
-        page: page.toString(),
-        pageSize: PAGE_SIZE.toString()
-      });
-
-      if (searchInput.value.trim()) params.append("q", searchInput.value.trim());
-      if (dateInput.value) params.append("date", dateInput.value);
-
+    async function load(reset) {
+      if (reset) { page = 1; shown = 0; results.innerHTML = '<div class="ux-empty">Loading…</div>'; }
+      const params = new URLSearchParams({ page: String(page), pageSize: "20", status: f.status });
+      if (f.q) params.set("q", f.q);
+      if (f.range === "day") { if (f.day) params.set("date", f.day); }
+      else { const from = RANGES[f.range].from(); if (from) params.set("from", from); }
       try {
         const res = await adminFetch(`/api/admin-history?${params.toString()}`);
-
-        const payload = await res.json();
-        if (!res.ok) throw new Error(payload.error || "Failed to load history");
-
-        resultsContainer.innerHTML = "";
-
-        if (!payload.rows.length) {
-          resultsContainer.innerHTML = "<div style='margin-top:20px;font-weight:600;color:rgba(255,255,255,0.7);'>No records found.</div>";
-          sectionHeader.querySelector("span").textContent = "History (0)";
-          return;
-        }
-
-        sectionHeader.querySelector("span").textContent = "History (" + (payload.totalCount || payload.rows.length) + ")";
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to load history");
+        if (reset) results.innerHTML = "";
+        const rows = data.rows || [];
+        shown += rows.length;
+        summary.textContent = data.totalCount
+          ? `${data.totalCount} booking${data.totalCount === 1 ? "" : "s"}${data.collected ? ` · $${Number(data.collected).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} collected` : ""}`
+          : "";
+        if (!data.totalCount) results.innerHTML = '<div class="ux-empty">No bookings match these filters.</div>';
+        // Same day grouping and cards as Today / Bookings, appended page by page.
         const groups = {};
-        payload.rows.forEach(b => {
-          const dayKey = new Date(b.scheduled_start).toDateString();
-          if (!groups[dayKey]) groups[dayKey] = [];
-          groups[dayKey].push(b);
+        rows.forEach(b => { const k = new Date(b.scheduled_start).toDateString(); (groups[k] = groups[k] || []).push(b); });
+        Object.entries(groups).forEach(([day, items]) => {
+          let g = results.querySelector(`section[data-day-key="${CSS.escape(day)}"]`);
+          if (!g) {
+            g = document.createElement("section");
+            g.className = "ux-day";
+            g.dataset.dayKey = day;
+            g.innerHTML = `<h3 class="ux-day-title">${formatDay(new Date(day))}</h3>`;
+            results.appendChild(g);
+          }
+          items.forEach(b => g.appendChild(buildCard(b)));
         });
-        const sortedDays = Object.keys(groups).sort((a, b) => new Date(b) - new Date(a));
-        sortedDays.forEach(dayKey => {
-          const dayGroup = document.createElement("div");
-          dayGroup.className = "day-group";
-          const dayHeader = document.createElement("h3");
-          dayHeader.textContent = formatDay(new Date(dayKey));
-          dayGroup.appendChild(dayHeader);
-          groups[dayKey].forEach(b => dayGroup.appendChild(buildCard(b)));
-          resultsContainer.appendChild(dayGroup);
-        });
-
-        const totalPages = Math.ceil(payload.totalCount / PAGE_SIZE);
-        for (let i = 1; i <= totalPages; i++) {
-          const btn = document.createElement("button");
-          btn.textContent = i;
-          btn.className = "moon-tab";
-          if (i === currentPage) btn.classList.add("active");
-          btn.onclick = () => loadHistoryPage(i);
-          paginationContainer.appendChild(btn);
-        }
-
-            } catch (err) {
-        resultsContainer.innerHTML = "Failed to load history.";
-        showAdminBanner("Failed to load history.", "error");
-        hardLog("HISTORY LOAD ERROR " + err.message);
+        moreBtn.style.display = shown < (data.totalCount || 0) ? "block" : "none";
+        return true;
+      } catch (err) {
+        results.innerHTML = `<div class="ux-empty" style="color:#ff8a8a;">${adminBookEscapeHtml(err.message)}</div>`;
         return false;
       }
-
-      return true;
     }
 
-
-    let searchTimeout;
-    searchInput.addEventListener("input", () => {
-      clearTimeout(searchTimeout);
-      searchTimeout = setTimeout(() => loadHistoryPage(1), 300);
-    });
-
-    dateInput.addEventListener("change", () => loadHistoryPage(1));
-       reloadHistoryPage = loadHistoryPage;
-    loadHistoryPage(1);
+    let t = null;
+    wrap.querySelector("[data-q]").addEventListener("input", (e) => { clearTimeout(t); t = setTimeout(() => { f.q = e.target.value.trim(); load(true); }, 300); });
+    wrap.querySelectorAll("[data-status]").forEach(b => (b.onclick = () => {
+      f.status = b.dataset.status;
+      wrap.querySelectorAll("[data-status]").forEach(x => x.classList.toggle("on", x === b));
+      load(true);
+    }));
+    wrap.querySelector("[data-range]").onchange = (e) => {
+      f.range = e.target.value;
+      dayInput.style.display = f.range === "day" ? "block" : "none";
+      if (f.range === "day") { if (!dayInput.value) dayInput.value = nyToday(); f.day = dayInput.value; }
+      load(true);
+    };
+    dayInput.onchange = () => { f.day = dayInput.value; load(true); };
+    moreBtn.onclick = () => { page += 1; load(false); };
+    reloadHistoryPage = () => load(true); // refresh button expects true/false
+    load(true);
     return;
   }
 
@@ -5299,6 +5655,30 @@ function renderView(viewName) {
         .sch-days{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
         .sch-days .sch-btn{flex:0 0 auto}
         .sch-days .sch-btn.on{background:var(--moon-primary);color:#07111d;font-weight:700}
+        .sch-pday{display:flex;flex-direction:column;gap:10px}
+        .sch-pwarn{color:#ffc65c;font-weight:600;font-size:14px}
+        .sch-pjobs{display:flex;flex-direction:column;gap:6px}
+        .sch-pjob{padding:9px 12px;border-radius:10px;border:1px dashed rgba(255,255,255,.3);font-size:14px}
+        .sch-pjob span{display:block;font-size:12px;opacity:.7}
+        .sch-pjob.ceramic{border-color:rgba(255,198,92,.8)}
+        .sch-pjob.empty{opacity:.7;text-align:center}
+        .sch-pperson{border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:12px;background:rgba(255,255,255,.03);display:flex;flex-direction:column;gap:8px}
+        .sch-phead{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+        .sch-phead i{width:12px;height:12px;border-radius:50%;display:inline-block}
+        .sch-pav{margin-left:auto;font-size:12px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.08)}
+        .sch-pav.ok{color:#6fd39a;background:rgba(111,211,154,.14)}
+        .sch-pav.off{color:#ff9a9a;background:rgba(255,107,107,.14)}
+        .sch-pshift{display:block;width:100%;text-align:left;padding:10px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.15);border-left:5px solid;background:rgba(255,255,255,.06);color:#fff;font:inherit;font-size:15px;cursor:pointer}
+        .sch-pshift.draft{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 6px,transparent 6px 12px)}
+        .sch-pshift span{font-size:12px;opacity:.7}
+        .sch-pshift em{display:block;font-style:normal;font-size:12px;opacity:.75}
+        .sch-pshift .wr{color:#ffc65c;font-size:12px;font-weight:600}
+        .sch-padd{width:100%}
+        @media (max-width:820px){
+          .sch-pop{left:0!important;right:0;top:auto!important;bottom:0;width:100%;max-width:none;border-radius:18px 18px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom));box-sizing:border-box}
+          .sch-pop input,.sch-pop select{min-height:44px;font-size:16px}
+          .sch-bar h3{flex-basis:100%}
+        }
       `;
       document.head.appendChild(st);
     }
@@ -5532,6 +5912,46 @@ function renderView(viewName) {
       document.addEventListener("pointerup", up);
     }
 
+    /* ---------- phones: tap-based day list ---------- */
+    // One day at a time: the day's jobs, then each person with their availability and
+    // shifts. Tap "+ Add shift" or a shift to open the editor (a bottom sheet on phones).
+    function phoneDay(day) {
+      const avTxt = (a) => a.status === "unavailable" ? (a.source === "time_off" ? "Time off" : "Off")
+        : a.status === "partial" ? `Available ${fmt12(a.start)}–${fmt12(a.end)}` : a.status === "available" ? "Available all day" : "Availability not set";
+      const avCls = (a) => a.status === "unavailable" ? "off" : a.status === "unknown" ? "unset" : "ok";
+      return `
+        <div class="sch-pday">
+          ${day.warnings.map(w => `<div class="sch-pwarn">⚠ ${esc(w)}</div>`).join("")}
+          <div class="sch-pjobs">${day.jobs.length
+            ? day.jobs.map(j => `<div class="sch-pjob${j.ceramic ? " ceramic" : ""}"><b>${esc(fmt12(j.start))}–${esc(fmt12(j.end))}</b> ${esc(j.customer)} <span>${esc(j.service)}${j.ceramic ? " · ✨ ceramic" : ""}</span></div>`).join("")
+            : '<div class="sch-pjob empty">No jobs booked this day</div>'}</div>
+          ${data.people.map(p => {
+            const a = day.availability[p.id] || { status: "unknown" };
+            const mine = day.shifts.filter(s => s.staff_id === p.id);
+            return `<div class="sch-pperson">
+              <div class="sch-phead"><i style="background:${colorOf(p.id)}"></i><strong>${esc(p.full_name)}</strong><span class="sch-pav ${avCls(a)}">${esc(avTxt(a))}</span></div>
+              ${mine.map(s => `<button type="button" class="sch-pshift${s.published ? "" : " draft"}" data-pshift="${esc(s.id)}" style="border-left-color:${colorOf(p.id)}">
+                  <b>${esc(fmt12(s.start_time))} – ${esc(fmt12(s.end_time))}</b>${s.published ? "" : " <span>draft</span>"}${s.notes ? `<em>${esc(s.notes)}</em>` : ""}
+                  ${s.warnings.length ? `<div class="wr">⚠ ${esc(s.warnings.join(" · "))}</div>` : ""}</button>`).join("")}
+              <button type="button" class="sch-btn sch-padd" data-padd="${esc(p.id)}" data-date="${esc(day.date)}">+ Add shift</button>
+            </div>`;
+          }).join("") || '<div class="sch-pjob empty">Add employees under Team first.</div>'}
+        </div>`;
+    }
+
+    function bindPhoneDay() {
+      wrapper.querySelectorAll("[data-padd]").forEach(b => (b.onclick = (ev) => {
+        const day = dayOf(b.dataset.date);
+        const cover = coverJobs(day);
+        const [a, z] = cover || [8 * 60, 17 * 60];
+        openPop({ x: ev.clientX, y: ev.clientY, staffId: b.dataset.padd, date: day.date, start: toT(a), end: toT(z) });
+      }));
+      wrapper.querySelectorAll("[data-pshift]").forEach(b => (b.onclick = (ev) => {
+        const shift = data.days.flatMap(x => x.shifts).find(s => s.id === b.dataset.pshift);
+        openPop({ x: ev.clientX, y: ev.clientY, shift });
+      }));
+    }
+
     /* ---------- rendering ---------- */
     function render() {
       const d = data;
@@ -5572,14 +5992,14 @@ function renderView(viewName) {
               : `<button type="button" class="sch-btn primary" data-approve="${esc(t.id)}">Approve</button>
                  <button type="button" class="sch-btn danger" data-deny="${esc(t.id)}">Deny</button>`}
           </div>`).join("")}</div>` : ""}
-        <div class="sch-panel">
+        ${narrow() ? "" : `<div class="sch-panel">
           <div class="sch-team"><span style="font-size:13px;opacity:.8;margin-right:4px;">Drag onto a day →</span>
             ${d.people.map(p => `<span class="sch-chip" data-chip="${esc(p.id)}"><i style="background:${colorOf(p.id)}"></i>${esc(p.full_name)}</span>`).join("") || '<span style="opacity:.7;">Add employees under Team first.</span>'}
           </div>
           <div style="font-size:12px;opacity:.65;margin-top:8px;">Or drag down inside a person's column to paint a shift. Drag a shift to move it, drag its top/bottom edge to change times, click it to edit. Striped = draft (crew can't see it yet). Red hatching = off / time off; dark = outside their hours.</div>
-        </div>
+        </div>`}
         ${narrow() ? `<div class="sch-days">${d.days.map(x => `<button type="button" class="sch-btn ${x.date === (focusDay || d.today) || (!d.days.some(y => y.date === (focusDay || d.today)) && x === d.days[0]) ? "on" : ""}" data-focus="${x.date}">${esc(dayHead(x.date))}${x.jobs.length ? ` · ${x.jobs.length}` : ""}</button>`).join("")}</div>` : ""}
-        <div class="sch-wrap"><div class="sch-grid">
+        ${narrow() ? phoneDay(shownDays[0]) : `<div class="sch-wrap"><div class="sch-grid">
           <div class="sch-hours" style="padding-top:92px;"><div style="position:relative;height:${hoursH}px;">${Array.from({ length: END_H - START_H + 1 }, (_, i) => `<div class="hl" style="top:${i * PX_H}px">${fmt12(toT((START_H + i) * 60))}</div>`).join("")}</div></div>
           ${shownDays.map(day => `
             <div class="sch-day">
@@ -5605,7 +6025,7 @@ function renderView(viewName) {
                 }).join("")}
               </div>
             </div>`).join("")}
-        </div></div>`;
+        </div></div>`}`;
 
       // toolbar
       wrapper.querySelector("[data-prev]").onclick = () => { weekDate = shiftWeek(-7); focusDay = shiftWeek(-7); load(); };
@@ -5667,7 +6087,7 @@ function renderView(viewName) {
         const shift = d.days.flatMap(x => x.shifts).find(s => s.id === el.dataset.shift);
         el.addEventListener("pointerdown", (ev) => startShiftDrag(ev, el, shift));
       });
-
+      if (narrow()) bindPhoneDay();
     }
 
     async function load() {
@@ -7428,23 +7848,12 @@ function renderView(viewName) {
   }
 
   // =========================
-// NORMAL VIEWS (Pending / Today / Upcoming)
-// =========================
-const data = cachedViews[viewName];
-const sectionTitles = { pending: "Pending Bookings", today: "Today's Schedule", upcoming: "Upcoming Bookings" };
-const sectionTitle = sectionTitles[viewName] || viewName;
-
-if (!data || data.length === 0) {
-  let message = "No records found.";
-  if (viewName === "pending") message = "No pending bookings yet.";
-  else if (viewName === "today") message = "No jobs scheduled for today.";
-  else if (viewName === "upcoming") message = "No upcoming confirmed bookings.";
-  viewContainer.innerHTML =
-  `<div style="margin-top:40px;font-weight:600;color:white;text-align:center;">${message}</div>`;
-  return;
-}
-
-renderSection(sectionTitle, data);
+  // TODAY / BOOKINGS / MORE
+  // =========================
+  if (viewName === "today") { renderTodayView(); return; }
+  if (viewName === "bookings") { renderBookingsView(); return; }
+  if (viewName === "more") { renderMoreView(); return; }
+  renderBookingList(cachedViews[viewName] || [], "No records found.");
 }
 
  bootAdminApp();

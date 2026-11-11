@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import verifyAdmin from "../_verifyAdmin.js";
+import { loadSavedAddresses } from "../_customerAddresses.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -27,11 +28,17 @@ export default async function handler(req, res) {
       requireEnv("SUPABASE_SERVICE_ROLE_KEY")
     );
 
-    const { data, error } = await supabase
-      .from("vehicles")
-      .select("id, vehicle_year, vehicle_make, vehicle_model, vehicle_size")
-      .eq("customer_id", customerId)
-      .order("vehicle_year", { ascending: false });
+    const [{ data, error }, addresses] = await Promise.all([
+      supabase
+        .from("vehicles")
+        .select("id, vehicle_year, vehicle_make, vehicle_model, vehicle_size")
+        .eq("customer_id", customerId)
+        .order("vehicle_year", { ascending: false }),
+      loadSavedAddresses(supabase, customerId).catch((e) => {
+        console.error("admin-customer-vehicles: saved addresses failed", e);
+        return [];
+      }),
+    ]);
 
     if (error) throw error;
 
@@ -43,7 +50,9 @@ export default async function handler(req, res) {
         make: v.vehicle_make,
         model: v.vehicle_model,
         vehicle_size: v.vehicle_size
-      }))
+      })),
+      // Past service addresses (newest first) so admins don't retype them.
+      addresses
     });
   } catch (err) {
     console.error("admin-customer-vehicles error:", err);
