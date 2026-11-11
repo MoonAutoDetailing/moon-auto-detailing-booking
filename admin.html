@@ -2208,8 +2208,8 @@ body.ux .card .actions button.confirm { flex-basis: 100%; order: -1; min-height:
 body.ux .ux-more { margin-top: 10px; border-top: 1px solid var(--ux-line); padding-top: 8px; }
 body.ux .ux-more > summary { cursor: pointer; font-weight: 600; color: var(--ux-muted); padding: 6px 0; list-style: none; }
 body.ux .ux-more > summary::-webkit-details-marker { display: none; }
-body.ux .ux-more > summary::after { content: " ▸"; }
-body.ux .ux-more[open] > summary::after { content: " ▾"; }
+body.ux .ux-more > summary::after { content: ""; display: inline-block; width: 7px; height: 7px; margin-left: 8px; border-right: 1.75px solid currentColor; border-bottom: 1.75px solid currentColor; transform: rotate(-45deg); vertical-align: 1px; transition: transform .15s; }
+body.ux .ux-more[open] > summary::after { transform: rotate(45deg); vertical-align: 3px; }
 
 body.ux .ux-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 8px; }
 body.ux .ux-chips:empty { display: none; }
@@ -2224,6 +2224,99 @@ body.ux .admin-book-actions { display: flex; flex-direction: column; gap: 8px; m
 body.ux .admin-book-actions .ux-btn-primary { min-height: 48px; font-size: 16px; }
 body.ux .admin-book-summary { background: #0f1318; border: 1px solid var(--ux-line); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
 body.ux .admin-book-option { border-radius: 12px; }
+/* line icons */
+.ui-icon { display: inline-block; vertical-align: -0.2em; flex: none; }
+body.ux .ux-tab-icon { height: 24px; display: inline-flex; align-items: center; }
+body.ux .ux-tab-center .ux-tab-icon { width: 42px; height: 42px; }
+body.ux .ux-tab-center .ux-tab-icon .ui-icon { stroke-width: 2.25; }
+body.ux .ux-side-item .ui-icon { opacity: .85; }
+body.ux .ux-list-icon { display: inline-flex; justify-content: center; color: var(--ux-muted); }
+body.ux .ux-chev { display: inline-flex; }
+body.ux .ux-list-label small { display: block; font-size: 12px; color: var(--ux-muted); font-weight: 400; margin-top: 2px; }
+body.ux .ux-list-label strong { font-weight: 600; }
+body.ux .ux-attention { margin-bottom: 18px; max-width: 860px; margin-left: auto; margin-right: auto; }
+body.ux .ux-tone-bad .ux-list-icon { color: var(--ux-bad); }
+body.ux .ux-tone-warn .ux-list-icon { color: var(--ux-warn); }
+body.ux .ux-tone-info .ux-list-icon { color: var(--ux-primary); }
+body.ux .ux-tone-ok .ux-list-icon { color: var(--ux-ok); }
+body.ux .ux-banner { display: flex; gap: 10px; align-items: flex-start; }
+body.ux .ux-quick a { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+body.ux .ux-pill { display: inline-flex; align-items: center; gap: 4px; }
+body.ux .ux-chip { display: inline-flex; align-items: center; gap: 6px; }
+body.ux .ux-icon .ui-icon, body.ux .ux-back .ui-icon { stroke-width: 2; }
+/* page building blocks (tool screens) */
+body.ux .ux-page { display: flex; flex-direction: column; gap: 14px; max-width: 860px; margin: 0 auto; }
+body.ux .ux-page > * { width: 100%; box-sizing: border-box; margin-left: 0; margin-right: 0; }
+body.ux .ux-page > .ux-stats, body.ux .ux-page > .ux-list { margin-bottom: 0; }
+body.ux .ux-pill.plain { text-transform: none; }
+body.ux .ux-pager { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+body.ux .ux-pager-nav { display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 12px; background: var(--ux-surface); border: 1px solid var(--ux-line); flex: 1 1 auto; justify-content: space-between; max-width: 340px; }
+body.ux .ux-pager-label { font-weight: 700; font-size: 15px; padding: 0 8px; white-space: nowrap; }
+body.ux .ux-icon-btn { width: 36px; height: 36px; border-radius: 9px; border: none; background: var(--ux-surface-2); color: var(--ux-text); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0; }
+body.ux .ux-btn-quiet { background: transparent; border-color: var(--ux-line); color: var(--ux-muted); }
+body.ux .ux-pager .ux-push { margin-left: auto; }
+body.ux .ux-stats-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body.ux .ux-card { background: var(--ux-surface); border: 1px solid var(--ux-line); border-radius: var(--ux-radius); padding: 14px; }
+body.ux .ux-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+body.ux .ux-card-head h3 { margin: 0; font-size: 17px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+body.ux .ux-card-head small { color: var(--ux-muted); font-size: 13px; }
+body.ux .ux-card-figure { font-size: 22px; font-weight: 700; text-align: right; line-height: 1.1; }
+body.ux .ux-card-figure span { display: block; font-size: 12px; font-weight: 500; color: var(--ux-muted); }
+body.ux .ux-flags { display: flex; flex-direction: column; gap: 4px; color: var(--ux-warn); font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+body.ux .ux-entry { border-top: 1px solid var(--ux-line); }
+body.ux .ux-entry-head { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 10px; width: 100%; padding: 12px 2px; border: none; background: none; color: var(--ux-text); font: inherit; text-align: left; cursor: pointer; }
+body.ux .ux-entry-main { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+body.ux .ux-entry-main span { font-size: 14px; }
+body.ux .ux-entry-main small { font-size: 12px; color: var(--ux-muted); }
+body.ux .ux-entry-hours { font-weight: 700; }
+body.ux .ux-entry .ux-chev { color: var(--ux-muted); transition: transform .15s; }
+body.ux .ux-entry.open .ux-chev { transform: rotate(180deg); }
+body.ux .ux-form { display: flex; flex-direction: column; gap: 10px; padding: 4px 0 14px; }
+body.ux .ux-form[hidden] { display: none; }
+body.ux .ux-form label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ux-muted); flex: 1 1 0; min-width: 0; }
+body.ux .ux-form-row { display: flex; gap: 10px; flex-wrap: wrap; }
+body.ux .ux-form-row label { min-width: 200px; }
+body.ux .ux-form-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+body.ux .ux-form-actions .ux-btn { flex: 1 1 140px; }
+body.ux .ux-footnote { margin: 0; font-size: 12px; color: var(--ux-muted); }
+body.ux .ux-ok-text { color: var(--ux-ok); }
+body.ux .ux-warn-text { color: var(--ux-warn); }
+body.ux .ux-bad-text { color: var(--ux-bad); }
+body.ux .ux-table-wrap { border: 1px solid var(--ux-line); border-radius: var(--ux-radius); overflow: hidden; background: var(--ux-surface); }
+body.ux .ux-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+body.ux .ux-table th { font-size: 12px; font-weight: 600; color: var(--ux-muted); text-align: right; padding: 10px 12px; border-bottom: 1px solid var(--ux-line); }
+body.ux .ux-table td { padding: 11px 12px; text-align: right; border-top: 1px solid var(--ux-line); }
+body.ux .ux-table th:first-child, body.ux .ux-table td:first-child { text-align: left; }
+body.ux .ux-table tr:first-child td { border-top: none; }
+/* tables become stacked cards on phones (each cell shows its column name) */
+@media (max-width: 640px) {
+  body.ux .ux-table thead { display: none; }
+  body.ux .ux-table, body.ux .ux-table tbody, body.ux .ux-table tr, body.ux .ux-table td { display: block; width: 100%; box-sizing: border-box; }
+  body.ux .ux-table tr { padding: 10px 12px; border-top: 1px solid var(--ux-line); }
+  body.ux .ux-table tr:first-child { border-top: none; }
+  body.ux .ux-table td { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border: none; text-align: right; }
+  body.ux .ux-table td::before { content: attr(data-label); color: var(--ux-muted); text-align: left; }
+  body.ux .ux-table td:first-child { font-size: 16px; font-weight: 700; padding-bottom: 6px; }
+  body.ux .ux-table td:first-child::before { content: none; }
+}
+body.ux .ux-approve { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 10px 12px; margin-bottom: 10px; border-color: rgba(255,198,92,.45); }
+body.ux .ux-receipt { width: 72px; height: 72px; border-radius: 10px; overflow: hidden; background: #000; display: flex; align-items: center; justify-content: center; color: var(--ux-primary); font-weight: 700; text-decoration: none; }
+body.ux .ux-receipt img { width: 100%; height: 100%; object-fit: cover; }
+body.ux .ux-approve-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+body.ux .ux-approve-title { display: flex; justify-content: space-between; gap: 8px; font-size: 16px; }
+body.ux .ux-approve-title span { font-weight: 700; }
+body.ux .ux-approve-body small { color: var(--ux-muted); font-size: 12px; }
+body.ux .ux-approve-fields { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+body.ux .ux-approve-fields label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ux-muted); }
+body.ux .ux-approve-fields select { width: 100%; }
+body.ux .ux-approve-actions { grid-column: 1 / -1; }
+body.ux .discount-create-section { margin: 0; border-top: 1px solid var(--ux-line); }
+body.ux .discount-create-section > summary { color: var(--ux-text); display: flex; align-items: center; gap: 8px; }
+body.ux .discount-create-form { margin-top: 12px; }
+body.ux .discount-create-form > * { flex: 1 1 160px; }
+body.ux .admin-availability-view > * { max-width: 860px; }
+body.ux .ux-check { flex-direction: row !important; align-items: center; gap: 8px !important; font-size: 14px !important; color: var(--ux-text) !important; }
+body.ux .ux-check input { width: 20px; height: 20px; accent-color: var(--ux-primary); }
 @media (max-width: 420px) {
   body.ux .ux-stats strong { font-size: 19px; }
   body.ux .ux-facts { grid-template-columns: 84px minmax(0, 1fr); }
@@ -2483,6 +2576,7 @@ style="
 
 <div id="toastContainer"></div>
 <script type="module">
+import { icon } from "/ui-icons.js";
 // ================= ADMIN LOGIN UI =================
 document.body.classList.add("ux");
 let ADMIN_SESSION = sessionStorage.getItem("moon_admin_session");
@@ -2683,9 +2777,14 @@ async function showBookingAdmin() {
 // Header buttons for the new shell (account menu, back to More, initials).
 function setupUxShell() {
   const staff = getAdminStaff();
+  const refresh = document.getElementById("refreshNow");
+  if (refresh) refresh.innerHTML = icon("refresh", 20);
+  const backBtn = document.getElementById("uxBack");
+  if (backBtn) backBtn.innerHTML = icon("chevronLeft", 22);
   const avatar = document.getElementById("uxAccountBtn");
   if (avatar) {
-    avatar.textContent = staff?.full_name ? staff.full_name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase() : "★";
+    if (staff?.full_name) avatar.textContent = staff.full_name.split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
+    else avatar.innerHTML = icon("user", 18);
     avatar.onclick = toggleAccountMenu;
   }
   const back = document.getElementById("uxBack");
@@ -2724,7 +2823,7 @@ async function logoutAndReloginToPortal() {
 
   showLoginOverlay();
 
-  // 🔴 THIS IS THE MISSING PIECE
+  // Wait for the login form before showing the portal again
   await requireLoginUI();
   hideLoginOverlay();
 
@@ -3476,7 +3575,7 @@ function buildCrewQcPanel(b) {
         <div style="font-weight:600;">Damage / issues (${photosOf("issue").length})</div>${thumbs(photosOf("issue"))}
         <details><summary style="cursor:pointer;font-weight:600;">Checklist ${doneCount}/${d.checklist.length}</summary>
           <ul style="margin:6px 0 0;padding-left:18px;">${d.checklist.map(s =>
-            `<li style="${s.done ? "" : "color:#ffc65c;"}">${s.done ? "✓" : "✗"} ${esc(s.text)}</li>`).join("")}</ul>
+            `<li style="${s.done ? "" : "color:#ffc65c;"}">${icon(s.done ? "check" : "x", 13)} ${esc(s.text)}</li>`).join("")}</ul>
         </details>`;
     } catch (err) {
       body.innerHTML = `<span style="color:#ff8a8a;">${esc(err.message || "Load failed")}</span>`;
@@ -3550,14 +3649,14 @@ card.style.borderLeft = "4px solid var(--moon-primary)";
     <div class="ux-right">
       <span class="ux-price">${escC(totalStr)}</span>
       <span class="ux-pill ${escC(statusKey)}">${escC(statusLabel)}</span>
-      ${b.job_flag === "ceramic" ? '<span class="ux-pill ceramic">✨ Ceramic</span>' : ""}
+      ${b.job_flag === "ceramic" ? `<span class="ux-pill ceramic">${icon("sparkle", 12)}Ceramic</span>` : ""}
     </div>
   </div>
 
   <div class="booking-content">
     <div class="ux-quick">
-      ${phoneDigits ? `<a href="tel:${escC(phoneDigits)}">📞 Call</a><a href="sms:${escC(phoneDigits)}">💬 Text</a>` : ""}
-      ${b.service_address ? `<a href="${escC(mapsUrl)}" target="_blank" rel="noopener">🧭 Map</a>` : ""}
+      ${phoneDigits ? `<a href="tel:${escC(phoneDigits)}">${icon("phone", 16)}Call</a><a href="sms:${escC(phoneDigits)}">${icon("message", 16)}Text</a>` : ""}
+      ${b.service_address ? `<a href="${escC(mapsUrl)}" target="_blank" rel="noopener">${icon("navigate", 16)}Map</a>` : ""}
     </div>
     <dl class="ux-facts">
       <dt>When</dt><dd>${escC(formatDay(start))}, ${escC(formatTime(start))} → ${escC(formatTime(end))}</dd>
@@ -3898,41 +3997,42 @@ showAdminBanner("Unsupported status change: " + status, "error");
 // ===================== APP SHELL: navigation =====================
 // Phones: bottom tab bar (Today · Bookings · + Book · Schedule · More). Desktop: sidebar
 // with every section in groups. Owner-only sections are left out for managers.
+// Grouped by how often each tool is used: daily work first, setup last.
 const NAV_GROUPS = [
   { title: "Daily", items: [
-    { key: "today", label: "Today", icon: "☀️" },
-    { key: "bookings", label: "Bookings", icon: "📋" },
-    { key: "book-customer", label: "Book a customer", icon: "➕" },
-    { key: "schedule", label: "Crew schedule", icon: "🗓️" }
+    { key: "today", label: "Today", icon: "today" },
+    { key: "bookings", label: "Bookings", icon: "bookings" },
+    { key: "book-customer", label: "Book a customer", icon: "plus" },
+    { key: "schedule", label: "Crew schedule", icon: "calendar" },
+    { key: "timeclock", label: "Time clock", icon: "clock" }
   ] },
-  { title: "Crew", items: [
-    { key: "timeclock", label: "Time clock", icon: "⏱️" },
-    { key: "team", label: "Team", icon: "👥" },
-    { key: "checklists", label: "Job checklists", icon: "✅" }
+  { title: "Weekly", items: [
+    { key: "payroll", label: "Payroll", icon: "payroll" },
+    { key: "revenue", label: "Weekly revenue", icon: "dollar" },
+    { key: "expenses", label: "Expenses", icon: "receipt" },
+    { key: "subscriptions", label: "Maintenance plans", icon: "repeat" }
   ] },
-  { title: "Money", items: [
-    { key: "revenue", label: "Weekly revenue", icon: "💵" },
-    { key: "payroll", label: "Payroll", icon: "🧾" },
-    { key: "expenses", label: "Expenses", icon: "🧴" },
-    { key: "business", label: "Business", icon: "📈" },
-    { key: "bookkeeping", label: "Bookkeeping export", icon: "📒" }
+  { title: "Look up", items: [
+    { key: "history", label: "Booking history", icon: "history" },
+    { key: "waitlist", label: "Waitlist", icon: "list" }
   ] },
-  { title: "Customers", items: [
-    { key: "history", label: "Booking history", icon: "🕘" },
-    { key: "subscriptions", label: "Maintenance plans", icon: "🔁" },
-    { key: "waitlist", label: "Waitlist", icon: "📝" },
-    { key: "discount-codes", label: "Discount codes", icon: "🏷️" }
+  { title: "Business", items: [
+    { key: "business", label: "Business dashboard", icon: "chart" },
+    { key: "bookkeeping", label: "Bookkeeping export", icon: "book" }
   ] },
-  { title: "Settings", items: [
-    { key: "availability", label: "Availability & solo mode", icon: "🕑" }
+  { title: "Setup", items: [
+    { key: "team", label: "Team", icon: "users" },
+    { key: "checklists", label: "Job checklists", icon: "checklist" },
+    { key: "discount-codes", label: "Discount codes", icon: "tag" },
+    { key: "availability", label: "Availability", icon: "sliders" }
   ] }
 ];
 const TABBAR = [
-  { key: "today", label: "Today", icon: "☀️" },
-  { key: "bookings", label: "Bookings", icon: "📋" },
-  { key: "book-customer", label: "Book", icon: "＋", center: true },
-  { key: "schedule", label: "Schedule", icon: "🗓️" },
-  { key: "more", label: "More", icon: "☰" }
+  { key: "today", label: "Today", icon: "today" },
+  { key: "bookings", label: "Bookings", icon: "bookings" },
+  { key: "book-customer", label: "Book", icon: "plus", center: true },
+  { key: "schedule", label: "Schedule", icon: "calendar" },
+  { key: "more", label: "More", icon: "menu" }
 ];
 const VIEW_TITLES = { more: "More", pending: "Bookings", upcoming: "Bookings" };
 NAV_GROUPS.forEach(g => g.items.forEach(i => { VIEW_TITLES[i.key] = i.label; }));
@@ -3952,6 +4052,35 @@ function tabForView(view) {
   return TABBAR_KEYS.includes(view) ? view : "more";
 }
 
+// ===================== shared page helpers =====================
+function uxShiftDate(dateStr, days) {
+  const d = new Date(dateStr + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+function uxWeekLabel(start, end) {
+  const f = (d, opts) => new Date(d + "T12:00:00Z").toLocaleDateString([], { timeZone: "UTC", ...opts });
+  const sameMonth = start.slice(0, 7) === end.slice(0, 7);
+  return `${f(start, { month: "short", day: "numeric" })} – ${sameMonth ? f(end, { day: "numeric" }) : f(end, { month: "short", day: "numeric" })}`;
+}
+// ‹ label › with an optional "This week" reset — the one way to move between periods.
+function uxPager({ label, onPrev, onNext, onReset, resetLabel = "This week", extra = "" }) {
+  const el = document.createElement("div");
+  el.className = "ux-pager";
+  el.innerHTML = `
+    <div class="ux-pager-nav">
+      <button type="button" class="ux-icon-btn" data-prev aria-label="Previous">${icon("chevronLeft", 18)}</button>
+      <span class="ux-pager-label">${adminBookEscapeHtml(label)}</span>
+      <button type="button" class="ux-icon-btn" data-next aria-label="Next">${icon("chevronRight", 18)}</button>
+    </div>
+    ${onReset ? `<button type="button" class="ux-btn ux-btn-quiet" data-reset>${adminBookEscapeHtml(resetLabel)}</button>` : ""}
+    ${extra}`;
+  el.querySelector("[data-prev]").onclick = onPrev;
+  el.querySelector("[data-next]").onclick = onNext;
+  if (onReset) el.querySelector("[data-reset]").onclick = onReset;
+  return el;
+}
+
 function renderDashboard() {
   handleViewSwitch("today");
 }
@@ -3965,7 +4094,7 @@ function renderButtons() {
   if (bar) {
     bar.innerHTML = TABBAR.map(t => `
       <button type="button" class="ux-tab${t.center ? " ux-tab-center" : ""}" data-view="${t.key}">
-        <span class="ux-tab-icon" aria-hidden="true">${t.icon}</span><span class="ux-tab-label">${t.label}</span>${badge(t.key)}
+        <span class="ux-tab-icon" aria-hidden="true">${icon(t.icon, t.center ? 22 : 22)}</span><span class="ux-tab-label">${t.label}</span>${badge(t.key)}
       </button>`).join("");
     bar.querySelectorAll("[data-view]").forEach(b => (b.onclick = () => handleViewSwitch(b.dataset.view)));
   }
@@ -3975,7 +4104,7 @@ function renderButtons() {
     side.innerHTML = visibleNavGroups().map(g => `
       <div class="ux-side-group">
         <div class="ux-side-title">${g.title}</div>
-        ${g.items.map(i => `<button type="button" class="ux-side-item" data-view="${i.key}"><span aria-hidden="true">${i.icon}</span>${i.label}${badge(i.key)}</button>`).join("")}
+        ${g.items.map(i => `<button type="button" class="ux-side-item" data-view="${i.key}">${icon(i.icon, 18)}<span>${i.label}</span>${badge(i.key)}</button>`).join("")}
       </div>`).join("");
     side.querySelectorAll("[data-view]").forEach(b => (b.onclick = () => handleViewSwitch(b.dataset.view)));
   }
@@ -3991,16 +4120,16 @@ function renderMoreView() {
     wrap.insertAdjacentHTML("beforeend", `
       <section class="ux-list-group">
         <div class="ux-list-title">${g.title}</div>
-        <div class="ux-list">${items.map(i => `<button type="button" class="ux-list-item" data-view="${i.key}"><span class="ux-list-icon" aria-hidden="true">${i.icon}</span><span class="ux-list-label">${i.label}</span><span class="ux-chev" aria-hidden="true">›</span></button>`).join("")}</div>
+        <div class="ux-list">${items.map(i => `<button type="button" class="ux-list-item" data-view="${i.key}"><span class="ux-list-icon">${icon(i.icon, 20)}</span><span class="ux-list-label">${i.label}</span><span class="ux-chev">${icon("chevronRight", 18)}</span></button>`).join("")}</div>
       </section>`);
   });
   wrap.insertAdjacentHTML("beforeend", `
     <section class="ux-list-group">
       <div class="ux-list-title">Account</div>
       <div class="ux-list">
-        <a class="ux-list-item" href="/staff.html"><span class="ux-list-icon">📱</span><span class="ux-list-label">Open the crew app</span><span class="ux-chev">›</span></a>
-        <button type="button" class="ux-list-item" data-act="portal"><span class="ux-list-icon">🏠</span><span class="ux-list-label">Admin portal</span><span class="ux-chev">›</span></button>
-        <button type="button" class="ux-list-item ux-danger-text" data-act="logout"><span class="ux-list-icon">⎋</span><span class="ux-list-label">Sign out</span></button>
+        <a class="ux-list-item" href="/staff.html"><span class="ux-list-icon">${icon("smartphone", 20)}</span><span class="ux-list-label">Open the crew app</span><span class="ux-chev">${icon("chevronRight", 18)}</span></a>
+        <button type="button" class="ux-list-item" data-act="portal"><span class="ux-list-icon">${icon("home", 20)}</span><span class="ux-list-label">Admin portal</span><span class="ux-chev">${icon("chevronRight", 18)}</span></button>
+        <button type="button" class="ux-list-item ux-danger-text" data-act="logout"><span class="ux-list-icon">${icon("logout", 20)}</span><span class="ux-list-label">Sign out</span></button>
       </div>
     </section>`);
   wrap.querySelectorAll("[data-view]").forEach(b => (b.onclick = () => handleViewSwitch(b.dataset.view)));
@@ -4043,12 +4172,36 @@ function renderTodayView() {
     <button type="button" class="ux-stat ux-stat-link${pending.length ? " ux-stat-warn" : ""}" data-go="pending"><span>Needs confirming</span><strong>${pending.length}</strong></button>`;
   strip.querySelector("[data-go]").onclick = () => { bookingsSegment = "pending"; handleViewSwitch("bookings"); };
   viewContainer.appendChild(strip);
-  if (ceramic) viewContainer.insertAdjacentHTML("beforeend", `<div class="ux-banner">✨ Ceramic coating job today — make sure the crew has the kit and cure time is planned.</div>`);
+  const attention = document.createElement("section");
+  attention.className = "ux-attention";
+  viewContainer.appendChild(attention);
+  loadAttention(attention);
+  if (ceramic) viewContainer.insertAdjacentHTML("beforeend", `<div class="ux-banner">${icon("sparkle", 18)}<span>Ceramic coating job today — make sure the crew has the kit and cure time is planned.</span></div>`);
   if (today.length) {
     renderBookingList(today, "");
   } else {
     viewContainer.insertAdjacentHTML("beforeend", `<div class="ux-empty">No jobs today.${upcoming.length ? " Next up:" : ""}</div>`);
     if (upcoming.length) renderBookingList(upcoming.slice(0, 3), "");
+  }
+}
+
+// "Needs attention" on Today: forgotten clock-outs, unfinished jobs, time off, drafts,
+// payroll and (owner) expense approvals — each row opens the tool that fixes it.
+async function loadAttention(el) {
+  try {
+    const res = await adminFetch("/api/admin-attention", {}, false);
+    if (!res.ok) { el.remove(); return; }
+    const { items } = await res.json();
+    if (!items.length) { el.remove(); return; }
+    el.innerHTML = `<div class="ux-list-title">Needs attention</div><div class="ux-list">${items.map(it => `
+      <button type="button" class="ux-list-item ux-tone-${it.tone}" data-view="${it.view}">
+        <span class="ux-list-icon">${icon(it.icon, 20)}</span>
+        <span class="ux-list-label"><strong>${adminBookEscapeHtml(it.title)}</strong>${it.detail ? `<small>${adminBookEscapeHtml(it.detail)}</small>` : ""}</span>
+        <span class="ux-chev">${icon("chevronRight", 18)}</span>
+      </button>`).join("")}</div>`;
+    el.querySelectorAll("[data-view]").forEach(b => (b.onclick = () => handleViewSwitch(b.dataset.view)));
+  } catch {
+    el.remove();
   }
 }
 
@@ -4556,7 +4709,7 @@ function renderBookCustomerView() {
     const current = $("bookServiceAddress").value.trim();
     el.innerHTML = list.length
       ? `<span class="admin-book-muted" style="width:100%;">Saved addresses</span>` + list.map((a, i) =>
-          `<button type="button" class="ux-chip${a === current ? " on" : ""}" data-addr="${i}">📍 ${adminBookEscapeHtml(a)}</button>`).join("")
+          `<button type="button" class="ux-chip${a === current ? " on" : ""}" data-addr="${i}">${icon("map", 14)}<span>${adminBookEscapeHtml(a)}</span></button>`).join("")
       : "";
     el.querySelectorAll("[data-addr]").forEach(btn => {
       btn.onclick = () => {
@@ -5298,61 +5451,52 @@ function renderView(viewName) {
     const fmtDay = (iso) => new Date(iso).toLocaleDateString([], { timeZone: "America/New_York", weekday: "short", month: "numeric", day: "numeric" });
     let weekDate = null;
     const wrapper = document.createElement("div");
-    wrapper.style.cssText = "display:flex;flex-direction:column;gap:12px;";
+    wrapper.className = "ux-page";
     viewContainer.appendChild(wrapper);
-    const btn = "padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:#fff;font:inherit;font-size:14px;cursor:pointer;";
-    const tile = (label, value, sub, warn) => `<div style="flex:1 1 150px;padding:12px 14px;border-radius:12px;background:${warn ? "rgba(255,198,92,0.12)" : "rgba(111,147,196,0.12)"};"><div style="font-size:12px;opacity:.75;">${label}</div><div style="font-size:24px;font-weight:700;${warn ? "color:#ffc65c;" : ""}">${value}</div>${sub ? `<div style="font-size:12px;opacity:.7;">${sub}</div>` : ""}</div>`;
+    const stat = (label, value, sub, warn) => `<div class="ux-stat${warn ? " ux-stat-warn" : ""}"><span>${label}</span><strong>${value}</strong>${sub ? `<span>${sub}</span>` : ""}</div>`;
 
     async function load() {
-      wrapper.innerHTML = "<p style='margin:0;'>Loading…</p>";
+      if (!wrapper.childElementCount) wrapper.innerHTML = '<div class="ux-empty">Loading…</div>';
       try {
         const res = await adminFetch(`/api/admin-payments${weekDate ? "?week=" + weekDate : ""}`);
         const d = await res.json();
         if (!res.ok) throw new Error(d.error || "Failed to load");
         weekDate = d.week.start;
         const t = d.totals;
-        const shift = (n) => { const x = new Date(d.week.start + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
         const methods = Object.entries(d.by_method).sort((a, b) => b[1] - a[1]);
-        wrapper.innerHTML = `
-          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-            <h3 style="margin:0;flex:1 1 auto;">Weekly revenue <span class="booking-summary-meta">· ${esc(fmtD(d.week.start))} – ${esc(fmtD(d.week.end))}</span></h3>
-            <button type="button" style="${btn}" data-prev>‹ Prev</button>
-            <button type="button" style="${btn}" data-this>This week</button>
-            <button type="button" style="${btn}" data-next>Next ›</button>
+        wrapper.innerHTML = "";
+        wrapper.appendChild(uxPager({
+          label: uxWeekLabel(d.week.start, d.week.end),
+          onPrev: () => { weekDate = uxShiftDate(d.week.start, -7); load(); },
+          onNext: () => { weekDate = uxShiftDate(d.week.start, 7); load(); },
+          onReset: () => { weekDate = null; load(); }
+        }));
+        wrapper.insertAdjacentHTML("beforeend", `
+          <div class="ux-stats">
+            ${stat("Collected", $(t.collected), `${t.jobs} job${t.jobs === 1 ? "" : "s"} done`)}
+            ${d.week.start >= d.this_week ? stat("Still to collect", $(t.still_to_collect), `${t.jobs_remaining} job${t.jobs_remaining === 1 ? "" : "s"} left`) : stat("Average ticket", $(t.average_ticket))}
+            ${t.short ? stat("Under job price", $(t.short), "follow up", true) : stat("Tips to crew", $(t.tips))}
           </div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
-            ${tile("Collected", $(t.collected), `${t.jobs} job${t.jobs === 1 ? "" : "s"} completed`)}
-            ${tile("Average ticket", $(t.average_ticket))}
-            ${tile("Tips (go to crew)", $(t.tips))}
-            ${d.week.start >= d.this_week ? tile("Still to collect", $(t.still_to_collect), `${t.jobs_remaining} confirmed job${t.jobs_remaining === 1 ? "" : "s"} left this week`) : ""}
-            ${t.short ? tile("Under job price", $(t.short), "collected less than the booked total", true) : ""}
-          </div>
-          ${methods.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:14px;">${methods.map(([m, v]) => `<span style="padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.07);">${esc(m)}: <strong>${$(v)}</strong></span>`).join("")}</div>` : ""}
-          <div style="overflow-x:auto;border:1px solid rgba(255,255,255,.12);border-radius:12px;">
-            <table style="border-collapse:collapse;width:100%;min-width:720px;font-size:14px;">
-              <thead><tr style="font-size:12px;opacity:.75;text-align:right;">
-                <th style="text-align:left;padding:10px;">Day</th><th style="text-align:left;padding:10px;">Customer</th><th style="text-align:left;padding:10px;">Service</th>
-                <th style="padding:10px;">Job total</th><th style="padding:10px;">Collected</th><th style="padding:10px;">Tip</th><th style="text-align:left;padding:10px;">Method</th><th style="text-align:left;padding:10px;">Recorded by</th>
-              </tr></thead>
+          ${methods.length ? `<div class="ux-chips">${methods.map(([m, v]) => `<span class="ux-chip">${esc(m)} <strong>${$(v)}</strong></span>`).join("")}</div>` : ""}
+          <div class="ux-table-wrap">
+            <table class="ux-table">
+              <thead><tr><th>Customer</th><th>Day</th><th>Service</th><th>Job total</th><th>Collected</th><th>Tip</th><th>Method</th><th>Recorded by</th></tr></thead>
               <tbody>${d.jobs.length ? d.jobs.map(j => `
-                <tr style="border-top:1px solid rgba(255,255,255,.08);text-align:right;${j.short ? "background:rgba(255,198,92,0.06);" : ""}">
-                  <td style="text-align:left;padding:10px;">${esc(fmtDay(j.scheduled_start))}</td>
-                  <td style="text-align:left;padding:10px;font-weight:600;">${esc(j.customer)}</td>
-                  <td style="text-align:left;padding:10px;">${esc(j.service)}</td>
-                  <td style="padding:10px;">${$(j.total)}</td>
-                  <td style="padding:10px;font-weight:700;${j.short ? "color:#ffc65c;" : ""}">${j.unpaid ? "No payment" : $(j.collected)}${j.short ? `<div style="font-size:11px;font-weight:400;">${$(j.short)} under</div>` : ""}</td>
-                  <td style="padding:10px;">${j.tip ? $(j.tip) : "—"}</td>
-                  <td style="text-align:left;padding:10px;">${esc(j.method || "—")}</td>
-                  <td style="text-align:left;padding:10px;opacity:.8;">${esc(j.recorded_by || "—")}</td>
-                </tr>`).join("") : `<tr><td colspan="8" style="padding:16px;opacity:.7;">No completed jobs this week yet.</td></tr>`}</tbody>
+                <tr>
+                  <td>${esc(j.customer)}</td>
+                  <td data-label="Day">${esc(fmtDay(j.scheduled_start))}</td>
+                  <td data-label="Service">${esc(j.service)}</td>
+                  <td data-label="Job total">${$(j.total)}</td>
+                  <td data-label="Collected" class="${j.short ? "ux-warn-text" : ""}"><strong>${j.unpaid ? "No payment" : $(j.collected)}</strong>${j.short ? ` (${$(j.short)} under)` : ""}</td>
+                  <td data-label="Tip">${j.tip ? $(j.tip) : "—"}</td>
+                  <td data-label="Method">${esc(j.method || "—")}</td>
+                  <td data-label="Recorded by">${esc(j.recorded_by || "—")}</td>
+                </tr>`).join("") : `<tr><td>No completed jobs this week yet.</td></tr>`}</tbody>
             </table>
           </div>
-          <p style="margin:0;font-size:12px;opacity:.65;">Completed jobs by service date, Monday–Sunday. "Under job price" flags jobs where less was collected than the booked total (discounts given on site, partial payments) — follow up with the crew or customer.</p>`;
-        wrapper.querySelector("[data-prev]").onclick = () => { weekDate = shift(-7); load(); };
-        wrapper.querySelector("[data-next]").onclick = () => { weekDate = shift(7); load(); };
-        wrapper.querySelector("[data-this]").onclick = () => { weekDate = null; load(); };
+          <p class="ux-footnote">Completed jobs by service date, Monday–Sunday. "Under job price" means less was collected than the booked total (a discount given on site or a partial payment) — follow up with the crew or customer.</p>`);
       } catch (err) {
-        wrapper.innerHTML = `<p style="margin:0;color:#ff8a8a;">${esc(err.message)}</p>`;
+        wrapper.innerHTML = `<div class="ux-empty ux-bad-text">${esc(err.message)}</div>`;
       }
     }
     load();
@@ -5385,63 +5529,58 @@ function renderView(viewName) {
       const st = STATUS[d.run.status] || STATUS.draft;
       const isCurrentWeek = d.week.start >= d.this_week;
       const shift = (n) => { const x = new Date(d.week.start + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
-      const btn = "padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:#fff;font:inherit;font-size:14px;cursor:pointer;";
-      const primary = "padding:8px 14px;border-radius:10px;border:none;background:var(--moon-primary);color:#07111d;font:inherit;font-size:14px;font-weight:700;cursor:pointer;";
-      const tile = (label, value, strong) => `<div style="flex:1 1 120px;padding:10px 12px;border-radius:10px;background:rgba(111,147,196,0.12);"><div style="font-size:12px;opacity:.75;">${label}</div><div style="font-size:${strong ? 22 : 18}px;font-weight:700;">${value}</div></div>`;
-      wrapper.innerHTML = `
-        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-          <h3 style="margin:0;flex:1 1 auto;">Payroll <span class="booking-summary-meta">· ${esc(fmtD(d.week.start))} – ${esc(fmtD(d.week.end))}</span></h3>
-          <button type="button" style="${btn}" data-prev>‹ Prev</button>
-          <button type="button" style="${btn}" data-last>Last week</button>
-          <button type="button" style="${btn}" data-next>Next ›</button>
+      // Status → what to do next (approve / mark paid) → totals → one row per person.
+      const statusTone = d.run.status === "paid" ? "completed" : d.run.status === "approved" ? "confirmed" : "pending";
+      wrapper.className = "ux-page";
+      wrapper.innerHTML = "";
+      wrapper.appendChild(uxPager({
+        label: uxWeekLabel(d.week.start, d.week.end),
+        onPrev: () => { weekDate = shift(-7); load(); },
+        onNext: () => { weekDate = shift(7); load(); },
+        onReset: () => { weekDate = null; load(); },
+        resetLabel: "Last week"
+      }));
+      wrapper.insertAdjacentHTML("beforeend", `
+        <section class="ux-card">
+          <div class="ux-card-head">
+            <div><h3><span class="ux-pill ${statusTone} plain">${esc(st[0])}</span></h3>
+              <small>${d.run.approved_at ? `Approved ${esc(new Date(d.run.approved_at).toLocaleDateString())} by ${esc(String(d.run.approved_by || "").replace(/ \(.*\)$/, ""))}` : isCurrentWeek ? "This week isn't over — numbers update live." : "Check hours and warnings, then approve."}${d.run.paid_at ? ` · Paid ${esc(new Date(d.run.paid_at).toLocaleDateString())}${d.lines[0]?.payment_method ? " via " + esc(d.lines[0].payment_method) : ""}` : ""}</small></div>
+            <div class="ux-card-figure">${$(d.totals.total)}<span>total to pay</span></div>
+          </div>
+          <div class="ux-form-actions">
+            ${d.run.status === "draft" ? `<button type="button" class="ux-btn ux-btn-primary" data-approve ${isCurrentWeek || !d.lines.length ? "disabled" : ""}>Approve payroll</button>` : ""}
+            ${d.run.status === "approved" ? (paidArmed
+              ? `<select data-method aria-label="How the crew was paid">${d.payment_methods.map(m => `<option>${esc(m)}</option>`).join("")}</select>
+                 <button type="button" class="ux-btn ux-btn-primary" data-paid-yes>Confirm paid ${$(d.totals.total)}</button>
+                 <button type="button" class="ux-btn" data-paid-no>Cancel</button>`
+              : `<button type="button" class="ux-btn ux-btn-primary" data-paid>Mark as paid</button><button type="button" class="ux-btn" data-reopen>Reopen</button>`) : ""}
+            <button type="button" class="ux-btn ux-btn-quiet" data-csv ${d.lines.length ? "" : "disabled"}>Download CSV</button>
+          </div>
+        </section>
+        <div class="ux-stats">
+          <div class="ux-stat"><span>Hours</span><strong>${h(d.totals.hours)}</strong></div>
+          <div class="ux-stat"><span>Wages</span><strong>${$(d.totals.wages)}</strong></div>
+          <div class="ux-stat"><span>Tips + pay-backs</span><strong>${$(Number(d.totals.tips) + Number(d.totals.reimbursements))}</strong></div>
         </div>
-        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
-          <span style="padding:5px 12px;border-radius:999px;background:${st[1]};color:${st[2]};font-weight:700;font-size:13px;">${esc(st[0])}</span>
-          ${d.run.approved_at ? `<span style="font-size:12px;opacity:.7;">Approved ${esc(new Date(d.run.approved_at).toLocaleString())} by ${esc(String(d.run.approved_by || "").replace(/ \(.*\)$/, ""))}</span>` : ""}
-          ${d.run.paid_at ? `<span style="font-size:12px;opacity:.7;">· Paid ${esc(new Date(d.run.paid_at).toLocaleDateString())}${d.lines[0]?.payment_method ? " via " + esc(d.lines[0].payment_method) : ""}</span>` : ""}
-          <span style="flex:1"></span>
-          <button type="button" style="${btn}" data-csv ${d.lines.length ? "" : "disabled"}>Download CSV</button>
-          ${d.run.status === "draft" ? `<button type="button" style="${primary}" data-approve ${isCurrentWeek || !d.lines.length ? "disabled title='Approve once the week is over'" : ""}>Approve payroll</button>` : ""}
-          ${d.run.status === "approved" ? (paidArmed
-            ? `<select data-method style="padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;">${d.payment_methods.map(m => `<option style="color:#000;">${esc(m)}</option>`).join("")}</select>
-               <button type="button" style="${primary}" data-paid-yes>Confirm paid ${$(d.totals.total)}</button>
-               <button type="button" style="${btn}" data-paid-no>Cancel</button>`
-            : `<button type="button" style="${btn}" data-reopen>Reopen</button><button type="button" style="${primary}" data-paid>Mark as paid</button>`) : ""}
-        </div>
-        ${isCurrentWeek && d.run.status === "draft" ? `<div style="font-size:13px;opacity:.75;">This week isn't over yet — numbers update live as the crew clocks time and completes jobs.</div>` : ""}
-        <div style="display:flex;flex-wrap:wrap;gap:8px;">
-          ${tile("Total to pay", $(d.totals.total), true)}
-          ${tile("Hours", h(d.totals.hours))}
-          ${tile("Wages", $(d.totals.wages))}
-          ${tile("Tips", $(d.totals.tips))}
-          ${tile("Pay-backs", $(d.totals.reimbursements))}
-        </div>
-        ${d.unassigned_tips?.length ? `<div style="padding:10px 12px;border-radius:10px;border:1px solid rgba(255,198,92,.5);color:#ffc65c;font-size:13px;">${$(d.unassigned_tips.reduce((t, x) => t + x.tip, 0))} in tips from ${d.unassigned_tips.length} job${d.unassigned_tips.length === 1 ? "" : "s"} completed from the admin page have no crew recorded, so they aren't in anyone's pay. Pay them out by hand or have the crew complete jobs in the crew app.</div>` : ""}
-        <div style="overflow-x:auto;border:1px solid rgba(255,255,255,.12);border-radius:12px;">
-          <table style="border-collapse:collapse;width:100%;min-width:720px;font-size:14px;">
-            <thead><tr style="text-align:right;font-size:12px;opacity:.75;">
-              <th style="text-align:left;padding:10px;">Name</th><th style="padding:10px;">Rate</th><th style="padding:10px;">Reg. hrs</th><th style="padding:10px;">OT hrs</th>
-              <th style="padding:10px;">Wages</th><th style="padding:10px;">Tips</th><th style="padding:10px;">Pay-backs</th><th style="padding:10px;">Total</th>
-            </tr></thead>
+        ${d.unassigned_tips?.length ? `<div class="ux-banner">${icon("alert", 18)}<span>${$(d.unassigned_tips.reduce((t, x) => t + x.tip, 0))} in tips from ${d.unassigned_tips.length} job${d.unassigned_tips.length === 1 ? "" : "s"} completed from the admin page have no crew recorded, so they aren't in anyone's pay.</span></div>` : ""}
+        <div class="ux-table-wrap">
+          <table class="ux-table">
+            <thead><tr><th>Name</th><th>Rate</th><th>Reg. hrs</th><th>OT hrs</th><th>Wages</th><th>Tips</th><th>Pay-backs</th><th>Total</th></tr></thead>
             <tbody>${d.lines.length ? d.lines.map(l => `
-              <tr style="border-top:1px solid rgba(255,255,255,.08);text-align:right;">
-                <td style="text-align:left;padding:10px;font-weight:600;">${esc(l.full_name)}${l.warnings.length ? `<div style="font-weight:400;font-size:12px;color:#ffc65c;">⚠ ${l.warnings.map(esc).join("<br>⚠ ")}</div>` : ""}</td>
-                <td style="padding:10px;">${l.hourly_rate != null ? $(l.hourly_rate) : "—"}</td>
-                <td style="padding:10px;">${h(l.regular_hours)}</td>
-                <td style="padding:10px;${l.overtime_hours ? "color:#ffc65c;" : ""}">${h(l.overtime_hours)}</td>
-                <td style="padding:10px;">${$(Number(l.regular_pay) + Number(l.overtime_pay))}</td>
-                <td style="padding:10px;">${$(l.tips)}</td>
-                <td style="padding:10px;">${$(l.reimbursements)}</td>
-                <td style="padding:10px;font-weight:700;">${$(l.total)}</td>
-              </tr>`).join("") : `<tr><td colspan="8" style="padding:16px;opacity:.7;">No hours, tips or pay-backs this week.</td></tr>`}</tbody>
+              <tr>
+                <td>${esc(l.full_name)}${l.warnings.length ? `<div class="ux-flags" style="margin:4px 0 0;font-size:12px;">${l.warnings.map(w => `<div>${icon("alert", 13)} ${esc(w)}</div>`).join("")}</div>` : ""}</td>
+                <td data-label="Rate">${l.hourly_rate != null ? $(l.hourly_rate) : "—"}</td>
+                <td data-label="Regular hours">${h(l.regular_hours)}</td>
+                <td data-label="Overtime hours" class="${l.overtime_hours ? "ux-warn-text" : ""}">${h(l.overtime_hours)}</td>
+                <td data-label="Wages">${$(Number(l.regular_pay) + Number(l.overtime_pay))}</td>
+                <td data-label="Tips">${$(l.tips)}</td>
+                <td data-label="Pay-backs">${$(l.reimbursements)}</td>
+                <td data-label="Total"><strong>${$(l.total)}</strong></td>
+              </tr>`).join("") : `<tr><td>No hours, tips or pay-backs this week.</td></tr>`}</tbody>
           </table>
         </div>
-        <p style="margin:0;font-size:12px;opacity:.65;">Wages = time clock hours × hourly rate, 1.5× over 40 hours. Tips are split evenly between the crew who worked each job. Pay-backs are approved "own money" expenses. Approving freezes the numbers; fix time entries first under Time Clock. This page records payroll — it doesn't send money.</p>
-        ${d.recent.length ? `<div><div style="font-weight:700;margin-bottom:6px;">Recent weeks</div>${d.recent.map(r => `<button type="button" data-week="${esc(r.week_start)}" style="${btn}margin:0 6px 6px 0;">${esc(fmtD(r.week_start))} · ${esc(r.status)}</button>`).join("")}</div>` : ""}`;
-
-      wrapper.querySelector("[data-prev]").onclick = () => { weekDate = shift(-7); load(); };
-      wrapper.querySelector("[data-next]").onclick = () => { weekDate = shift(7); load(); };
-      wrapper.querySelector("[data-last]").onclick = () => { weekDate = null; load(); };
+        ${d.recent.length ? `<div><div class="ux-list-title">Recent weeks</div><div class="ux-chips">${d.recent.map(r => `<button type="button" class="ux-chip" data-week="${esc(r.week_start)}">${esc(fmtD(r.week_start))} · ${esc(r.status)}</button>`).join("")}</div></div>` : ""}
+        <p class="ux-footnote">Wages = time clock hours × hourly rate, 1.5× over 40 hours. Tips are split evenly between the crew who worked each job. Pay-backs are approved "own money" expenses. This page records payroll — it doesn't send money.</p>`);
       wrapper.querySelectorAll("[data-week]").forEach(b => (b.onclick = () => { weekDate = b.dataset.week; load(); }));
       wrapper.querySelector("[data-csv]").onclick = async () => {
         try {
@@ -5489,7 +5628,7 @@ function renderView(viewName) {
     let period = "month";
     let date = null;
     const wrapper = document.createElement("div");
-    wrapper.style.cssText = "display:flex;flex-direction:column;gap:12px;";
+    wrapper.className = "ux-page";
     viewContainer.appendChild(wrapper);
 
     function chart(series) {
@@ -5527,20 +5666,23 @@ function renderView(viewName) {
         date = d.date;
         const c = d.current;
         const prev = d.series[d.series.length - 2];
-        const delta = (a, b) => b ? `${a >= b ? "▲" : "▼"} ${Math.abs(Math.round(((a - b) / (Math.abs(b) || 1)) * 100))}% vs ${esc(prev.label)}` : "";
-        const tile = (label, value, sub) => `<div style="flex:1 1 150px;padding:12px 14px;border-radius:12px;background:rgba(111,147,196,0.12);"><div style="font-size:12px;opacity:.75;">${label}</div><div style="font-size:24px;font-weight:700;">${value}</div>${sub ? `<div style="font-size:12px;opacity:.7;">${sub}</div>` : ""}</div>`;
-        const btn = (on) => `padding:7px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:${on ? "var(--moon-primary)" : "rgba(255,255,255,.06)"};color:${on ? "#07111d" : "#fff"};font:inherit;font-size:14px;cursor:pointer;${on ? "font-weight:700;" : ""}`;
+        const delta = (a, b) => b ? `${a >= b ? "Up" : "Down"} ${Math.abs(Math.round(((a - b) / (Math.abs(b) || 1)) * 100))}% vs ${esc(prev.label)}` : "";
+        const tile = (label, value, sub) => `<div class="ux-stat"><span>${label}</span><strong>${value}</strong>${sub ? `<span>${sub}</span>` : ""}</div>`;
         const step = (n) => { const x = new Date(d.date + "T12:00:00Z"); if (period === "week") x.setUTCDate(x.getUTCDate() + 7 * n); else x.setUTCMonth(x.getUTCMonth() + n, 15); return x.toISOString().slice(0, 10); };
         wrapper.innerHTML = `
-          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
-            <h3 style="margin:0;flex:1 1 auto;">Business <span class="booking-summary-meta">· ${esc(c.label)}${period === "week" ? " week" : ""}</span></h3>
-            <button type="button" style="${btn(period === "week")}" data-p="week">Week</button>
-            <button type="button" style="${btn(period === "month")}" data-p="month">Month</button>
-            <button type="button" style="${btn(false)}" data-step="-1">‹</button>
-            <button type="button" style="${btn(false)}" data-step="0">Now</button>
-            <button type="button" style="${btn(false)}" data-step="1">›</button>
+          <div class="ux-pager">
+            <div class="ux-seg" style="margin:0;flex:0 0 auto;">
+              <button type="button" data-p="week" class="${period === "week" ? "on" : ""}">Week</button>
+              <button type="button" data-p="month" class="${period === "month" ? "on" : ""}">Month</button>
+            </div>
+            <div class="ux-pager-nav">
+              <button type="button" class="ux-icon-btn" data-step="-1" aria-label="Previous">${icon("chevronLeft", 18)}</button>
+              <span class="ux-pager-label">${esc(c.label)}</span>
+              <button type="button" class="ux-icon-btn" data-step="1" aria-label="Next">${icon("chevronRight", 18)}</button>
+            </div>
+            <button type="button" class="ux-btn ux-btn-quiet" data-step="0">Now</button>
           </div>
-          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+          <div class="ux-stats">
             ${tile("Revenue", $(c.revenue), delta(c.revenue, prev?.revenue))}
             ${tile("Profit (est.)", $(c.profit), `${c.margin}% margin`)}
             ${tile("Jobs completed", c.jobs, `avg ticket ${$(c.average_ticket)}`)}
@@ -5735,7 +5877,7 @@ function renderView(viewName) {
         <div class="sch-row"><div><label>Start</label><input type="time" name="start" step="900" value="${shift?.start_time || start}"></div>
         <div><label>End</label><input type="time" name="end" step="900" value="${shift?.end_time || end}"></div></div>
         <label>Note (optional)</label><input name="notes" value="${esc(shift?.notes || "")}" placeholder="e.g. ceramic day, bring kit">
-        ${shift?.warnings?.length ? `<div style="color:#ffc65c;font-size:12px;">⚠ ${shift.warnings.map(esc).join("<br>⚠ ")}</div>` : ""}
+        ${shift?.warnings?.length ? `<div style="color:#ffc65c;font-size:12px;">${icon("alert", 13)} ${shift.warnings.map(esc).join("<br>" + icon("alert", 13) + " ")}</div>` : ""}
         <div class="sch-row" style="margin-top:4px;">
           <button type="button" class="sch-btn primary" data-save>${shift ? "Save" : "Add shift"}</button>
           ${shift ? `<button type="button" class="sch-btn danger" data-del>Delete</button>` : ""}
@@ -5921,9 +6063,9 @@ function renderView(viewName) {
       const avCls = (a) => a.status === "unavailable" ? "off" : a.status === "unknown" ? "unset" : "ok";
       return `
         <div class="sch-pday">
-          ${day.warnings.map(w => `<div class="sch-pwarn">⚠ ${esc(w)}</div>`).join("")}
+          ${day.warnings.map(w => `<div class="sch-pwarn">${icon("alert", 13)} ${esc(w)}</div>`).join("")}
           <div class="sch-pjobs">${day.jobs.length
-            ? day.jobs.map(j => `<div class="sch-pjob${j.ceramic ? " ceramic" : ""}"><b>${esc(fmt12(j.start))}–${esc(fmt12(j.end))}</b> ${esc(j.customer)} <span>${esc(j.service)}${j.ceramic ? " · ✨ ceramic" : ""}</span></div>`).join("")
+            ? day.jobs.map(j => `<div class="sch-pjob${j.ceramic ? " ceramic" : ""}"><b>${esc(fmt12(j.start))}–${esc(fmt12(j.end))}</b> ${esc(j.customer)} <span>${esc(j.service)}${j.ceramic ? " · ceramic" : ""}</span></div>`).join("")
             : '<div class="sch-pjob empty">No jobs booked this day</div>'}</div>
           ${data.people.map(p => {
             const a = day.availability[p.id] || { status: "unknown" };
@@ -5932,7 +6074,7 @@ function renderView(viewName) {
               <div class="sch-phead"><i style="background:${colorOf(p.id)}"></i><strong>${esc(p.full_name)}</strong><span class="sch-pav ${avCls(a)}">${esc(avTxt(a))}</span></div>
               ${mine.map(s => `<button type="button" class="sch-pshift${s.published ? "" : " draft"}" data-pshift="${esc(s.id)}" style="border-left-color:${colorOf(p.id)}">
                   <b>${esc(fmt12(s.start_time))} – ${esc(fmt12(s.end_time))}</b>${s.published ? "" : " <span>draft</span>"}${s.notes ? `<em>${esc(s.notes)}</em>` : ""}
-                  ${s.warnings.length ? `<div class="wr">⚠ ${esc(s.warnings.join(" · "))}</div>` : ""}</button>`).join("")}
+                  ${s.warnings.length ? `<div class="wr">${icon("alert", 13)} ${esc(s.warnings.join(" · "))}</div>` : ""}</button>`).join("")}
               <button type="button" class="sch-btn sch-padd" data-padd="${esc(p.id)}" data-date="${esc(day.date)}">+ Add shift</button>
             </div>`;
           }).join("") || '<div class="sch-pjob empty">Add employees under Team first.</div>'}
@@ -5973,14 +6115,14 @@ function renderView(viewName) {
           <button type="button" class="sch-btn" data-next>›</button>
         </div>
         <div class="sch-bar">
-          <button type="button" class="sch-btn" data-auto title="Draft a shift covering each day's jobs for everyone who's available">⚡ Auto-fill from jobs</button>
+          <button type="button" class="sch-btn" data-auto title="Draft a shift covering each day's jobs for everyone who's available">${icon("zap", 16)} Auto-fill from jobs</button>
           <button type="button" class="sch-btn" data-copy title="Copy last week's shifts into this week as drafts">Copy last week</button>
           <span style="flex:1"></span>
           ${publishArmed
             ? `<span style="font-size:14px;">Email the crew their schedule?</span>
                <button type="button" class="sch-btn primary" data-publish-yes>Yes, publish ${d.drafts}</button>
                <button type="button" class="sch-btn" data-publish-no>Cancel</button>`
-            : `<button type="button" class="sch-btn ${d.drafts ? "primary" : ""}" data-publish ${d.drafts ? "" : "disabled"}>${d.drafts ? `Publish ${d.drafts} draft${d.drafts === 1 ? "" : "s"}` : "✓ All published"}</button>`}
+            : `<button type="button" class="sch-btn ${d.drafts ? "primary" : ""}" data-publish ${d.drafts ? "" : "disabled"}>${d.drafts ? `Publish ${d.drafts} draft${d.drafts === 1 ? "" : "s"}` : "All published"}</button>`}
         </div>
         ${d.time_off.length ? `<div class="sch-panel"><strong>Time-off requests</strong>${d.time_off.map(t => `
           <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;">
@@ -6005,12 +6147,12 @@ function renderView(viewName) {
             <div class="sch-day">
               <div class="sch-head ${day.date === d.today ? "today" : ""}" title="${esc(day.warnings.join(" · "))}">
                 <strong>${esc(dayHead(day.date))}</strong>
-                <span style="opacity:.8;">${day.jobs.length ? `${day.jobs.length} job${day.jobs.length === 1 ? "" : "s"}` : "No jobs"}${day.jobs.some(j => j.ceramic) ? ' · <b style="color:#ffc65c;">✨ Ceramic</b>' : ""}${day.pending_requests ? ` · +${day.pending_requests} pending` : ""}</span>
-                ${day.warnings.slice(0, 1).map(w => `<span class="sch-warn">⚠ ${esc(w)}</span>`).join("")}
+                <span style="opacity:.8;">${day.jobs.length ? `${day.jobs.length} job${day.jobs.length === 1 ? "" : "s"}` : "No jobs"}${day.jobs.some(j => j.ceramic) ? ` · <b style="color:#ffc65c;">${icon("sparkle", 12)} Ceramic</b>` : ""}${day.pending_requests ? ` · +${day.pending_requests} pending` : ""}</span>
+                ${day.warnings.slice(0, 1).map(w => `<span class="sch-warn">${icon("alert", 13)} ${esc(w)}</span>`).join("")}
                 <div class="sch-lanehead">${lanes.map(p => `<span style="background:${colorOf(p.id)}33;color:${colorOf(p.id)}" title="${esc(p.full_name)}">${esc(p.full_name.split(" ").map(w => w[0]).join("").slice(0, 2))}</span>`).join("")}</div>
               </div>
               <div class="sch-body" data-date="${day.date}" style="height:${hoursH}px;">
-                ${day.jobs.map(j => `<div class="sch-job ${j.ceramic ? "ceramic" : ""}" style="top:${minToY(toMin(j.start))}px;height:${Math.max(14, minToY(toMin(j.end)) - minToY(toMin(j.start)))}px;" title="${esc(j.customer)} · ${esc(j.service)}"><span>${j.ceramic ? "✨ " : ""}Job ${esc(fmt12(j.start))}–${esc(fmt12(j.end))} · ${esc(j.customer)}</span></div>`).join("")}
+                ${day.jobs.map(j => `<div class="sch-job ${j.ceramic ? "ceramic" : ""}" style="top:${minToY(toMin(j.start))}px;height:${Math.max(14, minToY(toMin(j.end)) - minToY(toMin(j.start)))}px;" title="${esc(j.customer)} · ${esc(j.service)}"><span>${j.ceramic ? icon("sparkle", 11) + " " : ""}Job ${esc(fmt12(j.start))}–${esc(fmt12(j.end))} · ${esc(j.customer)}</span></div>`).join("")}
                 ${lanes.map((p, i) => {
                   const a = day.availability[p.id] || { status: "unknown" };
                   const shades = a.status === "partial"
@@ -6020,8 +6162,8 @@ function renderView(viewName) {
                 }).join("")}
                 ${day.shifts.map(s => {
                   const i = Math.max(0, lanes.findIndex(p => p.id === s.staff_id));
-                  return `<div class="sch-shift ${s.published ? "" : "draft"}" data-shift="${esc(s.id)}" style="left:calc(${i * lanePct}% + 2px);width:calc(${lanePct}% - 4px);top:${minToY(toMin(s.start_time))}px;height:${minToY(toMin(s.end_time)) - minToY(toMin(s.start_time))}px;background-color:${colorOf(s.staff_id)};" title="${esc(nameOf(s.staff_id))}${s.warnings.length ? " · ⚠ " + esc(s.warnings.join(" · ")) : ""}">
-                    <div class="sch-h top"></div><b>${esc(fmt12(s.start_time))}–${esc(fmt12(s.end_time))}</b>${esc(nameOf(s.staff_id).split(" ")[0])}${s.published ? "" : " · draft"}${s.warnings.length ? `<div class="wr">⚠ ${esc(s.warnings[0])}</div>` : ""}<div class="sch-h bot"></div></div>`;
+                  return `<div class="sch-shift ${s.published ? "" : "draft"}" data-shift="${esc(s.id)}" style="left:calc(${i * lanePct}% + 2px);width:calc(${lanePct}% - 4px);top:${minToY(toMin(s.start_time))}px;height:${minToY(toMin(s.end_time)) - minToY(toMin(s.start_time))}px;background-color:${colorOf(s.staff_id)};" title="${esc(nameOf(s.staff_id))}${s.warnings.length ? " · Warning: " + esc(s.warnings.join(" · ")) : ""}">
+                    <div class="sch-h top"></div><b>${esc(fmt12(s.start_time))}–${esc(fmt12(s.end_time))}</b>${esc(nameOf(s.staff_id).split(" ")[0])}${s.published ? "" : " · draft"}${s.warnings.length ? `<div class="wr">${icon("alert", 13)} ${esc(s.warnings[0])}</div>` : ""}<div class="sch-h bot"></div></div>`;
                 }).join("")}
               </div>
             </div>`).join("")}
@@ -6116,22 +6258,23 @@ function renderView(viewName) {
   // TIME CLOCK (weekly hours, corrections, who is on the clock)
   // =========================
   if (viewName === "timeclock") {
-    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-    const inputStyle = "padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:white;font-family:inherit;";
+    // Week pager, who's on the clock, then one card per person with tappable entry rows
+    // (tap a row to correct or void it; a reason is required and kept in the edit history).
+    const esc = adminBookEscapeHtml;
     const pad = (n) => String(n).padStart(2, "0");
     const toLocalInput = (iso) => { if (!iso) return ""; const d = new Date(iso); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
     const fromLocalInput = (v) => (v ? new Date(v).toISOString() : null);
     const fmtDay = (iso) => new Date(iso).toLocaleDateString([], { weekday: "short", month: "short", day: "numeric" });
     const fmtTime = (iso) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
     const hrs = (a, b) => ((Date.parse(b || new Date().toISOString()) - Date.parse(a)) / 3600000).toFixed(2);
-    const methodBadge = (e) => e.verify_method === "gps"
-      ? `<span title="${esc(e.in_site || "")}${e.in_distance_m != null ? " · " + e.in_distance_m + " m away" : ""}">📍 GPS</span>`
-      : e.verify_method === "pin" ? `<span style="color:#ffc65c;">🔑 PIN${e.verified_by_name ? " · " + esc(e.verified_by_name) : ""}</span>`
-      : `<span style="opacity:0.8;">✍️ Added by manager</span>`;
+    const method = (e) => e.verify_method === "gps"
+      ? `${icon("map", 13)} GPS${e.in_distance_m != null ? ` · ${e.in_distance_m} m from site` : ""}`
+      : e.verify_method === "pin" ? `<span class="ux-warn-text">${icon("user", 13)} Manager PIN${e.verified_by_name ? " · " + esc(e.verified_by_name) : ""}</span>`
+      : `${icon("plus", 13)} Added by manager`;
 
     let weekDate = null;
     const wrapper = document.createElement("div");
-    wrapper.style.cssText = "display:flex;flex-direction:column;gap:14px;";
+    wrapper.className = "ux-page";
     viewContainer.appendChild(wrapper);
 
     async function call(method, url, body) {
@@ -6143,24 +6286,29 @@ function renderView(viewName) {
 
     function entryRow(e) {
       const row = document.createElement("div");
-      row.style.cssText = "display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.08);font-size:14px;";
+      row.className = "ux-entry";
       row.innerHTML = `
-        <span style="min-width:96px;font-weight:600;">${esc(fmtDay(e.clock_in_at))}</span>
-        <span style="min-width:150px;">${esc(fmtTime(e.clock_in_at))} → ${e.clock_out_at ? esc(fmtTime(e.clock_out_at)) : '<strong style="color:#6fd39a;">on the clock</strong>'}</span>
-        <span style="min-width:64px;">${hrs(e.clock_in_at, e.clock_out_at)} h</span>
-        <span style="flex:1;min-width:120px;">${methodBadge(e)}${e.edits ? ` <span style="opacity:0.6;">· edited ${e.edits}×</span>` : ""}${e.notes ? ` <span style="opacity:0.7;">· ${esc(e.notes)}</span>` : ""}</span>
-        <button type="button" class="moon-tab" data-edit>Edit</button>
-        <button type="button" class="moon-tab" data-void title="Void entry">✕</button>
-        <form data-form style="flex-basis:100%;display:none;flex-wrap:wrap;gap:6px;align-items:center;">
-          <label style="font-size:12px;">In <input type="datetime-local" name="in" value="${toLocalInput(e.clock_in_at)}" style="${inputStyle}" required></label>
-          <label style="font-size:12px;">Out <input type="datetime-local" name="out" value="${toLocalInput(e.clock_out_at)}" style="${inputStyle}"></label>
-          <input name="notes" placeholder="Note" value="${esc(e.notes || "")}" style="${inputStyle}flex:1;min-width:120px;">
-          <input name="reason" placeholder="Reason for change (required)" style="${inputStyle}flex:1;min-width:160px;" required>
-          <button type="submit" class="moon-tab">Save</button>
-          <button type="button" class="moon-tab" data-void-go style="border-color:rgba(255,107,107,0.6);color:#ff9a9a;">Void entry</button>
+        <button type="button" class="ux-entry-head" data-toggle>
+          <span class="ux-entry-main"><strong>${esc(fmtDay(e.clock_in_at))}</strong>
+            <span>${esc(fmtTime(e.clock_in_at))} – ${e.clock_out_at ? esc(fmtTime(e.clock_out_at)) : '<b class="ux-ok-text">on the clock</b>'}</span>
+            <small>${method(e)}${e.edits ? ` · edited ${e.edits}×` : ""}${e.notes ? ` · ${esc(e.notes)}` : ""}</small></span>
+          <span class="ux-entry-hours">${hrs(e.clock_in_at, e.clock_out_at)} h</span>
+          <span class="ux-chev">${icon("chevronDown", 16)}</span>
+        </button>
+        <form class="ux-form" data-form hidden>
+          <div class="ux-form-row">
+            <label>Clock in<input type="datetime-local" name="in" value="${toLocalInput(e.clock_in_at)}" required></label>
+            <label>Clock out<input type="datetime-local" name="out" value="${toLocalInput(e.clock_out_at)}"></label>
+          </div>
+          <label>Note<input name="notes" value="${esc(e.notes || "")}" placeholder="Optional"></label>
+          <label>Reason for the change<input name="reason" placeholder="Required, e.g. forgot to clock out" required></label>
+          <div class="ux-form-actions">
+            <button type="submit" class="ux-btn ux-btn-primary">Save changes</button>
+            <button type="button" class="ux-btn ux-btn-danger" data-void-go>Void entry</button>
+          </div>
         </form>`;
       const form = row.querySelector("[data-form]");
-      row.querySelector("[data-edit]").onclick = () => { form.style.display = form.style.display === "none" ? "flex" : "none"; };
+      row.querySelector("[data-toggle]").onclick = () => { form.hidden = !form.hidden; row.classList.toggle("open", !form.hidden); };
       form.onsubmit = async (ev) => {
         ev.preventDefault();
         const f = Object.fromEntries(new FormData(form).entries());
@@ -6169,11 +6317,6 @@ function renderView(viewName) {
           showAdminBanner("Entry updated.", "success");
           load();
         } catch (err) { showAdminBanner(err.message, "error"); }
-      };
-      // Voiding uses the same form so the reason is typed on the page (no browser pop-ups).
-      row.querySelector("[data-void]").onclick = () => {
-        form.style.display = "flex";
-        form.elements.reason.focus();
       };
       form.querySelector("[data-void-go]").onclick = async () => {
         const reason = form.elements.reason.value.trim();
@@ -6188,28 +6331,28 @@ function renderView(viewName) {
       const s = p.summary;
       const rate = p.staff.hourly_rate != null ? Number(p.staff.hourly_rate) : null;
       const est = rate != null ? rate * s.regularHours + rate * 1.5 * s.overtimeHours : null;
-      const card = document.createElement("div");
-      card.className = "discount-code-card expanded";
-      card.style.padding = "14px";
+      const card = document.createElement("section");
+      card.className = "ux-card";
       card.innerHTML = `
-        <div style="display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline;">
-          <strong style="font-size:16px;">${esc(p.staff.full_name)}</strong>
-          <span>${s.hours.toFixed(2)} hrs${s.overtimeHours ? ` <span style="color:#ffc65c;">(${s.overtimeHours.toFixed(2)} OT)</span>` : ""}</span>
-          ${est != null ? `<span style="opacity:0.8;">≈ $${est.toFixed(2)} before tips</span>` : `<span style="opacity:0.6;">No pay rate set</span>`}
-          ${s.open ? `<span style="color:#6fd39a;font-weight:600;">● On the clock</span>` : ""}
-        </div>
-        ${s.flags.length ? `<ul style="margin:8px 0 0;padding-left:18px;color:#ffc65c;font-size:13px;">${s.flags.map(f => `<li>${esc(f.message)}</li>`).join("")}</ul>` : ""}
-        <div data-entries style="margin-top:6px;"></div>
-        <details style="margin-top:8px;"><summary style="cursor:pointer;font-size:13px;">Add a missed entry</summary>
-          <form data-add style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px;">
-            <label style="font-size:12px;">In <input type="datetime-local" name="in" style="${inputStyle}" required></label>
-            <label style="font-size:12px;">Out <input type="datetime-local" name="out" style="${inputStyle}" required></label>
-            <input name="reason" placeholder="Reason (e.g. phone died)" style="${inputStyle}flex:1;min-width:160px;" required>
-            <button type="submit" class="moon-tab">Add</button>
+        <header class="ux-card-head">
+          <div><h3>${esc(p.staff.full_name)}${s.open ? ' <span class="ux-pill completed plain">On the clock</span>' : ""}</h3>
+            <small>${est != null ? `≈ $${est.toFixed(2)} before tips` : "No pay rate set"}</small></div>
+          <div class="ux-card-figure">${s.hours.toFixed(2)}<span>hrs${s.overtimeHours ? ` · ${s.overtimeHours.toFixed(2)} OT` : ""}</span></div>
+        </header>
+        ${s.flags.length ? `<div class="ux-flags">${s.flags.map(f => `<div>${icon("alert", 14)} ${esc(f.message)}</div>`).join("")}</div>` : ""}
+        <div data-entries></div>
+        <details class="ux-more"><summary>Add a missed entry</summary>
+          <form class="ux-form" data-add>
+            <div class="ux-form-row">
+              <label>Clock in<input type="datetime-local" name="in" required></label>
+              <label>Clock out<input type="datetime-local" name="out" required></label>
+            </div>
+            <label>Reason<input name="reason" placeholder="e.g. phone died" required></label>
+            <div class="ux-form-actions"><button type="submit" class="ux-btn ux-btn-primary">Add entry</button></div>
           </form>
         </details>`;
       const list = card.querySelector("[data-entries]");
-      if (!p.entries.length) list.innerHTML = `<div style="opacity:0.6;font-size:14px;padding:6px 0;">No time this week.</div>`;
+      if (!p.entries.length) list.innerHTML = `<div class="ux-empty" style="padding:12px;">No time this week.</div>`;
       p.entries.forEach(e => list.appendChild(entryRow(e)));
       card.querySelector("[data-add]").onsubmit = async (ev) => {
         ev.preventDefault();
@@ -6224,33 +6367,31 @@ function renderView(viewName) {
     }
 
     async function load() {
-      wrapper.innerHTML = "<p style='margin:0;'>Loading…</p>";
+      if (!wrapper.childElementCount) wrapper.innerHTML = '<div class="ux-empty">Loading…</div>';
       try {
         const d = await call("GET", `/api/admin-time${weekDate ? "?week=" + weekDate : ""}`);
         weekDate = d.week.start;
-        const shift = (days) => { const x = new Date(d.week.start + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + days); weekDate = x.toISOString().slice(0, 10); load(); };
         const total = d.people.reduce((t, p) => t + p.summary.hours, 0);
-        wrapper.innerHTML = `
-          <div class="admin-filters" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;">
-            <h3 style="margin:0;flex:1 1 auto;">Time clock <span class="booking-summary-meta">· ${esc(d.week.start)} – ${esc(d.week.end)} · ${total.toFixed(2)} hrs total</span></h3>
-            <button type="button" class="moon-tab" data-prev>‹ Prev week</button>
-            <button type="button" class="moon-tab" data-this>This week</button>
-            <button type="button" class="moon-tab" data-next>Next week ›</button>
+        wrapper.innerHTML = "";
+        wrapper.appendChild(uxPager({
+          label: uxWeekLabel(d.week.start, d.week.end),
+          onPrev: () => { weekDate = uxShiftDate(d.week.start, -7); load(); },
+          onNext: () => { weekDate = uxShiftDate(d.week.start, 7); load(); },
+          onReset: () => { weekDate = null; load(); },
+          resetLabel: "This week"
+        }));
+        wrapper.insertAdjacentHTML("beforeend", `
+          <div class="ux-stats ux-stats-2">
+            <div class="ux-stat"><span>Hours this week</span><strong>${total.toFixed(1)}</strong></div>
+            <div class="ux-stat"><span>On the clock now</span><strong>${d.on_clock.length}</strong></div>
           </div>
-          <div class="discount-code-card expanded" style="padding:14px;">
-            <strong>On the clock now:</strong>
-            ${d.on_clock.length ? d.on_clock.map(o => `<span style="margin-left:10px;color:#6fd39a;">● ${esc(o.full_name)} since ${esc(fmtTime(o.clock_in_at))}${o.verify_method === "pin" ? " (PIN)" : ""}</span>`).join("") : '<span style="opacity:0.6;margin-left:8px;">Nobody</span>'}
-          </div>
-          <div data-people style="display:flex;flex-direction:column;gap:10px;"></div>
-          <p style="margin:0;font-size:12px;opacity:0.65;">Pay weeks run Monday–Sunday. Estimates use each person's hourly rate with 1.5× over 40 hours; tips and reimbursements are added in payroll.</p>`;
-        wrapper.querySelector("[data-prev]").onclick = () => shift(-7);
-        wrapper.querySelector("[data-next]").onclick = () => shift(7);
-        wrapper.querySelector("[data-this]").onclick = () => { weekDate = null; load(); };
-        const peopleEl = wrapper.querySelector("[data-people]");
-        if (!d.people.length) peopleEl.innerHTML = "<p style='margin:0;opacity:0.7;'>No team members yet — add them under Team.</p>";
-        d.people.forEach(p => peopleEl.appendChild(personCard(p)));
+          ${d.on_clock.length ? `<div class="ux-list" style="margin-bottom:16px;">${d.on_clock.map(o => `
+            <div class="ux-list-item ux-tone-ok"><span class="ux-list-icon">${icon("clock", 20)}</span><span class="ux-list-label"><strong>${esc(o.full_name)}</strong><small>since ${esc(fmtTime(o.clock_in_at))}${o.verify_method === "pin" ? " · approved with PIN" : ""}</small></span></div>`).join("")}</div>` : ""}`);
+        if (!d.people.length) wrapper.insertAdjacentHTML("beforeend", '<div class="ux-empty">No team members yet — add them under Team.</div>');
+        d.people.forEach(p => wrapper.appendChild(personCard(p)));
+        wrapper.insertAdjacentHTML("beforeend", '<p class="ux-footnote">Weeks run Monday–Sunday. Estimates use each person\'s hourly rate with 1.5× over 40 hours; tips and pay-backs are added in Payroll.</p>');
       } catch (err) {
-        wrapper.innerHTML = `<p style="margin:0;color:#ff8a8a;">${esc(err.message)}</p>`;
+        wrapper.innerHTML = `<div class="ux-empty ux-bad-text">${esc(err.message)}</div>`;
       }
     }
     load();
@@ -6261,23 +6402,20 @@ function renderView(viewName) {
   // JOB CHECKLISTS (what the crew must tick off per service)
   // =========================
   if (viewName === "checklists") {
-    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-    const inputStyle = "padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:white;font-family:inherit;";
+    // Steps read as a list (text + small tags); tap a step to edit it. Each group has a
+    // collapsed "Add a step" form at the bottom.
+    const esc = adminBookEscapeHtml;
     const SCOPES = [
-      { key: "general", label: "Every job (arrival & handoff)", hint: "Order 90+ shows at the end of the job." },
-      { key: "interior", label: "Interior (Interior, Combined, Monthly)", hint: "" },
-      { key: "exterior", label: "Exterior (Exterior, Combined, Monthly)", hint: "" },
-      { key: "ceramic", label: "Ceramic coating jobs", hint: "Added when a booking is marked Ceramic." }
+      { key: "general", label: "Every job", hint: "Arrival and handoff. Steps numbered 90+ show at the end of the job." },
+      { key: "interior", label: "Interior", hint: "Interior, Combined and Monthly services." },
+      { key: "exterior", label: "Exterior", hint: "Exterior, Combined and Monthly services." },
+      { key: "ceramic", label: "Ceramic coating", hint: "Added when a booking is marked Ceramic." }
     ];
     const wrapper = document.createElement("div");
-    wrapper.style.display = "flex";
-    wrapper.style.flexDirection = "column";
-    wrapper.style.gap = "14px";
+    wrapper.className = "ux-page";
     wrapper.innerHTML = `
-      <div class="admin-filters"><h3 style="margin:0;">Job checklists</h3>
-        <p style="margin:6px 0 0;font-size:13px;opacity:0.75;">The crew must tick every required step and upload before/after photos before they can complete a job.
-        “Level 2+” steps only appear on Level 2 services. Changes apply to jobs not yet completed.</p></div>
-      <div data-list><p style="margin:0;">Loading…</p></div>`;
+      <p class="ux-footnote" style="font-size:14px;">The crew must tick every required step and upload before and after photos before they can complete a job. Level 2+ steps only appear on Level 2 services.</p>
+      <div data-list class="ux-page"><div class="ux-empty">Loading…</div></div>`;
     viewContainer.appendChild(wrapper);
     const listEl = wrapper.querySelector("[data-list]");
 
@@ -6290,28 +6428,39 @@ function renderView(viewName) {
 
     function stepRow(s) {
       const row = document.createElement("div");
-      row.style.cssText = "display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:10px;";
+      row.className = "ux-entry";
       row.innerHTML = `
-        <input type="number" value="${s.step_order}" title="Order" style="${inputStyle}width:56px;" data-f="step_order" />
-        <input type="text" value="${esc(s.text)}" style="${inputStyle}flex:1 1 220px;min-width:0;" data-f="text" />
-        <select style="${inputStyle}" data-f="min_level"><option value="1" ${s.min_level === 1 ? "selected" : ""}>All levels</option><option value="2" ${s.min_level === 2 ? "selected" : ""}>Level 2+</option></select>
-        <label style="font-size:12px;display:flex;gap:4px;align-items:center;"><input type="checkbox" data-f="required" style="width:auto;" ${s.required ? "checked" : ""} />Req.</label>
-        <button type="button" class="moon-tab" data-save>Save</button>
-        <button type="button" class="moon-tab" data-del title="Remove">✕</button>`;
-      const val = () => ({
-        id: s.id,
-        step_order: row.querySelector('[data-f="step_order"]').value,
-        text: row.querySelector('[data-f="text"]').value,
-        min_level: row.querySelector('[data-f="min_level"]').value,
-        required: row.querySelector('[data-f="required"]').checked
-      });
-      row.querySelector("[data-save]").onclick = async () => {
-        try { await call("PATCH", "/api/admin-checklists", val()); showAdminBanner("Step saved.", "success"); load(); }
-        catch (err) { showAdminBanner(err.message, "error"); }
+        <button type="button" class="ux-entry-head" data-toggle>
+          <span class="ux-entry-main"><span>${esc(s.text)}</span>
+            <small>Step ${s.step_order}${s.min_level === 2 ? " · Level 2+ only" : ""}${s.required ? "" : " · optional"}</small></span>
+          <span></span>
+          <span class="ux-chev">${icon("chevronDown", 16)}</span>
+        </button>
+        <form class="ux-form" hidden>
+          <label>Step<input name="text" value="${esc(s.text)}" required></label>
+          <div class="ux-form-row">
+            <label>Order<input name="step_order" type="number" value="${s.step_order}"></label>
+            <label>Shows on<select name="min_level"><option value="1" ${s.min_level === 1 ? "selected" : ""}>All levels</option><option value="2" ${s.min_level === 2 ? "selected" : ""}>Level 2+ only</option></select></label>
+          </div>
+          <label class="ux-check"><input type="checkbox" name="required" ${s.required ? "checked" : ""}> Required to complete the job</label>
+          <div class="ux-form-actions">
+            <button type="submit" class="ux-btn ux-btn-primary">Save step</button>
+            <button type="button" class="ux-btn ux-btn-danger" data-del>Remove</button>
+          </div>
+        </form>`;
+      const form = row.querySelector("form");
+      row.querySelector("[data-toggle]").onclick = () => { form.hidden = !form.hidden; row.classList.toggle("open", !form.hidden); };
+      form.onsubmit = async (e) => {
+        e.preventDefault();
+        try {
+          await call("PATCH", "/api/admin-checklists", { id: s.id, text: form.elements.text.value, step_order: form.elements.step_order.value, min_level: form.elements.min_level.value, required: form.elements.required.checked });
+          showAdminBanner("Step saved.", "success");
+          load();
+        } catch (err) { showAdminBanner(err.message, "error"); }
       };
-      row.querySelector("[data-del]").onclick = async (ev) => {
+      form.querySelector("[data-del]").onclick = async (ev) => {
         const btn = ev.currentTarget;
-        if (!btn.dataset.armed) { btn.dataset.armed = "1"; btn.textContent = "Remove?"; return; }
+        if (!btn.dataset.armed) { btn.dataset.armed = "1"; btn.textContent = "Confirm remove"; return; }
         try { await call("DELETE", `/api/admin-checklists?id=${encodeURIComponent(s.id)}`); load(); }
         catch (err) { showAdminBanner(err.message, "error"); }
       };
@@ -6323,29 +6472,31 @@ function renderView(viewName) {
         const { steps } = await call("GET", "/api/admin-checklists");
         listEl.innerHTML = "";
         for (const scope of SCOPES) {
-          const card = document.createElement("div");
-          card.className = "discount-code-card expanded";
-          card.style.padding = "14px";
-          card.innerHTML = `<div style="font-weight:700;margin-bottom:4px;">${esc(scope.label)}</div>
-            ${scope.hint ? `<div style="font-size:12px;opacity:0.7;margin-bottom:8px;">${esc(scope.hint)}</div>` : ""}`;
-          steps.filter(s => s.scope === scope.key).sort((a, b) => a.step_order - b.step_order).forEach(s => card.appendChild(stepRow(s)));
-          const add = document.createElement("form");
-          add.style.cssText = "display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;";
-          add.innerHTML = `<input name="text" placeholder="Add a step…" style="${inputStyle}flex:1;min-width:180px;" required />
-            <select name="min_level" style="${inputStyle}"><option value="1">All levels</option><option value="2">Level 2+</option></select>
-            <button type="submit" class="moon-tab">Add</button>`;
-          add.onsubmit = async (e) => {
+          const mine = steps.filter(s => s.scope === scope.key).sort((a, b) => a.step_order - b.step_order);
+          const card = document.createElement("section");
+          card.className = "ux-card";
+          card.innerHTML = `
+            <div class="ux-card-head"><div><h3>${esc(scope.label)}</h3><small>${esc(scope.hint)}</small></div><div class="ux-card-figure">${mine.length}<span>steps</span></div></div>
+            <div data-steps></div>
+            <details class="ux-more"><summary>Add a step</summary>
+              <form class="ux-form" data-add>
+                <label>Step<input name="text" placeholder="e.g. Clean door jambs" required></label>
+                <label>Shows on<select name="min_level"><option value="1">All levels</option><option value="2">Level 2+ only</option></select></label>
+                <div class="ux-form-actions"><button type="submit" class="ux-btn ux-btn-primary">Add step</button></div>
+              </form>
+            </details>`;
+          mine.forEach(s => card.querySelector("[data-steps]").appendChild(stepRow(s)));
+          card.querySelector("[data-add]").onsubmit = async (e) => {
             e.preventDefault();
-            const f = Object.fromEntries(new FormData(add).entries());
-            const maxOrder = Math.max(0, ...steps.filter(s => s.scope === scope.key && s.step_order < 90).map(s => s.step_order));
-            try { await call("POST", "/api/admin-checklists", { scope: scope.key, text: f.text, min_level: f.min_level, step_order: maxOrder + 10 }); load(); }
+            const f = e.target;
+            const maxOrder = Math.max(0, ...mine.filter(s => s.step_order < 90).map(s => s.step_order));
+            try { await call("POST", "/api/admin-checklists", { scope: scope.key, text: f.elements.text.value, min_level: f.elements.min_level.value, step_order: maxOrder + 10 }); load(); }
             catch (err) { showAdminBanner(err.message, "error"); }
           };
-          card.appendChild(add);
           listEl.appendChild(card);
         }
       } catch (err) {
-        listEl.innerHTML = `<p style="margin:0;color:#ff8a8a;">${esc(err.message)}</p>`;
+        listEl.innerHTML = `<div class="ux-empty ux-bad-text">${esc(err.message)}</div>`;
       }
     }
     load();
@@ -6375,8 +6526,8 @@ function renderView(viewName) {
     toolbar.style.gap = "10px";
     toolbar.style.alignItems = "center";
     toolbar.innerHTML = `
-      <h3 style="margin:0;flex:1 1 auto;">Team <span id="teamCount" class="booking-summary-meta"></span></h3>
-      <button type="button" id="teamAddBtn" class="moon-tab">Add team member</button>
+      <span id="teamCount" class="admin-book-muted" style="flex:1 1 auto;"></span>
+      <button type="button" id="teamAddBtn" class="ux-btn ux-btn-primary">${icon("plus", 16)} Add team member</button>
     `;
     wrapper.appendChild(toolbar);
 
@@ -6444,7 +6595,7 @@ function renderView(viewName) {
 
     function renderTeam() {
       const active = staffList.filter(p => p.active).length;
-      toolbar.querySelector("#teamCount").textContent = `· ${active} active`;
+      toolbar.querySelector("#teamCount").textContent = `${active} active ${active === 1 ? "person" : "people"}`;
       list.innerHTML = "";
       if (staffList.length === 0) {
         list.innerHTML = "<p style='margin:0;color:rgba(255,255,255,0.6);'>No team accounts yet. Start by adding yourself as Owner, then your managers and crew.</p>";
@@ -6540,9 +6691,9 @@ function renderView(viewName) {
     toolbar.style.gap = "10px";
     toolbar.style.alignItems = "center";
     toolbar.innerHTML = `
-      <h3 style="margin:0;flex:1 1 auto;">Waitlist <span id="waitlistCount" class="booking-summary-meta"></span></h3>
-      <label style="display:flex;align-items:center;gap:6px;font-size:14px;"><input type="checkbox" id="waitlistHideContacted" style="width:auto;" /> Hide contacted</label>
-      <button type="button" id="waitlistExportBtn" class="moon-tab">Export CSV</button>
+      <span id="waitlistCount" class="admin-book-muted" style="flex:1 1 100%;"></span>
+      <label class="ux-check" style="flex:1 1 auto;"><input type="checkbox" id="waitlistHideContacted" /> Hide contacted</label>
+      <button type="button" id="waitlistExportBtn" class="ux-btn ux-btn-quiet">Export CSV</button>
     `;
     wrapper.appendChild(toolbar);
 
@@ -6558,7 +6709,7 @@ function renderView(viewName) {
       const hideContacted = toolbar.querySelector("#waitlistHideContacted").checked;
       const visible = hideContacted ? entries.filter(e => !e.contacted) : entries;
       const open = entries.filter(e => !e.contacted).length;
-      toolbar.querySelector("#waitlistCount").textContent = `· ${entries.length} total, ${open} to contact`;
+      toolbar.querySelector("#waitlistCount").textContent = `${entries.length} on the waitlist · ${open} still to contact`;
       list.innerHTML = "";
       if (visible.length === 0) {
         list.innerHTML = "<p style='margin:0;color:rgba(255,255,255,0.6);'>No waitlist sign-ups yet.</p>";
@@ -6642,13 +6793,9 @@ function renderView(viewName) {
     wrapper.style.flexDirection = "column";
     wrapper.style.gap = "24px";
 
-    const createSection = document.createElement("div");
-    createSection.className = "discount-create-section";
-    createSection.style.padding = "18px";
-    createSection.style.borderRadius = "14px";
-    createSection.style.border = "1px solid rgba(255,255,255,0.2)";
-    createSection.style.background = "rgba(111,147,196,0.15)";
-    createSection.innerHTML = "<h3 style='margin-top:0;'>Create discount code</h3>";
+    const createSection = document.createElement("details");
+    createSection.className = "discount-create-section ux-card ux-more";
+    createSection.innerHTML = `<summary>${icon("plus", 16)} Create a discount code</summary>`;
     const form = document.createElement("form");
     form.className = "admin-filters discount-create-form";
     form.style.display = "flex";
@@ -6907,27 +7054,28 @@ function renderView(viewName) {
     navRow.style.flexWrap = "wrap";
     const prevBtn = document.createElement("button");
     prevBtn.type = "button";
-    prevBtn.className = "moon-tab";
-    prevBtn.textContent = "← Prev month";
+    prevBtn.className = "ux-icon-btn";
+    prevBtn.setAttribute("aria-label", "Previous month");
+    prevBtn.innerHTML = icon("chevronLeft", 18);
     const nextBtn = document.createElement("button");
     nextBtn.type = "button";
-    nextBtn.className = "moon-tab";
-    nextBtn.textContent = "Next month →";
+    nextBtn.className = "ux-icon-btn";
+    nextBtn.setAttribute("aria-label", "Next month");
+    nextBtn.innerHTML = icon("chevronRight", 18);
     const monthLabel = document.createElement("span");
     monthLabel.style.fontWeight = "700";
-    monthLabel.style.minWidth = "160px";
+    monthLabel.className = "ux-pager-label";
     const multiSelectBtn = document.createElement("button");
     multiSelectBtn.type = "button";
-    multiSelectBtn.className = "moon-tab";
-    multiSelectBtn.textContent = "Multi-select";
-    multiSelectBtn.style.marginLeft = "8px";
+    multiSelectBtn.className = "ux-btn ux-btn-quiet";
+    multiSelectBtn.textContent = "Select several days";
     function updateMultiSelectButton() {
       if (multiSelectMode) {
         multiSelectBtn.textContent = "Exit multi-select";
         multiSelectBtn.style.background = "rgba(76,175,80,0.5)";
         multiSelectBtn.style.borderColor = "rgba(76,175,80,0.8)";
       } else {
-        multiSelectBtn.textContent = "Multi-select";
+        multiSelectBtn.textContent = "Select several days";
         multiSelectBtn.style.background = "";
         multiSelectBtn.style.borderColor = "";
       }
@@ -6936,10 +7084,12 @@ function renderView(viewName) {
       multiSelectMode = !multiSelectMode;
       updateMultiSelectButton();
     };
-    navRow.appendChild(prevBtn);
-    navRow.appendChild(monthLabel);
-    navRow.appendChild(nextBtn);
-    navRow.appendChild(multiSelectBtn);
+    // Same ‹ month › switcher as the other tools.
+    navRow.className = "ux-pager";
+    const pagerNav = document.createElement("div");
+    pagerNav.className = "ux-pager-nav";
+    pagerNav.append(prevBtn, monthLabel, nextBtn);
+    navRow.append(pagerNav, multiSelectBtn);
     wrapper.appendChild(navRow);
 
     const bulkRow = document.createElement("div");
@@ -7034,7 +7184,7 @@ function renderView(viewName) {
     multiSelectTip.style.fontSize = "13px";
     multiSelectTip.style.color = "rgba(255,255,255,0.75)";
     multiSelectTip.style.margin = "0 0 8px 0";
-    multiSelectTip.textContent = "Tip: Ctrl/Cmd-click to select multiple dates.";
+    multiSelectTip.textContent = "Tap a day to block time or turn on solo mode. Use “Select several days” to change many at once.";
     wrapper.appendChild(multiSelectTip);
 
     const gridEl = document.createElement("div");
@@ -7475,16 +7625,12 @@ function renderView(viewName) {
     header.style.flexWrap = "wrap";
     header.style.gap = "12px";
 
-    const title = document.createElement("h2");
-    title.textContent = "Expenses";
-    title.style.margin = "0";
-    title.style.color = "var(--moon-primary)";
-    header.appendChild(title);
 
     const controls = document.createElement("div");
     controls.style.display = "flex";
     controls.style.gap = "10px";
     controls.style.alignItems = "center";
+    controls.style.flex = "1 1 auto";
 
     const monthInput = document.createElement("input");
     monthInput.type = "month";
@@ -7498,8 +7644,10 @@ function renderView(viewName) {
     controls.appendChild(monthInput);
 
     const addBtn = document.createElement("button");
-    addBtn.textContent = "+ New Expense";
-    addBtn.className = "moon-tab";
+    addBtn.innerHTML = `${icon("plus", 16)} New expense`;
+    addBtn.className = "ux-btn ux-btn-primary";
+    addBtn.style.marginLeft = "auto";
+    monthInput.style.flex = "1 1 160px";
     controls.appendChild(addBtn);
 
     header.appendChild(controls);
@@ -7550,27 +7698,28 @@ function renderView(viewName) {
         if (!resp.ok) throw new Error(data.error || "Failed to load approvals");
         const rows = data.pending || [];
         if (!rows.length) { pendingEl.innerHTML = ""; return; }
-        const sel = (name, options, value) => `<select data-f="${name}" style="padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:white;">${options.map(o => `<option value="${escapeHtml(o)}" ${o === value ? "selected" : ""} style="color:black;">${escapeHtml(o)}</option>`).join("")}</select>`;
-        pendingEl.innerHTML = `<div style="font-weight:700;margin-bottom:8px;color:#ffc65c;">Needs approval (${rows.length})</div>`;
+        const sel = (name, options, value) => `<select data-f="${name}">${options.map(o => `<option value="${escapeHtml(o)}" ${o === value ? "selected" : ""}>${escapeHtml(o)}</option>`).join("")}</select>`;
+        pendingEl.innerHTML = `<div class="ux-list-title">Needs approval · ${rows.length}</div>`;
         rows.forEach(r => {
           const card = document.createElement("div");
-          card.style.cssText = "display:flex;gap:12px;flex-wrap:wrap;padding:12px;margin-bottom:8px;border-radius:10px;border:1px solid rgba(255,198,92,0.45);background:rgba(255,198,92,0.08);";
+          card.className = "ux-card ux-approve";
           card.innerHTML = `
-            <a href="${escapeHtml(r.receipt_url || "#")}" target="_blank" rel="noopener" style="flex:0 0 96px;height:96px;border-radius:8px;overflow:hidden;background:#222;display:flex;align-items:center;justify-content:center;color:#9fb7d3;font-weight:700;text-decoration:none;">
+            <a class="ux-receipt" href="${escapeHtml(r.receipt_url || "#")}" target="_blank" rel="noopener" title="Open receipt">
               ${r.receipt_is_pdf ? "PDF" : `<img src="${escapeHtml(r.receipt_url || "")}" style="width:100%;height:100%;object-fit:cover;" alt="Receipt">`}
             </a>
-            <div style="flex:1;min-width:220px;">
-              <div style="font-weight:700;">${escapeHtml(r.vendor)} — $${(Number(r.amount) || 0).toFixed(2)}${r.reimburse ? ' <span style="color:#ffc65c;">· pay back ' + escapeHtml(r.submitted_by.split(" ")[0]) + "</span>" : ""}</div>
-              <div style="font-size:12px;opacity:0.8;margin:2px 0 6px;">${escapeHtml(r.expense_date)} · from ${escapeHtml(r.submitted_by)}${r.description ? " · " + escapeHtml(r.description) : ""}</div>
-              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                ${sel("category", EXP_CATEGORIES, r.category)}
-                ${sel("expense_type", EXP_TYPES, r.expense_type)}
-                ${sel("payment_method", ["Cash","PayPal","Venmo","Check","Credit/Debit","Credit Card","Debit Card","Bank Transfer","Other"], r.payment_method)}
-              </div>
-              <div data-actions style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
-                <button type="button" class="moon-tab" data-approve style="background:var(--moon-primary);color:#07111d;font-weight:700;">Approve</button>
-                <button type="button" class="moon-tab" data-reject style="color:#ff9a9a;">Reject</button>
-              </div>
+            <div class="ux-approve-body">
+              <div class="ux-approve-title"><strong>${escapeHtml(r.vendor)}</strong><span>$${(Number(r.amount) || 0).toFixed(2)}</span></div>
+              <small>${escapeHtml(r.expense_date)} · ${escapeHtml(r.submitted_by)}${r.description ? " · " + escapeHtml(r.description) : ""}</small>
+              ${r.reimburse ? `<small class="ux-warn-text">Paid with their own money — pay back on payroll</small>` : ""}
+            </div>
+            <div class="ux-approve-fields">
+              <label>Category${sel("category", EXP_CATEGORIES, r.category)}</label>
+              <label>Type${sel("expense_type", EXP_TYPES, r.expense_type)}</label>
+              <label>Paid with${sel("payment_method", ["Cash","PayPal","Venmo","Check","Credit/Debit","Credit Card","Debit Card","Bank Transfer","Other"], r.payment_method)}</label>
+            </div>
+            <div data-actions class="ux-form-actions ux-approve-actions">
+              <button type="button" class="ux-btn ux-btn-primary" data-approve>Approve</button>
+              <button type="button" class="ux-btn ux-btn-danger" data-reject>Reject</button>
             </div>`;
           const fields = () => Object.fromEntries([...card.querySelectorAll("[data-f]")].map(el => [el.dataset.f, el.value]));
           const review = async (status, note) => {
@@ -7591,9 +7740,9 @@ function renderView(viewName) {
           // Reject asks for a reason on the page (no browser pop-ups).
           card.querySelector("[data-reject]").onclick = () => {
             const box = card.querySelector("[data-actions]");
-            box.innerHTML = `<input data-note placeholder="Reason (shown to ${escapeHtml(r.submitted_by.split(" ")[0])})" style="flex:1;min-width:180px;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:white;">
-              <button type="button" class="moon-tab" data-reject-yes style="color:#ff9a9a;">Reject expense</button>
-              <button type="button" class="moon-tab" data-reject-no>Cancel</button>`;
+            box.innerHTML = `<input data-note placeholder="Reason (shown to ${escapeHtml(r.submitted_by.split(" ")[0])})" style="flex:1 1 100%;">
+              <button type="button" class="ux-btn ux-btn-danger" data-reject-yes>Reject expense</button>
+              <button type="button" class="ux-btn" data-reject-no>Cancel</button>`;
             box.querySelector("[data-note]").focus();
             box.querySelector("[data-reject-yes]").onclick = () => review("rejected", box.querySelector("[data-note]").value);
             box.querySelector("[data-reject-no]").onclick = () => loadPending();
@@ -7640,7 +7789,7 @@ function renderView(viewName) {
           left.innerHTML = `
             <div style="font-weight:600;">${escapeHtml(r.vendor)} — $${(Number(r.amount) || 0).toFixed(2)}</div>
             <div style="font-size:12px;opacity:0.75;margin-top:2px;">
-              ${escapeHtml(r.expense_date)} · ${escapeHtml(r.category)} · ${escapeHtml(r.expense_type)} · ${escapeHtml(r.payment_method)}${r.receipt_url ? ` · <a href="${escapeHtml(r.receipt_url)}" target="_blank" rel="noopener" style="color:#9fb7d3;">View receipt</a>` : r.receipt_saved ? " · Receipt ✓" : ""}${r.submitted_by ? " · by " + escapeHtml(r.submitted_by) : ""}${r.reimburse ? (r.reimbursed_at ? " · reimbursed" : ' · <span style="color:#ffc65c;">owed to ' + escapeHtml(r.submitted_by || "crew") + "</span>") : ""}
+              ${escapeHtml(r.expense_date)} · ${escapeHtml(r.category)} · ${escapeHtml(r.expense_type)} · ${escapeHtml(r.payment_method)}${r.receipt_url ? ` · <a href="${escapeHtml(r.receipt_url)}" target="_blank" rel="noopener" style="color:#9fb7d3;">View receipt</a>` : r.receipt_saved ? " · receipt kept" : ""}${r.submitted_by ? " · by " + escapeHtml(r.submitted_by) : ""}${r.reimburse ? (r.reimbursed_at ? " · reimbursed" : ' · <span style="color:#ffc65c;">owed to ' + escapeHtml(r.submitted_by || "crew") + "</span>") : ""}
             </div>
             ${r.description ? `<div style="font-size:12px;opacity:0.85;margin-top:4px;">${escapeHtml(r.description)}</div>` : ""}
           `;
@@ -7648,13 +7797,7 @@ function renderView(viewName) {
 
           const delBtn = document.createElement("button");
           delBtn.textContent = "Delete";
-          delBtn.className = "cancel";
-          delBtn.style.padding = "6px 12px";
-          delBtn.style.borderRadius = "6px";
-          delBtn.style.border = "none";
-          delBtn.style.background = "rgba(255,138,138,0.18)";
-          delBtn.style.color = "#ff8a8a";
-          delBtn.style.cursor = "pointer";
+          delBtn.className = "ux-btn ux-btn-quiet";
           delBtn.onclick = async () => {
             if (!delBtn.dataset.armed) { delBtn.dataset.armed = "1"; delBtn.textContent = "Confirm delete"; return; }
             delBtn.disabled = true;

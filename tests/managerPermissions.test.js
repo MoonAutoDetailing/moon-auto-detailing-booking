@@ -78,3 +78,30 @@ test("history search matches name, email and phone digits safely", async () => {
   assert.equal(customerSearchFilter("  "), null);
   assert.deepEqual(STATUS_GROUPS.cancelled, ["cancelled", "denied", "no_show"]);
 });
+
+test("Needs attention: most urgent first, expense approvals only for the owner", async () => {
+  const { attentionItems } = await import("../api/_handlers/admin-attention.js");
+  const counts = { forgotClockOut: ["Eli"], onClock: ["Sam"], overdueJobs: 2, timeOff: 1, expenses: 3, payrollReady: true, payrollHours: 74.75, drafts: 4 };
+  const owner = attentionItems(counts, { isOwner: true });
+  assert.deepEqual(owner.map((i) => i.key), ["clock", "overdue", "timeoff", "expenses", "payroll", "drafts", "onclock"]);
+  assert.equal(owner[0].title, "1 person still clocked in after 12+ hours");
+  assert.equal(owner[1].title, "2 jobs finished but not marked complete");
+  assert.equal(owner.find((i) => i.key === "payroll").detail, "74.8 hours clocked");
+  const manager = attentionItems(counts, { isOwner: false });
+  assert.equal(manager.some((i) => i.key === "expenses"), false);
+  assert.deepEqual(attentionItems({ forgotClockOut: [], onClock: [], overdueJobs: 0, timeOff: 0, expenses: 0, payrollReady: false, payrollHours: 0, drafts: 0 }, { isOwner: true }), []);
+});
+
+test("every icon the pages ask for exists in the icon set", async () => {
+  const { ICON_NAMES } = await import("../ui-icons.js");
+  const { readFileSync } = await import("node:fs");
+  const used = new Set();
+  for (const f of ["admin.html", "staff.html", "api/_handlers/admin-attention.js"]) {
+    const src = readFileSync(new URL("../" + f, import.meta.url), "utf8");
+    for (const m of src.matchAll(/icon\(\s*"([a-zA-Z]+)"/g)) used.add(m[1]);
+    for (const m of src.matchAll(/icon: "([a-zA-Z]+)"/g)) used.add(m[1]);
+    for (const m of src.matchAll(/data-icon="([a-zA-Z]+)"/g)) used.add(m[1]);
+  }
+  const missing = [...used].filter((n) => !ICON_NAMES.includes(n));
+  assert.deepEqual(missing, []);
+});

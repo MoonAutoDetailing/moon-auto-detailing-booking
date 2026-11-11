@@ -11,6 +11,7 @@
 
 const ROUTES = {
   "admin-analytics": () => import("./_handlers/admin-analytics.js"),
+  "admin-attention": () => import("./_handlers/admin-attention.js"),
   "admin-availability-clear": () => import("./_handlers/admin-availability-clear.js"),
   "admin-availability-list": () => import("./_handlers/admin-availability-list.js"),
   "admin-availability-upsert": () => import("./_handlers/admin-availability-upsert.js"),

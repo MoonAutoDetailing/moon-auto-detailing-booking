@@ -57,7 +57,10 @@ nav.tabs button {
   font-size: 12px; font-weight: 600; cursor: pointer; min-width: 0;
 }
 nav.tabs button.active { color: var(--moon-primary); }
-nav.tabs button .ico { display: block; font-size: 20px; line-height: 1.2; }
+nav.tabs button .ico { display: flex; justify-content: center; height: 24px; margin-bottom: 2px; }
+.ui-icon { display: inline-block; vertical-align: -0.2em; flex: none; }
+.banner { display: flex; gap: 8px; align-items: flex-start; }
+.btn .ui-icon { margin-right: 2px; }
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   padding: 11px 16px; border-radius: 12px;
@@ -188,16 +191,18 @@ form.mini { margin-top: 8px; padding-top: 4px; }
 <main id="app"></main>
 
 <nav class="tabs" id="tabs">
-  <button type="button" data-tab="today" class="active"><span class="ico">🚗</span>Jobs</button>
-  <button type="button" data-tab="schedule"><span class="ico">📅</span>Schedule</button>
-  <button type="button" data-tab="availability"><span class="ico">🗓️</span>Availability</button>
-  <button type="button" data-tab="expenses"><span class="ico">🧾</span>Expenses</button>
-  <button type="button" data-tab="account"><span class="ico">👤</span>Me</button>
+  <button type="button" data-tab="today" class="active"><span class="ico" data-icon="car"></span>Jobs</button>
+  <button type="button" data-tab="schedule"><span class="ico" data-icon="calendar"></span>Schedule</button>
+  <button type="button" data-tab="availability"><span class="ico" data-icon="clock"></span>Availability</button>
+  <button type="button" data-tab="expenses"><span class="ico" data-icon="receipt"></span>Expenses</button>
+  <button type="button" data-tab="account"><span class="ico" data-icon="user"></span>Me</button>
 </nav>
 
 <input type="file" id="photoInput" accept="image/*" capture="environment" multiple class="hidden" />
 
 <script type="module">
+import { icon } from "/ui-icons.js";
+document.querySelectorAll("[data-icon]").forEach((el) => { el.innerHTML = icon(el.dataset.icon, 22); });
 // Crew app. All data comes from /api/staff-* with the x-staff-session header; the token
 // lives in localStorage so the crew stays signed in on their phone (12-hour sessions).
 const TOKEN_KEY = "moon_staff_session";
@@ -290,9 +295,9 @@ async function renderDay() {
   const date = state.date || state.today;
   app.innerHTML = `
     <div class="daynav">
-      <button class="btn small" id="prevDay" type="button">‹</button>
+      <button class="btn small" id="prevDay" type="button" aria-label="Previous day">${icon("chevronLeft", 16)}</button>
       <div class="label">${date ? esc(date === state.today ? "Today · " + dayLabel(date) : dayLabel(date)) : "Today"}</div>
-      <button class="btn small" id="nextDay" type="button">›</button>
+      <button class="btn small" id="nextDay" type="button" aria-label="Next day">${icon("chevronRight", 16)}</button>
     </div>
     <div id="clockCard"></div>
     <div id="dayBody"><div class="empty">Loading jobs…</div></div>`;
@@ -309,7 +314,7 @@ async function renderDay() {
     const body = app.querySelector("#dayBody");
     body.innerHTML = "";
     if (data.ceramic_today) {
-      body.insertAdjacentHTML("beforeend", `<div class="banner">✨ Ceramic coating on this day — bring the coating kit, panel prep and lights, and plan for cure time.</div>`);
+      body.insertAdjacentHTML("beforeend", `<div class="banner">${icon("sparkle", 18)} Ceramic coating on this day — bring the coating kit, panel prep and lights, and plan for cure time.</div>`);
     }
     if (!data.jobs.length) {
       body.insertAdjacentHTML("beforeend", `<div class="empty">No jobs scheduled.</div>`);
@@ -511,13 +516,13 @@ function drawAvailability(data) {
       const e = it.e;
       const what = e.available ? (e.start_time || e.end_time ? `Can work ${fmt12(e.start_time || "00:00")}–${fmt12(e.end_time || "23:59")}` : "Can work all day") : "Can't work";
       return `<div class="item"><div class="grow"><strong>${esc(dayLabel(e.on_date))}</strong><br><span class="muted">${esc(what)}${e.note ? " · " + esc(e.note) : ""}</span></div>
-        <button class="btn small" type="button" data-del-ex="${esc(e.id)}">${avState.armed === "ex" + e.id ? "Remove?" : "✕"}</button></div>`;
+        <button class="btn small" type="button" data-del-ex="${esc(e.id)}">${avState.armed === "ex" + e.id ? "Remove?" : icon("x", 16)}</button></div>`;
     }
     const t = it.t;
     return `<div class="item"><div class="grow"><strong>Time off · ${esc(dayLabel(t.start_date))}${t.end_date !== t.start_date ? " – " + esc(dayLabel(t.end_date)) : ""}</strong><br>
       <span class="chip ${t.status === "approved" ? "ok" : t.status === "denied" ? "bad" : "warn"}">${esc(statusLabel[t.status] || t.status)}</span>
       ${t.reason ? `<span class="muted">${esc(t.reason)}</span>` : ""}${t.review_note ? `<br><span class="muted">Manager: ${esc(t.review_note)}</span>` : ""}</div>
-      ${t.status === "pending" ? `<button class="btn small" type="button" data-cancel-off="${esc(t.id)}">${avState.armed === "off" + t.id ? "Cancel request?" : "✕"}</button>` : ""}</div>`;
+      ${t.status === "pending" ? `<button class="btn small" type="button" data-cancel-off="${esc(t.id)}">${avState.armed === "off" + t.id ? "Cancel request?" : icon("x", 16)}</button>` : ""}</div>`;
   };
 
   const forms = {
@@ -716,7 +721,7 @@ function drawExpenses() {
           <button class="btn" type="button" id="cancelExp">Cancel</button>
         </div>
       </form>` : `
-      <button class="btn primary block" type="button" id="snap" style="padding:16px;font-size:17px;margin-bottom:12px;">📷 Add a receipt</button>`}
+      <button class="btn primary block" type="button" id="snap" style="padding:16px;font-size:17px;margin-bottom:12px;">${icon("camera", 20)} Add a receipt</button>`}
     <div class="panel">
       <h3>My expenses <span class="count muted">last 90 days</span></h3>
       ${d.expenses.length ? d.expenses.map((e) => `
@@ -725,7 +730,7 @@ function drawExpenses() {
           <div class="grow"><strong>${money(e.amount)} · ${esc(e.vendor)}</strong><br>
             <span class="muted">${esc(dayLabel(e.expense_date))} · ${esc(e.category)}</span><br>
             ${statusChip(e)}${payback(e)}${e.review_note ? `<br><span class="muted">Manager: ${esc(e.review_note)}</span>` : ""}</div>
-          ${e.status === "pending" ? `<button class="btn small" type="button" data-withdraw="${esc(e.id)}">${exState.armed === e.id ? "Withdraw?" : "✕"}</button>` : ""}
+          ${e.status === "pending" ? `<button class="btn small" type="button" data-withdraw="${esc(e.id)}">${exState.armed === e.id ? "Withdraw?" : icon("x", 16)}</button>` : ""}
         </div>`).join("") : `<p class="muted" style="margin:0;font-size:14px;">No expenses yet. Tap “Add a receipt” after you buy supplies, fuel or equipment.</p>`}
     </div>`;
 
@@ -898,16 +903,16 @@ function photoSection(J, kind, title, hint) {
   const list = J.photos.filter((p) => p.kind === kind);
   const min = J.min_photos[kind];
   const done = J.job.status === "completed";
-  const countHtml = min ? `<span class="count ${list.length >= min ? "" : "muted"}">${list.length}/${min}${list.length >= min ? " ✓" : ""}</span>` : `<span class="count muted">${list.length}</span>`;
+  const countHtml = min ? `<span class="count ${list.length >= min ? "" : "muted"}">${list.length}/${min}${list.length >= min ? " " + icon("check", 14) : ""}</span>` : `<span class="count muted">${list.length}</span>`;
   return `
     <div class="panel" data-photos="${kind}">
       <h3>${esc(title)} ${countHtml}</h3>
       ${hint ? `<p class="muted" style="margin:0 0 8px;font-size:13px;">${esc(hint)}</p>` : ""}
       <div class="photos">
-        ${list.map((p) => `<div class="ph"><img src="${esc(p.url || "")}" alt="" loading="lazy" />${!done && p.mine ? `<button type="button" data-del="${esc(p.id)}" aria-label="Remove photo">✕</button>` : ""}</div>`).join("")}
+        ${list.map((p) => `<div class="ph"><img src="${esc(p.url || "")}" alt="" loading="lazy" />${!done && p.mine ? `<button type="button" data-del="${esc(p.id)}" aria-label="Remove photo">${icon("x", 14)}</button>` : ""}</div>`).join("")}
         ${Array.from({ length: J.uploading?.[kind] || 0 }).map(() => `<div class="ph uploading">Uploading…</div>`).join("")}
       </div>
-      ${done ? "" : `<div class="actions"><button class="btn small" type="button" data-add="${kind}">📷 Add ${kind} photo</button></div>`}
+      ${done ? "" : `<div class="actions"><button class="btn small" type="button" data-add="${kind}">${icon("camera", 16)} Add ${kind} photo</button></div>`}
     </div>`;
 }
 
@@ -935,8 +940,8 @@ function renderJob() {
   }).join("");
 
   app.innerHTML = `
-    <button class="btn small" id="backBtn" type="button" style="margin-bottom:12px;">‹ Back to jobs</button>
-    ${j.job_flag === "ceramic" ? `<div class="banner">✨ Ceramic coating job — follow the coating steps exactly and keep the car dry for the cure time.</div>` : ""}
+    <button class="btn small" id="backBtn" type="button" style="margin-bottom:12px;">${icon("chevronLeft", 16)} Back to jobs</button>
+    ${j.job_flag === "ceramic" ? `<div class="banner">${icon("sparkle", 18)} Ceramic coating job — follow the coating steps exactly and keep the car dry for the cure time.</div>` : ""}
     <div class="panel">
       <div class="job-head">
         <div class="muted" style="font-size:13px;font-weight:700;color:var(--moon-primary);">${esc(timeOf(j.scheduled_start))} – ${esc(timeOf(j.scheduled_end))}${j.duration_minutes ? ` · ~${Math.round(j.duration_minutes / 6) / 10} hrs` : ""}</div>
@@ -950,8 +955,8 @@ function renderJob() {
         <div class="k">Collect</div><div><strong>${money(j.amount_to_collect)}</strong></div>
       </div>
       <div class="actions">
-        <a class="btn small" href="${esc(mapsUrl)}" target="_blank" rel="noopener">🧭 Directions</a>
-        ${phone ? `<a class="btn small" href="tel:${esc(phone)}">📞 Call</a><a class="btn small" href="sms:${esc(phone)}">💬 Text</a>` : ""}
+        <a class="btn small" href="${esc(mapsUrl)}" target="_blank" rel="noopener">${icon("navigate", 15)} Directions</a>
+        ${phone ? `<a class="btn small" href="tel:${esc(phone)}">${icon("phone", 15)} Call</a><a class="btn small" href="sms:${esc(phone)}">${icon("message", 15)} Text</a>` : ""}
       </div>
     </div>
     ${j.crew_notes ? `<div class="panel"><h3>Crew notes</h3><div class="note crew">${esc(j.crew_notes)}</div></div>` : ""}
@@ -967,7 +972,7 @@ function renderJob() {
     </div>
     ${photoSection(J, "after", "3 · After photos", "Same angles as the before photos, once the job is finished.")}
 
-    ${done ? `<div class="panel"><h3>✅ Job completed</h3><p class="muted" style="margin:0;">Payment recorded and the customer has been emailed.</p></div>` : `
+    ${done ? `<div class="panel"><h3>${icon("check", 18)} Job completed</h3><p class="muted" style="margin:0;">Payment recorded and the customer has been emailed.</p></div>` : `
     <form class="panel" id="completeForm">
       <h3>4 · Payment & complete</h3>
       <label class="field">Amount collected</label>
