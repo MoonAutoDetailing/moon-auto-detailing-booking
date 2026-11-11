@@ -1,5 +1,6 @@
 import verifyAdmin from "../_verifyAdmin.js";
 import { createClient } from "@supabase/supabase-js";
+import { PHOTO_BUCKET } from "../_jobs.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -7,8 +8,9 @@ function requireEnv(name) {
   return v;
 }
 
-/** GET: list expenses, optionally filtered by month (YYYY-MM).
+/** GET: list approved expenses, optionally filtered by month (YYYY-MM).
  *  Query: ?month=YYYY-MM (optional). No filter = current month.
+ *  Crew submissions waiting for approval are listed by admin-expense-review instead.
  */
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -50,7 +52,8 @@ export default async function handler(req, res) {
 
     const { data, error } = await supabase
       .from("expenses")
-      .select("id, expense_date, vendor, category, expense_type, description, amount, payment_method, receipt_saved, notes, created_at")
+      .select("id, expense_date, vendor, category, expense_type, description, amount, payment_method, receipt_saved, receipt_path, reimburse, reimbursed_at, submitted_by_staff_id, notes, created_at")
+      .eq("status", "approved")
       .gte("expense_date", startDate)
       .lt("expense_date", endDate)
       .order("expense_date", { ascending: false })
@@ -61,7 +64,28 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: "Database query failed" });
     }
 
-    return res.status(200).json({ ok: true, month: monthStr, expenses: data || [] });
+    // Short-lived receipt links and who submitted crew expenses.
+    const rows = data || [];
+    const paths = rows.map((r) => r.receipt_path).filter(Boolean);
+    let urls = new Map();
+    if (paths.length) {
+      const { data: signed, error: sErr } = await supabase.storage.from(PHOTO_BUCKET).createSignedUrls(paths, 3600);
+      if (sErr) console.error("admin-list-expenses receipt links failed", sErr);
+      urls = new Map((signed || []).map((s) => [s.path, s.signedUrl]));
+    }
+    const staffIds = [...new Set(rows.map((r) => r.submitted_by_staff_id).filter(Boolean))];
+    let names = new Map();
+    if (staffIds.length) {
+      const { data: staff } = await supabase.from("staff").select("id, full_name").in("id", staffIds);
+      names = new Map((staff || []).map((s) => [s.id, s.full_name]));
+    }
+    const expenses = rows.map(({ receipt_path, submitted_by_staff_id, ...r }) => ({
+      ...r,
+      receipt_url: urls.get(receipt_path) || null,
+      submitted_by: names.get(submitted_by_staff_id) || null,
+    }));
+
+    return res.status(200).json({ ok: true, month: monthStr, expenses });
   } catch (err) {
     console.error("admin-list-expenses error:", err);
     return res.status(500).json({ error: err.message || "Server error" });

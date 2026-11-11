@@ -54,7 +54,7 @@ nav.tabs {
 }
 nav.tabs button {
   flex: 1; padding: 12px 0 14px; border: none; background: none; color: var(--muted);
-  font-size: 13px; font-weight: 600; cursor: pointer;
+  font-size: 12px; font-weight: 600; cursor: pointer; min-width: 0;
 }
 nav.tabs button.active { color: var(--moon-primary); }
 nav.tabs button .ico { display: block; font-size: 20px; line-height: 1.2; }
@@ -191,6 +191,7 @@ form.mini { margin-top: 8px; padding-top: 4px; }
   <button type="button" data-tab="today" class="active"><span class="ico">🚗</span>Jobs</button>
   <button type="button" data-tab="schedule"><span class="ico">📅</span>Schedule</button>
   <button type="button" data-tab="availability"><span class="ico">🗓️</span>Availability</button>
+  <button type="button" data-tab="expenses"><span class="ico">🧾</span>Expenses</button>
   <button type="button" data-tab="account"><span class="ico">👤</span>Account</button>
 </nav>
 
@@ -261,6 +262,7 @@ function render() {
   if (state.tab === "today") return renderDay();
   if (state.tab === "schedule") return renderSchedule();
   if (state.tab === "availability") return renderAvailability();
+  if (state.tab === "expenses") return renderExpenses();
   return renderAccount();
 }
 
@@ -660,6 +662,141 @@ function drawAvailability(data) {
     catch (err) { toast(err.message, true); }
   }));
 }
+
+/* ---------------- Expenses (receipts) ---------------- */
+// Snap the receipt first, then a short form. Managers approve; money you spent yourself is
+// paid back on payroll.
+
+const exState = { photo: null, preview: null, armed: null, data: null };
+
+async function renderExpenses() {
+  app.innerHTML = `<div class="empty">Loading…</div>`;
+  try {
+    exState.data = await api("/api/staff-expenses");
+    drawExpenses();
+  } catch (err) {
+    app.innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+  }
+}
+
+function drawExpenses() {
+  const d = exState.data;
+  const statusChip = (e) => e.status === "approved"
+    ? `<span class="chip ok">Approved</span>`
+    : e.status === "rejected" ? `<span class="chip bad">Rejected</span>` : `<span class="chip warn">Waiting for approval</span>`;
+  const payback = (e) => !e.reimburse ? "" : e.reimbursed_at
+    ? `<span class="muted"> · paid back</span>`
+    : e.status === "approved" ? `<span class="muted"> · you'll be paid back on payroll</span>` : "";
+
+  app.innerHTML = `
+    ${exState.photo ? `
+      <form class="panel" id="expForm">
+        <h3>New expense</h3>
+        <img src="${exState.preview}" alt="Receipt" style="width:100%;max-height:260px;object-fit:contain;border-radius:10px;background:#000;" />
+        <div class="actions" style="margin-top:6px;"><button class="btn small" type="button" id="retake">Retake photo</button></div>
+        <label class="field">Total on the receipt</label>
+        <input class="in" name="amount" type="number" inputmode="decimal" min="0.01" step="0.01" placeholder="0.00" required style="font-size:22px;font-weight:700;" />
+        <label class="field">Store</label>
+        <input class="in" name="vendor" placeholder="e.g. AutoZone, Shell, Chemical Guys" required />
+        <label class="field">What was it for?</label>
+        <select class="in" name="category" required>
+          <option value="">Choose…</option>
+          ${d.categories.map((c) => `<option>${esc(c)}</option>`).join("")}
+        </select>
+        <label class="field">How did you pay?</label>
+        <div class="seg" id="paidWith">${d.paid_with.map((p) => `<button type="button" data-paid="${esc(p.key)}">${esc(p.label.replace(" — pay me back", ""))}</button>`).join("")}</div>
+        <p class="muted" id="paidHint" style="margin:6px 0 0;font-size:12px;">Choose "My own money" if you paid personally — you'll be paid back on payroll.</p>
+        <div class="row2" style="margin-top:4px;">
+          <div><label class="field">Receipt date</label><input class="in" name="expense_date" type="date" value="${esc(d.today)}" max="${esc(d.today)}" required /></div>
+        </div>
+        <label class="field">Note (optional)</label>
+        <input class="in" name="description" placeholder="e.g. 2 gal APC for the Lee job" />
+        <div class="actions">
+          <button class="btn primary" type="submit" style="flex:1;">Submit expense</button>
+          <button class="btn" type="button" id="cancelExp">Cancel</button>
+        </div>
+      </form>` : `
+      <button class="btn primary block" type="button" id="snap" style="padding:16px;font-size:17px;margin-bottom:12px;">📷 Add a receipt</button>`}
+    <div class="panel">
+      <h3>My expenses <span class="count muted">last 90 days</span></h3>
+      ${d.expenses.length ? d.expenses.map((e) => `
+        <div class="item">
+          ${e.receipt_url ? `<a href="${esc(e.receipt_url)}" target="_blank" rel="noopener" style="flex:0 0 48px;height:48px;border-radius:8px;overflow:hidden;background:#222;display:block;"><img src="${esc(e.receipt_url)}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.replaceWith(document.createTextNode('PDF'))"></a>` : ""}
+          <div class="grow"><strong>${money(e.amount)} · ${esc(e.vendor)}</strong><br>
+            <span class="muted">${esc(dayLabel(e.expense_date))} · ${esc(e.category)}</span><br>
+            ${statusChip(e)}${payback(e)}${e.review_note ? `<br><span class="muted">Manager: ${esc(e.review_note)}</span>` : ""}</div>
+          ${e.status === "pending" ? `<button class="btn small" type="button" data-withdraw="${esc(e.id)}">${exState.armed === e.id ? "Withdraw?" : "✕"}</button>` : ""}
+        </div>`).join("") : `<p class="muted" style="margin:0;font-size:14px;">No expenses yet. Tap “Add a receipt” after you buy supplies, fuel or equipment.</p>`}
+    </div>`;
+
+  app.querySelector("#snap")?.addEventListener("click", () => pickReceipt());
+  app.querySelector("#retake")?.addEventListener("click", () => pickReceipt());
+  app.querySelector("#cancelExp")?.addEventListener("click", () => { clearReceipt(); drawExpenses(); });
+
+  let paidWith = null;
+  app.querySelectorAll("[data-paid]").forEach((b) => (b.onclick = () => {
+    paidWith = b.dataset.paid;
+    app.querySelectorAll("[data-paid]").forEach((x) => x.classList.toggle("on", x === b));
+  }));
+
+  app.querySelector("#expForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!paidWith) { toast("Choose how you paid.", true); return; }
+    const f = Object.fromEntries(new FormData(e.target).entries());
+    const btn = e.target.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    btn.textContent = "Uploading receipt…";
+    try {
+      const signed = await api("/api/receipt-upload-url", { method: "POST", body: { content_type: exState.photo.type } });
+      await putToSignedUrl(signed.upload_url, exState.photo.blob, exState.photo.type);
+      btn.textContent = "Submitting…";
+      exState.data = await api("/api/staff-expenses", { method: "POST", body: { ...f, paid_with: paidWith, receipt_path: signed.path } });
+      clearReceipt();
+      toast("Expense submitted for approval.");
+      drawExpenses();
+    } catch (err) {
+      toast(err.message, true);
+      btn.disabled = false;
+      btn.textContent = "Submit expense";
+    }
+  });
+
+  app.querySelectorAll("[data-withdraw]").forEach((b) => (b.onclick = async () => {
+    if (exState.armed !== b.dataset.withdraw) { exState.armed = b.dataset.withdraw; drawExpenses(); return; }
+    try {
+      exState.data = await api(`/api/staff-expenses?id=${encodeURIComponent(b.dataset.withdraw)}`, { method: "DELETE" });
+      exState.armed = null;
+      drawExpenses();
+    } catch (err) { toast(err.message, true); }
+  }));
+}
+
+function clearReceipt() {
+  if (exState.preview) URL.revokeObjectURL(exState.preview);
+  exState.photo = null;
+  exState.preview = null;
+}
+
+const receiptInput = document.createElement("input");
+receiptInput.type = "file";
+receiptInput.accept = "image/*";
+receiptInput.capture = "environment";
+receiptInput.className = "hidden";
+document.body.appendChild(receiptInput);
+function pickReceipt() {
+  receiptInput.value = "";
+  receiptInput.click();
+}
+receiptInput.onchange = async () => {
+  const file = receiptInput.files[0];
+  if (!file) return;
+  const photo = await compressImage(file);
+  clearReceipt();
+  exState.photo = photo;
+  exState.preview = URL.createObjectURL(photo.blob);
+  drawExpenses();
+  app.querySelector('#expForm [name="amount"]')?.focus();
+};
 
 /* ---------------- Account ---------------- */
 

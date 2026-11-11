@@ -1,5 +1,6 @@
 import verifyAdmin from "../_verifyAdmin.js";
 import { createClient } from "@supabase/supabase-js";
+import { isReceiptPath } from "../_expenses.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -86,13 +87,17 @@ export default async function handler(req, res) {
     const description = body.description != null ? String(body.description).trim() : null;
     const amountNum = body.amount != null ? Number(body.amount) : NaN;
     const payment_method = String(body.payment_method ?? "").trim();
-    const receipt_saved = body.receipt_saved === true;
+    const receipt_path = body.receipt_path ? String(body.receipt_path) : null;
+    const receipt_saved = body.receipt_saved === true || !!receipt_path;
     const notes = body.notes != null ? String(body.notes).trim() : null;
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(expense_date)) {
       return res.status(400).json({ error: "expense_date must be YYYY-MM-DD." });
     }
     if (!vendor) return res.status(400).json({ error: "Vendor is required." });
+    if (receipt_path && !isReceiptPath(receipt_path)) {
+      return res.status(400).json({ error: "Invalid receipt upload; attach it again." });
+    }
     if (ALLOWED_CATEGORIES.indexOf(category) === -1) {
       return res.status(400).json({ error: "Invalid category." });
     }
@@ -121,6 +126,7 @@ export default async function handler(req, res) {
       receipt_saved
     };
     if (description) insertPayload.description = description;
+    if (receipt_path) insertPayload.receipt_path = receipt_path;
     if (notes) insertPayload.notes = notes;
     if (adminInfo && adminInfo.admin && adminInfo.admin.id) {
       insertPayload.created_by = adminInfo.admin.id;

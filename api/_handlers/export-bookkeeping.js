@@ -130,6 +130,7 @@ export default async function handler(req, res) {
     const { data: expenses, error: expErr } = await supabase
       .from("expenses")
       .select("id, expense_date, vendor, category, expense_type, description, amount, payment_method, receipt_saved, notes")
+      .eq("status", "approved") // crew submissions count once a manager approves them
       .order("expense_date", { ascending: true });
 
     if (expErr) {

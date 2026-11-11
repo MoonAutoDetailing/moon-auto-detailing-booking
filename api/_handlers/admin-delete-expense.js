@@ -1,5 +1,6 @@
 import verifyAdmin from "../_verifyAdmin.js";
 import { createClient } from "@supabase/supabase-js";
+import { PHOTO_BUCKET } from "../_jobs.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -33,6 +34,8 @@ export default async function handler(req, res) {
       requireEnv("SUPABASE_SERVICE_ROLE_KEY")
     );
 
+    const { data: existing } = await supabase.from("expenses").select("receipt_path").eq("id", expense_id).maybeSingle();
+
     const { error } = await supabase
       .from("expenses")
       .delete()
@@ -41,6 +44,11 @@ export default async function handler(req, res) {
     if (error) {
       console.error("admin-delete-expense failed", error);
       return res.status(500).json({ error: "Database delete failed" });
+    }
+
+    if (existing?.receipt_path) {
+      const { error: rmErr } = await supabase.storage.from(PHOTO_BUCKET).remove([existing.receipt_path]);
+      if (rmErr) console.error("admin-delete-expense receipt cleanup failed", rmErr);
     }
 
     console.log("EXPENSE_DELETED", { expense_id });

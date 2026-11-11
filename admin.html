@@ -2205,6 +2205,9 @@ style="
       <span>Receipt saved</span>
     </label>
 
+    <label for="expReceiptFile">Receipt photo or PDF (optional)</label>
+    <input id="expReceiptFile" type="file" accept="image/*,application/pdf" />
+
     <div class="exp-error" id="expError"></div>
 
     <div class="exp-actions">
@@ -6741,6 +6744,11 @@ function renderView(viewName) {
     header.appendChild(controls);
     wrapper.appendChild(header);
 
+    // Crew submissions waiting for approval (all months).
+    const pendingEl = document.createElement("div");
+    pendingEl.style.marginBottom = "14px";
+    wrapper.appendChild(pendingEl);
+
     const totalRow = document.createElement("div");
     totalRow.style.padding = "12px 16px";
     totalRow.style.background = "rgba(111,147,196,0.12)";
@@ -6772,6 +6780,68 @@ function renderView(viewName) {
 
     function escapeHtml(s) {
       return String(s == null ? "" : s).replace(/[&<>"']/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[ch]));
+    }
+
+    async function loadPending() {
+      try {
+        const resp = await adminFetch("/api/admin-expense-review");
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.error || "Failed to load approvals");
+        const rows = data.pending || [];
+        if (!rows.length) { pendingEl.innerHTML = ""; return; }
+        const sel = (name, options, value) => `<select data-f="${name}" style="padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:white;">${options.map(o => `<option value="${escapeHtml(o)}" ${o === value ? "selected" : ""} style="color:black;">${escapeHtml(o)}</option>`).join("")}</select>`;
+        pendingEl.innerHTML = `<div style="font-weight:700;margin-bottom:8px;color:#ffc65c;">Needs approval (${rows.length})</div>`;
+        rows.forEach(r => {
+          const card = document.createElement("div");
+          card.style.cssText = "display:flex;gap:12px;flex-wrap:wrap;padding:12px;margin-bottom:8px;border-radius:10px;border:1px solid rgba(255,198,92,0.45);background:rgba(255,198,92,0.08);";
+          card.innerHTML = `
+            <a href="${escapeHtml(r.receipt_url || "#")}" target="_blank" rel="noopener" style="flex:0 0 96px;height:96px;border-radius:8px;overflow:hidden;background:#222;display:flex;align-items:center;justify-content:center;color:#9fb7d3;font-weight:700;text-decoration:none;">
+              ${r.receipt_is_pdf ? "PDF" : `<img src="${escapeHtml(r.receipt_url || "")}" style="width:100%;height:100%;object-fit:cover;" alt="Receipt">`}
+            </a>
+            <div style="flex:1;min-width:220px;">
+              <div style="font-weight:700;">${escapeHtml(r.vendor)} — $${(Number(r.amount) || 0).toFixed(2)}${r.reimburse ? ' <span style="color:#ffc65c;">· pay back ' + escapeHtml(r.submitted_by.split(" ")[0]) + "</span>" : ""}</div>
+              <div style="font-size:12px;opacity:0.8;margin:2px 0 6px;">${escapeHtml(r.expense_date)} · from ${escapeHtml(r.submitted_by)}${r.description ? " · " + escapeHtml(r.description) : ""}</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                ${sel("category", EXP_CATEGORIES, r.category)}
+                ${sel("expense_type", EXP_TYPES, r.expense_type)}
+                ${sel("payment_method", ["Cash","PayPal","Venmo","Check","Credit/Debit","Credit Card","Debit Card","Bank Transfer","Other"], r.payment_method)}
+              </div>
+              <div data-actions style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;">
+                <button type="button" class="moon-tab" data-approve style="background:var(--moon-primary);color:#07111d;font-weight:700;">Approve</button>
+                <button type="button" class="moon-tab" data-reject style="color:#ff9a9a;">Reject</button>
+              </div>
+            </div>`;
+          const fields = () => Object.fromEntries([...card.querySelectorAll("[data-f]")].map(el => [el.dataset.f, el.value]));
+          const review = async (status, note) => {
+            try {
+              const resp2 = await adminFetch("/api/admin-expense-review", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ id: r.id, status, note, ...fields() })
+              });
+              const d2 = await resp2.json().catch(() => ({}));
+              if (!resp2.ok) throw new Error(d2.error || "Review failed");
+              showAdminBanner(status === "approved" ? "Expense approved." : "Expense rejected.", "success");
+              loadPending();
+              loadExpenses();
+            } catch (err) { showAdminBanner(err.message || "Review failed.", "error"); }
+          };
+          card.querySelector("[data-approve]").onclick = () => review("approved");
+          // Reject asks for a reason on the page (no browser pop-ups).
+          card.querySelector("[data-reject]").onclick = () => {
+            const box = card.querySelector("[data-actions]");
+            box.innerHTML = `<input data-note placeholder="Reason (shown to ${escapeHtml(r.submitted_by.split(" ")[0])})" style="flex:1;min-width:180px;padding:6px 8px;border-radius:8px;border:1px solid rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);color:white;">
+              <button type="button" class="moon-tab" data-reject-yes style="color:#ff9a9a;">Reject expense</button>
+              <button type="button" class="moon-tab" data-reject-no>Cancel</button>`;
+            box.querySelector("[data-note]").focus();
+            box.querySelector("[data-reject-yes]").onclick = () => review("rejected", box.querySelector("[data-note]").value);
+            box.querySelector("[data-reject-no]").onclick = () => loadPending();
+          };
+          pendingEl.appendChild(card);
+        });
+      } catch (err) {
+        pendingEl.innerHTML = `<div style="color:#ff8a8a;">${escapeHtml(err.message)}</div>`;
+      }
     }
 
     async function loadExpenses() {
@@ -6809,7 +6879,7 @@ function renderView(viewName) {
           left.innerHTML = `
             <div style="font-weight:600;">${escapeHtml(r.vendor)} — $${(Number(r.amount) || 0).toFixed(2)}</div>
             <div style="font-size:12px;opacity:0.75;margin-top:2px;">
-              ${escapeHtml(r.expense_date)} · ${escapeHtml(r.category)} · ${escapeHtml(r.expense_type)} · ${escapeHtml(r.payment_method)}${r.receipt_saved ? " · Receipt ✓" : ""}
+              ${escapeHtml(r.expense_date)} · ${escapeHtml(r.category)} · ${escapeHtml(r.expense_type)} · ${escapeHtml(r.payment_method)}${r.receipt_url ? ` · <a href="${escapeHtml(r.receipt_url)}" target="_blank" rel="noopener" style="color:#9fb7d3;">View receipt</a>` : r.receipt_saved ? " · Receipt ✓" : ""}${r.submitted_by ? " · by " + escapeHtml(r.submitted_by) : ""}${r.reimburse ? (r.reimbursed_at ? " · reimbursed" : ' · <span style="color:#ffc65c;">owed to ' + escapeHtml(r.submitted_by || "crew") + "</span>") : ""}
             </div>
             ${r.description ? `<div style="font-size:12px;opacity:0.85;margin-top:4px;">${escapeHtml(r.description)}</div>` : ""}
           `;
@@ -6825,7 +6895,7 @@ function renderView(viewName) {
           delBtn.style.color = "#ff8a8a";
           delBtn.style.cursor = "pointer";
           delBtn.onclick = async () => {
-            if (!confirm("Delete this expense?")) return;
+            if (!delBtn.dataset.armed) { delBtn.dataset.armed = "1"; delBtn.textContent = "Confirm delete"; return; }
             delBtn.disabled = true;
             try {
               const resp = await adminFetch("/api/admin-delete-expense", {
@@ -6865,6 +6935,7 @@ function renderView(viewName) {
       document.getElementById("expDescription").value = "";
       document.getElementById("expNotes").value = "";
       document.getElementById("expReceiptSaved").checked = false;
+      document.getElementById("expReceiptFile").value = "";
       const errEl = document.getElementById("expError");
       errEl.textContent = "";
       errEl.classList.remove("show");
@@ -6907,6 +6978,23 @@ function renderView(viewName) {
         cancelBtn.disabled = true;
         confirmBtn.textContent = "Saving...";
         try {
+          const file = document.getElementById("expReceiptFile").files[0];
+          if (file) {
+            confirmBtn.textContent = "Uploading receipt...";
+            const type = file.type === "application/pdf" ? "application/pdf" : (file.type || "image/jpeg");
+            const signResp = await adminFetch("/api/receipt-upload-url", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ content_type: type })
+            });
+            const signed = await signResp.json().catch(() => ({}));
+            if (!signResp.ok) throw new Error(signed.error || "Receipt upload failed");
+            const put = await fetch(signed.upload_url, { method: "PUT", headers: { "Content-Type": type, "x-upsert": "false" }, body: file });
+            if (!put.ok) throw new Error("Receipt upload failed (" + put.status + ")");
+            payload.receipt_path = signed.path;
+            payload.receipt_saved = true;
+            confirmBtn.textContent = "Saving...";
+          }
           const resp = await adminFetch("/api/admin-record-expense", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -6932,6 +7020,7 @@ function renderView(viewName) {
     addBtn.onclick = () => openExpenseModal();
 
     viewContainer.appendChild(wrapper);
+    loadPending();
     loadExpenses();
     return;
   }
