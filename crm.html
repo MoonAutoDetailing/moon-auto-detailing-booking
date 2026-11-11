@@ -7119,11 +7119,27 @@ function crmLogoutToAdmin() {
   window.location.href = "/admin.html";
 }
 
+// The CRM is owner-only while it's being rebuilt (the API returns 403 for managers too).
+function crmBlockedForRole() {
+  let staff = null;
+  try { staff = JSON.parse(sessionStorage.getItem("moon_admin_staff") || "null"); } catch {}
+  if (!staff || staff.role === "owner") return false;
+  document.body.innerHTML = `
+    <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:#0e0e0e;color:#fff;font-family:system-ui,sans-serif;padding:16px;text-align:center;">
+      <div><h2 style="color:#7fb8e6;margin:0 0 8px;">The CRM is owner-only for now</h2>
+      <p style="opacity:.8;margin:0 0 16px;">It's being rebuilt. Bookings, the crew schedule and weekly revenue are in Booking Operations.</p>
+      <a href="/admin.html?booking=1" style="color:#07111d;background:#7fb8e6;padding:10px 16px;border-radius:10px;text-decoration:none;font-weight:700;">Open Booking Operations</a></div>
+    </div>`;
+  return true;
+}
+
 async function bootCrmApp() {
+  if (crmBlockedForRole()) return;
   try {
     showLoginOverlay();
     await requireLoginUI();
     hideLoginOverlay();
+    if (crmBlockedForRole()) return;
     setDetailPanelOpen(false);
     renderTabHeader();
     initCrmAddressAutocomplete();

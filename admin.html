@@ -2077,7 +2077,7 @@ style="
           <h2>Booking Operations</h2>
           <p>Manage bookings, approvals, reschedules, subscriptions, discounts, and admin-created appointments.</p>
         </button>
-        <a class="admin-gateway-option" href="/crm.html">
+        <a class="admin-gateway-option" href="/crm.html" id="openCrmLink">
           <span class="admin-gateway-pill">Customer Growth</span>
           <h2>CRM Operations HQ</h2>
           <p>Desktop workspace for today&apos;s queue, customers, pipeline, tasks, and follow-ups.</p>
@@ -2292,6 +2292,35 @@ function getAdminStaff() {
   try { return JSON.parse(sessionStorage.getItem("moon_admin_staff") || "null"); } catch { return null; }
 }
 
+// Owners see everything. Managers run the day-to-day (bookings, schedule, time clock,
+// checklists, weekly revenue); the CRM, Business dashboard, Bookkeeping and expense approvals
+// are owner-only (the API enforces the same rules). The shared-password login counts as owner.
+function adminRole() {
+  return getAdminStaff()?.role || "owner";
+}
+const OWNER_ONLY_VIEWS = ["business", "bookkeeping"];
+
+// Re-reads the signed-in person so a role change applies on the next page load.
+async function refreshAdminStaff() {
+  if (!ADMIN_SESSION || !ADMIN_SESSION.startsWith("v2.")) return;
+  try {
+    const res = await fetch("/api/staff-me", { headers: { "x-admin-session": ADMIN_SESSION } });
+    if (!res.ok) return;
+    const { staff } = await res.json();
+    sessionStorage.setItem("moon_admin_staff", JSON.stringify(staff));
+  } catch {}
+}
+
+function applyRoleToGateway() {
+  const owner = adminRole() === "owner";
+  const crm = document.getElementById("openCrmLink");
+  if (crm) crm.style.display = owner ? "" : "none";
+  const sub = document.querySelector("#adminGatewaySection .admin-gateway-subtitle");
+  if (sub) sub.textContent = owner
+    ? "Choose Booking Operations or the CRM Dashboard to manage your business."
+    : "Bookings, crew schedule, time clock, job checklists and weekly revenue.";
+}
+
 async function requireLoginUI() {
   if (ADMIN_SESSION) return;
 
@@ -2372,6 +2401,8 @@ function hideLoginOverlay() {
 
 function showAdminGateway() {
   stopRealtimeBookings();
+  applyRoleToGateway();
+  refreshAdminStaff().then(applyRoleToGateway);
   document.getElementById("bookingAdminSection").classList.remove("open");
   document.getElementById("adminGatewaySection").classList.add("open");
 }
@@ -3600,7 +3631,7 @@ function renderButtons() {
   viewButtons.innerHTML = "";
 
   const primaryKeys = ["pending", "today", "upcoming"];
-  const menuKeys = ["business", "history", "subscriptions", "waitlist", "team", "schedule", "timeclock", "payroll", "checklists", "discount-codes", "book-customer", "availability", "expenses", "bookkeeping"];
+  const menuKeys = ["revenue", "business", "history", "subscriptions", "waitlist", "team", "schedule", "timeclock", "payroll", "checklists", "discount-codes", "book-customer", "availability", "expenses", "bookkeeping"];
   const allButtons = [
     { key: "pending", label: "Pending Bookings" },
     { key: "today", label: "Today's Schedule" },
@@ -3612,6 +3643,7 @@ function renderButtons() {
     { key: "schedule", label: "Crew Schedule" },
     { key: "timeclock", label: "Time Clock" },
     { key: "payroll", label: "Payroll" },
+    { key: "revenue", label: "Weekly Revenue" },
     { key: "business", label: "Business" },
     { key: "checklists", label: "Job Checklists" },
     { key: "discount-codes", label: "Discount Codes" },
@@ -3620,6 +3652,9 @@ function renderButtons() {
     { key: "expenses", label: "Expenses" },
     { key: "bookkeeping", label: "Bookkeeping" }
   ];
+
+  const hidden = adminRole() === "owner" ? [] : OWNER_ONLY_VIEWS;
+  for (let i = allButtons.length - 1; i >= 0; i--) if (hidden.includes(allButtons[i].key)) allButtons.splice(i, 1);
 
   allButtons.forEach(btn => {
     const button = document.createElement("button");
@@ -3635,7 +3670,7 @@ function renderButtons() {
   if (dropdown) {
     dropdown.innerHTML = "";
     const sections = [
-      { title: "Views", keys: ["business", "history", "subscriptions", "waitlist"] },
+      { title: "Views", keys: ["revenue", "business", "history", "subscriptions", "waitlist"] },
       { title: "Team", keys: ["team", "schedule", "timeclock", "payroll", "checklists"] },
       { title: "Tools", keys: ["discount-codes", "book-customer", "availability", "expenses", "bookkeeping"] },
       { title: "Account", keys: ["__debug__"] }
@@ -4423,6 +4458,11 @@ function renderBookCustomerView() {
 function renderView(viewName) {
   viewContainer.innerHTML = "";
 
+  if (OWNER_ONLY_VIEWS.includes(viewName) && adminRole() !== "owner") {
+    viewContainer.innerHTML = "<p style='margin-top:40px;'>That section is for the owner.</p>";
+    return;
+  }
+
   if (viewName === "book-customer") {
     renderBookCustomerView();
     return;
@@ -4892,6 +4932,77 @@ function renderView(viewName) {
   // =========================
   // WAITLIST (off-season sign-ups)
   // =========================
+  // =========================
+  // WEEKLY REVENUE (collected payments, owners and managers)
+  // =========================
+  if (viewName === "revenue") {
+    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const $ = (n) => "$" + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmtD = (d) => new Date(d + "T12:00:00Z").toLocaleDateString([], { timeZone: "UTC", month: "short", day: "numeric" });
+    const fmtDay = (iso) => new Date(iso).toLocaleDateString([], { timeZone: "America/New_York", weekday: "short", month: "numeric", day: "numeric" });
+    let weekDate = null;
+    const wrapper = document.createElement("div");
+    wrapper.style.cssText = "display:flex;flex-direction:column;gap:12px;";
+    viewContainer.appendChild(wrapper);
+    const btn = "padding:8px 12px;border-radius:10px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.06);color:#fff;font:inherit;font-size:14px;cursor:pointer;";
+    const tile = (label, value, sub, warn) => `<div style="flex:1 1 150px;padding:12px 14px;border-radius:12px;background:${warn ? "rgba(255,198,92,0.12)" : "rgba(111,147,196,0.12)"};"><div style="font-size:12px;opacity:.75;">${label}</div><div style="font-size:24px;font-weight:700;${warn ? "color:#ffc65c;" : ""}">${value}</div>${sub ? `<div style="font-size:12px;opacity:.7;">${sub}</div>` : ""}</div>`;
+
+    async function load() {
+      wrapper.innerHTML = "<p style='margin:0;'>Loading…</p>";
+      try {
+        const res = await adminFetch(`/api/admin-payments${weekDate ? "?week=" + weekDate : ""}`);
+        const d = await res.json();
+        if (!res.ok) throw new Error(d.error || "Failed to load");
+        weekDate = d.week.start;
+        const t = d.totals;
+        const shift = (n) => { const x = new Date(d.week.start + "T12:00:00Z"); x.setUTCDate(x.getUTCDate() + n); return x.toISOString().slice(0, 10); };
+        const methods = Object.entries(d.by_method).sort((a, b) => b[1] - a[1]);
+        wrapper.innerHTML = `
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+            <h3 style="margin:0;flex:1 1 auto;">Weekly revenue <span class="booking-summary-meta">· ${esc(fmtD(d.week.start))} – ${esc(fmtD(d.week.end))}</span></h3>
+            <button type="button" style="${btn}" data-prev>‹ Prev</button>
+            <button type="button" style="${btn}" data-this>This week</button>
+            <button type="button" style="${btn}" data-next>Next ›</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;">
+            ${tile("Collected", $(t.collected), `${t.jobs} job${t.jobs === 1 ? "" : "s"} completed`)}
+            ${tile("Average ticket", $(t.average_ticket))}
+            ${tile("Tips (go to crew)", $(t.tips))}
+            ${d.week.start >= d.this_week ? tile("Still to collect", $(t.still_to_collect), `${t.jobs_remaining} confirmed job${t.jobs_remaining === 1 ? "" : "s"} left this week`) : ""}
+            ${t.short ? tile("Under job price", $(t.short), "collected less than the booked total", true) : ""}
+          </div>
+          ${methods.length ? `<div style="display:flex;flex-wrap:wrap;gap:8px;font-size:14px;">${methods.map(([m, v]) => `<span style="padding:6px 12px;border-radius:999px;background:rgba(255,255,255,.07);">${esc(m)}: <strong>${$(v)}</strong></span>`).join("")}</div>` : ""}
+          <div style="overflow-x:auto;border:1px solid rgba(255,255,255,.12);border-radius:12px;">
+            <table style="border-collapse:collapse;width:100%;min-width:720px;font-size:14px;">
+              <thead><tr style="font-size:12px;opacity:.75;text-align:right;">
+                <th style="text-align:left;padding:10px;">Day</th><th style="text-align:left;padding:10px;">Customer</th><th style="text-align:left;padding:10px;">Service</th>
+                <th style="padding:10px;">Job total</th><th style="padding:10px;">Collected</th><th style="padding:10px;">Tip</th><th style="text-align:left;padding:10px;">Method</th><th style="text-align:left;padding:10px;">Recorded by</th>
+              </tr></thead>
+              <tbody>${d.jobs.length ? d.jobs.map(j => `
+                <tr style="border-top:1px solid rgba(255,255,255,.08);text-align:right;${j.short ? "background:rgba(255,198,92,0.06);" : ""}">
+                  <td style="text-align:left;padding:10px;">${esc(fmtDay(j.scheduled_start))}</td>
+                  <td style="text-align:left;padding:10px;font-weight:600;">${esc(j.customer)}</td>
+                  <td style="text-align:left;padding:10px;">${esc(j.service)}</td>
+                  <td style="padding:10px;">${$(j.total)}</td>
+                  <td style="padding:10px;font-weight:700;${j.short ? "color:#ffc65c;" : ""}">${j.unpaid ? "No payment" : $(j.collected)}${j.short ? `<div style="font-size:11px;font-weight:400;">${$(j.short)} under</div>` : ""}</td>
+                  <td style="padding:10px;">${j.tip ? $(j.tip) : "—"}</td>
+                  <td style="text-align:left;padding:10px;">${esc(j.method || "—")}</td>
+                  <td style="text-align:left;padding:10px;opacity:.8;">${esc(j.recorded_by || "—")}</td>
+                </tr>`).join("") : `<tr><td colspan="8" style="padding:16px;opacity:.7;">No completed jobs this week yet.</td></tr>`}</tbody>
+            </table>
+          </div>
+          <p style="margin:0;font-size:12px;opacity:.65;">Completed jobs by service date, Monday–Sunday. "Under job price" flags jobs where less was collected than the booked total (discounts given on site, partial payments) — follow up with the crew or customer.</p>`;
+        wrapper.querySelector("[data-prev]").onclick = () => { weekDate = shift(-7); load(); };
+        wrapper.querySelector("[data-next]").onclick = () => { weekDate = shift(7); load(); };
+        wrapper.querySelector("[data-this]").onclick = () => { weekDate = null; load(); };
+      } catch (err) {
+        wrapper.innerHTML = `<p style="margin:0;color:#ff8a8a;">${esc(err.message)}</p>`;
+      }
+    }
+    load();
+    return;
+  }
+
   // =========================
   // PAYROLL (weekly: draft → approve → mark paid)
   // =========================
@@ -7250,7 +7361,7 @@ function renderView(viewName) {
     addBtn.onclick = () => openExpenseModal();
 
     viewContainer.appendChild(wrapper);
-    loadPending();
+    if (adminRole() === "owner") loadPending();
     loadExpenses();
     return;
   }

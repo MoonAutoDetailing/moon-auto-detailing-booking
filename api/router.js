@@ -54,6 +54,7 @@ const ROUTES = {
   "admin-pause-subscription": () => import("./_handlers/admin-pause-subscription.js"),
   "admin-record-expense": () => import("./_handlers/admin-record-expense.js"),
   "admin-reschedule-booking": () => import("./_handlers/admin-reschedule-booking.js"),
+  "admin-payments": () => import("./_handlers/admin-payments.js"),
   "admin-payroll": () => import("./_handlers/admin-payroll.js"),
   "admin-request-reschedule": () => import("./_handlers/admin-request-reschedule.js"),
   "admin-resume-subscription": () => import("./_handlers/admin-resume-subscription.js"),
@@ -120,6 +121,13 @@ const ROUTES = {
   "validate-discount-code": () => import("./_handlers/validate-discount-code.js"),
 };
 
+// Owner-only endpoints: the CRM (being rebuilt), full business numbers (profit, labor,
+// expenses), the bookkeeping workbook and crew expense approvals. Managers get a 403 here
+// before the handler loads; each handler still does its own admin check.
+export function isOwnerOnly(name) {
+  return name.startsWith("admin-crm-") || ["admin-analytics", "export-bookkeeping", "admin-expense-review"].includes(name);
+}
+
 const ROUTE_PARAM = "__route";
 
 function resolveRouteName(req) {
@@ -138,6 +146,17 @@ export default async function handler(req, res) {
   const load = Object.prototype.hasOwnProperty.call(ROUTES, name) ? ROUTES[name] : null;
   if (!load) {
     return res.status(404).json({ error: "Not found" });
+  }
+
+  if (isOwnerOnly(name)) {
+    const { default: verifyAdmin } = await import("./_verifyAdmin.js");
+    let admin;
+    try {
+      ({ admin } = await verifyAdmin(req));
+    } catch {
+      return res.status(401).json({ error: "Unauthorized" });
+    }
+    if (admin.role !== "owner") return res.status(403).json({ error: "Owner only" });
   }
 
   const mod = await load();
