@@ -3892,7 +3892,7 @@ const response = await fetch("/api/submit-reschedule", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify({
-    bookingId: RESCHEDULE_BOOKING_ID,
+    token: RESCHEDULE_TOKEN,
     start: startLocal.toISOString(),
     end: endLocal.toISOString()
   })

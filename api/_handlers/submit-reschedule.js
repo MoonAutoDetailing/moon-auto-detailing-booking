@@ -21,11 +21,26 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { bookingId, start, end } = req.body;
+    const { token, start, end } = req.body;
 
-    if (!bookingId || !start || !end) {
+    if (!token || !start || !end) {
       return res.status(400).json({ error: "Missing required fields" });
     }
+
+    // The reschedule link's token is the only proof the caller owns the booking; never
+    // trust a booking id from the client. Only bookings a customer was sent a reschedule
+    // link for (status reschedule_requested) can be moved here.
+    const { data: owned, error: ownedErr } = await supabase
+      .from("bookings")
+      .select("id, status")
+      .eq("manage_token", token)
+      .maybeSingle();
+
+    if (ownedErr || !owned || owned.status !== "reschedule_requested") {
+      return res.status(404).json({ error: "Invalid or expired reschedule link." });
+    }
+
+    const bookingId = owned.id;
 
     // Maintenance plan bookings must stay inside their cycle window.
     const cycleCheck = await validateCustomerReschedule(supabase, bookingId, start);
