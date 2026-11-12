@@ -2193,6 +2193,7 @@ body.ux .ux-pill.confirmed { background: rgba(127,184,230,.18); color: var(--ux-
 body.ux .ux-pill.completed { background: rgba(111,211,154,.16); color: var(--ux-ok); }
 body.ux .ux-pill.cancelled, body.ux .ux-pill.denied { background: rgba(255,123,123,.16); color: var(--ux-bad); }
 body.ux .ux-pill.ceramic { background: rgba(255,198,92,.18); color: var(--ux-warn); }
+body.ux .ux-pill.overdue { background: rgba(255,123,123,.16); color: var(--ux-bad); text-transform: none; }
 body.ux .card .booking-header .status-badge, body.ux .card .booking-header .booking-summary-meta, body.ux .card .booking-header .chevron { display: none; }
 body.ux .card .booking-content { display: none; padding: 0 14px 14px; border-top: 1px solid var(--ux-line); }
 body.ux .card.expanded .booking-content { display: block; }
@@ -2320,6 +2321,91 @@ body.ux .ux-check input { width: 20px; height: 20px; accent-color: var(--ux-prim
 @media (max-width: 420px) {
   body.ux .ux-stats strong { font-size: 19px; }
   body.ux .ux-facts { grid-template-columns: 84px minmax(0, 1fr); }
+}
+/* expandable cards (Team, Waitlist, Discount codes) and collapsible sections in the new style */
+body.ux .discount-code-card { margin: 0; }
+body.ux .discount-code-header {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center;
+  padding: 14px; min-height: 56px; box-sizing: border-box;
+}
+body.ux .discount-code-header > span:first-child { grid-column: 1; font-size: 16px; }
+body.ux .discount-code-header .booking-summary-meta { grid-column: 1; font-size: 13px; color: var(--ux-muted); }
+body.ux .discount-code-header .booking-summary-meta:empty { display: none; }
+body.ux .discount-code-header .chevron, body.ux .admin-section-header .chevron {
+  grid-column: 2; grid-row: 1 / span 5; font-size: 0; width: 10px; height: 10px; opacity: 1; color: var(--ux-muted);
+  border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); margin: 0 4px 4px 0;
+}
+body.ux .discount-code-card.expanded .chevron { transform: rotate(-135deg); margin: 4px 4px 0 0; }
+body.ux .discount-code-detail { padding: 4px 14px 14px; font-size: 14px; border-top: 1px solid var(--ux-line); }
+body.ux .discount-code-detail p { padding-top: 8px; }
+body.ux .discount-code-detail .moon-tab { flex: 1 1 160px; }
+body.ux .admin-section { margin: 0; }
+body.ux .admin-section-header { padding: 14px; min-height: 52px; box-sizing: border-box; font-size: 15px; font-weight: 600; }
+body.ux .admin-section.collapsed .admin-section-header .chevron { transform: rotate(-45deg); }
+body.ux .admin-section-body { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-top: 1px solid var(--ux-line); }
+body.ux .ux-toolbar { flex-direction: row !important; align-items: center !important; justify-content: space-between; gap: 10px; margin: 0; }
+body.ux .ux-toolbar .ux-check { margin-right: auto; flex: 0 1 auto !important; }
+body.ux .ux-check { display: flex; white-space: nowrap; }
+body.ux .discount-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ux-muted); }
+body.ux .discount-field input { width: 100%; max-width: none; }
+@media (max-width: 640px) {
+  body.ux .discount-create-section .discount-create-form { flex-direction: column; align-items: stretch !important; }
+  body.ux .discount-create-section .discount-create-form > * { flex: none; width: 100%; max-width: none; }
+}
+/* payment / expense modals in the new style: bottom sheet on phones, 16px fields (no iPhone zoom) */
+body.ux #paymentModalOverlay, body.ux #expenseModalOverlay { align-items: flex-end; padding: 0; }
+body.ux .payment-modal-card, body.ux .expense-modal-card {
+  max-width: 520px; max-height: calc(100dvh - 24px); border-radius: 18px 18px 0 0; background: var(--ux-surface-2);
+  border: 1px solid var(--ux-line-strong); padding: 20px 16px calc(16px + env(safe-area-inset-bottom)); backdrop-filter: none;
+}
+body.ux .payment-modal-card h3, body.ux .expense-modal-card h3 { color: var(--ux-text); font-size: 19px; }
+body.ux .payment-modal-card .pmt-summary { font-size: 14px; color: var(--ux-muted); }
+body.ux .payment-modal-card label, body.ux .expense-modal-card label { text-transform: none; letter-spacing: 0; font-size: 13px; font-weight: 600; color: var(--ux-muted); }
+body.ux .payment-modal-card input:not([type="checkbox"]), body.ux .payment-modal-card select, body.ux .payment-modal-card textarea,
+body.ux .expense-modal-card input:not([type="checkbox"]), body.ux .expense-modal-card select, body.ux .expense-modal-card textarea {
+  font-size: 16px; min-height: 46px; border-radius: 10px; background: #0f1318; border-color: var(--ux-line-strong);
+}
+body.ux .payment-modal-card .pmt-actions button, body.ux .expense-modal-card .pmt-actions button { min-height: 48px; border-radius: 12px; font-size: 15px; }
+@media (min-width: 700px) {
+  body.ux #paymentModalOverlay, body.ux #expenseModalOverlay { align-items: center; padding: 16px; }
+  body.ux .payment-modal-card, body.ux .expense-modal-card { border-radius: 18px; }
+}
+.pmt-crew { display: flex; flex-direction: column; border: 1px solid rgba(255,255,255,.18); border-radius: 10px; overflow: hidden; }
+.payment-modal-card .pmt-crew-item { display: flex; align-items: center; gap: 10px; margin: 0; padding: 12px; min-height: 46px; box-sizing: border-box; border-top: 1px solid rgba(255,255,255,.1); text-transform: none; letter-spacing: 0; font-size: 15px; font-weight: 500; color: #f3f6fa; cursor: pointer; }
+.payment-modal-card .pmt-crew-item:first-child { border-top: none; }
+.payment-modal-card .pmt-crew-item input { width: 20px; height: 20px; min-height: 0; margin: 0; flex: none; accent-color: #7fb8e6; }
+.pmt-crew-note { padding: 12px; font-size: 14px; color: rgba(255,255,255,.6); }
+/* on-page confirm sheet (uxConfirm) — bottom sheet on phones, centered card on desktop */
+.ux-confirm { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,.6); display: flex; align-items: flex-end; justify-content: center; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); box-sizing: border-box; }
+.ux-confirm-card { width: 100%; max-width: 440px; background: #1b222b; color: #f3f6fa; border: 1px solid rgba(255,255,255,.18); border-radius: 16px; padding: 18px; box-shadow: 0 20px 50px rgba(0,0,0,.6); font-size: 16px; line-height: 1.45; }
+.ux-confirm-card p { margin: 0 0 16px; }
+.ux-confirm-actions { display: flex; gap: 10px; }
+.ux-confirm-actions .ux-btn { flex: 1; min-height: 46px; font-size: 15px; }
+body.ux .ux-btn-danger-solid, .ux-confirm .ux-btn-danger-solid { background: #ff7b7b; border-color: #ff7b7b; color: #1d0505; }
+@media (min-width: 700px) { .ux-confirm { align-items: center; } }
+/* maintenance plans — filters, windows table and actions sized for phones */
+body.ux .subs-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+body.ux .subs-filters select, body.ux .subs-filters input { width: 100%; flex: none; }
+body.ux .subs-filters input { grid-column: 1 / -1; order: -1; }
+body.ux .subs-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+body.ux .sub-mini { min-height: 36px; padding: 6px 12px !important; font-size: 13px !important; }
+body.ux .sub-plan-actions .moon-tab { flex: 1 1 140px; }
+body.ux .sub-inline-form label { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 14px; }
+@media (max-width: 640px) {
+  body.ux .subs-filters { grid-template-columns: 1fr 1fr; }
+  body.ux .subs-filters #subsSort { grid-column: 1 / -1; }
+  body.ux .sub-table thead { display: none; }
+  body.ux .sub-table, body.ux .sub-table tbody, body.ux .sub-table tr, body.ux .sub-table td { display: block; width: 100%; box-sizing: border-box; }
+  body.ux .sub-table tr { padding: 10px 0; border-bottom: 1px solid var(--ux-line); }
+  body.ux .sub-table td { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; border: none; text-align: right; font-size: 14px; }
+  body.ux .sub-table td::before { content: attr(data-label); color: var(--ux-muted); text-align: left; flex: none; }
+  body.ux .sub-table td.sub-actions { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 6px; padding-top: 8px; }
+  body.ux .sub-table td.sub-actions::before { content: none; }
+  body.ux .sub-table td.sub-actions:empty { display: none; }
+  body.ux .sub-table td.sub-actions .sub-mini, body.ux .sub-table td.sub-actions select { flex: 1 1 140px; margin: 0; min-height: 40px; }
+  body.ux .sub-inline-form label { width: 100%; }
+  body.ux .sub-inline-form select, body.ux .sub-inline-form input[type="date"] { flex: 1 1 100%; margin-left: 0; }
+  body.ux .sub-inline-form .moon-tab { width: 100%; }
 }
 </style>
 </head>
@@ -2490,6 +2576,9 @@ style="
         </select>
       </div>
     </div>
+
+    <label>Who worked this job</label>
+    <div class="pmt-crew" id="pmtCrew"><span class="pmt-crew-note">Loading team…</span></div>
 
     <label for="pmtNotes">Notes</label>
     <textarea id="pmtNotes" placeholder="Optional"></textarea>
@@ -2732,6 +2821,8 @@ function clearAdminSession() {
   ADMIN_SESSION = null;
   sessionStorage.removeItem("moon_admin_session");
   sessionStorage.removeItem("moon_admin_staff");
+  sessionStorage.removeItem("moon_admin_view");
+  sessionStorage.removeItem("moon_admin_area");
 }
 
 function showLoginOverlay() {
@@ -2748,9 +2839,15 @@ function showAdminGateway() {
   refreshAdminStaff().then(applyRoleToGateway);
   document.getElementById("bookingAdminSection").classList.remove("open");
   document.getElementById("adminGatewaySection").classList.add("open");
+  try { sessionStorage.setItem("moon_admin_area", "portal"); } catch {}
 }
 
+// Read before start-up renders anything, since rendering records the current view.
+let restoreViewOnLoad = null;
+try { restoreViewOnLoad = sessionStorage.getItem("moon_admin_view"); } catch {}
+
 async function showBookingAdmin() {
+  try { sessionStorage.setItem("moon_admin_area", "booking"); } catch {}
   document.getElementById("adminGatewaySection").classList.remove("open");
   document.getElementById("bookingAdminSection").classList.add("open");
 
@@ -2771,7 +2868,11 @@ async function showBookingAdmin() {
 
   startRealtimeBookings();
   setupUxShell();
-  if (!currentView || currentView === "pending" || currentView === "today" || currentView === "upcoming") handleViewSwitch(currentView || "today");
+  // After a page refresh, come back to the screen the person was on (once per page load).
+  const restore = restoreViewOnLoad;
+  restoreViewOnLoad = null;
+  if (restore && VIEW_TITLES[restore]) handleViewSwitch(restore);
+  else if (!currentView || currentView === "pending" || currentView === "today" || currentView === "upcoming") handleViewSwitch(currentView || "today");
 }
 
 // Header buttons for the new shell (account menu, back to More, initials).
@@ -2789,6 +2890,9 @@ function setupUxShell() {
   }
   const back = document.getElementById("uxBack");
   if (back) back.onclick = () => handleViewSwitch("more");
+  // The portal only adds the CRM, which is owner-only.
+  const portal = document.getElementById("backToPortalBtn");
+  if (portal) portal.style.display = adminRole() === "owner" ? "" : "none";
 }
 
 document.getElementById("openBookingAdminBtn").onclick = () => {
@@ -2844,11 +2948,15 @@ async function bootAdminApp() {
     hideLoginOverlay();
     hardLog("ADMIN AUTH SUCCESS");
 
+    // Managers only have Booking Operations, so they skip the portal; the owner lands where
+    // they were before a refresh (the portal on a fresh sign-in).
     const params = new URLSearchParams(window.location.search);
-    if (params.get("booking") === "1") {
-      await showBookingAdmin();
-    } else if (params.get("portal") === "1") {
+    let lastArea = null;
+    try { lastArea = sessionStorage.getItem("moon_admin_area"); } catch {}
+    if (params.get("portal") === "1") {
       showAdminGateway();
+    } else if (params.get("booking") === "1" || adminRole() !== "owner" || lastArea === "booking") {
+      await showBookingAdmin();
     } else {
       showAdminGateway();
     }
@@ -3153,6 +3261,9 @@ function showPaymentModal(b, opts) {
     discountInfo.style.display = "none";
   }
 
+  const crewBox = document.getElementById("pmtCrew");
+  loadPaymentCrew(crewBox);
+
   amountInput.value = expectedTotal > 0 ? expectedTotal.toFixed(2) : "";
   tipInput.value = "0";
   methodSelect.value = "";
@@ -3198,6 +3309,12 @@ function showPaymentModal(b, opts) {
       errorEl.classList.add("show");
       return;
     }
+    const workedBy = [...crewBox.querySelectorAll("input[type=checkbox]:checked")].map((c) => c.value);
+    if (tip > 0 && !workedBy.length && crewBox.querySelector("input[type=checkbox]")) {
+      errorEl.textContent = "Pick who worked this job so the tip goes into their pay.";
+      errorEl.classList.add("show");
+      return;
+    }
 
     confirmBtn.disabled = true;
     cancelBtn.disabled = true;
@@ -3209,6 +3326,7 @@ function showPaymentModal(b, opts) {
       payment_method: method
     };
     if (notes) payload.payment_notes = notes;
+    if (workedBy.length) payload.worked_by = workedBy;
 
     let result = { ok: false };
     try {
@@ -3232,6 +3350,25 @@ function showPaymentModal(b, opts) {
   };
 }
 
+
+// Active team for the "Who worked this job" checkboxes; tips are split between the people ticked.
+let paymentCrewCache = null;
+async function loadPaymentCrew(box) {
+  box.innerHTML = `<span class="pmt-crew-note">Loading team…</span>`;
+  try {
+    if (!paymentCrewCache) {
+      const res = await adminFetch("/api/admin-staff");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || "Couldn't load the team");
+      paymentCrewCache = (data.staff || []).filter((s) => s.active);
+    }
+    box.innerHTML = paymentCrewCache.length
+      ? paymentCrewCache.map((s) => `<label class="pmt-crew-item"><input type="checkbox" value="${adminBookEscapeHtml(s.id)}"> ${adminBookEscapeHtml(s.full_name)}</label>`).join("")
+      : `<span class="pmt-crew-note">No team members yet.</span>`;
+  } catch (e) {
+    box.innerHTML = `<span class="pmt-crew-note">${adminBookEscapeHtml(e.message)}</span>`;
+  }
+}
 
 /* ===================== FORMAT HELPERS ===================== */
 function isValidDate(d) {
@@ -3564,7 +3701,7 @@ function buildCrewQcPanel(b) {
       const res = await adminFetch(`/api/admin-job?booking_id=${encodeURIComponent(b.id)}`);
       const d = await res.json();
       if (!res.ok) throw new Error(d.error || "Load failed");
-      const fmt = (iso) => iso ? new Date(iso).toLocaleString() : "—";
+      const fmt = (iso) => iso ? new Date(iso).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }) : "—";
       const doneCount = d.checklist.filter(s => s.done).length;
       const photosOf = (kind) => d.photos.filter(p => p.kind === kind);
       const thumbs = (list) => list.length
@@ -3644,15 +3781,20 @@ card.style.borderLeft = "4px solid var(--moon-primary)";
   const timeShort = start.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   const phoneDigits = String(b.customers?.phone || "").replace(/[^\d+]/g, "");
   const mapsUrl = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(b.service_address || "");
-  const statusKey = String(b.status || "").toLowerCase();
-  const statusLabel = (b.status ?? "").replace(/_/g, " ");
+  // A confirmed job that ended over an hour ago was never completed — flag it instead of "Confirmed".
+  const overdue = b.status === "confirmed" && end.getTime() < Date.now() - 3600000;
+  const statusKey = overdue ? "overdue" : String(b.status || "").toLowerCase();
+  const statusLabel = overdue ? "Not completed" : (b.status ?? "").replace(/_/g, " ");
   const money = (n) => n != null ? "$" + Number(n).toFixed(2) : "—";
+  // Town from "street, town, ST zip" so the row says where the job is.
+  const addrParts = String(b.service_address || "").split(",").map((s) => s.trim()).filter(Boolean);
+  const town = addrParts.length >= 3 ? addrParts[addrParts.length - 2] : "";
 
   card.innerHTML = `
   <div class="booking-header" role="button" aria-expanded="false">
     <div class="ux-time">${escC(timeShort)}<small>${escC(durStr)}</small></div>
     <div class="ux-who">${escC(customerName)}</div>
-    <div class="ux-what">${escC(serviceShort)}${vehicleShort ? " · " + escC(vehicleShort) : ""}</div>
+    <div class="ux-what">${escC(serviceShort)}${town ? " · " + escC(town) : vehicleShort ? " · " + escC(vehicleShort) : ""}</div>
     <div class="ux-right">
       <span class="ux-price">${escC(totalStr)}</span>
       <span class="ux-pill ${escC(statusKey)}">${escC(statusLabel)}</span>
@@ -3792,7 +3934,7 @@ denyBtn.className = "cancel";
   setBookingButtonsDisabled(card, true);
 
   try {
-    if (!confirm("Are you sure you want to deny this booking?")) return;
+    if (!(await uxConfirm("Deny this booking request? The customer gets an email that it was declined.", { okLabel: "Deny booking", cancelLabel: "Keep it", danger: true }))) return;
 
     const res = await adminFetch("/api/admin-deny-booking", {
       method: "POST",
@@ -3836,7 +3978,7 @@ denyBtn.className = "cancel";
     setBookingButtonsDisabled(card, true);
 
     try {
-      if (!confirm("Mark this booking as reschedule requested?")) return;
+      if (!(await uxConfirm("Send the customer a link to pick a new time? The booking is marked as reschedule requested.", { okLabel: "Send link" }))) return;
 
       // Delete Google Calendar event ONLY if one exists
 if (b.google_event_id) {
@@ -3930,7 +4072,7 @@ if (b.google_event_id) {
     setBookingButtonsDisabled(card, true);
 
     try {
-      if (!confirm("Cancel this booking?")) return;
+      if (!(await uxConfirm("Cancel this booking? The customer gets a cancellation email.", { okLabel: "Cancel booking", cancelLabel: "Keep booking", danger: true }))) return;
 
       const cancelRes = await adminFetch("/api/admin-cancel-booking", {
         method: "POST",
@@ -4087,6 +4229,30 @@ function uxPager({ label, onPrev, onNext, onReset, resetLabel = "This week", ext
   if (onReset) el.querySelector("[data-reset]").onclick = onReset;
   return el;
 }
+// On-page confirmation sheet; use instead of window.confirm(), which some browsers block silently.
+// Resolves true when the person taps the action, false on Cancel / backdrop / Escape.
+function uxConfirm(message, { okLabel = "Confirm", cancelLabel = "Cancel", danger = false } = {}) {
+  return new Promise((resolve) => {
+    const wrap = document.createElement("div");
+    wrap.className = "ux-confirm";
+    wrap.innerHTML = `
+      <div class="ux-confirm-card" role="alertdialog" aria-modal="true">
+        <p>${adminBookEscapeHtml(message)}</p>
+        <div class="ux-confirm-actions">
+          <button type="button" class="ux-btn" data-no>${adminBookEscapeHtml(cancelLabel)}</button>
+          <button type="button" class="ux-btn ${danger ? "ux-btn-danger-solid" : "ux-btn-primary"}" data-yes>${adminBookEscapeHtml(okLabel)}</button>
+        </div>
+      </div>`;
+    const done = (v) => { document.removeEventListener("keydown", onKey); wrap.remove(); resolve(v); };
+    const onKey = (e) => { if (e.key === "Escape") done(false); };
+    wrap.addEventListener("click", (e) => { if (e.target === wrap) done(false); });
+    wrap.querySelector("[data-no]").onclick = () => done(false);
+    wrap.querySelector("[data-yes]").onclick = () => done(true);
+    document.addEventListener("keydown", onKey);
+    document.body.appendChild(wrap);
+    wrap.querySelector("[data-yes]").focus();
+  });
+}
 
 function renderDashboard() {
   handleViewSwitch("today");
@@ -4094,7 +4260,8 @@ function renderDashboard() {
 
 function renderButtons() {
   viewButtons.innerHTML = "";
-  const pendingCount = (cachedViews.pending || []).length;
+  // Bookings badge = everything waiting on a manager: requests to confirm + finished jobs not completed.
+  const pendingCount = (cachedViews.pending || []).length + (cachedViews.overdue || []).length;
   const badge = (key) => key === "bookings" && pendingCount ? `<span class="ux-badge">${pendingCount}</span>` : "";
 
   const bar = document.getElementById("uxTabbar");
@@ -4135,12 +4302,13 @@ function renderMoreView() {
       <div class="ux-list-title">Account</div>
       <div class="ux-list">
         <a class="ux-list-item" href="/staff.html"><span class="ux-list-icon">${icon("smartphone", 20)}</span><span class="ux-list-label">Open the crew app</span><span class="ux-chev">${icon("chevronRight", 18)}</span></a>
-        <button type="button" class="ux-list-item" data-act="portal"><span class="ux-list-icon">${icon("home", 20)}</span><span class="ux-list-label">Admin portal</span><span class="ux-chev">${icon("chevronRight", 18)}</span></button>
+        ${adminRole() === "owner" ? `<button type="button" class="ux-list-item" data-act="portal"><span class="ux-list-icon">${icon("home", 20)}</span><span class="ux-list-label">Admin portal · CRM</span><span class="ux-chev">${icon("chevronRight", 18)}</span></button>` : ""}
         <button type="button" class="ux-list-item ux-danger-text" data-act="logout"><span class="ux-list-icon">${icon("logout", 20)}</span><span class="ux-list-label">Sign out</span></button>
       </div>
     </section>`);
   wrap.querySelectorAll("[data-view]").forEach(b => (b.onclick = () => handleViewSwitch(b.dataset.view)));
-  wrap.querySelector('[data-act="portal"]').onclick = () => document.getElementById("backToPortalBtn").click();
+  const portalBtn = wrap.querySelector('[data-act="portal"]');
+  if (portalBtn) portalBtn.onclick = () => document.getElementById("backToPortalBtn").click();
   wrap.querySelector('[data-act="logout"]').onclick = () => document.getElementById("logoutBtn").click();
   viewContainer.appendChild(wrap);
 }
@@ -4261,6 +4429,7 @@ function handleViewSwitch(viewName) {
     viewName = "bookings";
   }
   currentView = viewName;
+  try { sessionStorage.setItem("moon_admin_view", viewName); } catch {}
   closeAccountMenu();
   const title = document.getElementById("uxTitle");
   if (title) title.textContent = VIEW_TITLES[viewName] || "Booking Operations";
@@ -5343,10 +5512,10 @@ function renderView(viewName) {
           <div class="sub-block"><div class="sub-block-title">Service windows</div>
             <div class="sub-table-wrap"><table class="sub-table"><thead><tr><th>#</th><th>Window</th><th>Status</th><th>Appointment</th><th>Actions</th></tr></thead><tbody>
             ${cycles.map((c) => `<tr class="sub-row-${esc(c.status)}">
-              <td>${c.cycle_number}</td>
-              <td>${c.cycle_index === 0 ? "First service " + esc(fmtD(c.window_start_date)) : esc(fmtD(c.window_start_date)) + " – " + esc(fmtD(c.effective_window_end))}${c.pushback_used ? `<div class="sub-muted">extended${c.free_pushback ? " (free)" : " (15% fee)"}</div>` : ""}</td>
-              <td><span class="sub-cycle-badge sub-cycle-${esc(c.status)}">${esc(CYCLE_LABEL[c.status] || c.status)}</span>${c.resolved_by && c.resolved_by !== "cron" ? `<div class="sub-muted">by ${esc(c.resolved_by)}</div>` : ""}</td>
-              <td>${c.booking ? `${esc(fmtDT(c.booking.scheduled_start))}<div class="sub-muted">${esc(c.booking.status)} · ${money(c.booking.total_price)} · ${c.booking.price_mode === "discounted" ? "member" : "full"} price</div>` : "—"}</td>
+              <td data-label="Visit">#${c.cycle_number}</td>
+              <td data-label="Window"><div>${c.cycle_index === 0 ? "First service " + esc(fmtD(c.window_start_date)) : esc(fmtD(c.window_start_date)) + " – " + esc(fmtD(c.effective_window_end))}${c.pushback_used ? `<div class="sub-muted">extended${c.free_pushback ? " (free)" : " (15% fee)"}</div>` : ""}</div></td>
+              <td data-label="Status"><div><span class="sub-cycle-badge sub-cycle-${esc(c.status)}">${esc(CYCLE_LABEL[c.status] || c.status)}</span>${c.resolved_by && c.resolved_by !== "cron" ? `<div class="sub-muted">by ${esc(c.resolved_by)}</div>` : ""}</div></td>
+              <td data-label="Appointment"><div>${c.booking ? `${esc(fmtDT(c.booking.scheduled_start))}<div class="sub-muted">${esc(c.booking.status)} · ${money(c.booking.total_price)} · ${c.booking.price_mode === "discounted" ? "member" : "full"} price</div>` : "—"}</div></td>
               <td class="sub-actions">${cycleActions(c, data)}</td></tr>`).join("")}
             </tbody></table></div>
           </div>
@@ -5354,7 +5523,7 @@ function renderView(viewName) {
             <div class="sub-plan-actions">
               ${sub.status === "active" ? `<button type="button" class="moon-tab" data-plan-action="pause">Pause plan</button>` : ""}
               ${sub.status === "paused" ? `<button type="button" class="moon-tab" data-plan-action="resume">Resume plan</button>` : ""}
-              ${sub.status !== "cancelled" ? `<button type="button" class="moon-tab" data-plan-action="cancel">Cancel plan</button>` : ""}
+              ${sub.status !== "cancelled" ? `<button type="button" class="moon-tab ux-btn-danger" data-plan-action="cancel">Cancel plan</button>` : ""}
             </div>
             ${sub.status === "active" ? `<div class="sub-inline-form"><label>Move next window to start on <input type="date" id="subNextDate"></label><button type="button" class="moon-tab sub-mini" data-plan-action="setNext">Save</button></div>` : ""}
             ${sub.status !== "cancelled" ? `<div class="sub-inline-form" id="subPlanForm"><label>Change plan (from next window):
@@ -5386,7 +5555,7 @@ function renderView(viewName) {
         panel.querySelectorAll("[data-cycle-action]").forEach((b) => {
           b.onclick = async () => {
             const action = b.dataset.cycleAction;
-            if (CONFIRM[action] && !confirm(CONFIRM[action])) return;
+            if (CONFIRM[action] && !(await uxConfirm(CONFIRM[action]))) return;
             b.disabled = true;
             try {
               const d = await postJson("/api/admin-subscription-cycle-action", { subscription_id: id, action, cycle_id: b.dataset.cycleId });
@@ -5397,7 +5566,7 @@ function renderView(viewName) {
         panel.querySelectorAll(".sub-attach").forEach((sel) => {
           sel.onchange = async () => {
             if (!sel.value) return;
-            if (!confirm("Attach this booking to the window?")) { sel.value = ""; return; }
+            if (!(await uxConfirm("Attach this booking to the window?", { okLabel: "Attach" }))) { sel.value = ""; return; }
             try {
               const d = await postJson("/api/admin-subscription-cycle-action", { subscription_id: id, action: "link_booking", cycle_id: sel.dataset.cycleId, booking_id: sel.value });
               await refresh(d.message);
@@ -5410,18 +5579,18 @@ function renderView(viewName) {
             try {
               let d;
               if (action === "pause") {
-                if (!confirm("Pause this plan? Any open, unbooked window is skipped and no emails are sent while paused.")) return;
+                if (!(await uxConfirm("Pause this plan? Any open, unbooked window is skipped and no emails are sent while paused.", { okLabel: "Pause plan" }))) return;
                 d = await postJson("/api/admin-pause-subscription", { subscription_id: id });
               } else if (action === "resume") {
-                if (!confirm("Resume this plan? The next window will be scheduled one period from today.")) return;
+                if (!(await uxConfirm("Resume this plan? The next window will be scheduled one period from today.", { okLabel: "Resume plan" }))) return;
                 d = await postJson("/api/admin-resume-subscription", { subscription_id: id });
               } else if (action === "cancel") {
-                if (!confirm("Cancel this plan for good? The member stops getting windows and member pricing. Existing appointments stay booked.")) return;
+                if (!(await uxConfirm("Cancel this plan for good? The member stops getting windows and member pricing. Existing appointments stay booked.", { okLabel: "Cancel plan", cancelLabel: "Keep plan", danger: true }))) return;
                 d = await postJson("/api/admin-cancel-subscription", { subscription_id: id });
               } else if (action === "setNext") {
                 const date = panel.querySelector("#subNextDate").value;
                 if (!date) return showAdminBanner("Pick a date first.", "error");
-                if (!confirm(`Start this member's next window on ${fmtD(date)}? Any open, unbooked window is skipped.`)) return;
+                if (!(await uxConfirm(`Start this member's next window on ${fmtD(date)}? Any open, unbooked window is skipped.`, { okLabel: "Move window" }))) return;
                 d = await postJson("/api/admin-subscription-cycle-action", { subscription_id: id, action: "set_next_window", start_date: date });
               } else if (action === "changePlan") {
                 const body = { subscription_id: id, frequency: panel.querySelector("#subNewFreq").value, service_variant_id: panel.querySelector("#subNewVariant").value, reset_discount: panel.querySelector("#subResetDiscount").checked };
@@ -6123,7 +6292,7 @@ function renderView(viewName) {
 
       wrapper.innerHTML = `
         <div class="sch-bar">
-          <h3>Crew schedule <span class="booking-summary-meta">· ${esc(d.week.start)} – ${esc(d.week.end)}</span></h3>
+          <h3>Week of ${esc(uxWeekLabel(d.week.start, d.week.end))}</h3>
           <button type="button" class="sch-btn" data-prev>‹</button>
           <button type="button" class="sch-btn" data-this>This week</button>
           <button type="button" class="sch-btn" data-next>›</button>
@@ -6140,7 +6309,7 @@ function renderView(viewName) {
         </div>
         ${d.time_off.length ? `<div class="sch-panel"><strong>Time-off requests</strong>${d.time_off.map(t => `
           <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;">
-            <span style="flex:1;min-width:200px;">${esc(t.full_name)}: <strong>${esc(dayHead(t.start_date))}${t.end_date !== t.start_date ? " → " + esc(dayHead(t.end_date)) : ""}</strong>${t.reason ? ` <span style="opacity:.75;">· ${esc(t.reason)}</span>` : ""}</span>
+            <span style="flex:1 1 100%;">${esc(t.full_name)}: <strong>${esc(dayHead(t.start_date))}${t.end_date !== t.start_date ? " → " + esc(dayHead(t.end_date)) : ""}</strong>${t.reason ? ` <span style="opacity:.75;">· ${esc(t.reason)}</span>` : ""}</span>
             ${denyArmed === t.id
               ? `<input data-deny-note placeholder="Note to ${esc(t.full_name.split(" ")[0])} (optional)" style="padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;font:inherit;min-width:180px;">
                  <button type="button" class="sch-btn danger" data-deny-yes="${esc(t.id)}">Deny request</button>
@@ -6182,6 +6351,14 @@ function renderView(viewName) {
               </div>
             </div>`).join("")}
         </div></div>`}`;
+
+      // phones: keep the selected day's tab in view (today is often past the right edge)
+      const onDay = wrapper.querySelector(".sch-days .on");
+      if (onDay) {
+        const strip = onDay.parentElement;
+        const b = onDay.getBoundingClientRect(), s = strip.getBoundingClientRect();
+        strip.scrollLeft += b.left - s.left - (s.width - b.width) / 2;
+      }
 
       // toolbar
       wrapper.querySelector("[data-prev]").onclick = () => { weekDate = shiftWeek(-7); focusDay = shiftWeek(-7); load(); };
@@ -6534,7 +6711,7 @@ function renderView(viewName) {
     let staffList = [];
 
     const toolbar = document.createElement("div");
-    toolbar.className = "admin-filters";
+    toolbar.className = "admin-filters ux-toolbar";
     toolbar.style.display = "flex";
     toolbar.style.flexWrap = "wrap";
     toolbar.style.gap = "10px";
@@ -6699,7 +6876,7 @@ function renderView(viewName) {
     };
 
     const toolbar = document.createElement("div");
-    toolbar.className = "admin-filters";
+    toolbar.className = "admin-filters ux-toolbar";
     toolbar.style.display = "flex";
     toolbar.style.flexWrap = "wrap";
     toolbar.style.gap = "10px";
@@ -6803,9 +6980,7 @@ function renderView(viewName) {
 
   if (viewName === "discount-codes") {
     const wrapper = document.createElement("div");
-    wrapper.style.display = "flex";
-    wrapper.style.flexDirection = "column";
-    wrapper.style.gap = "24px";
+    wrapper.className = "ux-page";
 
     const createSection = document.createElement("details");
     createSection.className = "discount-create-section ux-card ux-more";
@@ -6855,10 +7030,17 @@ function renderView(viewName) {
     submitBtn.type = "submit";
     submitBtn.textContent = "Create";
     submitBtn.className = "moon-tab";
+    // Date/time fields show no placeholder, so each gets a visible label.
+    const labelled = (text, input) => {
+      const label = document.createElement("label");
+      label.className = "discount-field";
+      label.append(text, input);
+      return label;
+    };
     form.appendChild(codeInput);
     form.appendChild(pctInput);
-    form.appendChild(startInput);
-    form.appendChild(endInput);
+    form.appendChild(labelled("Starts", startInput));
+    form.appendChild(labelled("Ends", endInput));
     form.appendChild(submitBtn);
     createSection.appendChild(form);
     wrapper.appendChild(createSection);
@@ -7178,8 +7360,6 @@ function renderView(viewName) {
         showAdminBanner("Set start and end time (start must be before end) in the panel below.", "error");
         return;
       }
-      const anyBookings = Array.from(selectedDates).some(function(d) { return (bookingCountByDate[d] || 0) > 0; });
-      if (anyBookings && !confirm("Some selected dates have existing bookings. Block time range anyway?")) return;
       await doBulkUpsert("blocked", "time_range", start.value, end.value);
     };
     bulkClearOverride.onclick = () => doBulkClear();
@@ -7411,7 +7591,7 @@ function renderView(viewName) {
 
       if (selectedDates.size === 1) {
         detailPanel.querySelector("[data-action='block-full']").onclick = async () => {
-          if (bookingCount > 0 && !confirm("This date has " + bookingCount + " existing booking(s). New slots will be hidden; existing bookings will not be changed. Continue?")) return;
+          if (bookingCount > 0 && !(await uxConfirm("This date has " + bookingCount + " existing booking(s). New slots will be hidden; existing bookings will not be changed.", { okLabel: "Block day" }))) return;
           await doUpsert("blocked", "full_day", null, null);
         };
         detailPanel.querySelector("[data-action='open-full']").onclick = () => doUpsert("open", "full_day", null, null);
@@ -7425,7 +7605,7 @@ function renderView(viewName) {
           const start = document.getElementById("availabilityStartTime").value;
           const end = document.getElementById("availabilityEndTime").value;
           if (!start || !end || start >= end) { showAdminBanner("Set start and end time (start must be before end).", "error"); return; }
-          if (bookingCount > 0 && !confirm("This date has " + bookingCount + " existing booking(s). New slots in this range will be hidden; existing bookings will not be changed. Continue?")) return;
+          if (bookingCount > 0 && !(await uxConfirm("This date has " + bookingCount + " existing booking(s). New slots in this range will be hidden; existing bookings will not be changed.", { okLabel: "Block time" }))) return;
           await doUpsert("blocked", "time_range", start, end);
         };
         detailPanel.querySelector("[data-action='clear']").onclick = doClear;
@@ -7522,7 +7702,7 @@ function renderView(viewName) {
       try {
         if (mode === "blocked") {
           const anyBookings = Array.from(selectedDates).some(function(d) { return (bookingCountByDate[d] || 0) > 0; });
-          if (anyBookings && !confirm("Some selected dates have existing bookings. Block anyway?")) return;
+          if (anyBookings && !(await uxConfirm("Some selected dates have existing bookings. New slots will be hidden; existing bookings will not be changed.", { okLabel: "Block dates" }))) return;
         }
         const body = { override_dates: Array.from(selectedDates), mode, scope: scope || "full_day" };
         if (scope === "time_range" && startTime != null && endTime != null) {
@@ -7704,6 +7884,8 @@ function renderView(viewName) {
     function escapeHtml(s) {
       return String(s == null ? "" : s).replace(/[&<>"']/g, ch => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[ch]));
     }
+    // "2026-11-09" → "Mon, Nov 9"
+    const expDate = (d) => d ? new Date(d + "T12:00:00Z").toLocaleDateString([], { timeZone: "UTC", weekday: "short", month: "short", day: "numeric" }) : "—";
 
     async function loadPending() {
       try {
@@ -7723,7 +7905,7 @@ function renderView(viewName) {
             </a>
             <div class="ux-approve-body">
               <div class="ux-approve-title"><strong>${escapeHtml(r.vendor)}</strong><span>$${(Number(r.amount) || 0).toFixed(2)}</span></div>
-              <small>${escapeHtml(r.expense_date)} · ${escapeHtml(r.submitted_by)}${r.description ? " · " + escapeHtml(r.description) : ""}</small>
+              <small>${escapeHtml(expDate(r.expense_date))} · ${escapeHtml(r.submitted_by)}${r.description ? " · " + escapeHtml(r.description) : ""}</small>
               ${r.reimburse ? `<small class="ux-warn-text">Paid with their own money — pay back on payroll</small>` : ""}
             </div>
             <div class="ux-approve-fields">
@@ -7803,7 +7985,7 @@ function renderView(viewName) {
           left.innerHTML = `
             <div style="font-weight:600;">${escapeHtml(r.vendor)} — $${(Number(r.amount) || 0).toFixed(2)}</div>
             <div style="font-size:12px;opacity:0.75;margin-top:2px;">
-              ${escapeHtml(r.expense_date)} · ${escapeHtml(r.category)} · ${escapeHtml(r.expense_type)} · ${escapeHtml(r.payment_method)}${r.receipt_url ? ` · <a href="${escapeHtml(r.receipt_url)}" target="_blank" rel="noopener" style="color:#9fb7d3;">View receipt</a>` : r.receipt_saved ? " · receipt kept" : ""}${r.submitted_by ? " · by " + escapeHtml(r.submitted_by) : ""}${r.reimburse ? (r.reimbursed_at ? " · reimbursed" : ' · <span style="color:#ffc65c;">owed to ' + escapeHtml(r.submitted_by || "crew") + "</span>") : ""}
+              ${escapeHtml(expDate(r.expense_date))} · ${escapeHtml(r.category)} ·${escapeHtml(r.expense_type)} · ${escapeHtml(r.payment_method)}${r.receipt_url ? ` · <a href="${escapeHtml(r.receipt_url)}" target="_blank" rel="noopener" style="color:#9fb7d3;">View receipt</a>` : r.receipt_saved ? " · receipt kept" : ""}${r.submitted_by ? " · by " + escapeHtml(r.submitted_by) : ""}${r.reimburse ? (r.reimbursed_at ? " · reimbursed" : ' · <span style="color:#ffc65c;">owed to ' + escapeHtml(r.submitted_by || "crew") + "</span>") : ""}
             </div>
             ${r.description ? `<div style="font-size:12px;opacity:0.85;margin-top:4px;">${escapeHtml(r.description)}</div>` : ""}
           `;

@@ -110,9 +110,22 @@ nav.tabs button .ico { display: flex; justify-content: center; height: 24px; mar
 .photos .ph { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: #222; }
 .photos .ph img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .photos .ph button {
-  position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; border-radius: 50%;
-  border: none; background: rgba(0,0,0,0.7); color: white; font-size: 14px; cursor: pointer;
+  position: absolute; top: 0; right: 0; width: 44px; height: 44px; padding: 0;
+  border: none; background: none; color: white; cursor: pointer;
+  display: flex; align-items: flex-start; justify-content: flex-end;
 }
+.photos .ph button span {
+  display: flex; align-items: center; justify-content: center; margin: 5px;
+  width: 30px; height: 30px; border-radius: 50%; background: rgba(0,0,0,0.75);
+}
+.photo-add { margin-top: 10px; min-height: 48px; }
+/* on-page confirm sheet (sheetConfirm) — window.confirm() is blocked by some browsers */
+.sheet { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
+.sheet-card { width: 100%; max-width: 440px; background: #1b222b; border: 1px solid var(--line); border-radius: 16px; padding: 18px; font-size: 16px; line-height: 1.45; }
+.sheet-card p { margin: 0 0 16px; }
+.sheet-actions { display: flex; gap: 10px; }
+.sheet-actions .btn { flex: 1; min-height: 48px; }
+.btn.danger { background: var(--bad); border-color: var(--bad); color: #1d0505; }
 .photos .ph.uploading { display: flex; align-items: center; justify-content: center; font-size: 12px; color: var(--muted); }
 .step {
   display: flex; gap: 12px; align-items: flex-start; padding: 10px 2px;
@@ -198,7 +211,8 @@ form.mini { margin-top: 8px; padding-top: 4px; }
   <button type="button" data-tab="account"><span class="ico" data-icon="user"></span>Me</button>
 </nav>
 
-<input type="file" id="photoInput" accept="image/*" capture="environment" multiple class="hidden" />
+<!-- No capture attribute: phones offer Take Photo or the photo library, and several can be picked at once. -->
+<input type="file" id="photoInput" accept="image/*" multiple class="hidden" />
 
 <script type="module">
 import { icon } from "/ui-icons.js";
@@ -251,6 +265,21 @@ function toast(message, isError) {
   document.body.appendChild(el);
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.remove(), isError ? 6000 : 3000);
+}
+
+// On-page confirmation; resolves true when the action is tapped, false on Cancel or a tap outside.
+function sheetConfirm(message, { okLabel = "Confirm", danger = false } = {}) {
+  return new Promise((resolve) => {
+    const wrap = document.createElement("div");
+    wrap.className = "sheet";
+    wrap.innerHTML = `<div class="sheet-card" role="alertdialog" aria-modal="true"><p>${esc(message)}</p>
+      <div class="sheet-actions"><button type="button" class="btn" data-no>Cancel</button><button type="button" class="btn ${danger ? "danger" : "primary"}" data-yes>${esc(okLabel)}</button></div></div>`;
+    const done = (v) => { wrap.remove(); resolve(v); };
+    wrap.addEventListener("click", (e) => { if (e.target === wrap) done(false); });
+    wrap.querySelector("[data-no]").onclick = () => done(false);
+    wrap.querySelector("[data-yes]").onclick = () => done(true);
+    document.body.appendChild(wrap);
+  });
 }
 
 function setTab(tab) {
@@ -422,7 +451,7 @@ async function clockIn(pin, knownPosition) {
 }
 
 async function clockOut() {
-  if (!confirm("Clock out now?")) return;
+  if (!(await sheetConfirm("Clock out now?", { okLabel: "Clock out" }))) return;
   const btn = document.querySelector("#clockCard [data-clock]");
   if (btn) { btn.disabled = true; btn.textContent = "Clocking out…"; }
   const position = await getPosition();
@@ -909,10 +938,10 @@ function photoSection(J, kind, title, hint) {
       <h3>${esc(title)} ${countHtml}</h3>
       ${hint ? `<p class="muted" style="margin:0 0 8px;font-size:13px;">${esc(hint)}</p>` : ""}
       <div class="photos">
-        ${list.map((p) => `<div class="ph"><img src="${esc(p.url || "")}" alt="" loading="lazy" />${!done && p.mine ? `<button type="button" data-del="${esc(p.id)}" aria-label="Remove photo">${icon("x", 14)}</button>` : ""}</div>`).join("")}
+        ${list.map((p) => `<div class="ph"><img src="${esc(p.url || "")}" alt="" loading="lazy" />${!done && p.mine ? `<button type="button" data-del="${esc(p.id)}" aria-label="Remove photo"><span>${icon("x", 16)}</span></button>` : ""}</div>`).join("")}
         ${Array.from({ length: J.uploading?.[kind] || 0 }).map(() => `<div class="ph uploading">Uploading…</div>`).join("")}
       </div>
-      ${done ? "" : `<div class="actions"><button class="btn small" type="button" data-add="${kind}">${icon("camera", 16)} Add ${kind} photo</button></div>`}
+      ${done ? "" : `<button class="btn block photo-add" type="button" data-add="${kind}">${icon("camera", 18)} Add ${kind === "issue" ? "damage" : kind} photos</button>`}
     </div>`;
 }
 
@@ -924,10 +953,15 @@ function renderJob() {
   const mapsUrl = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(j.service_address || "");
   const phone = (j.customer_phone || "").replace(/[^\d+]/g, "");
 
+  // General steps come first (arrival) and last (steps numbered 90+), so the second run
+  // gets its own heading instead of repeating "Arrival & handoff".
   let lastScope = null;
+  const seenScopes = new Set();
   const checklistHtml = J.checklist.map((s) => {
-    const head = s.scope !== lastScope ? `<div class="scope">${esc(SCOPE_LABEL[s.scope] || s.scope)}</div>` : "";
+    const label = s.scope === "general" && seenScopes.has("general") ? "Before you leave" : SCOPE_LABEL[s.scope] || s.scope;
+    const head = s.scope !== lastScope ? `<div class="scope">${esc(label)}</div>` : "";
     lastScope = s.scope;
+    seenScopes.add(s.scope);
     const on = !!J.checked[s.id];
     return `${head}<label class="step ${on ? "done" : ""}"><input type="checkbox" data-step="${esc(s.id)}" ${on ? "checked" : ""} ${done ? "disabled" : ""} /><span>${esc(s.text)}${s.required ? "" : ' <span class="muted">(optional)</span>'}</span></label>`;
   }).join("");
@@ -964,13 +998,13 @@ function renderJob() {
 
     ${!done && !started ? `<button class="btn primary block" id="startBtn" type="button" style="margin-bottom:12px;">Start job</button>` : ""}
 
-    ${photoSection(J, "before", "1 · Before photos", "All four sides plus front and back interior, before you touch the car.")}
+    ${photoSection(J, "before", "1 · Before photos", `Before you touch the car: all four sides plus the interior${J.min_photos.before ? ` (at least ${J.min_photos.before})` : ""}.`)}
     ${photoSection(J, "issue", "Damage / issues (if any)", "Scratches, dents, stains or anything already wrong — protects you and the business.")}
     <div class="panel">
       <h3>2 · Checklist <span class="count">${J.checklist.filter((s) => J.checked[s.id]).length}/${J.checklist.length}</span></h3>
       ${checklistHtml || '<p class="muted" style="margin:0;">No checklist for this service.</p>'}
     </div>
-    ${photoSection(J, "after", "3 · After photos", "Same angles as the before photos, once the job is finished.")}
+    ${photoSection(J, "after", "3 · After photos", `Same angles as the before photos, once the job is finished${J.min_photos.after ? ` (at least ${J.min_photos.after})` : ""}.`)}
 
     ${done ? `<div class="panel"><h3>${icon("check", 18)} Job completed</h3><p class="muted" style="margin:0;">Payment recorded and the customer has been emailed.</p></div>` : `
     <form class="panel" id="completeForm">
@@ -1107,7 +1141,7 @@ async function uploadPhoto(kind, file) {
 }
 
 async function deletePhoto(id) {
-  if (!confirm("Remove this photo?")) return;
+  if (!(await sheetConfirm("Remove this photo?", { okLabel: "Remove", danger: true }))) return;
   try {
     await api(`/api/staff-job-photo?id=${encodeURIComponent(id)}`, { method: "DELETE" });
     state.job.photos = state.job.photos.filter((p) => p.id !== id);
@@ -1138,8 +1172,8 @@ async function submitComplete(e) {
   const workedBy = [...form.querySelectorAll("[data-crew]")].filter((c) => c.checked).map((c) => c.dataset.crew);
   const amount = Number(f.amount_collected);
   if (J.job.amount_to_collect != null && amount < J.job.amount_to_collect &&
-      !confirm(`You entered ${money(amount)}, but the job total is ${money(J.job.amount_to_collect)}. Complete anyway?`)) return;
-  if (!confirm("Complete this job? The customer will get their completion email.")) return;
+      !(await sheetConfirm(`You entered ${money(amount)}, but the job total is ${money(J.job.amount_to_collect)}. Complete anyway?`, { okLabel: "Complete anyway" }))) return;
+  if (!(await sheetConfirm("Complete this job? The customer will get their completion email.", { okLabel: "Complete job" }))) return;
 
   const btn = form.querySelector('button[type="submit"]');
   btn.disabled = true;
