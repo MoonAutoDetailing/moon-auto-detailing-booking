@@ -125,7 +125,8 @@ async function main() {
     service_variant_id,
     default_address: "11 Grant St, Cohoes, NY 12047",
     frequency: "monthly",
-    activation_booking_id: bookingId
+    activation_booking_id: bookingId,
+    manage_token: createJson.manage_token
   };
   const subRes = await fetch(`${base}/api/create-subscription${qsBypass()}`, {
     method: "POST",

@@ -134,6 +134,20 @@ export function isOwnerOnly(name) {
   return name.startsWith("admin-crm-") || ["admin-analytics", "export-bookkeeping", "admin-expense-report"].includes(name);
 }
 
+// Admin-only endpoints whose handlers have no login check of their own: emails that are sent
+// to a customer about a booking id, the test email and the old calendar endpoint (which used
+// a shared ADMIN_SECRET header). Owner or manager session required, checked here.
+export const ADMIN_REQUIRED = [
+  "send-booking-created-email",
+  "send-booking-confirmed-email",
+  "send-booking-cancelled-email",
+  "send-booking-completed-email",
+  "send-booking-denied-email",
+  "send-reschedule-link-email",
+  "send-test-email",
+  "create-calendar-event",
+];
+
 const ROUTE_PARAM = "__route";
 
 function resolveRouteName(req) {
@@ -154,7 +168,7 @@ export default async function handler(req, res) {
     return res.status(404).json({ error: "Not found" });
   }
 
-  if (isOwnerOnly(name)) {
+  if (isOwnerOnly(name) || ADMIN_REQUIRED.includes(name)) {
     const { default: verifyAdmin } = await import("./_verifyAdmin.js");
     let admin;
     try {
@@ -162,7 +176,7 @@ export default async function handler(req, res) {
     } catch {
       return res.status(401).json({ error: "Unauthorized" });
     }
-    if (admin.role !== "owner") return res.status(403).json({ error: "Owner only" });
+    if (isOwnerOnly(name) && admin.role !== "owner") return res.status(403).json({ error: "Owner only" });
   }
 
   const mod = await load();

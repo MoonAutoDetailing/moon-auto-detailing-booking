@@ -41,6 +41,12 @@ export default async function handler(req, res) {
       });
     }
 
+    // Only the person who just made the activation booking can enroll it: they hold that
+    // booking's private link token, and the customer/vehicle/service must match the booking.
+    if (!body.manage_token || typeof body.manage_token !== "string") {
+      return res.status(403).json({ ok: false, message: "Missing booking link. Please refresh and try again." });
+    }
+
     if (!VALID_FREQUENCIES.includes(frequency)) {
       return res.status(400).json({
         ok: false,
@@ -52,6 +58,23 @@ export default async function handler(req, res) {
       requireEnv("SUPABASE_URL"),
       requireEnv("SUPABASE_SERVICE_ROLE_KEY")
     );
+
+    const { data: activation, error: actErr } = await supabase
+      .from("bookings")
+      .select("id, manage_token, customer_id, vehicle_id, service_variant_id, status")
+      .eq("id", activation_booking_id)
+      .maybeSingle();
+    if (actErr) throw actErr;
+    if (
+      !activation ||
+      activation.manage_token !== body.manage_token ||
+      activation.customer_id !== customer_id ||
+      activation.vehicle_id !== vehicle_id ||
+      activation.service_variant_id !== service_variant_id ||
+      ["cancelled", "denied"].includes(activation.status)
+    ) {
+      return res.status(403).json({ ok: false, message: "This booking can't be used to start a plan." });
+    }
 
     const { data: existing } = await supabase
       .from("subscriptions")

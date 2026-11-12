@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { addBusinessDays } from "../_subscriptions/lifecycle.js";
+import { isCronRequest } from "../_cronAuth.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -14,8 +15,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).end();
 
-  const auth = req.headers.authorization;
-  if (!auth || auth !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isCronRequest(req)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 

@@ -4,6 +4,7 @@ import { todayNY } from "../_subscriptions/lifecycle.js";
 import { runSendReminders } from "../_subscriptions/cycleJobs.js";
 import { sendCycleReminder1EmailCore } from "../../lib/email/sendCycleReminder1Email.js";
 import { sendCycleReminder2EmailCore } from "../../lib/email/sendCycleReminder2Email.js";
+import { isCronRequest } from "../_cronAuth.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -17,11 +18,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const authHeader = req.headers.authorization;
-  const cronHeader = req.headers["x-vercel-cron"];
-  const validBearer = authHeader && authHeader === `Bearer ${process.env.CRON_SECRET}`;
-  const validVercelCron = cronHeader === "1";
-  if (!validBearer && !validVercelCron) {
+  if (!isCronRequest(req)) {
     return res.status(401).json({ error: "Unauthorized" });
   }
 

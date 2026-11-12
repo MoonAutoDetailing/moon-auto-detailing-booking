@@ -4302,7 +4302,8 @@ if (!isBookingWithinBusinessRules(startLocal, endLocal)) {
               service_variant_id: draft.service_variant_id,
               default_address: draft.service_address,
               frequency: SUBSCRIPTION_FREQUENCY,
-              activation_booking_id: bookingRow.id
+              activation_booking_id: bookingRow.id,
+              manage_token: bookingRow.manage_token
             })
           });
           const subJson = await subRes.json();

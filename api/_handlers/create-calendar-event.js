@@ -6,14 +6,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Admin auth
-    const adminSecret = process.env.ADMIN_SECRET;
-    const providedSecret =
-      req.headers["x-admin-secret"] || req.body?.adminSecret;
-
-    if (!adminSecret || providedSecret !== adminSecret) {
-      return res.status(401).json({ ok: false, message: "Unauthorized" });
-    }
+    // Admin session is checked in api/router.js (ADMIN_REQUIRED); the old shared
+    // ADMIN_SECRET header is no longer accepted.
 
     const calendarId = process.env.GOOGLE_CALENDAR_ID.trim();
     if (!calendarId) {
