@@ -122,7 +122,7 @@ nav.tabs button .ico { display: flex; justify-content: center; height: 24px; mar
 /* on-page confirm sheet (sheetConfirm) — window.confirm() is blocked by some browsers */
 .sheet { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
 .sheet-card { width: 100%; max-width: 440px; background: #1b222b; border: 1px solid var(--line); border-radius: 16px; padding: 18px; font-size: 16px; line-height: 1.45; }
-.sheet-card p { margin: 0 0 16px; }
+.sheet-card p { margin: 0 0 16px; white-space: pre-line; }
 .sheet-actions { display: flex; gap: 10px; }
 .sheet-actions .btn { flex: 1; min-height: 48px; }
 .btn.danger { background: var(--bad); border-color: var(--bad); color: #1d0505; }
@@ -411,7 +411,7 @@ function renderClock(extra = {}) {
       ${extra.why ? `<div class="why">${esc(extra.why)}</div>` : ""}
       ${extra.needsPin ? `
         <form class="pin" data-pin-form>
-          <input class="in" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Manager PIN" autocomplete="off" required />
+          <input class="in" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="${state.me?.role === "employee" ? "Manager PIN" : "Owner PIN"}" autocomplete="off" required />
           <button class="btn primary" type="submit">Approve</button>
         </form>` : ""}
     </div>`;
@@ -677,6 +677,13 @@ function drawAvailability(data) {
       ? { kind: "time_off", start_date: f.start_date, end_date: f.end_date || f.start_date, reason: f.reason }
       : { kind: "exception", on_date: f.on_date, available: kind === "can", start_time: f.start_time || null, end_time: f.end_time || null, note: f.note };
     try {
+      // Taking days off: warn first if it leaves the crew short or jobs with nobody to do them.
+      const offStart = kind === "off" ? body.start_date : kind === "cant" ? body.on_date : null;
+      const offEnd = kind === "off" ? body.end_date : offStart;
+      if (offStart && offEnd) {
+        const check = await api(`/api/staff-availability?impact_start=${encodeURIComponent(offStart)}&impact_end=${encodeURIComponent(offEnd)}`);
+        if (check.warning && !(await sheetConfirm(`Heads up:\n${check.warning}\n\nYour manager will see this. ${kind === "off" ? "Request" : "Save"} anyway?`, { okLabel: kind === "off" ? "Request anyway" : "Save anyway" }))) return;
+      }
       const next = await api("/api/staff-availability", { method: "POST", body });
       toast(kind === "off" ? "Time off requested. A manager will review it." : "Saved.");
       apply(next);

@@ -1,6 +1,7 @@
 import verifyAdmin from "../_verifyAdmin.js";
 import { createClient } from "@supabase/supabase-js";
 import { PHOTO_BUCKET } from "../_jobs.js";
+import { rejectBlocked } from "../_expenses.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -16,8 +17,9 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
+  let actor;
   try {
-    await verifyAdmin(req);
+    ({ admin: actor } = await verifyAdmin(req));
   } catch (err) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -34,7 +36,18 @@ export default async function handler(req, res) {
       requireEnv("SUPABASE_SERVICE_ROLE_KEY")
     );
 
-    const { data: existing } = await supabase.from("expenses").select("receipt_path").eq("id", expense_id).maybeSingle();
+    const { data: existing } = await supabase
+      .from("expenses")
+      .select("receipt_path, status, submitted_by_staff_id, payroll_run_id, reimbursed_at")
+      .eq("id", expense_id)
+      .maybeSingle();
+    if (!existing) return res.status(404).json({ error: "Expense not found" });
+    // Paid-back expenses are payroll records; managers may only withdraw their own pending ones.
+    const blocked = rejectBlocked(existing);
+    if (blocked) return res.status(409).json({ error: blocked.replace("rejected", "deleted") });
+    if (actor.role !== "owner" && !(existing.status === "pending" && existing.submitted_by_staff_id === actor.id)) {
+      return res.status(403).json({ error: "Managers can only delete their own expenses that are still waiting for approval" });
+    }
 
     const { error } = await supabase
       .from("expenses")

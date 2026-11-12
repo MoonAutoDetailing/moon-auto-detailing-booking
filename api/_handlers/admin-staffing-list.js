@@ -40,13 +40,15 @@ export default async function handler(req, res) {
 
     const { data: rows } = await supabase
       .from("staffing_overrides")
-      .select("override_date")
+      .select("override_date, source")
       .eq("solo_mode", true)
       .gte("override_date", startDate)
       .lte("override_date", endDate);
 
     const soloDates = (rows || []).map((r) => r.override_date).filter(Boolean);
-    return res.status(200).json({ soloDates });
+    // Days set to solo automatically because only one person on the team is available.
+    const autoSoloDates = (rows || []).filter((r) => r.source === "auto").map((r) => r.override_date);
+    return res.status(200).json({ soloDates, autoSoloDates });
   } catch (err) {
     console.error("admin-staffing-list", err);
     return res.status(500).json({ error: err.message || "List failed" });

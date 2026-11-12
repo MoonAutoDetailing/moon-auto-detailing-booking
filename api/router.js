@@ -15,6 +15,7 @@ const ROUTES = {
   "admin-availability-clear": () => import("./_handlers/admin-availability-clear.js"),
   "admin-availability-list": () => import("./_handlers/admin-availability-list.js"),
   "admin-availability-upsert": () => import("./_handlers/admin-availability-upsert.js"),
+  "admin-book-member": () => import("./_handlers/admin-book-member.js"),
   "admin-bookings": () => import("./_handlers/admin-bookings.js"),
   "admin-cancel-booking": () => import("./_handlers/admin-cancel-booking.js"),
   "admin-cancel-subscription": () => import("./_handlers/admin-cancel-subscription.js"),
@@ -45,6 +46,7 @@ const ROUTES = {
   "admin-discount-codes-create": () => import("./_handlers/admin-discount-codes-create.js"),
   "admin-discount-codes-disable": () => import("./_handlers/admin-discount-codes-disable.js"),
   "admin-discount-codes-list": () => import("./_handlers/admin-discount-codes-list.js"),
+  "admin-expense-report": () => import("./_handlers/admin-expense-report.js"),
   "admin-expense-review": () => import("./_handlers/admin-expense-review.js"),
   "admin-extend-subscription-cycle": () => import("./_handlers/admin-extend-subscription-cycle.js"),
   "admin-force-create-subscription-cycle": () => import("./_handlers/admin-force-create-subscription-cycle.js"),
@@ -110,12 +112,14 @@ const ROUTES = {
   "staff-clock": () => import("./_handlers/staff-clock.js"),
   "staff-complete-job": () => import("./_handlers/staff-complete-job.js"),
   "staff-expenses": () => import("./_handlers/staff-expenses.js"),
+  "staff-forgot-password": () => import("./_handlers/staff-forgot-password.js"),
   "staff-job": () => import("./_handlers/staff-job.js"),
   "staff-job-photo": () => import("./_handlers/staff-job-photo.js"),
   "staff-jobs": () => import("./_handlers/staff-jobs.js"),
   "staff-login": () => import("./_handlers/staff-login.js"),
   "staff-me": () => import("./_handlers/staff-me.js"),
   "staff-pay": () => import("./_handlers/staff-pay.js"),
+  "staff-reset-password": () => import("./_handlers/staff-reset-password.js"),
   "staff-shifts": () => import("./_handlers/staff-shifts.js"),
   "submit-reschedule": () => import("./_handlers/submit-reschedule.js"),
   "subscription-pushback": () => import("./_handlers/subscription-pushback.js"),
@@ -123,10 +127,11 @@ const ROUTES = {
 };
 
 // Owner-only endpoints: the CRM (being rebuilt), full business numbers (profit, labor,
-// expenses), the bookkeeping workbook and crew expense approvals. Managers get a 403 here
-// before the handler loads; each handler still does its own admin check.
+// expenses), the bookkeeping workbook and the weekly expense report. Managers get a 403 here
+// before the handler loads; each handler still does its own admin check. (Expense approvals
+// are open to managers; admin-expense-review limits them to employees' receipts.)
 export function isOwnerOnly(name) {
-  return name.startsWith("admin-crm-") || ["admin-analytics", "export-bookkeeping", "admin-expense-review"].includes(name);
+  return name.startsWith("admin-crm-") || ["admin-analytics", "export-bookkeeping", "admin-expense-report"].includes(name);
 }
 
 const ROUTE_PARAM = "__route";

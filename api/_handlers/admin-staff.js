@@ -8,6 +8,8 @@ import {
   parseBody,
   STAFF_PUBLIC_COLUMNS,
 } from "../_staffAuth.js";
+import { syncSafely } from "../_teamCoverage.js";
+import { todayNY } from "../_subscriptions/lifecycle.js";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -133,6 +135,8 @@ export default async function handler(req, res) {
         if (error.code === "23505") return res.status(409).json({ error: "That email already has an account" });
         throw error;
       }
+      // Someone joining/leaving the working team changes how many people can take jobs.
+      if (update.active !== undefined || update.role !== undefined) await syncSafely(sb, todayNY());
       return res.status(200).json({ staff: data });
     }
 

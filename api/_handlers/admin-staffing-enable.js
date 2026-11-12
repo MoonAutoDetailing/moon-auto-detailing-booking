@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     for (const d of dates) {
       await supabase
         .from("staffing_overrides")
-        .upsert({ override_date: d, solo_mode: true, updated_at: new Date().toISOString() }, { onConflict: "override_date" });
+        .upsert({ override_date: d, solo_mode: true, source: "manual", updated_at: new Date().toISOString() }, { onConflict: "override_date" });
     }
     return res.status(200).json({ enabled: dates.length, dates });
   } catch (err) {

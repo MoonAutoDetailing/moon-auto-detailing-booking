@@ -19,8 +19,9 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "GET") return res.status(405).json({ error: "Method not allowed" });
 
+  let actor;
   try {
-    await verifyAdmin(req);
+    ({ admin: actor } = await verifyAdmin(req));
   } catch (err) {
     return res.status(401).json({ error: "Unauthorized" });
   }
@@ -50,14 +51,17 @@ export default async function handler(req, res) {
       requireEnv("SUPABASE_SERVICE_ROLE_KEY")
     );
 
-    const { data, error } = await supabase
-      .from("expenses")
-      .select("id, expense_date, vendor, category, expense_type, description, amount, payment_method, receipt_saved, receipt_path, reimburse, reimbursed_at, submitted_by_staff_id, notes, created_at")
-      .eq("status", "approved")
-      .gte("expense_date", startDate)
-      .lt("expense_date", endDate)
-      .order("expense_date", { ascending: false })
-      .order("created_at", { ascending: false });
+    // Approved expenses count in totals; your own still-pending or rejected ones are listed
+    // too (marked) so a manager can see what's waiting on the owner.
+    const cols = "id, expense_date, vendor, category, expense_type, description, amount, payment_method, receipt_saved, receipt_path, reimburse, reimbursed_at, payroll_run_id, submitted_by_staff_id, notes, status, review_note, created_at";
+    const inMonth = (q) => q.gte("expense_date", startDate).lt("expense_date", endDate);
+    const [{ data: approved, error }, { data: mine, error: mineErr }] = await Promise.all([
+      inMonth(supabase.from("expenses").select(cols).eq("status", "approved")),
+      actor?.id ? inMonth(supabase.from("expenses").select(cols).eq("submitted_by_staff_id", actor.id).in("status", ["pending", "rejected"])) : Promise.resolve({ data: [] }),
+    ]);
+    const data = [...(approved || []), ...((mineErr ? [] : mine) || [])].sort((a, b) =>
+      a.expense_date === b.expense_date ? String(b.created_at).localeCompare(String(a.created_at)) : b.expense_date.localeCompare(a.expense_date)
+    );
 
     if (error) {
       console.error("admin-list-expenses query failed", error);
@@ -83,6 +87,10 @@ export default async function handler(req, res) {
       ...r,
       receipt_url: urls.get(receipt_path) || null,
       submitted_by: names.get(submitted_by_staff_id) || null,
+      mine: !!actor?.id && submitted_by_staff_id === actor.id,
+      // Owner deletes anything not yet paid back; a manager only their own pending ones.
+      can_delete: !r.reimbursed_at && !r.payroll_run_id &&
+        (actor?.role === "owner" || (r.status === "pending" && submitted_by_staff_id === actor?.id)),
     }));
 
     return res.status(200).json({ ok: true, month: monthStr, expenses });

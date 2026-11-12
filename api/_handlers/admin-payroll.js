@@ -6,7 +6,7 @@ import { payWeek } from "../_timeclock.js";
 import { payrollCsv } from "../_payroll.js";
 import { loadPayroll } from "../_payrollData.js";
 
-const RUN_COLS = "id, week_start, week_end, status, approved_by, approved_at, paid_by, paid_at, notes";
+const RUN_COLS = "id, week_start, week_end, status, approved_by, approved_at, paid_by, paid_at, notes, crew_approved_by, crew_approved_at";
 const METHODS = ["Direct deposit", "Check", "Cash", "Venmo", "PayPal", "Zelle", "Payroll service", "Other"];
 
 async function frozenLines(sb, runId) {
@@ -44,6 +44,10 @@ const sumLines = (lines) => {
  * POST { action: "approve", week } → freezes the numbers and reserves the pay-backs
  * POST { action: "reopen", week }  → back to draft (approved runs only)
  * POST { action: "paid", week, payment_method } → locks the run; pay-backs marked reimbursed
+ *
+ * Hierarchy: a manager approves employees' pay. When the week also has a manager's (or the
+ * owner's) pay, the manager's approve is a sign-off on the crew (crew_approved_*) and the
+ * owner finishes the approval; only the owner can reopen such a week.
  */
 export default async function handler(req, res) {
   let actor;
@@ -61,8 +65,16 @@ export default async function handler(req, res) {
     // Default to the most recent finished week — that's the one you pay.
     const week = payWeek(isIsoDate(weekArg) ? weekArg : lastWeek());
 
-    const { data: run, error: runErr } = await sb.from("payroll_runs").select(RUN_COLS).eq("week_start", week.weekStart).maybeSingle();
+    const [{ data: run, error: runErr }, { data: staffRows, error: stErr }] = await Promise.all([
+      sb.from("payroll_runs").select(RUN_COLS).eq("week_start", week.weekStart).maybeSingle(),
+      sb.from("staff").select("id, role"),
+    ]);
     if (runErr) throw runErr;
+    if (stErr) throw stErr;
+    const roleOf = new Map((staffRows || []).map((s) => [s.id, s.role]));
+    const isOwner = actor.role === "owner";
+    // True when any line is someone the actor can't approve pay for (a manager or the owner).
+    const needsOwner = (lines) => lines.some((l) => roleOf.get(l.staff_id) !== "employee");
 
     const current = async () => {
       if (run && run.status !== "draft") {
@@ -83,11 +95,15 @@ export default async function handler(req, res) {
       }
       const { data: recent, error: recErr } = await sb.from("payroll_runs").select(RUN_COLS).order("week_start", { ascending: false }).limit(8);
       if (recErr) throw recErr;
+      const ownerNeeded = needsOwner(result.lines);
       return res.status(200).json({
         week: { start: week.weekStart, end: week.weekEnd },
         this_week: payWeek(todayNY()).weekStart,
         run: run || { status: "draft", week_start: week.weekStart, week_end: week.weekEnd },
         ...result,
+        lines: result.lines.map((l) => ({ ...l, role: roleOf.get(l.staff_id) || null })),
+        needs_owner: ownerNeeded,
+        can_finish: isOwner || !ownerNeeded,
         payment_methods: METHODS,
         recent: recent || [],
       });
@@ -103,6 +119,24 @@ export default async function handler(req, res) {
       const blocking = result.lines.filter((l) => l.warnings.some((w) => /Still clocked in/.test(w)));
       if (blocking.length) {
         return res.status(409).json({ error: `Fix open clock-ins first: ${blocking.map((l) => l.full_name).join(", ")}` });
+      }
+
+      // A manager signs off the crew; weeks with a manager's pay are finished by the owner.
+      if (!isOwner && needsOwner(result.lines)) {
+        if (run?.crew_approved_at) return res.status(409).json({ error: "You've already signed off the crew; the owner approves the managers' pay" });
+        if (run) {
+          const { error } = await sb.from("payroll_runs").update({ crew_approved_by: who, crew_approved_at: now, updated_at: now }).eq("id", run.id).eq("status", "draft");
+          if (error) throw error;
+        } else {
+          const { error } = await sb
+            .from("payroll_runs")
+            .insert({ week_start: week.weekStart, week_end: week.weekEnd, status: "draft", crew_approved_by: who, crew_approved_at: now });
+          if (error) {
+            if (error.code === "23505") return res.status(409).json({ error: "Someone else just saved this week; refresh" });
+            throw error;
+          }
+        }
+        return res.status(200).json({ ok: true, status: "draft", crew_approved: true });
       }
 
       let runId = run?.id;
@@ -150,7 +184,14 @@ export default async function handler(req, res) {
 
     if (body.action === "reopen") {
       if (!run || run.status !== "approved") return res.status(409).json({ error: "Only an approved, unpaid week can be reopened" });
-      const { error } = await sb.from("payroll_runs").update({ status: "draft", approved_by: null, approved_at: null, updated_at: now }).eq("id", run.id).eq("status", "approved");
+      if (!isOwner && needsOwner(await frozenLines(sb, run.id))) {
+        return res.status(403).json({ error: "This week includes a manager's pay; only the owner can reopen it" });
+      }
+      const { error } = await sb
+        .from("payroll_runs")
+        .update({ status: "draft", approved_by: null, approved_at: null, crew_approved_by: null, crew_approved_at: null, updated_at: now })
+        .eq("id", run.id)
+        .eq("status", "approved");
       if (error) throw error;
       await sb.from("payroll_lines").delete().eq("run_id", run.id);
       await sb.from("expenses").update({ payroll_run_id: null }).eq("payroll_run_id", run.id).is("reimbursed_at", null);

@@ -1,5 +1,6 @@
 import verifyAdmin from "../_verifyAdmin.js";
-import { serviceClient, parseBody } from "../_staffAuth.js";
+import { serviceClient, parseBody, canManageWorkOf } from "../_staffAuth.js";
+import { timeOffImpact, impactWarning, syncSafely } from "../_teamCoverage.js";
 import { todayNY } from "../_subscriptions/lifecycle.js";
 import { isIsoDate } from "../_jobs.js";
 import { payWeek } from "../_timeclock.js";
@@ -114,9 +115,22 @@ export default async function handler(req, res) {
         people: people.map((p) => ({ id: p.id, full_name: p.full_name, role: p.role })),
         days: dayData,
         drafts: (shifts || []).filter((s) => !s.published).length,
-        time_off: (off || [])
-          .filter((t) => t.status === "pending")
-          .map((t) => ({ ...t, full_name: names.get(t.staff_id) || "Unknown" })),
+        // Each pending request says what approving it would leave (solo days, closed days, jobs).
+        time_off: await Promise.all(
+          (off || [])
+            .filter((t) => t.status === "pending")
+            .map(async (t) => {
+              const impact = await timeOffImpact(sb, { staffId: t.staff_id, start: t.start_date, end: t.end_date });
+              const role = (staff || []).find((s) => s.id === t.staff_id)?.role || null;
+              return {
+                ...t,
+                full_name: names.get(t.staff_id) || "Unknown",
+                impact,
+                warning: impactWarning(impact, { names: true }),
+                can_review: canManageWorkOf(actor, { id: t.staff_id, role }),
+              };
+            })
+        ),
       });
     }
 
@@ -218,6 +232,13 @@ export default async function handler(req, res) {
 
     if (req.method === "POST" && body.action === "time_off") {
       if (!body.id || !["approved", "denied"].includes(body.status)) return res.status(400).json({ error: "Invalid request" });
+      // Hierarchy: managers decide employees' requests; the owner decides managers'.
+      const { data: request, error: rqErr } = await sb.from("time_off_requests").select("staff_id, staff:staff_id ( id, role )").eq("id", body.id).maybeSingle();
+      if (rqErr) throw rqErr;
+      if (!request) return res.status(404).json({ error: "Request not found" });
+      if (!canManageWorkOf(actor, request.staff || { id: request.staff_id })) {
+        return res.status(403).json({ error: "Only the owner can approve a manager's time off" });
+      }
       const { data, error } = await sb
         .from("time_off_requests")
         .update({ status: body.status, reviewed_by: editor, reviewed_at: new Date().toISOString(), review_note: body.note ? String(body.note).slice(0, 300) : null })
@@ -227,7 +248,9 @@ export default async function handler(req, res) {
         .maybeSingle();
       if (error) throw error;
       if (!data) return res.status(409).json({ error: "Request was already handled" });
-      return res.status(200).json({ time_off: data });
+      // Approved time off can leave a day solo or with nobody: update booking availability.
+      const sync = data.status === "approved" ? await syncSafely(sb, todayNY()) : null;
+      return res.status(200).json({ time_off: data, booking_sync: sync });
     }
 
     if (req.method === "PATCH") {

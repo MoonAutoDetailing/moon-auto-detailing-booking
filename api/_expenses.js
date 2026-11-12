@@ -83,6 +83,29 @@ export function parseCrewExpense(body, { today, staffId }) {
   };
 }
 
+/**
+ * Who may approve or reject whose expense (simple hierarchy): the owner reviews anyone's;
+ * a manager reviews employees' only — never their own or another manager's.
+ * Returns null when allowed, otherwise the reason.
+ */
+export function reviewDenied(actor, submitter) {
+  if (actor.role === "owner") return null;
+  if (actor.role !== "manager") return "Only managers and the owner review expenses";
+  if (!submitter || submitter.role !== "employee" || submitter.id === actor.id) {
+    return "The owner reviews managers' own expenses";
+  }
+  return null;
+}
+
+/**
+ * Why an expense can no longer be rejected (it was already paid back on a payroll), or null.
+ */
+export function rejectBlocked(expense) {
+  if (expense.reimbursed_at) return "Already paid back on payroll — it can't be rejected now";
+  if (expense.payroll_run_id) return "It's on an approved payroll — reopen that week's payroll first";
+  return null;
+}
+
 /** Validates a manager's review. Returns { error } or { update }. */
 export function parseReview(body, reviewer) {
   if (!["approved", "rejected"].includes(body.status)) return { error: "Choose approve or reject" };

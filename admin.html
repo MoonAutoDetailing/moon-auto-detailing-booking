@@ -2378,11 +2378,16 @@ body.ux .payment-modal-card .pmt-actions button, body.ux .expense-modal-card .pm
 /* on-page confirm sheet (uxConfirm) — bottom sheet on phones, centered card on desktop */
 .ux-confirm { position: fixed; inset: 0; z-index: 2000; background: rgba(0,0,0,.6); display: flex; align-items: flex-end; justify-content: center; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); box-sizing: border-box; }
 .ux-confirm-card { width: 100%; max-width: 440px; background: #1b222b; color: #f3f6fa; border: 1px solid rgba(255,255,255,.18); border-radius: 16px; padding: 18px; box-shadow: 0 20px 50px rgba(0,0,0,.6); font-size: 16px; line-height: 1.45; }
-.ux-confirm-card p { margin: 0 0 16px; }
+.ux-confirm-card p { margin: 0 0 16px; white-space: pre-line; }
 .ux-confirm-actions { display: flex; gap: 10px; }
 .ux-confirm-actions .ux-btn { flex: 1; min-height: 46px; font-size: 15px; }
 body.ux .ux-btn-danger-solid, .ux-confirm .ux-btn-danger-solid { background: #ff7b7b; border-color: #ff7b7b; color: #1d0505; }
 @media (min-width: 700px) { .ux-confirm { align-items: center; } }
+/* maintenance plans — book a member's visit from their plan */
+body.ux .sub-book-form { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+body.ux .sub-book-form > label, body.ux .sub-book-form .ux-form-row label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--ux-muted); }
+body.ux .sub-book-form label[hidden] { display: none; }
+body.ux .sub-book-form .ux-check { flex-direction: row; }
 /* maintenance plans — filters, windows table and actions sized for phones */
 body.ux .subs-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
 body.ux .subs-filters select, body.ux .subs-filters input { width: 100%; flex: none; }
@@ -2483,6 +2488,7 @@ style="
     <button id="loginButton" class="act-primary" type="submit">Unlock Admin Portal</button>
 
     <div id="loginError">Wrong password</div>
+    <a href="/staff-login.html?forgot=1" style="display:inline-block;margin-top:12px;color:#7fb8e6;font-weight:600;font-size:14px;text-decoration:none;">Forgot password?</a>
   </form>
 </div>
 
@@ -2635,6 +2641,15 @@ style="
       <span>Receipt saved</span>
     </label>
 
+    <!-- Managers only: their own expenses go to the owner for approval. -->
+    <div id="expManagerRow" style="display:none;">
+      <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-weight:500;">
+        <input id="expReimburse" type="checkbox" style="width:auto;" />
+        <span>I paid with my own money — pay me back on payroll</span>
+      </label>
+      <p style="margin:6px 0 0;font-size:13px;opacity:.75;">Your own expenses go to the owner for approval.</p>
+    </div>
+
     <label for="expReceiptFile">Receipt photo or PDF (optional)</label>
     <input id="expReceiptFile" type="file" accept="image/*,application/pdf" />
 
@@ -2730,7 +2745,7 @@ function getAdminStaff() {
 function adminRole() {
   return getAdminStaff()?.role || "owner";
 }
-const OWNER_ONLY_VIEWS = ["business", "bookkeeping"];
+const OWNER_ONLY_VIEWS = ["business", "bookkeeping", "expense-report"];
 
 // Re-reads the signed-in person so a role change applies on the next page load.
 async function refreshAdminStaff() {
@@ -4167,6 +4182,7 @@ const NAV_GROUPS = [
   ] },
   { title: "Business", items: [
     { key: "business", label: "Business dashboard", icon: "chart" },
+    { key: "expense-report", label: "Expense report", icon: "receipt" },
     { key: "bookkeeping", label: "Bookkeeping export", icon: "book" }
   ] },
   { title: "Setup", items: [
@@ -5488,6 +5504,27 @@ function renderView(viewName) {
         else nextHtml = esc(STATUS_LABEL[n.phase] || n.phase || "—");
 
         const priceHtml = n.price ? `${money(n.price.base_price)} ${n.price.price_mode === "discounted" ? "member price" : "full price" + (n.price.reason === "missed_cycle" ? " (missed window)" : "")}` : "—";
+        // Book the open window for the member (e.g. they texted a time that works).
+        const canBook = sub.status === "active" && data.active_cycle_id && n.phase !== "booked";
+        const bookHtml = canBook ? `
+          <details class="sub-book" ${n.phase === "bookable" || n.phase === "overdue" ? "open" : ""}>
+            <summary class="sub-block-title" style="cursor:pointer;margin-top:12px;">Book this visit for ${esc((sub.customer_name || "the member").split(" ")[0])}</summary>
+            <div class="sub-book-form">
+              <label>Date<input type="date" data-book-date min="${esc(n.window_start || "")}" max="${esc(n.effective_end || "")}" value="${esc(n.window_start && n.window_start > new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }) ? n.window_start : "")}"></label>
+              <label>Service address<input type="text" data-book-address value="${esc(sub.default_address || "")}"></label>
+              <div class="ux-form-actions"><button type="button" class="ux-btn" data-book-find>Find open times</button>
+                <label class="ux-check"><input type="checkbox" data-book-manual> Enter a time myself</label></div>
+              <div data-book-slots class="ux-chips"></div>
+              <label data-book-time-row hidden>Time<input type="time" data-book-time value="09:00"></label>
+              <label>Notes for this visit<input type="text" data-book-notes placeholder="Optional, e.g. texted Tue 10am works"></label>
+              <div class="ux-form-row">
+                <label>Booking is<select data-book-status><option value="confirmed">Confirmed — on the schedule now</option><option value="pending">A request to confirm later</option></select></label>
+              </div>
+              <label class="ux-check"><input type="checkbox" data-book-email checked> Email ${esc((sub.customer_name || "the customer").split(" ")[0])} the details</label>
+              <div class="ux-form-actions"><button type="button" class="ux-btn ux-btn-primary" data-book-go>Book visit</button></div>
+              <p class="sub-muted" style="margin:0;">Window ${esc(fmtD(n.window_start))} – ${esc(fmtD(n.effective_end))} · ${esc(priceHtml)}. Customer, vehicle and service come from the plan.</p>
+            </div>
+          </details>` : "";
         const pending = sub.pending_frequency || sub.pending_service_variant_id
           ? `<div class="sub-note">Queued for next window: ${sub.pending_frequency ? esc(FREQ_LABEL[sub.pending_frequency]) : ""}${sub.pending_service_variant_id ? " new service" : ""} <button type="button" class="moon-tab sub-mini" data-plan-action="cancelPending">Remove</button></div>` : "";
 
@@ -5508,7 +5545,7 @@ function renderView(viewName) {
             <div><span>Member for</span><strong>${m.subscription_age_days ?? "—"} days</strong></div>
             <div><span>Collected</span><strong>${money(m.lifetime_value)}</strong></div>
           </div>
-          <div class="sub-block"><div class="sub-block-title">Next service</div>${nextHtml}<div class="sub-muted">Price next visit: ${esc(priceHtml)}${sub.discount_reset_required ? ` <button type="button" class="moon-tab sub-mini" data-cycle-action="clear_discount_reset">Restore member price</button>` : ""}</div>${pending}</div>
+          <div class="sub-block"><div class="sub-block-title">Next service</div>${nextHtml}<div class="sub-muted">Price next visit: ${esc(priceHtml)}${sub.discount_reset_required ? ` <button type="button" class="moon-tab sub-mini" data-cycle-action="clear_discount_reset">Restore member price</button>` : ""}</div>${pending}${bookHtml}</div>
           <div class="sub-block"><div class="sub-block-title">Service windows</div>
             <div class="sub-table-wrap"><table class="sub-table"><thead><tr><th>#</th><th>Window</th><th>Status</th><th>Appointment</th><th>Actions</th></tr></thead><tbody>
             ${cycles.map((c) => `<tr class="sub-row-${esc(c.status)}">
@@ -5540,6 +5577,77 @@ function renderView(viewName) {
           showAdminBanner(message || "Saved.", "success");
           await loadSubscriptionsList();
         };
+
+        if (canBook) {
+          const q = (sel) => panel.querySelector(sel);
+          let pickedSlot = null;
+          q("[data-book-manual]").onchange = () => {
+            const manual = q("[data-book-manual]").checked;
+            q("[data-book-time-row]").hidden = !manual;
+            q("[data-book-slots]").hidden = manual;
+          };
+          q("[data-book-find]").onclick = async () => {
+            const day = q("[data-book-date]").value;
+            const address = q("[data-book-address]").value.trim();
+            if (!day || !address) return showAdminBanner("Pick a date and address first.", "error");
+            const box = q("[data-book-slots]");
+            box.innerHTML = `<span class="sub-muted">Looking…</span>`;
+            try {
+              const variant = (await loadVariants()).find((v) => v.service_variant_id === sub.service_variant_id);
+              const params = new URLSearchParams({ day, service_address: address, service_variant_id: sub.service_variant_id, duration_minutes: String(variant?.duration_minutes || 180) });
+              const r = await adminFetch(`/api/get-availability?${params.toString()}`);
+              const av = await r.json();
+              if (!r.ok) throw new Error(av.message || av.error || "Couldn't load times");
+              pickedSlot = null;
+              const slots = av.slots || [];
+              box.innerHTML = slots.length
+                ? slots.map((iso) => `<button type="button" class="ux-chip" data-slot="${esc(iso)}">${esc(new Date(iso).toLocaleTimeString([], { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }))}</button>`).join("")
+                : `<span class="sub-muted">No open times that day. Try another date, or tick "Enter a time myself".</span>`;
+              box.querySelectorAll("[data-slot]").forEach((b) => (b.onclick = () => {
+                pickedSlot = b.dataset.slot;
+                box.querySelectorAll("[data-slot]").forEach((x) => x.classList.toggle("on", x === b));
+              }));
+            } catch (e) { box.innerHTML = ""; showAdminBanner(e.message, "error"); }
+          };
+          q("[data-book-go]").onclick = async () => {
+            const manual = q("[data-book-manual]").checked;
+            const day = q("[data-book-date]").value;
+            let start = pickedSlot;
+            if (manual) {
+              const t = q("[data-book-time]").value;
+              if (!day || !t) return showAdminBanner("Pick a date and time.", "error");
+              // New York wall time → ISO, using New York's UTC offset on that date (DST-safe,
+              // whatever time zone this browser is in).
+              const probe = new Date(`${day}T12:00:00Z`);
+              const parts = Object.fromEntries(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+                .formatToParts(probe).map((x) => [x.type, x.value]));
+              const nyAsUtc = Date.UTC(+parts.year, +parts.month - 1, +parts.day, +parts.hour, +parts.minute);
+              const offsetMs = probe.getTime() - nyAsUtc; // e.g. +5h in winter
+              start = new Date(new Date(`${day}T${t}:00Z`).getTime() + offsetMs).toISOString();
+            }
+            if (!start) return showAdminBanner("Find open times and pick one (or enter a time yourself).", "error");
+            const btn = q("[data-book-go]");
+            btn.disabled = true;
+            try {
+              const d = await postJson("/api/admin-book-member", {
+                subscription_id: id,
+                scheduled_start: start,
+                service_address: q("[data-book-address]").value.trim(),
+                customer_notes: q("[data-book-notes]").value.trim() || undefined,
+                manual_time: manual,
+                status: q("[data-book-status]").value,
+                send_customer_email: q("[data-book-email]").checked,
+              });
+              if (d.warning) {
+                await loadSubscriptionsList();
+                showAdminBanner(d.warning, "error");
+              } else {
+                await refresh(d.status === "confirmed" ? "Visit booked and confirmed." : "Visit booked as a request.");
+              }
+              if (typeof loadAdminData === "function") loadAdminData().catch(() => {});
+            } catch (e) { showAdminBanner(e.message, "error"); btn.disabled = false; }
+          };
+        }
 
         if (panel.querySelector("#subNewVariant")) {
           loadVariants().then((variants) => {
@@ -5727,16 +5835,24 @@ function renderView(viewName) {
         <section class="ux-card">
           <div class="ux-card-head">
             <div><h3><span class="ux-pill ${statusTone} plain">${esc(st[0])}</span></h3>
-              <small>${d.run.approved_at ? `Approved ${esc(new Date(d.run.approved_at).toLocaleDateString())} by ${esc(String(d.run.approved_by || "").replace(/ \(.*\)$/, ""))}` : isCurrentWeek ? "This week isn't over — numbers update live." : "Check hours and warnings, then approve."}${d.run.paid_at ? ` · Paid ${esc(new Date(d.run.paid_at).toLocaleDateString())}${d.lines[0]?.payment_method ? " via " + esc(d.lines[0].payment_method) : ""}` : ""}</small></div>
+              <small>${d.run.approved_at ? `Approved ${esc(new Date(d.run.approved_at).toLocaleDateString())} by ${esc(String(d.run.approved_by || "").replace(/ \(.*\)$/, ""))}` : isCurrentWeek ? "This week isn't over — numbers update live." : "Check hours and warnings, then approve."}${d.run.paid_at ? ` · Paid ${esc(new Date(d.run.paid_at).toLocaleDateString())}${d.lines[0]?.payment_method ? " via " + esc(d.lines[0].payment_method) : ""}` : ""}</small>
+              ${d.run.status === "draft" && d.run.crew_approved_at ? `<small style="display:block;" class="ux-ok-text">Crew pay signed off by ${esc(String(d.run.crew_approved_by || "").replace(/ \(.*\)$/, ""))}${d.can_finish ? " — approve to finish" : " — waiting for the owner to approve managers' pay"}</small>` : ""}
+              ${d.run.status === "draft" && !d.can_finish && !d.run.crew_approved_at ? `<small style="display:block;">Managers' pay is approved by the owner — you sign off the crew.</small>` : ""}</div>
             <div class="ux-card-figure">${$(d.totals.total)}<span>total to pay</span></div>
           </div>
           <div class="ux-form-actions">
-            ${d.run.status === "draft" ? `<button type="button" class="ux-btn ux-btn-primary" data-approve ${isCurrentWeek || !d.lines.length ? "disabled" : ""}>Approve payroll</button>` : ""}
+            ${d.run.status === "draft"
+              ? (d.can_finish
+                ? `<button type="button" class="ux-btn ux-btn-primary" data-approve ${isCurrentWeek || !d.lines.length ? "disabled" : ""}>Approve payroll</button>`
+                : d.run.crew_approved_at
+                  ? `<button type="button" class="ux-btn" disabled>Waiting for the owner</button>`
+                  : `<button type="button" class="ux-btn ux-btn-primary" data-approve ${isCurrentWeek || !d.lines.length ? "disabled" : ""}>Sign off crew pay</button>`)
+              : ""}
             ${d.run.status === "approved" ? (paidArmed
               ? `<select data-method aria-label="How the crew was paid">${d.payment_methods.map(m => `<option>${esc(m)}</option>`).join("")}</select>
                  <button type="button" class="ux-btn ux-btn-primary" data-paid-yes>Confirm paid ${$(d.totals.total)}</button>
                  <button type="button" class="ux-btn" data-paid-no>Cancel</button>`
-              : `<button type="button" class="ux-btn ux-btn-primary" data-paid>Mark as paid</button><button type="button" class="ux-btn" data-reopen>Reopen</button>`) : ""}
+              : `<button type="button" class="ux-btn ux-btn-primary" data-paid>Mark as paid</button>${d.can_finish ? `<button type="button" class="ux-btn" data-reopen>Reopen</button>` : ""}`) : ""}
             <button type="button" class="ux-btn ux-btn-quiet" data-csv ${d.lines.length ? "" : "disabled"}>Download CSV</button>
           </div>
         </section>
@@ -5751,7 +5867,7 @@ function renderView(viewName) {
             <thead><tr><th>Name</th><th>Rate</th><th>Reg. hrs</th><th>OT hrs</th><th>Wages</th><th>Tips</th><th>Pay-backs</th><th>Total</th></tr></thead>
             <tbody>${d.lines.length ? d.lines.map(l => `
               <tr>
-                <td>${esc(l.full_name)}${l.warnings.length ? `<div class="ux-flags" style="margin:4px 0 0;font-size:12px;">${l.warnings.map(w => `<div>${icon("alert", 13)} ${esc(w)}</div>`).join("")}</div>` : ""}</td>
+                <td>${esc(l.full_name)}${!d.can_finish && l.role && l.role !== "employee" ? ` <span class="ux-pill plain">Owner approves</span>` : ""}${l.warnings.length ? `<div class="ux-flags" style="margin:4px 0 0;font-size:12px;">${l.warnings.map(w => `<div>${icon("alert", 13)} ${esc(w)}</div>`).join("")}</div>` : ""}</td>
                 <td data-label="Rate">${l.hourly_rate != null ? $(l.hourly_rate) : "—"}</td>
                 <td data-label="Regular hours">${h(l.regular_hours)}</td>
                 <td data-label="Overtime hours" class="${l.overtime_hours ? "ux-warn-text" : ""}">${h(l.overtime_hours)}</td>
@@ -5781,7 +5897,8 @@ function renderView(viewName) {
         try { await call("POST", "/api/admin-payroll", { week: d.week.start, ...body }); paidArmed = false; showAdminBanner(msg, "success"); load(); }
         catch (err) { showAdminBanner(err.message, "error"); }
       };
-      wrapper.querySelector("[data-approve]")?.addEventListener("click", () => act({ action: "approve" }, "Payroll approved. Numbers are frozen."));
+      wrapper.querySelector("[data-approve]")?.addEventListener("click", () =>
+        act({ action: "approve" }, d.can_finish ? "Payroll approved. Numbers are frozen." : "Crew pay signed off. The owner approves the managers' pay."));
       wrapper.querySelector("[data-reopen]")?.addEventListener("click", () => act({ action: "reopen" }, "Back to draft."));
       wrapper.querySelector("[data-paid]")?.addEventListener("click", () => { paidArmed = true; render(d); });
       wrapper.querySelector("[data-paid-no]")?.addEventListener("click", () => { paidArmed = false; render(d); });
@@ -6310,7 +6427,10 @@ function renderView(viewName) {
         ${d.time_off.length ? `<div class="sch-panel"><strong>Time-off requests</strong>${d.time_off.map(t => `
           <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:8px;">
             <span style="flex:1 1 100%;">${esc(t.full_name)}: <strong>${esc(dayHead(t.start_date))}${t.end_date !== t.start_date ? " → " + esc(dayHead(t.end_date)) : ""}</strong>${t.reason ? ` <span style="opacity:.75;">· ${esc(t.reason)}</span>` : ""}</span>
-            ${denyArmed === t.id
+            ${t.warning ? `<div style="flex:1 1 100%;color:#ffc65c;font-size:13px;white-space:pre-line;">${icon("alert", 13)} If approved — ${esc(t.warning)}</div>` : ""}
+            ${t.can_review === false
+              ? `<span style="flex:1 1 100%;font-size:13px;opacity:.75;">The owner decides managers' time off.</span>`
+              : denyArmed === t.id
               ? `<input data-deny-note placeholder="Note to ${esc(t.full_name.split(" ")[0])} (optional)" style="padding:8px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#fff;font:inherit;min-width:180px;">
                  <button type="button" class="sch-btn danger" data-deny-yes="${esc(t.id)}">Deny request</button>
                  <button type="button" class="sch-btn" data-deny-no>Cancel</button>`
@@ -6395,7 +6515,16 @@ function renderView(viewName) {
 
       // time off
       wrapper.querySelectorAll("[data-approve]").forEach(b => (b.onclick = async () => {
-        try { await call("POST", "/api/admin-schedule", { action: "time_off", id: b.dataset.approve, status: "approved" }); await load(); }
+        // Approving can leave days solo or closed to bookings — say so before it happens.
+        const req = d.time_off.find(t => t.id === b.dataset.approve);
+        if (req?.warning && !(await uxConfirm(`Approve ${req.full_name.split(" ")[0]}'s time off?\n\n${req.warning}\n\nBooking availability updates automatically.`, { okLabel: "Approve anyway" }))) return;
+        try {
+          const r = await call("POST", "/api/admin-schedule", { action: "time_off", id: b.dataset.approve, status: "approved" });
+          const s = r.booking_sync || {};
+          const changed = (s.addSolo?.length || 0) + (s.addBlock?.length || 0);
+          showAdminBanner(changed ? `Time off approved. Booking updated: ${s.addSolo?.length || 0} solo day(s), ${s.addBlock?.length || 0} closed day(s).` : "Time off approved.", "success");
+          await load();
+        }
         catch (err) { showAdminBanner(err.message, "error"); }
       }));
       wrapper.querySelectorAll("[data-deny]").forEach(b => (b.onclick = () => { denyArmed = b.dataset.deny; render(); wrapper.querySelector("[data-deny-note]")?.focus(); }));
@@ -6475,9 +6604,20 @@ function renderView(viewName) {
       return data;
     }
 
-    function entryRow(e) {
+    function entryRow(e, editable = true) {
       const row = document.createElement("div");
       row.className = "ux-entry";
+      if (!editable) {
+        // Manager viewing another manager's (or their own) time: read only; the owner corrects it.
+        row.innerHTML = `
+          <div class="ux-entry-head" style="cursor:default;grid-template-columns:minmax(0,1fr) auto;">
+            <span class="ux-entry-main"><strong>${esc(fmtDay(e.clock_in_at))}</strong>
+              <span>${esc(fmtTime(e.clock_in_at))} – ${e.clock_out_at ? esc(fmtTime(e.clock_out_at)) : '<b class="ux-ok-text">on the clock</b>'}</span>
+              <small>${method(e)}${e.edits ? ` · edited ${e.edits}×` : ""}${e.notes ? ` · ${esc(e.notes)}` : ""}</small></span>
+            <span class="ux-entry-hours">${hrs(e.clock_in_at, e.clock_out_at)} h</span>
+          </div>`;
+        return row;
+      }
       row.innerHTML = `
         <button type="button" class="ux-entry-head" data-toggle>
           <span class="ux-entry-main"><strong>${esc(fmtDay(e.clock_in_at))}</strong>
@@ -6532,7 +6672,7 @@ function renderView(viewName) {
         </header>
         ${s.flags.length ? `<div class="ux-flags">${s.flags.map(f => `<div>${icon("alert", 14)} ${esc(f.message)}</div>`).join("")}</div>` : ""}
         <div data-entries></div>
-        <details class="ux-more"><summary>Add a missed entry</summary>
+        ${p.can_edit === false ? `<p class="ux-footnote" style="margin-top:8px;">Only the owner can change a manager's time.</p>` : `<details class="ux-more"><summary>Add a missed entry</summary>
           <form class="ux-form" data-add>
             <div class="ux-form-row">
               <label>Clock in<input type="datetime-local" name="in" required></label>
@@ -6541,11 +6681,11 @@ function renderView(viewName) {
             <label>Reason<input name="reason" placeholder="e.g. phone died" required></label>
             <div class="ux-form-actions"><button type="submit" class="ux-btn ux-btn-primary">Add entry</button></div>
           </form>
-        </details>`;
+        </details>`}`;
       const list = card.querySelector("[data-entries]");
       if (!p.entries.length) list.innerHTML = `<div class="ux-empty" style="padding:12px;">No time this week.</div>`;
-      p.entries.forEach(e => list.appendChild(entryRow(e)));
-      card.querySelector("[data-add]").onsubmit = async (ev) => {
+      p.entries.forEach(e => list.appendChild(entryRow(e, p.can_edit !== false)));
+      if (card.querySelector("[data-add]")) card.querySelector("[data-add]").onsubmit = async (ev) => {
         ev.preventDefault();
         const f = Object.fromEntries(new FormData(ev.target).entries());
         try {
@@ -7240,6 +7380,7 @@ function renderView(viewName) {
     let overrideMap = {};
     let bookingCountByDate = {};
     let soloModeDates = {};
+    let autoSoloDates = {}; // solo set by the team-availability sync
     let listPayload = null;
     let multiSelectMode = false;
 
@@ -7554,10 +7695,11 @@ function renderView(viewName) {
           html += " " + formatTimeForInput(override.start_time) + "–" + formatTimeForInput(override.end_time);
         }
         html += "</p>";
+        if (override.source === "auto") html += "<p style='color:#ffc65c;'>Closed automatically: nobody on the team is available this day. It reopens on its own when someone is.</p>";
       }
       html += "<p><strong>Existing bookings this day:</strong> " + bookingCount + "</p>";
       const soloOn = !!soloModeDates[selectedDate];
-      html += "<p><strong>Solo Mode:</strong> " + (soloOn ? "On" : "Off") + "</p>";
+      html += "<p><strong>Solo Mode:</strong> " + (soloOn ? "On" : "Off") + (autoSoloDates[selectedDate] ? " <span style='color:#ffc65c;'>(automatic — only one person is available)</span>" : "") + "</p>";
       if (selectedDates.size > 1) {
         html += "<p style='margin-top:8px;color:rgba(255,255,255,0.85);'>Multiple dates selected. Use the bulk actions above for Solo Mode and availability.</p>";
         html += "<div style='margin-top:12px;' id='availabilityTimeRangeRow'><strong>Time range for bulk actions</strong></div>";
@@ -7759,6 +7901,8 @@ function renderView(viewName) {
         if (staffRes.ok) {
           const staffData = await staffRes.json();
           (staffData.soloDates || []).forEach(function(d) { soloModeDates[d] = true; });
+          autoSoloDates = {};
+          (staffData.autoSoloDates || []).forEach(function(d) { autoSoloDates[d] = true; });
         }
       } catch (e) {
         overrideMap = {};
@@ -7801,6 +7945,122 @@ function renderView(viewName) {
   // =========================
   // EXPENSES
   // =========================
+  // EXPENSE REPORT (owner): each week's expenses → approve/deny items → approve the report
+  if (viewName === "expense-report") {
+    const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    const $ = (n) => "$" + Number(n || 0).toFixed(2);
+    const day = (d) => d ? new Date(d + "T12:00:00Z").toLocaleDateString([], { timeZone: "UTC", weekday: "short", month: "short", day: "numeric" }) : "—";
+    const who = (s) => String(s || "").replace(/ \(.*\)$/, "");
+    let weekDate = null;
+    let rejecting = null;
+    const wrapper = document.createElement("div");
+    wrapper.className = "ux-page";
+    viewContainer.appendChild(wrapper);
+
+    async function call(method, url, body) {
+      const res = await adminFetch(url, { method, headers: { "Content-Type": "application/json" }, body: body ? JSON.stringify(body) : undefined });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.error || "Request failed");
+      return d;
+    }
+
+    function render(d) {
+      const t = d.totals;
+      const weekOver = d.week.start < d.this_week;
+      const shift = (n) => uxShiftDate(d.week.start, n);
+      wrapper.innerHTML = "";
+      wrapper.appendChild(uxPager({
+        label: uxWeekLabel(d.week.start, d.week.end),
+        onPrev: () => { weekDate = shift(-7); load(); },
+        onNext: () => { weekDate = shift(7); load(); },
+        onReset: () => { weekDate = null; load(); },
+        resetLabel: "Last week"
+      }));
+      const status = d.report
+        ? `<span class="ux-pill completed plain">Approved</span>`
+        : t.pending ? `<span class="ux-pill pending plain">${t.pending} to decide</span>` : `<span class="ux-pill confirmed plain">Ready to approve</span>`;
+      wrapper.insertAdjacentHTML("beforeend", `
+        <section class="ux-card">
+          <div class="ux-card-head">
+            <div><h3>Expense report ${status}</h3>
+              <small>${d.report ? `Approved ${esc(new Date(d.report.approved_at).toLocaleDateString())} by ${esc(who(d.report.approved_by))}`
+                : !weekOver ? "This week isn't over yet — expenses keep coming in."
+                : "Check each expense; reject anything that shouldn't count, then approve the report."}</small></div>
+            <div class="ux-card-figure">${$(t.amount)}<span>${t.count} expense${t.count === 1 ? "" : "s"}</span></div>
+          </div>
+          ${t.paybacks ? `<p class="ux-footnote" style="margin:0 0 10px;">${$(t.paybacks)} of this is owed back to the team on payroll.</p>` : ""}
+          ${d.report ? "" : `<div class="ux-form-actions"><button type="button" class="ux-btn ux-btn-primary" data-approve-report ${!weekOver || t.pending || !d.expenses.length ? "disabled" : ""}>Approve report</button></div>`}
+        </section>
+        ${d.expenses.length ? "" : `<div class="ux-empty">No expenses were entered this week.</div>`}`);
+
+      d.expenses.forEach((x) => {
+        const card = document.createElement("section");
+        card.className = "ux-card ux-approve";
+        if (x.status !== "pending") card.style.borderColor = "var(--ux-line)";
+        const pill = x.status === "pending" ? `<span class="ux-pill pending plain">Waiting for you</span>`
+          : x.status === "rejected" ? `<span class="ux-pill cancelled plain">Rejected</span>`
+          : `<span class="ux-pill completed plain">Approved${x.reviewed_by ? " · " + esc(who(x.reviewed_by)) : ""}</span>`;
+        const actions = rejecting === x.id
+          ? `<input data-note placeholder="Reason (shown to ${esc((x.submitted_by || "them").split(" ")[0])})" style="flex:1 1 100%;">
+             <button type="button" class="ux-btn ux-btn-danger" data-reject-yes>Reject expense</button>
+             <button type="button" class="ux-btn" data-reject-no>Cancel</button>`
+          : x.status === "pending"
+            ? `<button type="button" class="ux-btn ux-btn-primary" data-approve>Approve</button><button type="button" class="ux-btn ux-btn-danger" data-reject>Reject</button>`
+            : x.status === "approved"
+              ? (x.locked ? `<small class="ux-footnote">${esc(x.locked)}</small>` : `<button type="button" class="ux-btn ux-btn-danger" data-reject>Reject</button>`)
+              : `<button type="button" class="ux-btn" data-approve>Approve instead</button>`;
+        card.innerHTML = `
+          <a class="ux-receipt" href="${esc(x.receipt_url || "#")}" target="_blank" rel="noopener" title="Open receipt">
+            ${x.receipt_url ? (/\.pdf/.test(x.receipt_url.split("?")[0]) ? "PDF" : `<img src="${esc(x.receipt_url)}" alt="Receipt">`) : icon("receipt", 22)}
+          </a>
+          <div class="ux-approve-body">
+            <div class="ux-approve-title"><strong>${esc(x.vendor)}</strong><span>${$(x.amount)}</span></div>
+            <small>${esc(day(x.expense_date))} · ${esc(x.submitted_by)}${x.submitted_role ? ` (${esc(x.submitted_role)})` : ""}</small>
+            <small>${esc(x.category)} · ${esc(x.expense_type)} · ${esc(x.payment_method)}${x.description ? " · " + esc(x.description) : ""}</small>
+            ${x.reimburse ? `<small class="ux-warn-text">Paid with their own money${x.reimbursed_at ? " — paid back" : " — paid back on payroll"}</small>` : ""}
+            ${x.status === "rejected" && x.review_note ? `<small class="ux-bad-text">${esc(x.review_note)}</small>` : ""}
+            <div style="margin-top:4px;">${pill}</div>
+          </div>
+          ${d.report ? "" : `<div class="ux-form-actions ux-approve-actions" data-actions>${actions}</div>`}`;
+        const review = async (status, note) => {
+          try {
+            await call("POST", "/api/admin-expense-report", { action: "review", id: x.id, status, note });
+            rejecting = null;
+            showAdminBanner(status === "approved" ? "Expense approved." : "Expense rejected.", "success");
+            load();
+          } catch (err) { showAdminBanner(err.message, "error"); }
+        };
+        card.querySelector("[data-approve]")?.addEventListener("click", () => review("approved"));
+        card.querySelector("[data-reject]")?.addEventListener("click", () => { rejecting = x.id; render(d); wrapper.querySelector("[data-note]")?.focus(); });
+        card.querySelector("[data-reject-no]")?.addEventListener("click", () => { rejecting = null; render(d); });
+        card.querySelector("[data-reject-yes]")?.addEventListener("click", () => review("rejected", card.querySelector("[data-note]").value));
+        wrapper.appendChild(card);
+      });
+
+      wrapper.querySelector("[data-approve-report]")?.addEventListener("click", async () => {
+        if (!(await uxConfirm(`Approve the expense report for ${uxWeekLabel(d.week.start, d.week.end)}? ${t.count} expense${t.count === 1 ? "" : "s"}, ${$(t.amount)}.`, { okLabel: "Approve report" }))) return;
+        try {
+          await call("POST", "/api/admin-expense-report", { action: "approve", week: d.week.start });
+          showAdminBanner("Expense report approved.", "success");
+          load();
+        } catch (err) { showAdminBanner(err.message, "error"); }
+      });
+    }
+
+    async function load() {
+      wrapper.innerHTML = "<p style='margin:0;'>Loading…</p>";
+      try {
+        const d = await call("GET", `/api/admin-expense-report${weekDate ? "?week=" + weekDate : ""}`);
+        weekDate = d.week.start;
+        render(d);
+      } catch (err) {
+        wrapper.innerHTML = `<p style="margin:0;color:#ff8a8a;">${esc(err.message)}</p>`;
+      }
+    }
+    load();
+    return;
+  }
+
   if (viewName === "expenses") {
     const EXP_CATEGORIES = ["Chemicals","Towels / Supplies","Equipment","Fuel","Truck Maintenance / Repairs","Advertising / Marketing","Website / Software","Insurance","Phone","Payment Processing Fees","Business Meals","Office / Admin","Taxes / Fees","Other"];
     const EXP_TYPES = ["Direct Cost","Operating Expense","Asset Purchase","Owner Draw","Owner Contribution","Liability Payment"];
@@ -7895,7 +8155,7 @@ function renderView(viewName) {
         const rows = data.pending || [];
         if (!rows.length) { pendingEl.innerHTML = ""; return; }
         const sel = (name, options, value) => `<select data-f="${name}">${options.map(o => `<option value="${escapeHtml(o)}" ${o === value ? "selected" : ""}>${escapeHtml(o)}</option>`).join("")}</select>`;
-        pendingEl.innerHTML = `<div class="ux-list-title">Needs approval · ${rows.length}</div>`;
+        pendingEl.innerHTML = `<div class="ux-list-title">Needs your approval · ${rows.length}</div>`;
         rows.forEach(r => {
           const card = document.createElement("div");
           card.className = "ux-card ux-approve";
@@ -7958,8 +8218,10 @@ function renderView(viewName) {
         const data = await resp.json();
         if (!resp.ok) throw new Error(data.error || "Failed to load");
         const rows = data.expenses || [];
-        const total = rows.reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
-        totalRow.textContent = `${rows.length} expense${rows.length === 1 ? "" : "s"} · Total $${total.toFixed(2)}`;
+        const approvedRows = rows.filter((r) => !r.status || r.status === "approved");
+        const total = approvedRows.reduce((acc, r) => acc + (Number(r.amount) || 0), 0);
+        const waiting = rows.filter((r) => r.status === "pending").length;
+        totalRow.textContent = `${approvedRows.length} expense${approvedRows.length === 1 ? "" : "s"} · Total $${total.toFixed(2)}${waiting ? ` · ${waiting} of yours waiting for the owner` : ""}`;
 
         if (rows.length === 0) {
           listEl.innerHTML = '<div style="text-align:center;padding:24px;opacity:0.7;">No expenses for this month yet.</div>';
@@ -7982,8 +8244,12 @@ function renderView(viewName) {
           const left = document.createElement("div");
           left.style.flex = "1";
           left.style.minWidth = "200px";
+          const statusPill = r.status === "pending"
+            ? ' <span class="ux-pill pending plain">Waiting for owner</span>'
+            : r.status === "rejected" ? ' <span class="ux-pill cancelled">Rejected</span>' : "";
           left.innerHTML = `
-            <div style="font-weight:600;">${escapeHtml(r.vendor)} — $${(Number(r.amount) || 0).toFixed(2)}</div>
+            <div style="font-weight:600;">${escapeHtml(r.vendor)} — $${(Number(r.amount) || 0).toFixed(2)}${statusPill}</div>
+            ${r.status === "rejected" && r.review_note ? `<div style="font-size:12px;color:#ff8a8a;margin-top:2px;">${escapeHtml(r.review_note)}</div>` : ""}
             <div style="font-size:12px;opacity:0.75;margin-top:2px;">
               ${escapeHtml(expDate(r.expense_date))} · ${escapeHtml(r.category)} ·${escapeHtml(r.expense_type)} · ${escapeHtml(r.payment_method)}${r.receipt_url ? ` · <a href="${escapeHtml(r.receipt_url)}" target="_blank" rel="noopener" style="color:#9fb7d3;">View receipt</a>` : r.receipt_saved ? " · receipt kept" : ""}${r.submitted_by ? " · by " + escapeHtml(r.submitted_by) : ""}${r.reimburse ? (r.reimbursed_at ? " · reimbursed" : ' · <span style="color:#ffc65c;">owed to ' + escapeHtml(r.submitted_by || "crew") + "</span>") : ""}
             </div>
@@ -8012,7 +8278,7 @@ function renderView(viewName) {
               delBtn.disabled = false;
             }
           };
-          card.appendChild(delBtn);
+          if (r.can_delete !== false) card.appendChild(delBtn);
           listEl.appendChild(card);
         });
       } catch (err) {
@@ -8036,6 +8302,9 @@ function renderView(viewName) {
       document.getElementById("expNotes").value = "";
       document.getElementById("expReceiptSaved").checked = false;
       document.getElementById("expReceiptFile").value = "";
+      const isManager = adminRole() !== "owner";
+      document.getElementById("expManagerRow").style.display = isManager ? "" : "none";
+      document.getElementById("expReimburse").checked = false;
       const errEl = document.getElementById("expError");
       errEl.textContent = "";
       errEl.classList.remove("show");
@@ -8065,7 +8334,8 @@ function renderView(viewName) {
           payment_method: document.getElementById("expPaymentMethod").value,
           description: document.getElementById("expDescription").value.trim(),
           notes: document.getElementById("expNotes").value.trim(),
-          receipt_saved: document.getElementById("expReceiptSaved").checked
+          receipt_saved: document.getElementById("expReceiptSaved").checked,
+          reimburse: isManager && document.getElementById("expReimburse").checked
         };
         if (!payload.expense_date) { errEl.textContent = "Date is required."; errEl.classList.add("show"); return; }
         if (!payload.vendor) { errEl.textContent = "Vendor is required."; errEl.classList.add("show"); return; }
@@ -8102,7 +8372,7 @@ function renderView(viewName) {
           });
           const dd = await resp.json().catch(() => ({}));
           if (!resp.ok) throw new Error(dd.error || "Save failed");
-          showAdminBanner("Expense saved.", "success");
+          showAdminBanner(isManager ? "Expense sent to the owner for approval." : "Expense saved.", "success");
           close();
           confirmBtn.textContent = "Save Expense";
           loadExpenses();
@@ -8119,8 +8389,19 @@ function renderView(viewName) {
     monthInput.onchange = () => loadExpenses();
     addBtn.onclick = () => openExpenseModal();
 
+    // Owner: shortcut to the weekly expense report.
+    if (adminRole() === "owner") {
+      const reportLink = document.createElement("button");
+      reportLink.type = "button";
+      reportLink.className = "ux-list-item ux-card";
+      reportLink.style.marginBottom = "14px";
+      reportLink.innerHTML = `<span class="ux-list-icon">${icon("receipt", 20)}</span><span class="ux-list-label"><strong>Weekly expense report</strong><small>Review each week's expenses and approve the report</small></span><span class="ux-chev">${icon("chevronRight", 18)}</span>`;
+      reportLink.onclick = () => handleViewSwitch("expense-report");
+      wrapper.insertBefore(reportLink, pendingEl);
+    }
+
     viewContainer.appendChild(wrapper);
-    if (adminRole() === "owner") loadPending();
+    loadPending(); // managers see employees' receipts; the owner sees everything incl. managers'
     loadExpenses();
     return;
   }

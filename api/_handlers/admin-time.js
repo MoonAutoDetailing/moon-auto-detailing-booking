@@ -1,5 +1,5 @@
 import verifyAdmin from "../_verifyAdmin.js";
-import { serviceClient, parseBody } from "../_staffAuth.js";
+import { serviceClient, parseBody, canManageWorkOf } from "../_staffAuth.js";
 import { todayNY } from "../_subscriptions/lifecycle.js";
 import { isIsoDate } from "../_jobs.js";
 import { payWeek, summarizeWeek, parseEntryEdit } from "../_timeclock.js";
@@ -64,6 +64,7 @@ export default async function handler(req, res) {
           if (!s.active && !mine.length) return null;
           return {
             staff: { id: s.id, full_name: s.full_name, role: s.role, hourly_rate: s.hourly_rate },
+            can_edit: canManageWorkOf(actor, s),
             summary: summarizeWeek(mine, week),
             entries: mine.map((e) => ({ ...e, verified_by_name: names.get(e.verified_by) || null, edits: editCounts.get(e.id) || 0 })),
           };
@@ -82,8 +83,17 @@ export default async function handler(req, res) {
     const reason = String(body.reason || "").trim();
     if (!reason) return res.status(400).json({ error: "Please give a reason for the change" });
 
+    // Hierarchy: managers fix employees' time only; the owner fixes managers' (and their own).
+    const allowedFor = async (staffId) => {
+      const { data: target, error } = await sb.from("staff").select("id, role").eq("id", staffId).maybeSingle();
+      if (error) throw error;
+      return canManageWorkOf(actor, target);
+    };
+    const notYours = { error: "Only the owner can change a manager's time entries" };
+
     if (req.method === "POST") {
       if (!body.staff_id) return res.status(400).json({ error: "Missing staff_id" });
+      if (!(await allowedFor(body.staff_id))) return res.status(403).json(notYours);
       const { error, update } = parseEntryEdit(body);
       if (error) return res.status(400).json({ error });
       const row = {
@@ -105,6 +115,7 @@ export default async function handler(req, res) {
     const { data: existing, error: exErr } = await sb.from("time_entries").select(COLS).eq("id", body.id).maybeSingle();
     if (exErr) throw exErr;
     if (!existing || existing.voided_at) return res.status(404).json({ error: "Entry not found" });
+    if (!(await allowedFor(existing.staff_id))) return res.status(403).json(notYours);
 
     if (req.method === "PATCH") {
       const { error, update } = parseEntryEdit(body, existing);

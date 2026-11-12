@@ -1,5 +1,5 @@
 import { rateLimit } from "../_rateLimit.js";
-import { requireRole, ROLES, serviceClient, sendAuthError, parseBody, verifySecret, ADMIN_ROLES } from "../_staffAuth.js";
+import { requireRole, ROLES, serviceClient, sendAuthError, parseBody, verifySecret, ADMIN_ROLES, canManageWorkOf } from "../_staffAuth.js";
 import { todayNY } from "../_subscriptions/lifecycle.js";
 import { nyDayRange } from "../_jobs.js";
 import { checkGeofence, validPosition, payWeek, summarizeWeek, clockSettings } from "../_timeclock.js";
@@ -36,12 +36,16 @@ async function clockSites(sb, today) {
   return sites;
 }
 
-/** Finds the active owner/manager whose PIN this is. */
-async function managerForPin(sb, pin) {
+/**
+ * Finds the active approver whose PIN this is, following the hierarchy: an employee needs a
+ * manager or the owner; a manager needs the owner and can't approve themselves.
+ */
+async function approverForPin(sb, pin, clocker) {
   if (!/^\d{4,6}$/.test(String(pin || ""))) return null;
   const { data, error } = await sb.from("staff").select("id, full_name, role, pin_hash").eq("active", true).in("role", ADMIN_ROLES);
   if (error) throw error;
-  return (data || []).find((m) => m.pin_hash && verifySecret(String(pin), m.pin_hash)) || null;
+  const match = (data || []).find((m) => m.pin_hash && verifySecret(String(pin), m.pin_hash)) || null;
+  return match && canManageWorkOf(match, clocker) ? match : null;
 }
 
 async function status(sb, staffId) {
@@ -119,8 +123,11 @@ export default async function handler(req, res) {
       } else if (body.pin) {
         const limit = rateLimit(req, { key: `clock-pin:${staff.id}`, limit: 5, windowMs: 15 * 60 * 1000 });
         if (!limit.allowed) return res.status(429).json({ error: "Too many PIN attempts. Wait a few minutes or call your manager." });
-        const manager = await managerForPin(sb, body.pin);
-        if (!manager) return res.status(403).json({ error: "That PIN didn't match a manager", needs_pin: true, nearest: fence.nearest });
+        const manager = await approverForPin(sb, body.pin, staff);
+        if (!manager) {
+          const who = staff.role === "employee" ? "a manager" : "the owner";
+          return res.status(403).json({ error: `That PIN didn't match ${who}.`, needs_pin: true, nearest: fence.nearest });
+        }
         verify_method = "pin";
         verified_by = manager.id;
       } else {
@@ -130,7 +137,7 @@ export default async function handler(req, res) {
             ? `You're about ${(fence.nearest.distanceM / 1609.34).toFixed(1)} mi from the nearest job site (${fence.nearest.label}).`
             : "There are no job sites set for today.";
         return res.status(403).json({
-          error: `${where} Ask a manager to enter their PIN to approve this clock-in.`,
+          error: `${where} Ask ${staff.role === "employee" ? "a manager" : "the owner"} to enter their PIN to approve this clock-in.`,
           needs_pin: true,
           nearest: fence.nearest,
           radius_m: clockSettings().radiusM,

@@ -1,6 +1,7 @@
 import { requireRole, ROLES, serviceClient, sendAuthError, parseBody } from "../_staffAuth.js";
 import { todayNY } from "../_subscriptions/lifecycle.js";
 import { isDate, addDays, parseAvailabilityRow } from "../_schedule.js";
+import { syncSafely, timeOffImpact, impactWarning } from "../_teamCoverage.js";
 
 const AVAIL_COLS = "id, weekday, on_date, available, start_time, end_time, note";
 const OFF_COLS = "id, start_date, end_date, reason, status, review_note, created_at";
@@ -44,8 +45,22 @@ export default async function handler(req, res) {
     return { weekly, exceptions, time_off: (off || []).filter((t) => t.status !== "cancelled"), today };
   };
 
+  // Changes to when someone can work feed booking availability (solo / closed days).
+  const loadAndSync = async () => {
+    await syncSafely(sb, todayNY());
+    return load();
+  };
+
   try {
-    if (req.method === "GET") return res.status(200).json(await load());
+    if (req.method === "GET") {
+      // ?impact_start&impact_end: what taking those days off would leave, shown before asking.
+      const { impact_start: start, impact_end: end } = req.query || {};
+      if (isDate(start) && isDate(end) && end >= start) {
+        const impact = await timeOffImpact(sb, { staffId: staff.id, start, end });
+        return res.status(200).json({ impact, warning: impactWarning(impact) });
+      }
+      return res.status(200).json(await load());
+    }
 
     if (req.method === "PUT") {
       const body = parseBody(req);
@@ -65,7 +80,7 @@ export default async function handler(req, res) {
         const { error: insErr } = await sb.from("staff_availability").insert(rows);
         if (insErr) throw insErr;
       }
-      return res.status(200).json(await load());
+      return res.status(200).json(await loadAndSync());
     }
 
     if (req.method === "POST") {
@@ -80,7 +95,7 @@ export default async function handler(req, res) {
         if (delErr) throw delErr;
         const { error: insErr } = await sb.from("staff_availability").insert({ staff_id: staff.id, on_date: body.on_date, ...row });
         if (insErr) throw insErr;
-        return res.status(200).json(await load());
+        return res.status(200).json(await loadAndSync());
       }
 
       if (body.kind === "time_off") {
@@ -109,7 +124,7 @@ export default async function handler(req, res) {
           .eq("staff_id", staff.id)
           .not("on_date", "is", null);
         if (error) throw error;
-        return res.status(200).json(await load());
+        return res.status(200).json(await loadAndSync());
       }
       if (req.query?.time_off_id) {
         const { data, error } = await sb

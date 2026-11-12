@@ -65,6 +65,7 @@ button:disabled { opacity: 0.6; cursor: default; }
 .msg { margin-top: 14px; font-size: 14px; min-height: 20px; }
 .msg.error { color: #ff6b6b; }
 .hidden { display: none; }
+.link { display: inline-block; margin-top: 14px; background: none; border: none; width: auto; padding: 6px; color: var(--moon-primary); font-weight: 600; font-size: 14px; }
 </style>
 </head>
 <body>
@@ -84,6 +85,7 @@ button:disabled { opacity: 0.6; cursor: default; }
 
   <button id="submitBtn" type="submit">Sign in</button>
   <div class="msg" id="msg"></div>
+  <button type="button" class="link" id="modeLink">Forgot password?</button>
 </form>
 
 <script type="module">
@@ -147,12 +149,73 @@ async function changePassword() {
   goHome({ token: session.token, staff: { ...session.staff, must_change_password: false } });
 }
 
+// Forgot password: "forgot" asks for the email; "reset" (from the emailed ?reset=… link)
+// sets the new password and signs straight in.
+const params = new URLSearchParams(location.search);
+const resetToken = params.get("reset");
+let mode = resetToken ? "reset" : params.get("forgot") === "1" ? "forgot" : "login";
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const modeLink = document.getElementById("modeLink");
+
+function setMode(next) {
+  mode = next;
+  session = null;
+  showMessage("");
+  const show = (id, on) => document.getElementById(id).classList.toggle("hidden", !on);
+  show("loginFields", mode !== "reset");
+  show("changeFields", mode === "reset");
+  passwordInput.classList.toggle("hidden", mode !== "login");
+  passwordInput.required = mode === "login";
+  emailInput.required = mode !== "reset";
+  document.querySelector("h1").textContent = { login: "Team sign in", forgot: "Forgot password", reset: "Choose a new password" }[mode];
+  document.getElementById("subtitle").textContent = {
+    login: "Crew, managers and owners",
+    forgot: "Enter the email you sign in with and we'll email you a link to reset it.",
+    reset: "Pick a password you'll remember (8+ characters).",
+  }[mode];
+  btn.textContent = { login: "Sign in", forgot: "Email me a reset link", reset: "Save and sign in" }[mode];
+  modeLink.textContent = mode === "login" ? "Forgot password?" : "Back to sign in";
+  (mode === "reset" ? document.getElementById("newPassword") : emailInput).focus();
+}
+modeLink.onclick = () => {
+  if (mode === "reset") history.replaceState(null, "", location.pathname);
+  setMode(mode === "login" ? "forgot" : "login");
+};
+if (mode !== "login") setMode(mode);
+
+async function requestReset() {
+  const res = await fetch("/api/staff-forgot-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email: emailInput.value.trim() })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Couldn't send the link");
+  showMessage("If that email has a team login, a reset link is on its way. Check your inbox (and spam).");
+}
+
+async function resetPassword() {
+  const pw = document.getElementById("newPassword").value;
+  if (pw !== document.getElementById("newPassword2").value) throw new Error("Passwords don't match");
+  const res = await fetch("/api/staff-reset-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token: resetToken, password: pw })
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || "Could not save password");
+  goHome(data);
+}
+
 form.onsubmit = async (e) => {
   e.preventDefault();
   btn.disabled = true;
   showMessage("");
   try {
-    if (session) await changePassword();
+    if (mode === "forgot") await requestReset();
+    else if (mode === "reset") await resetPassword();
+    else if (session) await changePassword();
     else await signIn();
   } catch (err) {
     showMessage(err.message, true);

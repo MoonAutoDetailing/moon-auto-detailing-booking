@@ -84,6 +84,15 @@ export function checkStaffChange(actor, target, changes) {
   return null;
 }
 
+/**
+ * Simple approval hierarchy for time and pay: the owner handles everyone; a manager handles
+ * employees only — never their own entries or another manager's.
+ */
+export function canManageWorkOf(actor, target) {
+  if (actor?.role === "owner") return true;
+  return actor?.role === "manager" && target?.role === "employee" && target.id !== actor.id;
+}
+
 /* ---------------- tokens ---------------- */
 
 function sign(data, secret) {

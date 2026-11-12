@@ -131,6 +131,13 @@ export default async function handler(req, res) {
     if (adminInfo && adminInfo.admin && adminInfo.admin.id) {
       insertPayload.created_by = adminInfo.admin.id;
     }
+    // Hierarchy: the owner's entries count straight away; a manager's own expense waits for
+    // the owner (and can be paid back on payroll if they used their own money).
+    if (adminInfo?.admin?.role !== "owner") {
+      insertPayload.status = "pending";
+      insertPayload.submitted_by_staff_id = adminInfo.admin.id;
+      insertPayload.reimburse = body.reimburse === true;
+    }
 
     console.log("admin-record-expense payload", {
       expense_date,

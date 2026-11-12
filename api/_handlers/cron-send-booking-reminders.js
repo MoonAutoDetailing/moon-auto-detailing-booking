@@ -4,6 +4,7 @@ import { sendBookingReminder8EmailCore } from "../../lib/email/sendBookingRemind
 import { runCrewMorningEmails } from "../_crewMorning.js";
 import { sendMorningEmail } from "../../lib/email/crewEmails.js";
 import { todayNY } from "../_subscriptions/lifecycle.js";
+import { syncSafely } from "../_teamCoverage.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -119,7 +120,11 @@ export default async function handler(req, res) {
       console.error("[CREW_MORNING] failed", crewErr);
     }
 
-    return res.status(200).json({ ok: true, reminder_48: sent48, reminder_8: sent8, crew_morning: crew.sent });
+    // Daily safety net: keep booking availability in step with team availability (each change
+    // already syncs; this catches the rolling 60-day window moving forward).
+    const coverage = await syncSafely(supabase, todayNY());
+
+    return res.status(200).json({ ok: true, reminder_48: sent48, reminder_8: sent8, crew_morning: crew.sent, coverage_sync: coverage });
   } catch (err) {
     console.error("cron-send-booking-reminders error:", err);
     return res.status(500).json({ error: "Internal error" });

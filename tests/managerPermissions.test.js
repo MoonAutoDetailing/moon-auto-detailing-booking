@@ -27,17 +27,17 @@ function call(route, role) {
   return router(req, res).then(() => ({ status, body }));
 }
 
-test("owner-only routes: CRM, Business dashboard, bookkeeping export, expense approvals", () => {
-  for (const r of ["admin-crm-customers", "admin-crm-send-email", "admin-analytics", "export-bookkeeping", "admin-expense-review"]) {
+test("owner-only routes: CRM, Business dashboard, bookkeeping export, weekly expense report", () => {
+  for (const r of ["admin-crm-customers", "admin-crm-send-email", "admin-analytics", "export-bookkeeping", "admin-expense-report"]) {
     assert.equal(isOwnerOnly(r), true, r);
   }
-  for (const r of ["admin-payments", "admin-schedule", "admin-time", "admin-checklists", "admin-staff", "admin-bookings", "admin-list-expenses", "admin-payroll", "cron-crm-automation"]) {
+  for (const r of ["admin-payments", "admin-schedule", "admin-time", "admin-checklists", "admin-staff", "admin-bookings", "admin-list-expenses", "admin-payroll", "admin-expense-review", "cron-crm-automation"]) {
     assert.equal(isOwnerOnly(r), false, r);
   }
 });
 
 test("managers get 403 on owner-only routes; signed-out callers get 401", async () => {
-  for (const r of ["admin-crm-customers", "admin-analytics", "export-bookkeeping", "admin-expense-review"]) {
+  for (const r of ["admin-crm-customers", "admin-analytics", "export-bookkeeping", "admin-expense-report"]) {
     assert.deepEqual(await call(r, "manager"), { status: 403, body: { error: "Owner only" } }, r);
     assert.equal((await call(r, null)).status, 401, r);
   }
@@ -79,16 +79,22 @@ test("history search matches name, email and phone digits safely", async () => {
   assert.deepEqual(STATUS_GROUPS.cancelled, ["cancelled", "denied", "no_show"]);
 });
 
-test("Needs attention: most urgent first, expense approvals only for the owner", async () => {
+test("Needs attention: most urgent first; expense report and manager payroll go to the owner", async () => {
   const { attentionItems } = await import("../api/_handlers/admin-attention.js");
-  const counts = { forgotClockOut: ["Eli"], onClock: ["Sam"], overdueJobs: 2, timeOff: 1, expenses: 3, payrollReady: true, payrollHours: 74.75, drafts: 4 };
+  const counts = { forgotClockOut: ["Eli"], onClock: ["Sam"], overdueJobs: 2, timeOff: 1, expenses: 3, expenseReport: { count: 4, total: 212.5 }, payrollReady: true, payrollHours: 74.75, drafts: 4 };
   const owner = attentionItems(counts, { isOwner: true });
-  assert.deepEqual(owner.map((i) => i.key), ["clock", "overdue", "timeoff", "expenses", "payroll", "drafts", "onclock"]);
+  assert.deepEqual(owner.map((i) => i.key), ["clock", "overdue", "timeoff", "expenses", "expense-report", "payroll", "drafts", "onclock"]);
   assert.equal(owner[0].title, "1 person still clocked in after 12+ hours");
   assert.equal(owner[1].title, "2 jobs finished but not marked complete");
+  assert.equal(owner.find((i) => i.key === "expense-report").detail, "4 expenses · $212.50");
   assert.equal(owner.find((i) => i.key === "payroll").detail, "74.8 hours clocked");
   const manager = attentionItems(counts, { isOwner: false });
-  assert.equal(manager.some((i) => i.key === "expenses"), false);
+  assert.equal(manager.find((i) => i.key === "expenses").detail, "Crew receipts");
+  assert.equal(manager.some((i) => i.key === "expense-report"), false);
+  // Manager signed off the crew; the owner finishes it.
+  const signed = { ...counts, payrollReady: false, payrollOwnerNeeded: true };
+  assert.equal(attentionItems(signed, { isOwner: true }).find((i) => i.key === "payroll").title, "Last week's payroll needs your approval");
+  assert.equal(attentionItems(signed, { isOwner: false }).some((i) => i.key === "payroll"), false);
   assert.deepEqual(attentionItems({ forgotClockOut: [], onClock: [], overdueJobs: 0, timeOff: 0, expenses: 0, payrollReady: false, payrollHours: 0, drafts: 0 }, { isOwner: true }), []);
 });
 

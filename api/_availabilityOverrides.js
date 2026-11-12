@@ -68,7 +68,7 @@ export async function getOverridesForRange(startDate, endDate) {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from("availability_overrides")
-    .select("id, override_date, mode, scope, start_time, end_time, reason, google_event_id, created_at, updated_at")
+    .select("id, override_date, mode, scope, start_time, end_time, reason, google_event_id, source, created_at, updated_at")
     .gte("override_date", startDate)
     .lte("override_date", endDate)
     .order("override_date", { ascending: true });

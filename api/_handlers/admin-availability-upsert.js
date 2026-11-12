@@ -106,6 +106,7 @@ export default async function handler(req, res) {
         end_time: scope === "time_range" ? endTime : null,
         reason: body.reason || null,
         google_event_id: googleEventId,
+        source: "manual",
         updated_at: new Date().toISOString(),
       };
 
