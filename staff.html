@@ -358,8 +358,8 @@ async function renderDay() {
 }
 
 /* ---------------- time clock ---------------- */
-// Clock-in is verified by GPS (near one of today's jobs or the base). Away from those, a
-// manager types their PIN on this phone. Clock-out records location but never blocks.
+// Clock-in is verified by GPS at home base (pay starts when crew arrive to prep). Away from
+// base, a manager types their PIN on this phone. Clock-out records location but never blocks.
 
 let clockState = null;
 let clockTicker = null;
@@ -404,7 +404,7 @@ function renderClock(extra = {}) {
           <strong>${open ? "On the clock" : "Off the clock"}</strong>
           <span>${open
             ? `Since ${esc(timeOf(open.clock_in_at))} · <span data-elapsed>${fmtDuration(Date.now() - since)}</span>`
-            : "Clock in when you arrive at your first job"} · ${weekHours.toFixed(2)} hrs this week</span>
+            : "Clock in when you arrive at home base"} · ${weekHours.toFixed(2)} hrs this week</span>
         </div>
         <button class="btn ${open ? "" : "primary"}" type="button" data-clock>${open ? "Clock out" : "Clock in"}</button>
       </div>

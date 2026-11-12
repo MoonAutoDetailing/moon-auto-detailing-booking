@@ -99,7 +99,7 @@ export function summarizeWeek(entries, week, { now = new Date(), settings = cloc
       });
     }
     if (e.verify_method === "pin") {
-      flags.push({ entry_id: e.id, type: "pin_clock_in", message: "Clocked in away from the job site (manager PIN)" });
+      flags.push({ entry_id: e.id, type: "pin_clock_in", message: "Clocked in away from home base (manager PIN)" });
     }
   }
   if (hours > settings.weeklyOvertimeHours) {

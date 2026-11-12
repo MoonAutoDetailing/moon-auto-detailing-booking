@@ -7,21 +7,28 @@ import geocodeAddress from "../_routing/geocodeAddress.js";
 
 const ENTRY_COLS = "id, clock_in_at, clock_out_at, verify_method, in_site, in_distance_m, notes";
 
-/** Places a clock-in counts as "on site": today's job addresses and the base address. */
-async function clockSites(sb, today) {
-  const { startISO, endISO } = nyDayRange(today);
-  const { data, error } = await sb
-    .from("bookings")
-    .select("service_address, customers:customer_id ( full_name )")
-    .in("status", ["confirmed", "completed"])
-    .gte("scheduled_start", startISO)
-    .lt("scheduled_start", endISO);
-  if (error) throw error;
+/**
+ * Places a GPS position is measured against. Pay starts when the crew arrive at home base
+ * to prep the truck and trailer, so clock-in counts only the base; clock-out also records
+ * the distance to today's job addresses.
+ */
+async function clockSites(sb, today, { includeJobs = false } = {}) {
+  const wanted = [];
+  if (process.env.BASE_ADDRESS) wanted.push({ label: "Home base", address: process.env.BASE_ADDRESS });
 
-  const wanted = (data || [])
-    .filter((b) => b.service_address)
-    .map((b) => ({ label: `${b.customers?.full_name || "Job"} — ${b.service_address}`, address: b.service_address }));
-  if (process.env.BASE_ADDRESS) wanted.push({ label: "Base", address: process.env.BASE_ADDRESS });
+  if (includeJobs) {
+    const { startISO, endISO } = nyDayRange(today);
+    const { data, error } = await sb
+      .from("bookings")
+      .select("service_address, customers:customer_id ( full_name )")
+      .in("status", ["confirmed", "completed"])
+      .gte("scheduled_start", startISO)
+      .lt("scheduled_start", endISO);
+    if (error) throw error;
+    for (const b of data || []) {
+      if (b.service_address) wanted.push({ label: `${b.customers?.full_name || "Job"} — ${b.service_address}`, address: b.service_address });
+    }
+  }
 
   const cache = new Map();
   const sites = [];
@@ -78,7 +85,7 @@ async function status(sb, staffId) {
 
 /**
  * GET → { open_entry, today_entries, week }.
- * POST { action: "in", lat, lng, accuracy, pin? } → clock in (GPS near a job/base, or a
+ * POST { action: "in", lat, lng, accuracy, pin? } → clock in (GPS at home base, or a
  *      manager PIN; responds 403 { needs_pin: true } when neither).
  * POST { action: "out", lat?, lng?, accuracy? } → clock out (location recorded, not required).
  */
@@ -134,8 +141,8 @@ export default async function handler(req, res) {
         const where = !position
           ? "We couldn't get your location."
           : fence.nearest
-            ? `You're about ${(fence.nearest.distanceM / 1609.34).toFixed(1)} mi from the nearest job site (${fence.nearest.label}).`
-            : "There are no job sites set for today.";
+            ? `You're about ${(fence.nearest.distanceM / 1609.34).toFixed(1)} mi from home base. Clock in when you arrive at base.`
+            : "Home base location isn't set up.";
         return res.status(403).json({
           error: `${where} Ask ${staff.role === "employee" ? "a manager" : "the owner"} to enter their PIN to approve this clock-in.`,
           needs_pin: true,
@@ -166,7 +173,7 @@ export default async function handler(req, res) {
       if (!open) return res.status(409).json({ error: "You're not clocked in", ...(await status(sb, staff.id)) });
       let outDistance = null;
       if (position) {
-        const sites = await clockSites(sb, todayNY());
+        const sites = await clockSites(sb, todayNY(), { includeJobs: true });
         outDistance = checkGeofence(position, sites).nearest?.distanceM ?? null;
       }
       const { error: upErr } = await sb
