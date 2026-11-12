@@ -16,6 +16,8 @@ create table if not exists public.expense_reports (
   approved_at timestamptz not null default now()
 );
 alter table public.expense_reports enable row level security;
+-- Only the API (service role) touches it; no public key access.
+revoke all on public.expense_reports from anon, authenticated;
 
 -- Payroll: a manager signs off the crew's pay; weeks that include a manager's (or owner's)
 -- pay are finished by the owner.
