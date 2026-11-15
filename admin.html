@@ -2058,6 +2058,9 @@ body.ux .ux-layout > #viewContainer { width: 100%; }
 body.ux .ux-day, body.ux .ux-seg, body.ux .ux-stats, body.ux .ux-banner { max-width: 860px; margin-left: auto; margin-right: auto; }
 body.ux .ux-day { margin-bottom: 20px; }
 
+body.ux #viewContainer.ux-embed { padding: 0; max-width: none; }
+body.ux .ux-me-frame { display: block; width: 100%; border: 0; background: #0e0e0e; }
+
 /* phone tab bar */
 body.ux .ux-tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
@@ -2523,7 +2526,6 @@ style="
       <button id="uxAccountBtn" class="ux-avatar" type="button" aria-label="Account menu">·</button>
       <div id="uxAccountMenu" class="ux-popover" hidden>
         <div data-who></div>
-        <a href="/staff.html">Open the crew app</a>
         <button id="backToPortalBtn" type="button">Admin portal</button>
         <button id="logoutBtn" type="button" class="ux-danger-text">Sign out</button>
       </div>
@@ -4166,6 +4168,9 @@ showAdminBanner("Unsupported status change: " + status, "error");
 // with every section in groups. Owner-only sections are left out for managers.
 // Grouped by how often each tool is used: daily work first, setup last.
 const NAV_GROUPS = [
+  { title: "Me", items: [
+    { key: "me", label: "Me", icon: "user" }
+  ] },
   { title: "Daily", items: [
     { key: "today", label: "Today", icon: "today" },
     { key: "bookings", label: "Bookings", icon: "bookings" },
@@ -4200,8 +4205,12 @@ const TABBAR = [
   { key: "bookings", label: "Bookings", icon: "bookings" },
   { key: "book-customer", label: "Book", icon: "plus", center: true },
   { key: "schedule", label: "Schedule", icon: "calendar" },
+  { key: "me", label: "Me", icon: "user" },
   { key: "more", label: "More", icon: "menu" }
 ];
+// "Me" (own clock, jobs, availability, pay, password) needs a team login; the legacy shared
+// owner password has no staff record behind it.
+const hasMeTab = () => !!getAdminStaff();
 const VIEW_TITLES = { more: "More", pending: "Bookings", upcoming: "Bookings", overdue: "Bookings" };
 NAV_GROUPS.forEach(g => g.items.forEach(i => { VIEW_TITLES[i.key] = i.label; }));
 const TABBAR_KEYS = TABBAR.map(t => t.key);
@@ -4210,7 +4219,7 @@ let bookingsSegment = "pending";
 function visibleNavGroups() {
   const hidden = adminRole() === "owner" ? [] : OWNER_ONLY_VIEWS;
   return NAV_GROUPS
-    .map(g => ({ ...g, items: g.items.filter(i => !hidden.includes(i.key)) }))
+    .map(g => ({ ...g, items: g.items.filter(i => !hidden.includes(i.key) && (i.key !== "me" || hasMeTab())) }))
     .filter(g => g.items.length);
 }
 
@@ -4285,7 +4294,7 @@ function renderButtons() {
 
   const bar = document.getElementById("uxTabbar");
   if (bar) {
-    bar.innerHTML = TABBAR.map(t => `
+    bar.innerHTML = TABBAR.filter(t => t.key !== "me" || hasMeTab()).map(t => `
       <button type="button" class="ux-tab${t.center ? " ux-tab-center" : ""}" data-view="${t.key}">
         <span class="ux-tab-icon" aria-hidden="true">${icon(t.icon, t.center ? 22 : 22)}</span><span class="ux-tab-label">${t.label}</span>${badge(t.key)}
       </button>`).join("");
@@ -4320,7 +4329,6 @@ function renderMoreView() {
     <section class="ux-list-group">
       <div class="ux-list-title">Account</div>
       <div class="ux-list">
-        <a class="ux-list-item" href="/staff.html"><span class="ux-list-icon">${icon("smartphone", 20)}</span><span class="ux-list-label">Open the crew app</span><span class="ux-chev">${icon("chevronRight", 18)}</span></a>
         ${adminRole() === "owner" ? `<button type="button" class="ux-list-item" data-act="portal"><span class="ux-list-icon">${icon("home", 20)}</span><span class="ux-list-label">Admin portal · CRM</span><span class="ux-chev">${icon("chevronRight", 18)}</span></button>` : ""}
         <button type="button" class="ux-list-item ux-danger-text" data-act="logout"><span class="ux-list-icon">${icon("logout", 20)}</span><span class="ux-list-label">Sign out</span></button>
       </div>
@@ -4366,14 +4374,6 @@ function renderTodayView() {
     <button type="button" class="ux-stat ux-stat-link${pending.length ? " ux-stat-warn" : ""}" data-go="pending"><span>Needs confirming</span><strong>${pending.length}</strong></button>`;
   strip.querySelector("[data-go]").onclick = () => { bookingsSegment = "pending"; handleViewSwitch("bookings"); };
   viewContainer.appendChild(strip);
-  // Managers and the owner work jobs too: the crew app has their clock, Start job and time off.
-  if (getAdminStaff()) {
-    viewContainer.insertAdjacentHTML("beforeend", `
-      <div class="ux-list"><a class="ux-list-item" href="/staff.html">
-        <span class="ux-list-icon">${icon("smartphone", 20)}</span>
-        <span class="ux-list-label"><strong>My day in the crew app</strong><small>Clock in, start a detail (photos and checklist), request time off</small></span>
-        <span class="ux-chev">${icon("chevronRight", 18)}</span></a></div>`);
-  }
   const attention = document.createElement("section");
   attention.className = "ux-attention";
   viewContainer.appendChild(attention);
@@ -4449,6 +4449,18 @@ function closeAdminMenu() {
   const d = document.getElementById("adminMenuDropdown");
   if (d) d.classList.remove("open");
 }
+
+// The Me frame fills the space between the header and the tab bar and scrolls on its own,
+// so the crew app's bottom sheets and toasts stay on screen.
+function sizeMeFrame() {
+  const frame = document.querySelector(".ux-me-frame");
+  if (!frame) return;
+  const top = document.querySelector("#bookingAdminSection .ux-header")?.getBoundingClientRect().bottom || 0;
+  const bar = document.getElementById("uxTabbar");
+  const barH = bar && getComputedStyle(bar).display !== "none" ? bar.getBoundingClientRect().height : 0;
+  frame.style.height = Math.max(320, window.innerHeight - top - barH) + "px";
+}
+window.addEventListener("resize", sizeMeFrame);
 
 function handleViewSwitch(viewName) {
   if (viewName === "pending" || viewName === "upcoming" || viewName === "overdue") {
@@ -5212,6 +5224,23 @@ function renderBookCustomerView() {
 
 function renderView(viewName) {
   viewContainer.innerHTML = "";
+  viewContainer.classList.toggle("ux-embed", viewName === "me");
+
+  // Me: the crew app's personal screens (clock in, own jobs with Start job, usual week and
+  // time off, pay, password) for managers and the owner, framed inside the admin.
+  if (viewName === "me") {
+    if (!hasMeTab()) {
+      viewContainer.innerHTML = "<p style='margin-top:40px;'>Sign in with your own email to use Me.</p>";
+      return;
+    }
+    const frame = document.createElement("iframe");
+    frame.className = "ux-me-frame";
+    frame.title = "Me";
+    frame.src = "/staff.html?embed=1";
+    viewContainer.appendChild(frame);
+    sizeMeFrame();
+    return;
+  }
 
   if (OWNER_ONLY_VIEWS.includes(viewName) && adminRole() !== "owner") {
     viewContainer.innerHTML = "<p style='margin-top:40px;'>That section is for the owner.</p>";

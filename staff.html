@@ -58,6 +58,23 @@ nav.tabs button {
 }
 nav.tabs button.active { color: var(--moon-primary); }
 nav.tabs button .ico { display: flex; justify-content: center; height: 24px; margin-bottom: 2px; }
+/* Embedded in the admin's Me tab (managers/owner): the admin has the header, sign-out and its
+   own tab bar, so these tabs sit at the top as a segmented control. */
+body.embed { padding: 0; min-height: 0; display: flex; flex-direction: column; }
+body.embed main { width: 100%; box-sizing: border-box; }
+body.embed header.top { display: none; }
+body.embed nav.tabs {
+  order: -1; position: sticky; top: 0; bottom: auto; gap: 6px; padding: 10px 16px; width: 100%; box-sizing: border-box;
+  background: rgba(14,14,14,0.96); border-top: 0; border-bottom: 1px solid var(--line); backdrop-filter: blur(8px);
+}
+body.embed nav.tabs button {
+  display: flex; align-items: center; justify-content: center; gap: 6px; padding: 9px 0;
+  border-radius: 10px; background: rgba(255,255,255,0.05); font-size: 13px;
+}
+body.embed nav.tabs button.active { background: rgba(138,184,230,0.18); }
+body.embed nav.tabs button .ico { height: auto; margin: 0; }
+body.embed nav.tabs [data-tab="schedule"], body.embed nav.tabs [data-tab="expenses"] { display: none; }
+body.embed [data-standalone] { display: none !important; }
 .ui-icon { display: inline-block; vertical-align: -0.2em; flex: none; }
 .banner { display: flex; gap: 8px; align-items: flex-start; }
 .btn .ui-icon { margin-right: 2px; }
@@ -240,6 +257,15 @@ document.querySelectorAll("[data-icon]").forEach((el) => { el.innerHTML = icon(e
 // Managers and the owner arrive from the admin page with their tab's admin session, which
 // is the same kind of team token, so it's reused (and kept) here.
 const TOKEN_KEY = "moon_staff_session";
+// ?embed=1: shown inside the admin's Me tab for managers and the owner.
+const EMBED = new URLSearchParams(location.search).has("embed");
+if (EMBED) {
+  document.body.classList.add("embed");
+  const label = { today: "Clock & jobs", availability: "My week", account: "Pay & account" };
+  document.querySelectorAll("#tabs button").forEach((btn) => {
+    if (label[btn.dataset.tab]) btn.lastChild.textContent = label[btn.dataset.tab];
+  });
+}
 let token = null;
 try { token = localStorage.getItem(TOKEN_KEY); } catch {}
 if (!token) {
@@ -265,6 +291,8 @@ const SCOPE_LABEL = { general: "Arrival & handoff", interior: "Interior", exteri
 
 function signOut() {
   try { localStorage.removeItem(TOKEN_KEY); } catch {}
+  // Inside the admin, the admin page owns sign-in: reload it so it asks again.
+  if (EMBED) { window.top.location.reload(); return; }
   window.location.replace("/staff-login.html?next=crew");
 }
 
@@ -892,12 +920,12 @@ function renderAccount() {
       <input class="in" type="password" name="next" autocomplete="new-password" required />
       <div class="actions"><button class="btn primary" type="submit">Save password</button></div>
     </form>
-    <div class="panel">
+    <div class="panel" data-standalone>
       <h3>Add to home screen</h3>
       <p class="muted" style="margin:0;font-size:14px;">iPhone: tap Share → “Add to Home Screen”. Android: menu ⋮ → “Add to Home screen”. It opens like an app.</p>
     </div>
-    ${me.role !== "employee" ? `<a class="btn block" href="/admin.html" style="margin-bottom:12px;">Open admin page</a>` : ""}
-    <button class="btn block" id="signOutBtn" type="button">Sign out</button>`;
+    ${me.role !== "employee" ? `<a class="btn block" href="/admin.html" style="margin-bottom:12px;" data-standalone>Open admin page</a>` : ""}
+    <button class="btn block" id="signOutBtn" type="button" data-standalone>Sign out</button>`;
   app.querySelector("#signOutBtn").onclick = signOut;
   loadPay();
   app.querySelector("#pwForm").onsubmit = async (e) => {
