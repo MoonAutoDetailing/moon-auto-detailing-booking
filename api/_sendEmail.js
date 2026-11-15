@@ -30,6 +30,11 @@ export async function sendBookingEmail({ to, subject, html }) {
       text
     });
 
+    // Resend reports API failures as { data: null, error } instead of throwing.
+    if (result?.error) {
+      return { success: false, error: result.error };
+    }
+
     return { success: true, id: result?.data?.id ?? null };
   } catch (err) {
     return { success: false, error: err };

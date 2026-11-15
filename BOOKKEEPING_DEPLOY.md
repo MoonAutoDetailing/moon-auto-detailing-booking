@@ -1,3 +1,7 @@
+> **Historical (April 2026).** This guide describes the first bookkeeping release and is out of date:
+> endpoints now live in `api/_handlers/` behind `api/router.js`, and job completion runs through
+> `api/_completeBookingCore.js`. See the current Developer Handoff PDF for how things work today.
+
 # Bookkeeping Feature — Deploy Guide
 
 This update adds payment tracking to job completion, an Expenses log in the admin panel, and a one-click Excel bookkeeping export.

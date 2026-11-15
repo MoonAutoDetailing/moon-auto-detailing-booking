@@ -64,7 +64,7 @@ export async function confirmBookingCore({ bookingId, sendCustomerEmail = true }
 
   const { data: customer, error: customerError } = await supabase
     .from("customers")
-    .select("full_name, email, phone")
+    .select("full_name, email, phone, sms_opt_out")
     .eq("id", booking.customer_id)
     .single();
 
