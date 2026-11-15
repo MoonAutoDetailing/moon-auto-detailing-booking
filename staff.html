@@ -259,9 +259,11 @@ document.querySelectorAll("[data-icon]").forEach((el) => { el.innerHTML = icon(e
 const TOKEN_KEY = "moon_staff_session";
 // ?embed=1: shown inside the admin's Me tab for managers and the owner.
 const EMBED = new URLSearchParams(location.search).has("embed");
+// ?embed=1&job=<booking id>: Start job from an admin booking card.
+const EMBED_JOB = EMBED ? new URLSearchParams(location.search).get("job") : null;
 if (EMBED) {
   document.body.classList.add("embed");
-  const label = { today: "Clock & jobs", availability: "My week", account: "Pay & account" };
+  const label = { today: "Clock", availability: "My week", account: "Pay & account" };
   document.querySelectorAll("#tabs button").forEach((btn) => {
     if (label[btn.dataset.tab]) btn.lastChild.textContent = label[btn.dataset.tab];
   });
@@ -378,6 +380,14 @@ function jobCard(j) {
 }
 
 async function renderDay() {
+  // In the admin's Me tab the jobs live on Today/Bookings (Start job opens them here), so
+  // this tab is just the leader's own clock.
+  if (EMBED) {
+    app.innerHTML = `<div id="clockCard"></div>
+      <p class="muted" style="margin:10px 2px 0;font-size:13px;">Your jobs are on Today and Bookings — use <b>Start job</b> on a booking for the photos and checklist.</p>`;
+    loadClock();
+    return;
+  }
   const date = state.date || state.today;
   app.innerHTML = `
     <div class="daynav">
@@ -1080,7 +1090,7 @@ function renderJob() {
   }).join("");
 
   app.innerHTML = `
-    <button class="btn small" id="backBtn" type="button" style="margin-bottom:12px;">${icon("chevronLeft", 16)} Back to jobs</button>
+    <button class="btn small" id="backBtn" type="button" style="margin-bottom:12px;">${icon("chevronLeft", 16)} ${EMBED_JOB ? "Back" : "Back to jobs"}</button>
     ${j.job_flag === "ceramic" ? `<div class="banner">${icon("sparkle", 18)} Ceramic coating job — follow the coating steps exactly and keep the car dry for the cure time.</div>` : ""}
     <div class="panel">
       <div class="job-head">
@@ -1137,7 +1147,12 @@ function renderJob() {
       </div>
     </form>`}`;
 
-  app.querySelector("#backBtn").onclick = () => { state.job = null; render(); };
+  app.querySelector("#backBtn").onclick = () => {
+    // Opened from an admin booking card: hand back to the admin page it came from.
+    if (EMBED_JOB) { window.parent.postMessage({ type: "moon-close-job" }, location.origin); return; }
+    state.job = null;
+    render();
+  };
   app.querySelector("#startBtn")?.addEventListener("click", startJob);
   app.querySelectorAll("[data-add]").forEach((b) => (b.onclick = () => pickPhotos(b.dataset.add)));
   app.querySelectorAll("[data-shot]").forEach((b) => (b.onclick = () => pickPhotos(b.dataset.kind, b.dataset.shot)));
@@ -1325,7 +1340,8 @@ if (!token) {
     if (staff.must_change_password) signOut(); // finish first sign-in on the sign-in page
     state.me = staff;
     document.getElementById("name").textContent = staff.full_name;
-    render();
+    if (EMBED_JOB) openJob(EMBED_JOB);
+    else render();
   } catch (err) {
     app.innerHTML = `<div class="empty">${esc(err.message)}</div>`;
   }

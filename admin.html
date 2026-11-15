@@ -4124,6 +4124,15 @@ if (b.google_event_id) {
 
   actions.appendChild(adminRescheduleBtn);
   actions.appendChild(rescheduleBtn);
+  // Managers/owner working the job themselves: the crew job screen (photos, checklist,
+  // completion) opens in their Me tab.
+  if (hasMeTab()) {
+    const startBtn = document.createElement("button");
+    startBtn.textContent = "Start job (photos & checklist)";
+    startBtn.className = "confirm";
+    startBtn.onclick = () => openJobInMe(b.id);
+    actions.appendChild(startBtn);
+  }
   actions.appendChild(completeBtn);
   actions.appendChild(cancelBtn);
 }
@@ -4449,6 +4458,22 @@ function closeAdminMenu() {
   const d = document.getElementById("adminMenuDropdown");
   if (d) d.classList.remove("open");
 }
+
+// Start job on a booking card opens that job in the Me frame; its Back returns here.
+let meJobId = null;
+let meReturnView = null;
+function openJobInMe(bookingId) {
+  meJobId = bookingId;
+  meReturnView = currentView;
+  handleViewSwitch("me");
+}
+window.addEventListener("message", (e) => {
+  if (e.origin !== location.origin || e.data?.type !== "moon-close-job") return;
+  const back = meReturnView || "today";
+  meReturnView = null;
+  handleViewSwitch(back);
+  loadAdminData(); // the job may have been completed
+});
 
 // The Me frame fills the space between the header and the tab bar and scrolls on its own,
 // so the crew app's bottom sheets and toasts stay on screen.
@@ -5236,7 +5261,8 @@ function renderView(viewName) {
     const frame = document.createElement("iframe");
     frame.className = "ux-me-frame";
     frame.title = "Me";
-    frame.src = "/staff.html?embed=1";
+    frame.src = "/staff.html?embed=1" + (meJobId ? "&job=" + encodeURIComponent(meJobId) : "");
+    meJobId = null;
     viewContainer.appendChild(frame);
     sizeMeFrame();
     return;
