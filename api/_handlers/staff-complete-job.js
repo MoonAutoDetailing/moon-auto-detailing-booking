@@ -1,6 +1,6 @@
 import { requireRole, ROLES, serviceClient, sendAuthError, parseBody } from "../_staffAuth.js";
 import { completeBooking, parsePayment } from "../_completeBookingCore.js";
-import { loadChecklistSteps, stepsForBooking, completionProblems, countPhotos } from "../_jobs.js";
+import { loadChecklistSteps, stepsForBooking, completionProblems, countPhotos, shotsForBooking } from "../_jobs.js";
 
 /**
  * POST { booking_id, checklist: {stepId:true}, worked_by: [staffId...],
@@ -45,10 +45,11 @@ export default async function handler(req, res) {
     const checked = {};
     for (const [k, v] of Object.entries(body.checklist || {})) if (v === true) checked[k] = true;
 
-    const { data: photos, error: pErr } = await sb.from("job_photos").select("kind").eq("booking_id", bookingId);
+    const { data: photos, error: pErr } = await sb.from("job_photos").select("kind, shot").eq("booking_id", bookingId);
     if (pErr) throw pErr;
 
-    const problems = completionProblems({ steps, checked, photoCounts: countPhotos(photos) });
+    const shots = shotsForBooking({ category: svc.category, jobFlag: booking.job_flag });
+    const problems = completionProblems({ steps, checked, photoCounts: countPhotos(photos), shots, photos });
     if (problems.length) return res.status(422).json({ error: "Job isn't ready to complete", problems });
 
     // Who worked it: the people picked in the app (active staff only), always including you.

@@ -8,6 +8,7 @@ import {
   countPhotos,
   withSignedUrls,
   minPhotos,
+  shotsForBooking,
 } from "../_jobs.js";
 
 /**
@@ -79,7 +80,7 @@ export default async function handler(req, res) {
       await Promise.all([
         loadChecklistSteps(sb),
         sb.from("job_completions").select("*").eq("booking_id", id).maybeSingle(),
-        sb.from("job_photos").select("id, kind, storage_path, staff_id, caption, taken_at").eq("booking_id", id).order("taken_at"),
+        sb.from("job_photos").select("id, kind, shot, storage_path, staff_id, caption, taken_at").eq("booking_id", id).order("taken_at"),
         sb.from("staff").select("id, full_name, role").eq("active", true).order("full_name"),
         sb.from("booking_staff").select("staff_id").eq("booking_id", id),
       ]);
@@ -93,6 +94,7 @@ export default async function handler(req, res) {
       .map(({ id: stepId, scope, text, required }) => ({ id: stepId, scope, text, required }));
     const checked = work?.checklist || {};
     const photoCounts = countPhotos(photos);
+    const shots = shotsForBooking({ category: svc.category, jobFlag: booking.job_flag });
     const signed = await withSignedUrls(sb, photos || []);
 
     return res.status(200).json({
@@ -104,7 +106,8 @@ export default async function handler(req, res) {
         : null,
       photos: signed.map(({ storage_path, ...p }) => ({ ...p, mine: p.staff_id === staff.id })),
       min_photos: minPhotos(),
-      problems: booking.status === "completed" ? [] : completionProblems({ steps: jobSteps, checked, photoCounts }),
+      shots,
+      problems: booking.status === "completed" ? [] : completionProblems({ steps: jobSteps, checked, photoCounts, shots, photos: photos || [] }),
       crew: (crew || []).map((c) => ({ id: c.id, full_name: c.full_name, role: c.role })),
       worked_by: (worked || []).map((w) => w.staff_id),
       me: staff.id,

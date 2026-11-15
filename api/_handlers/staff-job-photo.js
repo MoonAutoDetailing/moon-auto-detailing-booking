@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { requireRole, ROLES, serviceClient, sendAuthError, parseBody } from "../_staffAuth.js";
-import { PHOTO_BUCKET, PHOTO_KINDS, photoPath, isPathForJob, withSignedUrls } from "../_jobs.js";
+import { PHOTO_BUCKET, PHOTO_KINDS, photoPath, isPathForJob, withSignedUrls, isShotKey } from "../_jobs.js";
 
 const EXT = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/heic": "heic" };
 
@@ -8,7 +8,9 @@ const EXT = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "im
  * Photos upload straight from the phone to Storage (no size limit on our function):
  * POST { action: "sign", booking_id, kind, content_type } → { path, upload_url }
  * PUT the file to upload_url, then
- * POST { action: "confirm", booking_id, kind, path, caption? } → { photo }
+ * POST { action: "confirm", booking_id, kind, path, shot?, caption? } → { photo }
+ *   shot = guided angle for before/after photos (see PHOTO_SHOTS); a new photo of the same
+ *   shot replaces the old one (retake).
  * DELETE ?id → removes your own photo while the job is still open.
  */
 export default async function handler(req, res) {
@@ -61,20 +63,37 @@ export default async function handler(req, res) {
 
     if (body.action === "confirm") {
       if (!isPathForJob(body.path, bookingId, kind)) return res.status(400).json({ error: "Invalid path" });
+      const shot = kind === "issue" ? null : body.shot || null;
+      if (shot && !isShotKey(shot)) return res.status(400).json({ error: "Unknown photo angle" });
       const { data, error } = await sb
         .from("job_photos")
         .insert({
           booking_id: bookingId,
           staff_id: staff.id,
           kind,
+          shot,
           storage_path: body.path,
           caption: body.caption ? String(body.caption).slice(0, 300) : null,
         })
-        .select("id, kind, storage_path, staff_id, caption, taken_at")
+        .select("id, kind, shot, storage_path, staff_id, caption, taken_at")
         .single();
       if (error) {
         if (error.code === "23505") return res.status(409).json({ error: "Photo already saved" });
         throw error;
+      }
+      if (shot) {
+        // Retake: keep only the newest photo for this angle.
+        const { data: older } = await sb
+          .from("job_photos")
+          .select("id, storage_path")
+          .eq("booking_id", bookingId)
+          .eq("kind", kind)
+          .eq("shot", shot)
+          .neq("id", data.id);
+        if (older?.length) {
+          await sb.storage.from(PHOTO_BUCKET).remove(older.map((o) => o.storage_path));
+          await sb.from("job_photos").delete().in("id", older.map((o) => o.id));
+        }
       }
       const [signed] = await withSignedUrls(sb, [data]);
       const { storage_path, ...photo } = signed;

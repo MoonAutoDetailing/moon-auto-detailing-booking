@@ -119,6 +119,23 @@ nav.tabs button .ico { display: flex; justify-content: center; height: 24px; mar
   width: 30px; height: 30px; border-radius: 50%; background: rgba(0,0,0,0.75);
 }
 .photo-add { margin-top: 10px; min-height: 48px; }
+/* guided before/after shots: a white line sketch of what to frame, replaced by the photo once taken */
+.shot-area { font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 14px 0 6px; }
+.shot {
+  display: flex; gap: 12px; align-items: center; width: 100%; padding: 8px; margin-bottom: 8px; text-align: left;
+  background: rgba(255,255,255,0.04); border: 1px solid var(--line); border-radius: 12px; color: inherit; font: inherit; cursor: pointer;
+}
+.shot .pic { position: relative; flex: 0 0 44%; aspect-ratio: 4 / 3; border-radius: 9px; overflow: hidden; background: #0f1620; color: #fff; }
+.shot .pic svg { width: 100%; height: 100%; display: block; }
+.shot .pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.shot .pic .ok { position: absolute; right: 5px; bottom: 5px; width: 24px; height: 24px; border-radius: 50%; background: var(--ok, #4cc38a); color: #06240f; display: flex; align-items: center; justify-content: center; }
+.shot .txt { flex: 1; min-width: 0; }
+.shot .txt strong { display: block; font-size: 15px; }
+.shot .txt small { display: block; color: var(--muted); font-size: 12.5px; line-height: 1.35; margin-top: 3px; }
+.shot .txt .act { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; font-size: 13px; font-weight: 600; color: var(--accent, #8ab8e6); }
+.shot.done { border-color: rgba(76,195,138,0.45); }
+.shot.busy { opacity: .6; pointer-events: none; }
+.tag { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 6px; border-radius: 6px; background: rgba(255,255,255,0.08); color: var(--muted); margin-left: 4px; vertical-align: 1px; }
 /* on-page confirm sheet (sheetConfirm) — window.confirm() is blocked by some browsers */
 .sheet { position: fixed; inset: 0; z-index: 30; background: rgba(0,0,0,0.6); display: flex; align-items: flex-end; justify-content: center; padding: 16px 16px calc(16px + env(safe-area-inset-bottom)); }
 .sheet-card { width: 100%; max-width: 440px; background: #1b222b; border: 1px solid var(--line); border-radius: 16px; padding: 18px; font-size: 16px; line-height: 1.45; }
@@ -216,6 +233,7 @@ form.mini { margin-top: 8px; padding-top: 4px; }
 
 <script type="module">
 import { icon } from "/ui-icons.js";
+import { photoGuide } from "/photo-guides.js";
 document.querySelectorAll("[data-icon]").forEach((el) => { el.innerHTML = icon(el.dataset.icon, 22); });
 // Crew app. All data comes from /api/staff-* with the x-staff-session header; the token
 // lives in localStorage so the crew stays signed in on their phone (12-hour sessions).
@@ -941,12 +959,51 @@ function localProblems(J) {
   const missing = J.checklist.filter((s) => s.required && !J.checked[s.id]).length;
   if (missing) problems.push(`${missing} checklist step${missing === 1 ? "" : "s"} not checked off`);
   for (const kind of ["before", "after"]) {
+    if (guided(J, kind)) {
+      const taken = new Set(J.photos.filter((p) => p.kind === kind).map((p) => p.shot));
+      const need = J.shots.filter((s) => !s.optional && !taken.has(s.key)).map((s) => s.label);
+      if (need.length) problems.push(`${kind === "before" ? "Before" : "After"} photos still needed: ${need.join(", ")}`);
+      continue;
+    }
     const have = J.photos.filter((p) => p.kind === kind).length;
     const need = J.min_photos[kind] - have;
     if (need > 0) problems.push(`${need} more ${kind} photo${need === 1 ? "" : "s"} needed (minimum ${J.min_photos[kind]})`);
   }
   if (J.pendingUploads) problems.push("Wait for photos to finish uploading");
   return problems;
+}
+
+// Guided shots apply unless this job already has before/after photos from the old free-form
+// picker (taken before the update) — those jobs keep the minimum-count rule.
+function guided(J, kind) {
+  return Array.isArray(J.shots) && J.shots.length && !J.photos.some((p) => p.kind === kind && !p.shot);
+}
+
+function shotSection(J, kind, title, hint) {
+  if (!guided(J, kind)) return photoSection(J, kind, title, hint);
+  const done = J.job.status === "completed";
+  const byShot = new Map(J.photos.filter((p) => p.kind === kind).map((p) => [p.shot, p]));
+  const required = J.shots.filter((s) => !s.optional);
+  const have = required.filter((s) => byShot.has(s.key)).length;
+  const areas = [...new Set(J.shots.map((s) => s.area))];
+  const row = (s) => {
+    const p = byShot.get(s.key);
+    const busy = J.uploadingShots?.has(`${kind}:${s.key}`);
+    return `<button type="button" class="shot ${p ? "done" : ""} ${busy ? "busy" : ""}" ${done ? "disabled" : `data-shot="${s.key}" data-kind="${kind}"`}>
+      <span class="pic">${p ? `<img src="${esc(p.url || "")}" alt="" loading="lazy" /><span class="ok">${icon("check", 14)}</span>` : photoGuide(s.key)}</span>
+      <span class="txt">
+        <strong>${esc(s.label)}${s.optional ? `<span class="tag">Optional</span>` : ""}</strong>
+        <small>${esc(s.tip)}</small>
+        ${done ? "" : `<span class="act">${icon("camera", 14)} ${busy ? "Uploading…" : p ? "Retake" : "Take photo"}</span>`}
+      </span>
+    </button>`;
+  };
+  return `
+    <div class="panel" data-photos="${kind}">
+      <h3>${esc(title)} <span class="count ${have >= required.length ? "" : "muted"}">${have}/${required.length}${have >= required.length ? " " + icon("check", 14) : ""}</span></h3>
+      ${hint ? `<p class="muted" style="margin:0 0 4px;font-size:13px;">${esc(hint)}</p>` : ""}
+      ${areas.map((a) => `${areas.length > 1 ? `<div class="shot-area">${a === "interior" ? "Interior" : "Exterior"}</div>` : ""}${J.shots.filter((s) => s.area === a).map(row).join("")}`).join("")}
+    </div>`;
 }
 
 function photoSection(J, kind, title, hint) {
@@ -1019,13 +1076,17 @@ function renderJob() {
 
     ${!done && !started ? `<button class="btn primary block" id="startBtn" type="button" style="margin-bottom:12px;">Start job</button>` : ""}
 
-    ${photoSection(J, "before", "1 · Before photos", `Before you touch the car: all four sides plus the interior${J.min_photos.before ? ` (at least ${J.min_photos.before})` : ""}.`)}
+    ${guided(J, "before")
+      ? shotSection(J, "before", "1 · Before photos", "Before you touch the car. Tap each angle and match the sketch.")
+      : photoSection(J, "before", "1 · Before photos", `Before you touch the car: all four sides plus the interior${J.min_photos.before ? ` (at least ${J.min_photos.before})` : ""}.`)}
     ${photoSection(J, "issue", "Damage / issues (if any)", "Scratches, dents, stains or anything already wrong — protects you and the business.")}
     <div class="panel">
       <h3>2 · Checklist <span class="count">${J.checklist.filter((s) => J.checked[s.id]).length}/${J.checklist.length}</span></h3>
       ${checklistHtml || '<p class="muted" style="margin:0;">No checklist for this service.</p>'}
     </div>
-    ${photoSection(J, "after", "3 · After photos", `Same angles as the before photos, once the job is finished${J.min_photos.after ? ` (at least ${J.min_photos.after})` : ""}.`)}
+    ${guided(J, "after")
+      ? shotSection(J, "after", "3 · After photos", "Same angles as the before photos, once the job is finished.")
+      : photoSection(J, "after", "3 · After photos", `Same angles as the before photos, once the job is finished${J.min_photos.after ? ` (at least ${J.min_photos.after})` : ""}.`)}
 
     ${done ? `<div class="panel"><h3>${icon("check", 18)} Job completed</h3><p class="muted" style="margin:0;">Payment recorded and the customer has been emailed.</p></div>` : `
     <form class="panel" id="completeForm">
@@ -1051,6 +1112,7 @@ function renderJob() {
   app.querySelector("#backBtn").onclick = () => { state.job = null; render(); };
   app.querySelector("#startBtn")?.addEventListener("click", startJob);
   app.querySelectorAll("[data-add]").forEach((b) => (b.onclick = () => pickPhotos(b.dataset.add)));
+  app.querySelectorAll("[data-shot]").forEach((b) => (b.onclick = () => pickPhotos(b.dataset.kind, b.dataset.shot)));
   app.querySelectorAll("[data-del]").forEach((b) => (b.onclick = () => deletePhoto(b.dataset.del)));
   app.querySelectorAll("[data-step]").forEach((cb) => (cb.onchange = () => {
     if (cb.checked) J.checked[cb.dataset.step] = true;
@@ -1100,14 +1162,20 @@ async function startJob() {
 
 const photoInput = document.getElementById("photoInput");
 let photoKind = null;
-function pickPhotos(kind) {
+let photoShot = null;
+// A guided shot takes one photo (camera or library); damage/free-form photos can be several.
+function pickPhotos(kind, shot = null) {
   photoKind = kind;
+  photoShot = shot;
+  photoInput.multiple = !shot;
   photoInput.value = "";
   photoInput.click();
 }
 photoInput.onchange = () => {
   const files = [...photoInput.files];
-  if (files.length && photoKind) files.forEach((f) => uploadPhoto(photoKind, f));
+  if (!files.length || !photoKind) return;
+  if (photoShot) uploadPhoto(photoKind, files[0], photoShot);
+  else files.forEach((f) => uploadPhoto(photoKind, f));
 };
 
 // Shrinks phone photos (often 4–12 MB) to ~1600px JPEG before upload. Falls back to the
@@ -1138,24 +1206,29 @@ async function putToSignedUrl(url, blob, type) {
   if (!res.ok) throw new Error("Upload failed (" + res.status + ")");
 }
 
-async function uploadPhoto(kind, file) {
+async function uploadPhoto(kind, file, shot = null) {
   const J = state.job;
   if (!J) return;
   J.uploading = J.uploading || {};
-  J.uploading[kind] = (J.uploading[kind] || 0) + 1;
+  J.uploadingShots = J.uploadingShots || new Set();
+  if (shot) J.uploadingShots.add(`${kind}:${shot}`);
+  else J.uploading[kind] = (J.uploading[kind] || 0) + 1;
   J.pendingUploads++;
   renderJobKeepingForm();
   try {
     const { blob, type } = await compressImage(file);
     const signed = await api("/api/staff-job-photo", { method: "POST", body: { action: "sign", booking_id: J.id, kind, content_type: type } });
     await putToSignedUrl(signed.upload_url, blob, type);
-    const { photo } = await api("/api/staff-job-photo", { method: "POST", body: { action: "confirm", booking_id: J.id, kind, path: signed.path } });
-    if (state.job === J) J.photos.push(photo);
+    const { photo } = await api("/api/staff-job-photo", { method: "POST", body: { action: "confirm", booking_id: J.id, kind, path: signed.path, shot: shot || undefined } });
+    // A retake replaces the earlier photo of the same angle (the server keeps only the newest).
+    if (shot) J.photos = J.photos.filter((p) => !(p.kind === kind && p.shot === shot));
+    J.photos.push(photo);
     if (!J.work) J.work = { started_at: new Date().toISOString() };
   } catch (err) {
     toast("Photo not saved: " + err.message, true);
   } finally {
-    J.uploading[kind]--;
+    if (shot) J.uploadingShots.delete(`${kind}:${shot}`);
+    else J.uploading[kind]--;
     J.pendingUploads--;
     if (state.job === J) renderJobKeepingForm();
   }

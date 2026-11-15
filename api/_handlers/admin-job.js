@@ -1,6 +1,6 @@
 import verifyAdmin from "../_verifyAdmin.js";
 import { serviceClient, parseBody } from "../_staffAuth.js";
-import { loadChecklistSteps, stepsForBooking, withSignedUrls } from "../_jobs.js";
+import { loadChecklistSteps, stepsForBooking, withSignedUrls, byShotOrder, shotLabel } from "../_jobs.js";
 
 /**
  * GET ?booking_id → QC review: photos (signed URLs), checklist with what was ticked, who
@@ -58,7 +58,7 @@ export default async function handler(req, res) {
       await Promise.all([
         loadChecklistSteps(sb),
         sb.from("job_completions").select("*").eq("booking_id", bookingId).maybeSingle(),
-        sb.from("job_photos").select("id, kind, storage_path, staff_id, caption, taken_at").eq("booking_id", bookingId).order("taken_at"),
+        sb.from("job_photos").select("id, kind, shot, storage_path, staff_id, caption, taken_at").eq("booking_id", bookingId).order("taken_at"),
         sb.from("booking_staff").select("staff_id").eq("booking_id", bookingId),
         sb.from("staff").select("id, full_name"),
       ]);
@@ -79,7 +79,7 @@ export default async function handler(req, res) {
       completed_by: names.get(work?.completed_by) || null,
       worked_by: (worked || []).map((w) => names.get(w.staff_id) || "Unknown"),
       checklist,
-      photos: signed.map(({ storage_path, staff_id, ...p }) => ({ ...p, taken_by: names.get(staff_id) || null })),
+      photos: [...signed].sort(byShotOrder).map(({ storage_path, staff_id, ...p }) => ({ ...p, shot_label: shotLabel(p.shot), taken_by: names.get(staff_id) || null })),
     });
   } catch (err) {
     console.error("admin-job error:", err);

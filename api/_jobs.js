@@ -8,6 +8,42 @@ const BUSINESS_TZ = "America/New_York";
 export const PHOTO_BUCKET = "job-media";
 export const PHOTO_KINDS = ["before", "after", "issue"];
 
+/**
+ * The guided before/after shots. Before and after use the same list, so every angle is
+ * photographed twice. Interior shots apply to interior work, exterior shots to exterior work
+ * (and ceramic); optional shots never block completion. The crew app draws a line sketch
+ * for each key (photo-guides.js).
+ */
+export const PHOTO_SHOTS = [
+  { key: "front_driver", area: "interior", label: "Front driver", tip: "Open the driver door. Seat, floor, center console, steering wheel and door panel all in frame." },
+  { key: "front_passenger", area: "interior", label: "Front passenger", tip: "Open the passenger door. Seat, floor, center console, dashboard and door panel all in frame." },
+  { key: "rear_driver", area: "interior", label: "Back driver side", tip: "Open the rear driver door. Back seat, floor, back of the front seat and door panel in frame." },
+  { key: "rear_passenger", area: "interior", label: "Back passenger side", tip: "Open the rear passenger door. Back seat, floor, back of the front seat and door panel in frame." },
+  { key: "third_driver", area: "interior", label: "3rd row, driver side", tip: "Only if the vehicle has a 3rd row. Seat and floor in frame.", optional: true },
+  { key: "third_passenger", area: "interior", label: "3rd row, passenger side", tip: "Only if the vehicle has a 3rd row. Seat and floor in frame.", optional: true },
+  { key: "trunk", area: "interior", label: "Trunk", tip: "Trunk or hatch fully open. Whole cargo floor and both sides in frame." },
+  { key: "ext_front", area: "exterior", label: "Front, straight on", tip: "Stand in front of the car, centered. Whole front end, bumper to roof, in frame." },
+  { key: "ext_front_right", area: "exterior", label: "Front ¾, passenger side", tip: "Stand off the front passenger corner. Front end and the whole passenger side in frame." },
+  { key: "ext_rear_left", area: "exterior", label: "Rear ¾, driver side", tip: "Stand off the rear driver corner. Back end and the whole driver side in frame." },
+  { key: "ext_wheel", area: "exterior", label: "Wheel", tip: "Crouch level with a front wheel. Tire, rim and brake area fill the frame." },
+];
+const SHOT_KEYS = new Set(PHOTO_SHOTS.map((s) => s.key));
+export const isShotKey = (k) => SHOT_KEYS.has(k);
+const SHOT_INDEX = new Map(PHOTO_SHOTS.map((s, i) => [s.key, i]));
+/** Sorts photos into shot order (guided angles first, in shooting order; others after, by time). */
+export const byShotOrder = (a, b) => (SHOT_INDEX.get(a.shot) ?? 99) - (SHOT_INDEX.get(b.shot) ?? 99);
+export const shotLabel = (k) => PHOTO_SHOTS.find((s) => s.key === k)?.label || null;
+
+/** The guided shots for a booking's service, in shooting order. */
+export function shotsForBooking({ category, jobFlag }) {
+  const scopes = checklistScopes(category, jobFlag);
+  const areas = new Set();
+  if (scopes.includes("interior")) areas.add("interior");
+  if (scopes.includes("exterior") || scopes.includes("ceramic")) areas.add("exterior");
+  if (!areas.size) { areas.add("interior"); areas.add("exterior"); } // unknown service: ask for everything
+  return PHOTO_SHOTS.filter((s) => areas.has(s.area));
+}
+
 export function minPhotos() {
   const read = (name, fallback) => {
     const n = Number(process.env[name]);
@@ -44,15 +80,28 @@ export function stepsForBooking(allSteps, { category, level, jobFlag }) {
     });
 }
 
-/** Everything still blocking completion, as plain-language messages. Empty = ready. */
-export function completionProblems({ steps, checked = {}, photoCounts = {}, mins = minPhotos() }) {
+/**
+ * Everything still blocking completion, as plain-language messages. Empty = ready.
+ * With `shots` (guided photos) every required shot needs a before and an after photo; a job
+ * whose photos were taken before guided shots existed (photos with no shot) keeps the old
+ * minimum-count rule for that kind so it can still be finished.
+ */
+export function completionProblems({ steps, checked = {}, photoCounts = {}, mins = minPhotos(), shots = null, photos = [] }) {
   const problems = [];
   const missing = steps.filter((s) => s.required && !checked[s.id]);
   if (missing.length) {
     problems.push(`${missing.length} checklist step${missing.length === 1 ? "" : "s"} not checked off`);
   }
   for (const kind of ["before", "after"]) {
-    const have = photoCounts[kind] || 0;
+    const ofKind = (photos || []).filter((p) => p.kind === kind);
+    const legacy = ofKind.some((p) => !p.shot);
+    if (shots && !legacy) {
+      const taken = new Set(ofKind.map((p) => p.shot));
+      const need = shots.filter((s) => !s.optional && !taken.has(s.key)).map((s) => s.label);
+      if (need.length) problems.push(`${kind === "before" ? "Before" : "After"} photos still needed: ${need.join(", ")}`);
+      continue;
+    }
+    const have = shots ? ofKind.length : photoCounts[kind] || 0;
     if (have < mins[kind]) {
       problems.push(`${mins[kind] - have} more ${kind} photo${mins[kind] - have === 1 ? "" : "s"} needed (minimum ${mins[kind]})`);
     }
