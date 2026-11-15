@@ -6128,26 +6128,28 @@ function renderView(viewName) {
         .sch-team{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
         .sch-chip{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);cursor:grab;touch-action:none;user-select:none;font-weight:600;font-size:14px}
         .sch-chip i{width:12px;height:12px;border-radius:50%;display:inline-block}
+        .sch-chip.on{background:var(--chip-c);border-color:var(--chip-c);color:#07111d;box-shadow:0 0 0 3px rgba(255,255,255,.18)}
+        .sch-chip.on i{background:#07111d!important}
+        .sch-hint{font-size:12px;opacity:.65;margin-top:8px}
+        .sch-hint.on{opacity:1;font-size:13px;color:#fff}
         .sch-wrap{overflow-x:auto;border:1px solid rgba(255,255,255,.12);border-radius:12px;-webkit-overflow-scrolling:touch}
         .sch-grid{display:flex;min-width:100%}
         .sch-hours{flex:0 0 44px;position:relative}
         .sch-hours .hl{position:absolute;right:6px;font-size:11px;opacity:.6;transform:translateY(-50%)}
         .sch-day{flex:1 1 0;min-width:150px;border-left:1px solid rgba(255,255,255,.08)}
-        .sch-head{height:92px;padding:6px 6px 0;box-sizing:border-box;border-bottom:1px solid rgba(255,255,255,.12);overflow:hidden;font-size:12px;display:flex;flex-direction:column}
+        .sch-head{height:74px;padding:6px 6px 0;box-sizing:border-box;border-bottom:1px solid rgba(255,255,255,.12);overflow:hidden;font-size:12px;display:flex;flex-direction:column}
         .sch-head.today{background:rgba(127,184,230,.12)}
         .sch-head strong{font-size:13px}
         .sch-warn{color:#ffc65c;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-        .sch-lanehead{display:flex;margin-top:auto}
-        .sch-lanehead span{flex:1;text-align:center;font-size:11px;font-weight:700;padding:2px 0;border-radius:4px 4px 0 0}
-        .sch-body{position:relative;background-image:repeating-linear-gradient(to bottom,rgba(255,255,255,.07) 0 1px,transparent 1px ${PX_H}px)}
+        .sch-body{position:relative;touch-action:pan-x pan-y;cursor:crosshair;background-image:repeating-linear-gradient(to bottom,rgba(255,255,255,.07) 0 1px,transparent 1px ${PX_H}px)}
         .sch-job{position:absolute;left:1px;right:1px;z-index:3;border-radius:6px;border:1.5px dashed rgba(255,255,255,.55);pointer-events:none;box-sizing:border-box;display:flex;align-items:flex-end}
         .sch-job span{font-size:10px;line-height:1.2;background:rgba(10,14,20,.85);color:#fff;border-radius:4px;padding:1px 4px;margin:2px;max-width:calc(100% - 4px);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
         .sch-job.ceramic{border-color:rgba(255,198,92,.9)}
         .sch-job.ceramic span{color:#ffc65c}
-        .sch-lane{position:absolute;top:0;bottom:0;touch-action:pan-x pan-y;cursor:crosshair}
-        .sch-lane.off{background:repeating-linear-gradient(135deg,rgba(255,107,107,.16) 0 6px,transparent 6px 12px)}
+        .sch-off{position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,107,107,.16) 0 6px,transparent 6px 12px);pointer-events:none}
         .sch-shade{position:absolute;left:0;right:0;background:rgba(0,0,0,.35);pointer-events:none}
-        .sch-lane.drop{outline:2px solid var(--moon-primary);outline-offset:-2px}
+        .sch-body.drop{outline:2px solid var(--moon-primary);outline-offset:-2px}
+        .sch-body.picking:hover{background-color:rgba(127,184,230,.07)}
         .sch-shift{position:absolute;z-index:2;border-radius:7px;font-size:11px;color:#07111d;padding:3px 4px;box-sizing:border-box;overflow:hidden;cursor:grab;touch-action:none;user-select:none;box-shadow:0 2px 6px rgba(0,0,0,.35)}
         .sch-shift.draft{background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.35) 0 6px,transparent 6px 12px);outline:2px dashed rgba(255,255,255,.85);outline-offset:-2px}
         .sch-shift b{display:block;font-size:11px}
@@ -6197,6 +6199,7 @@ function renderView(viewName) {
     let focusDay = null;          // phones: one day at a time
     let publishArmed = false;
     let denyArmed = null;         // time-off id being denied
+    let picked = null;            // selected person: click a day to fill it, drag to paint their hours
     const wrapper = document.createElement("div");
     wrapper.style.cssText = "display:flex;flex-direction:column;gap:12px;";
     viewContainer.appendChild(wrapper);
@@ -6278,110 +6281,128 @@ function renderView(viewName) {
     }
 
     /* ---------- drag engine (pointer events: mouse + touch) ---------- */
-    function laneAt(x, y) {
-      const el = document.elementFromPoint(x, y);
-      return el?.closest?.(".sch-lane") || null;
-    }
     function bodyAt(x, y) {
       const el = document.elementFromPoint(x, y);
       return el?.closest?.(".sch-body") || null;
     }
-    function clearDrop() { wrapper.querySelectorAll(".sch-lane.drop").forEach(l => l.classList.remove("drop")); }
+    function clearDrop() { wrapper.querySelectorAll(".sch-body.drop").forEach(l => l.classList.remove("drop")); }
 
-    // Drag a person chip onto a day: covers that day's jobs, or 8 hours from the drop time.
-    function startChipDrag(ev, person) {
+    // Hours to fill when a person is put on a day: the day's jobs (with 30 min either side),
+    // else their available hours, else 8a–5p.
+    function fillHours(day, staffId) {
+      const cover = coverJobs(day);
+      if (cover) return cover;
+      const a = day.availability[staffId];
+      if (a?.status === "partial" && a.start && a.end) return [toMin(a.start), toMin(a.end)];
+      return [8 * 60, 17 * 60];
+    }
+
+    function setPicked(id) {
+      picked = picked === id ? null : id;
+      render();
+    }
+
+    // A person chip: click selects/deselects them; dragging it onto a day still adds a shift there.
+    function startChip(ev, person) {
       ev.preventDefault();
-      const fl = document.createElement("div");
-      fl.className = "sch-float";
-      fl.style.background = colorOf(person.id);
-      fl.textContent = person.full_name;
-      document.body.appendChild(fl);
+      const x0 = ev.clientX, y0 = ev.clientY;
+      let fl = null;
       const move = (e) => {
+        if (!fl) {
+          if (Math.abs(e.clientX - x0) < 6 && Math.abs(e.clientY - y0) < 6) return;
+          fl = document.createElement("div");
+          fl.className = "sch-float";
+          fl.style.background = colorOf(person.id);
+          fl.textContent = person.full_name;
+          document.body.appendChild(fl);
+        }
         fl.style.left = e.clientX + 12 + "px";
         fl.style.top = e.clientY + 12 + "px";
         clearDrop();
-        const body = bodyAt(e.clientX, e.clientY);
-        body?.querySelector(`.sch-lane[data-staff="${person.id}"]`)?.classList.add("drop");
+        bodyAt(e.clientX, e.clientY)?.classList.add("drop");
       };
       const up = (e) => {
         document.removeEventListener("pointermove", move);
         document.removeEventListener("pointerup", up);
+        if (!fl) { setPicked(person.id); return; }
         fl.remove();
         clearDrop();
         const body = bodyAt(e.clientX, e.clientY);
         if (!body) return;
         const day = dayOf(body.dataset.date);
-        const dropMin = yToMin(e.clientY - body.getBoundingClientRect().top);
-        const cover = coverJobs(day);
-        const [a, b] = cover || [dropMin, Math.min(END_H * 60, dropMin + 8 * 60)];
+        const [a, b] = fillHours(day, person.id);
         saveShift({ staff_id: person.id, shift_date: day.date, start_time: toT(a), end_time: toT(b) });
       };
-      move(ev);
       document.addEventListener("pointermove", move);
       document.addEventListener("pointerup", up);
     }
 
-    // Paint a new shift in someone's column (mouse), or tap to open the editor prefilled.
-    function startPaint(ev, lane) {
-      if (ev.target !== lane && !ev.target.classList.contains("sch-shade")) return;
-      const body = lane.closest(".sch-body");
+    // Empty space in a day: with a person selected, a click fills the day for them and a drag
+    // paints their hours. With nobody selected, the editor opens to pick who (drag sets the times).
+    function startPaint(ev, body) {
+      if (ev.target.closest(".sch-shift")) return;
       const top = body.getBoundingClientRect().top;
       const y0 = ev.clientY;
       const m0 = yToMin(y0 - top);
-      const day = dayOf(lane.dataset.date);
-      const staffId = lane.dataset.staff;
+      const day = dayOf(body.dataset.date);
+      const finish = (e, a, b) => {
+        if (b - a < 30) {
+          if (picked) {
+            const [fa, fb] = fillHours(day, picked);
+            saveShift({ staff_id: picked, shift_date: day.date, start_time: toT(fa), end_time: toT(fb) });
+          } else {
+            const [fa, fb] = coverJobs(day) || [m0, Math.min(END_H * 60, m0 + 8 * 60)];
+            openPop({ x: e.clientX, y: e.clientY, date: day.date, start: toT(fa), end: toT(fb) });
+          }
+          return;
+        }
+        if (picked) saveShift({ staff_id: picked, shift_date: day.date, start_time: toT(a), end_time: toT(b) });
+        else openPop({ x: e.clientX, y: e.clientY, date: day.date, start: toT(a), end: toT(b) });
+      };
       if (ev.pointerType !== "mouse") {
-        // Touch: let the page scroll; a tap opens the editor.
+        // Touch: let the page scroll; a tap does what a click does.
         const upT = (e) => {
-          lane.removeEventListener("pointerup", upT);
+          body.removeEventListener("pointerup", upT);
           if (Math.abs(e.clientY - y0) > 8) return;
-          const cover = coverJobs(day);
-          const [a, b] = cover || [m0, Math.min(END_H * 60, m0 + 8 * 60)];
-          openPop({ x: e.clientX, y: e.clientY, staffId, date: day.date, start: toT(a), end: toT(b) });
+          finish(e, m0, m0);
         };
-        lane.addEventListener("pointerup", upT);
+        body.addEventListener("pointerup", upT);
         return;
       }
       ev.preventDefault();
       const ghost = document.createElement("div");
       ghost.className = "sch-ghost";
-      ghost.style.left = lane.style.left;
-      ghost.style.width = lane.style.width;
+      ghost.style.left = "2px";
+      ghost.style.right = "2px";
+      if (picked) { ghost.style.background = colorOf(picked) + "88"; ghost.style.borderColor = colorOf(picked); }
       body.appendChild(ghost);
       let m1 = m0;
       const draw = () => {
         const a = Math.min(m0, m1), b = Math.max(m0, m1);
         ghost.style.top = minToY(a) + "px";
         ghost.style.height = Math.max(4, minToY(b) - minToY(a)) + "px";
-        ghost.textContent = b - a >= 30 ? `${fmt12(toT(a))}–${fmt12(toT(b))}` : "";
+        ghost.textContent = b - a >= 30 ? `${picked ? nameOf(picked).split(" ")[0] + " · " : ""}${fmt12(toT(a))}–${fmt12(toT(b))}` : "";
       };
       const move = (e) => { m1 = yToMin(e.clientY - top); draw(); };
       const up = (e) => {
         document.removeEventListener("pointermove", move);
         document.removeEventListener("pointerup", up);
         ghost.remove();
-        const a = Math.min(m0, m1), b = Math.max(m0, m1);
-        if (b - a < 30) {
-          const cover = coverJobs(day);
-          const [ca, cb] = cover || [m0, Math.min(END_H * 60, m0 + 8 * 60)];
-          openPop({ x: e.clientX, y: e.clientY, staffId, date: day.date, start: toT(ca), end: toT(cb) });
-          return;
-        }
-        saveShift({ staff_id: staffId, shift_date: day.date, start_time: toT(a), end_time: toT(b) });
+        finish(e, Math.min(m0, m1), Math.max(m0, m1));
       };
       draw();
       document.addEventListener("pointermove", move);
       document.addEventListener("pointerup", up);
     }
 
-    // Move a shift (time / day / person) or resize it from its top or bottom edge.
+    // Move a shift (time / day) or resize it from its top or bottom edge.
     function startShiftDrag(ev, el, shift) {
       ev.preventDefault();
       ev.stopPropagation();
       const mode = ev.target.classList.contains("top") ? "top" : ev.target.classList.contains("bot") ? "bot" : "move";
       const x0 = ev.clientX, y0 = ev.clientY;
       const s0 = toMin(shift.start_time), e0 = toMin(shift.end_time);
-      let moved = false, ns = s0, ne = e0, targetLane = null;
+      let moved = false, ns = s0, ne = e0, targetBody = null;
       const move = (e) => {
         const dy = e.clientY - y0, dx = e.clientX - x0;
         if (!moved && Math.abs(dy) < 5 && Math.abs(dx) < 5) return;
@@ -6392,9 +6413,8 @@ function renderView(viewName) {
           ns = Math.max(START_H * 60, Math.min(END_H * 60 - len, s0 + dMin));
           ne = ns + len;
           clearDrop();
-          targetLane = laneAt(e.clientX, e.clientY);
-          targetLane?.classList.add("drop");
-          if (targetLane && targetLane.closest(".sch-body") !== el.closest(".sch-body")) el.style.opacity = "0.35";
+          targetBody = bodyAt(e.clientX, e.clientY);
+          if (targetBody && targetBody !== el.closest(".sch-body")) { targetBody.classList.add("drop"); el.style.opacity = "0.35"; }
           else el.style.opacity = "";
         } else if (mode === "top") {
           ns = Math.max(START_H * 60, Math.min(e0 - 30, s0 + dMin));
@@ -6411,14 +6431,30 @@ function renderView(viewName) {
         clearDrop();
         if (!moved) { openPop({ x: e.clientX, y: e.clientY, shift }); return; }
         const payload = { start_time: toT(ns), end_time: toT(ne) };
-        if (mode === "move" && targetLane) {
-          payload.shift_date = targetLane.dataset.date;
-          payload.staff_id = targetLane.dataset.staff;
-        }
+        if (mode === "move" && targetBody) payload.shift_date = targetBody.dataset.date;
         saveShift(payload, shift);
       };
       document.addEventListener("pointermove", move);
       document.addEventListener("pointerup", up);
+    }
+
+    // Overlapping shifts in a day sit side by side: column index and column count per shift.
+    function layoutShifts(shifts) {
+      const sorted = [...shifts].sort((a, b) => toMin(a.start_time) - toMin(b.start_time) || toMin(b.end_time) - toMin(a.end_time));
+      const out = new Map();
+      let cluster = [], cols = [], clusterEnd = -1;
+      const flush = () => { cluster.forEach(s => (out.get(s.id).n = cols.length)); cluster = []; cols = []; };
+      for (const s of sorted) {
+        const a = toMin(s.start_time), b = toMin(s.end_time);
+        if (a >= clusterEnd) { flush(); clusterEnd = -1; }
+        let c = cols.findIndex(end => end <= a);
+        if (c < 0) { c = cols.length; cols.push(b); } else cols[c] = b;
+        out.set(s.id, { c, n: 1 });
+        cluster.push(s);
+        clusterEnd = Math.max(clusterEnd, b);
+      }
+      flush();
+      return out;
     }
 
     /* ---------- phones: tap-based day list ---------- */
@@ -6462,13 +6498,16 @@ function renderView(viewName) {
     }
 
     /* ---------- rendering ---------- */
+    const availText = (a = { status: "unknown" }) => a.status === "unavailable" ? (a.source === "time_off" ? "Time off" : "Off")
+      : a.status === "partial" ? `Available ${fmt12(a.start)}–${fmt12(a.end)}` : a.status === "available" ? "Available" : "Availability not set";
+    // The selected person's availability on a day: hatched when off, dark outside their hours.
+    const availShade = (a = { status: "unknown" }) => a.status === "unavailable" ? `<div class="sch-off"></div>`
+      : a.status === "partial"
+        ? `${a.start ? `<div class="sch-shade" style="top:0;height:${Math.max(0, minToY(toMin(a.start)))}px"></div>` : ""}${a.end ? `<div class="sch-shade" style="top:${minToY(toMin(a.end))}px;bottom:0"></div>` : ""}`
+        : "";
+
     function render() {
       const d = data;
-      // Columns per day: every employee, plus managers only once they have a shift this week.
-      const lanes = d.people.filter(p => p.role === "employee" || d.days.some(x => x.shifts.some(s => s.staff_id === p.id)));
-      if (!lanes.length) lanes.push(...d.people);
-      const N = Math.max(1, lanes.length);
-      const lanePct = 100 / N;
       const hoursH = (END_H - START_H) * PX_H;
       const visibleDays = narrow() ? d.days.filter(x => x.date === (focusDay || d.today)).concat([]) : d.days;
       const shownDays = visibleDays.length ? visibleDays : [d.days[0]];
@@ -6505,36 +6544,36 @@ function renderView(viewName) {
                  <button type="button" class="sch-btn danger" data-deny="${esc(t.id)}">Deny</button>`}
           </div>`).join("")}</div>` : ""}
         ${narrow() ? "" : `<div class="sch-panel">
-          <div class="sch-team"><span style="font-size:13px;opacity:.8;margin-right:4px;">Drag onto a day →</span>
-            ${d.people.map(p => `<span class="sch-chip" data-chip="${esc(p.id)}"><i style="background:${colorOf(p.id)}"></i>${esc(p.full_name)}</span>`).join("") || '<span style="opacity:.7;">Add employees under Team first.</span>'}
+          <div class="sch-team"><span style="font-size:13px;opacity:.8;margin-right:4px;">${picked ? "Scheduling:" : "Pick someone →"}</span>
+            ${d.people.map(p => `<span class="sch-chip ${picked === p.id ? "on" : ""}" data-chip="${esc(p.id)}" style="--chip-c:${colorOf(p.id)}"><i style="background:${colorOf(p.id)}"></i>${esc(p.full_name)}</span>`).join("") || '<span style="opacity:.7;">Add employees under Team first.</span>'}
+            ${picked ? `<button type="button" class="sch-btn" data-unpick>Done</button>` : ""}
           </div>
-          <div style="font-size:12px;opacity:.65;margin-top:8px;">Or drag down inside a person's column to paint a shift. Drag a shift to move it, drag its top/bottom edge to change times, click it to edit. Striped = draft (crew can't see it yet). Red hatching = off / time off; dark = outside their hours.</div>
+          ${picked
+            ? `<div class="sch-hint on">Click a day to give ${esc(nameOf(picked).split(" ")[0])} a shift (covers the jobs, else their hours, else 8a–5p), or drag down in a day to set the hours. Their days off are hatched red; dark = outside their hours. Click their name again or pick someone else when done.</div>`
+            : `<div class="sch-hint">Click a name to schedule that person, then click or drag on the days. Or click an empty spot to add a shift for anyone, or drag a name onto a day. Drag a shift to move it, drag its top/bottom edge to change times, click it to edit. Striped = draft (crew can't see it yet).</div>`}
         </div>`}
         ${narrow() ? `<div class="sch-days">${d.days.map(x => `<button type="button" class="sch-btn ${x.date === (focusDay || d.today) || (!d.days.some(y => y.date === (focusDay || d.today)) && x === d.days[0]) ? "on" : ""}" data-focus="${x.date}">${esc(dayHead(x.date))}${x.jobs.length ? ` · ${x.jobs.length}` : ""}</button>`).join("")}</div>` : ""}
         ${narrow() ? phoneDay(shownDays[0]) : `<div class="sch-wrap"><div class="sch-grid">
-          <div class="sch-hours" style="padding-top:92px;"><div style="position:relative;height:${hoursH}px;">${Array.from({ length: END_H - START_H + 1 }, (_, i) => `<div class="hl" style="top:${i * PX_H}px">${fmt12(toT((START_H + i) * 60))}</div>`).join("")}</div></div>
+          <div class="sch-hours" style="padding-top:74px;"><div style="position:relative;height:${hoursH}px;">${Array.from({ length: END_H - START_H + 1 }, (_, i) => `<div class="hl" style="top:${i * PX_H}px">${fmt12(toT((START_H + i) * 60))}</div>`).join("")}</div></div>
           ${shownDays.map(day => `
             <div class="sch-day">
               <div class="sch-head ${day.date === d.today ? "today" : ""}" title="${esc(day.warnings.join(" · "))}">
                 <strong>${esc(dayHead(day.date))}</strong>
                 <span style="opacity:.8;">${day.jobs.length ? `${day.jobs.length} job${day.jobs.length === 1 ? "" : "s"}` : "No jobs"}${day.jobs.some(j => j.ceramic) ? ` · <b style="color:#ffc65c;">${icon("sparkle", 12)} Ceramic</b>` : ""}${day.pending_requests ? ` · +${day.pending_requests} pending` : ""}</span>
                 ${day.warnings.slice(0, 1).map(w => `<span class="sch-warn">${icon("alert", 13)} ${esc(w)}</span>`).join("")}
-                <div class="sch-lanehead">${lanes.map(p => `<span style="background:${colorOf(p.id)}33;color:${colorOf(p.id)}" title="${esc(p.full_name)}">${esc(p.full_name.split(" ").map(w => w[0]).join("").slice(0, 2))}</span>`).join("")}</div>
               </div>
-              <div class="sch-body" data-date="${day.date}" style="height:${hoursH}px;">
+              <div class="sch-body ${picked ? "picking" : ""}" data-date="${day.date}" style="height:${hoursH}px;" ${picked ? `title="${esc(nameOf(picked))} · ${esc(availText(day.availability[picked]))}"` : ""}>
+                ${picked ? availShade(day.availability[picked]) : ""}
                 ${day.jobs.map(j => `<div class="sch-job ${j.ceramic ? "ceramic" : ""}" style="top:${minToY(toMin(j.start))}px;height:${Math.max(14, minToY(toMin(j.end)) - minToY(toMin(j.start)))}px;" title="${esc(j.customer)} · ${esc(j.service)}"><span>${j.ceramic ? icon("sparkle", 11) + " " : ""}Job ${esc(fmt12(j.start))}–${esc(fmt12(j.end))} · ${esc(j.customer)}</span></div>`).join("")}
-                ${lanes.map((p, i) => {
-                  const a = day.availability[p.id] || { status: "unknown" };
-                  const shades = a.status === "partial"
-                    ? `${a.start ? `<div class="sch-shade" style="top:0;height:${Math.max(0, minToY(toMin(a.start)))}px"></div>` : ""}${a.end ? `<div class="sch-shade" style="top:${minToY(toMin(a.end))}px;bottom:0"></div>` : ""}`
-                    : "";
-                  return `<div class="sch-lane ${a.status === "unavailable" ? "off" : ""}" data-staff="${esc(p.id)}" data-date="${day.date}" style="left:${i * lanePct}%;width:${lanePct}%;" title="${esc(p.full_name)} · ${esc(a.status === "unavailable" ? (a.source === "time_off" ? "Time off" : "Off") : a.status === "partial" ? `Available ${fmt12(a.start)}–${fmt12(a.end)}` : a.status === "available" ? "Available" : "Availability not set")}">${shades}</div>`;
-                }).join("")}
-                ${day.shifts.map(s => {
-                  const i = Math.max(0, lanes.findIndex(p => p.id === s.staff_id));
-                  return `<div class="sch-shift ${s.published ? "" : "draft"}" data-shift="${esc(s.id)}" style="left:calc(${i * lanePct}% + 2px);width:calc(${lanePct}% - 4px);top:${minToY(toMin(s.start_time))}px;height:${minToY(toMin(s.end_time)) - minToY(toMin(s.start_time))}px;background-color:${colorOf(s.staff_id)};" title="${esc(nameOf(s.staff_id))}${s.warnings.length ? " · Warning: " + esc(s.warnings.join(" · ")) : ""}">
-                    <div class="sch-h top"></div><b>${esc(fmt12(s.start_time))}–${esc(fmt12(s.end_time))}</b>${esc(nameOf(s.staff_id).split(" ")[0])}${s.published ? "" : " · draft"}${s.warnings.length ? `<div class="wr">${icon("alert", 13)} ${esc(s.warnings[0])}</div>` : ""}<div class="sch-h bot"></div></div>`;
-                }).join("")}
+                ${(() => {
+                  const lay = layoutShifts(day.shifts);
+                  return day.shifts.map(s => {
+                    const { c, n } = lay.get(s.id);
+                    const w = 100 / n;
+                    return `<div class="sch-shift ${s.published ? "" : "draft"}" data-shift="${esc(s.id)}" style="left:calc(${c * w}% + 2px);width:calc(${w}% - 4px);top:${minToY(toMin(s.start_time))}px;height:${minToY(toMin(s.end_time)) - minToY(toMin(s.start_time))}px;background-color:${colorOf(s.staff_id)};${picked && picked !== s.staff_id ? "opacity:.45;" : ""}" title="${esc(nameOf(s.staff_id))}${s.warnings.length ? " · Warning: " + esc(s.warnings.join(" · ")) : ""}">
+                      <div class="sch-h top"></div><b>${esc(fmt12(s.start_time))}–${esc(fmt12(s.end_time))}</b>${esc(nameOf(s.staff_id).split(" ")[0])}${s.published ? "" : " · draft"}${s.warnings.length ? `<div class="wr">${icon("alert", 13)} ${esc(s.warnings[0])}</div>` : ""}<div class="sch-h bot"></div></div>`;
+                  }).join("");
+                })()}
               </div>
             </div>`).join("")}
         </div></div>`}`;
@@ -6609,9 +6648,10 @@ function renderView(viewName) {
       // drag & drop
       wrapper.querySelectorAll("[data-chip]").forEach(chip => {
         const person = d.people.find(p => p.id === chip.dataset.chip);
-        chip.addEventListener("pointerdown", (ev) => startChipDrag(ev, person));
+        chip.addEventListener("pointerdown", (ev) => startChip(ev, person));
       });
-      wrapper.querySelectorAll(".sch-lane").forEach(lane => lane.addEventListener("pointerdown", (ev) => startPaint(ev, lane)));
+      wrapper.querySelector("[data-unpick]")?.addEventListener("click", () => setPicked(picked));
+      wrapper.querySelectorAll(".sch-body").forEach(body => body.addEventListener("pointerdown", (ev) => startPaint(ev, body)));
       wrapper.querySelectorAll(".sch-shift").forEach(el => {
         const shift = d.days.flatMap(x => x.shifts).find(s => s.id === el.dataset.shift);
         el.addEventListener("pointerdown", (ev) => startShiftDrag(ev, el, shift));
@@ -6632,6 +6672,10 @@ function renderView(viewName) {
         wrapper.innerHTML = `<p style="margin:0;color:#ff8a8a;">${esc(err.message)}</p>`;
       }
     }
+    document.addEventListener("keydown", function onKey(e) {
+      if (!wrapper.isConnected) return document.removeEventListener("keydown", onKey);
+      if (e.key === "Escape" && picked && !document.querySelector(".sch-pop")) setPicked(picked);
+    });
     let lastNarrow = narrow();
     window.addEventListener("resize", function onResize() {
       if (!wrapper.isConnected) return window.removeEventListener("resize", onResize);
