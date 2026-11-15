@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { shotsForBooking, completionProblems, PHOTO_SHOTS, isShotKey, byShotOrder } from "../api/_jobs.js";
 
 const keys = (shots) => shots.map((s) => s.key);
-const INTERIOR = ["front_driver", "front_passenger", "rear_driver", "rear_passenger", "third_driver", "third_passenger", "trunk"];
+const INTERIOR = ["front_driver", "front_passenger", "center_console", "rear_driver", "rear_passenger", "third_driver", "third_passenger", "trunk"];
 const EXTERIOR = ["ext_front", "ext_front_right", "ext_rear_left", "ext_wheel"];
 const allPhotos = (kind, shots, except = []) =>
   shots.filter((s) => !s.optional && !except.includes(s.key)).map((s) => ({ kind, shot: s.key }));
@@ -34,7 +34,7 @@ test("every required angle needs a before and an after photo; optional ones don'
 
   const none = completionProblems({ steps: [], shots, photos: [] });
   assert.equal(none.length, 2);
-  assert.match(none[0], /^Before photos still needed: Front driver, Front passenger, Back driver side, Back passenger side, Trunk$/);
+  assert.match(none[0], /^Before photos still needed: Front driver, Front passenger, Center console & screen, Back driver side, Back passenger side, Trunk$/);
 });
 
 test("a job with photos from before guided shots keeps the minimum-count rule for that kind", () => {

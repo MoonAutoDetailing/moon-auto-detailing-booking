@@ -50,6 +50,7 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   job_flag,
   crew_notes,
   booked_by_staff:booked_by ( full_name ),
+  job:job_completions ( started_at, completed_at, started_by_staff:started_by ( full_name ) ),
 
   customers:customer_id (
     full_name,

@@ -155,6 +155,32 @@ function threeQuarter({ rear = false } = {}) {
 const SKETCHES = {
   front_driver: svg(frontRow({ wheel: true })),
   front_passenger: svg(frontRow({ wheel: false }), { mirror: true }),
+  // From the back seat between the front seats, looking forward: dash with the screen and
+  // radio, vents, the console running toward the camera (shifter, cupholders, armrest),
+  // the front seat backs on either side.
+  center_console: svg(`
+    <path d="M6 46 Q80 30 154 46" stroke-width="${D}" opacity=".75"/>
+    <path d="M10 66 Q80 56 150 66"/>
+    <path d="M6 46 L10 66 M154 46 L150 66" stroke-width="${D}" opacity=".75"/>
+    <ellipse cx="34" cy="54" rx="17" ry="13" stroke-width="${D}" opacity=".8"/>
+    <rect x="61" y="27" width="38" height="24" rx="3"/>
+    <rect x="64.5" y="30.5" width="31" height="17" rx="1.5" stroke-width="${F}" opacity=".6"/>
+    ${poly([[46, 47], [58, 46], [58, 52], [46, 53]], D)}${line([[47, 49.5], [57, 49]], F, 'opacity=".6"')}
+    ${poly([[114, 47], [102, 46], [102, 52], [114, 53]], D)}${line([[113, 49.5], [103, 49]], F, 'opacity=".6"')}
+    ${poly([[62, 54], [98, 54], [99, 68], [61, 68]], D)}
+    <circle cx="68" cy="61" r="3.4" stroke-width="${D}"/><circle cx="92" cy="61" r="3.4" stroke-width="${D}"/>
+    ${line([[74, 59], [86, 59]], D)}${line([[74, 63], [86, 63]], D)}
+    ${line([[61, 68], [50, 118]])}${line([[99, 68], [110, 118]])}
+    ${line([[78, 82], [77, 74]], D)}<ellipse cx="77" cy="72" rx="4" ry="3" stroke-width="${D}"/>
+    ${poly([[71, 79], [89, 79], [90, 86], [70, 86]], F, 'opacity=".6"')}
+    <ellipse cx="72" cy="94" rx="5.5" ry="3.6" stroke-width="${D}"/><ellipse cx="88" cy="94" rx="5.5" ry="3.6" stroke-width="${D}"/>
+    <path d="M54 104 Q80 100 106 104 L108 118 L52 118 Z" stroke-width="${D}"/>
+    <path d="M0 56 C14 54 24 58 30 70 L40 118 L0 118 Z" fill="#0f1620"/>
+    <path d="M8 26 C8 18 14 16 22 16 C30 16 34 19 34 26 C34 32 30 34 22 34 C14 34 8 32 8 26 Z" fill="#0f1620"/>
+    ${line([[14, 34], [12, 56]], D)}${line([[28, 34], [26, 58]], D)}
+    <path d="M160 56 C146 54 136 58 130 70 L120 118 L160 118 Z" fill="#0f1620"/>
+    <path d="M152 26 C152 18 146 16 138 16 C130 16 126 19 126 26 C126 32 130 34 138 34 C146 34 152 32 152 26 Z" fill="#0f1620"/>
+    ${line([[146, 34], [148, 56]], D)}${line([[132, 34], [134, 58]], D)}`),
   rear_driver: svg(rearRow()),
   rear_passenger: svg(rearRow(), { mirror: true }),
   third_driver: svg(rearRow({ third: true })),

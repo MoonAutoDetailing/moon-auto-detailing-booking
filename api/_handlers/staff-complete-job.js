@@ -42,7 +42,10 @@ export default async function handler(req, res) {
       level: svc.level,
       jobFlag: booking.job_flag,
     });
-    const checked = {};
+    // Every tick anyone saved on this job counts, plus any sent with the completion.
+    const { data: stored, error: stErr } = await sb.from("job_completions").select("checklist").eq("booking_id", bookingId).maybeSingle();
+    if (stErr) throw stErr;
+    const checked = { ...(stored?.checklist || {}) };
     for (const [k, v] of Object.entries(body.checklist || {})) if (v === true) checked[k] = true;
 
     const { data: photos, error: pErr } = await sb.from("job_photos").select("kind, shot").eq("booking_id", bookingId);

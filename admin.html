@@ -2197,6 +2197,7 @@ body.ux .ux-pill.completed { background: rgba(111,211,154,.16); color: var(--ux-
 body.ux .ux-pill.cancelled, body.ux .ux-pill.denied { background: rgba(255,123,123,.16); color: var(--ux-bad); }
 body.ux .ux-pill.ceramic { background: rgba(255,198,92,.18); color: var(--ux-warn); }
 body.ux .ux-pill.overdue { background: rgba(255,123,123,.16); color: var(--ux-bad); text-transform: none; }
+body.ux .ux-pill.progress { background: rgba(111,211,154,.18); color: #6fd39a; text-transform: none; }
 body.ux .card .booking-header .status-badge, body.ux .card .booking-header .booking-summary-meta, body.ux .card .booking-header .chevron { display: none; }
 body.ux .card .booking-content { display: none; padding: 0 14px 14px; border-top: 1px solid var(--ux-line); }
 body.ux .card.expanded .booking-content { display: block; }
@@ -3084,7 +3085,7 @@ function showToast(message) {
 
 function bookingsSignature(bookings) {
   return bookings
-    .map(b => `${b.id}:${b.status}:${b.scheduled_start}`)
+    .map(b => { const j = Array.isArray(b.job) ? b.job[0] : b.job; return `${b.id}:${b.status}:${b.scheduled_start}:${j?.started_at || ""}`; })
     .sort()
     .join("|");
 }
@@ -3803,8 +3804,11 @@ card.style.borderLeft = "4px solid var(--moon-primary)";
   const mapsUrl = "https://www.google.com/maps/dir/?api=1&destination=" + encodeURIComponent(b.service_address || "");
   // A confirmed job that ended over an hour ago was never completed — flag it instead of "Confirmed".
   const overdue = b.status === "confirmed" && end.getTime() < Date.now() - 3600000;
-  const statusKey = overdue ? "overdue" : String(b.status || "").toLowerCase();
-  const statusLabel = overdue ? "Not completed" : (b.status ?? "").replace(/_/g, " ");
+  // Someone tapped Start job (crew app or Start job here): everyone sees it in progress.
+  const job = Array.isArray(b.job) ? b.job[0] : b.job;
+  const inProgress = b.status === "confirmed" && !!job?.started_at && !job?.completed_at;
+  const statusKey = overdue ? "overdue" : inProgress ? "progress" : String(b.status || "").toLowerCase();
+  const statusLabel = overdue ? "Not completed" : inProgress ? "In progress" : (b.status ?? "").replace(/_/g, " ");
   const money = (n) => n != null ? "$" + Number(n).toFixed(2) : "—";
   // Town from "street, town, ST zip" so the row says where the job is.
   const addrParts = String(b.service_address || "").split(",").map((s) => s.trim()).filter(Boolean);
@@ -3838,6 +3842,7 @@ card.style.borderLeft = "4px solid var(--moon-primary)";
     ${Array.isArray(b.job_payments) && b.job_payments.length ? `<div class="ux-note"><strong>Collected:</strong> ${money(b.job_payments.reduce((t, p) => t + Number(p.amount_collected || 0), 0))}${b.job_payments[0].payment_method ? " via " + escC(b.job_payments[0].payment_method) : ""}${b.job_payments.some(p => Number(p.tip_amount) > 0) ? ` · tip ${money(b.job_payments.reduce((t, p) => t + Number(p.tip_amount || 0), 0))}` : ""}</div>` : ""}
     ${(b.customer_notes != null && String(b.customer_notes).trim() !== "") ? `<div class="ux-note"><strong>Customer note:</strong> ${escC(String(b.customer_notes).trim())}</div>` : ""}
     ${b.booked_by_staff?.full_name ? `<div class="ux-note"><strong>Booked by:</strong> ${escC(b.booked_by_staff.full_name)} (crew app)</div>` : ""}
+    ${inProgress ? `<div class="ux-note"><strong>In progress:</strong> started${job.started_by_staff?.full_name ? " by " + escC(job.started_by_staff.full_name) : ""} at ${escC(new Date(job.started_at).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }))} — photos and checklist under "Crew notes, ceramic &amp; job photos" below.</div>` : ""}
   </div>
 `;
 

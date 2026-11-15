@@ -607,13 +607,24 @@ async function renderDay() {
   const go = (n) => { state.date = addDays(date || state.today, n); renderDay(); };
   app.querySelector("#prevDay").onclick = () => go(-1);
   app.querySelector("#nextDay").onclick = () => go(1);
+  daySig = "";
+  await loadDayJobs();
+}
 
+let daySig = "";
+// Fills the day's job list; quiet = background refresh, redrawn only when something changed.
+async function loadDayJobs({ quiet = false } = {}) {
+  const date = state.date || state.today;
   try {
     const data = await api(`/api/staff-jobs${date ? "?date=" + date : ""}`);
+    const body = app.querySelector("#dayBody");
+    if (!body || state.job || state.tab !== "today") return;
+    const sig = JSON.stringify(data.jobs.map((j) => [j.id, j.status, j.started_at, j.photo_counts]));
+    if (quiet && sig === daySig) return;
+    daySig = sig;
     state.today = data.today;
     if (!state.date) state.date = data.date;
     app.querySelector(".daynav .label").textContent = data.date === data.today ? "Today · " + dayLabel(data.date) : dayLabel(data.date);
-    const body = app.querySelector("#dayBody");
     body.innerHTML = "";
     if (data.ceramic_today) {
       body.insertAdjacentHTML("beforeend", `<div class="banner">${icon("sparkle", 18)} Ceramic coating on this day — bring the coating kit, panel prep and lights, and plan for cure time.</div>`);
@@ -626,7 +637,9 @@ async function renderDay() {
     body.insertAdjacentHTML("beforeend", `<p class="muted" style="margin:0 0 10px;font-size:14px;">${data.jobs.length} job${data.jobs.length === 1 ? "" : "s"} · ${done} done</p>`);
     data.jobs.forEach((j) => body.appendChild(jobCard(j)));
   } catch (err) {
-    app.querySelector("#dayBody").innerHTML = `<div class="empty">${esc(err.message)}</div>`;
+    if (quiet) return;
+    const body = app.querySelector("#dayBody");
+    if (body) body.innerHTML = `<div class="empty">${esc(err.message)}</div>`;
   }
 }
 
@@ -1302,7 +1315,7 @@ function renderJob() {
       <div class="job-head">
         <div class="muted" style="font-size:13px;font-weight:700;color:var(--moon-primary);">${esc(timeOf(j.scheduled_start))} – ${esc(timeOf(j.scheduled_end))}${j.duration_minutes ? ` · ~${Math.round(j.duration_minutes / 6) / 10} hrs` : ""}</div>
         <h2 style="margin:2px 0 6px;font-size:21px;">${esc(j.customer_name)}</h2>
-        <div>${done ? '<span class="chip ok">Completed</span>' : started ? '<span class="chip info">In progress</span>' : '<span class="chip">Not started</span>'}</div>
+        <div>${done ? '<span class="chip ok">Completed</span>' : started ? '<span class="chip info">In progress</span>' : '<span class="chip">Not started</span>'}${started && !done ? ` <span class="muted" style="font-size:13px;">started${J.work.started_by && J.work.started_by !== J.me ? " by " + esc((J.crew.find((c) => c.id === J.work.started_by)?.full_name || "a teammate").split(" ")[0]) : ""} ${esc(timeOf(J.work.started_at))}</span>` : ""}</div>
       </div>
       <div class="kv" style="margin-top:12px;">
         <div class="k">Service</div><div>${esc(serviceName(j))}</div>
@@ -1367,7 +1380,7 @@ function renderJob() {
     if (cb.checked) J.checked[cb.dataset.step] = true;
     else delete J.checked[cb.dataset.step];
     cb.closest(".step").classList.toggle("done", cb.checked);
-    saveChecklistSoon();
+    saveStep(J, cb.dataset.step, cb.checked);
     refreshCompleteState();
   }));
   app.querySelector("#completeForm")?.addEventListener("submit", submitComplete);
@@ -1387,16 +1400,41 @@ function refreshCompleteState() {
   btn.disabled = problems.length > 0;
 }
 
-function saveChecklistSoon() {
-  clearTimeout(state.saveTimer);
-  const J = state.job;
-  state.saveTimer = setTimeout(async () => {
-    try {
-      await api("/api/staff-job", { method: "POST", body: { id: J.id, action: "checklist", checklist: J.checked } });
-      if (!J.work) J.work = { started_at: new Date().toISOString() };
-    } catch (err) { toast("Checklist not saved: " + err.message, true); }
-  }, 700);
+// Each tick saves on its own, so two people on the same job never undo each other's steps.
+async function saveStep(J, stepId, checked) {
+  J.pendingChecks = J.pendingChecks || new Set();
+  J.pendingChecks.add(stepId);
+  try {
+    await api("/api/staff-job", { method: "POST", body: { id: J.id, action: "check", step_id: stepId, checked } });
+    if (!J.work) J.work = { started_at: new Date().toISOString(), started_by: J.me };
+  } catch (err) {
+    toast("Checklist not saved: " + err.message, true);
+  } finally {
+    J.pendingChecks.delete(stepId);
+  }
 }
+
+/* ---------------- live updates ---------------- */
+// Everyone working a job sees the same thing: an open job refreshes every 10 seconds (photos,
+// ticks, started / completed by someone else) and the day's job list every 30 seconds.
+// Skipped while the page is hidden or this phone is mid-upload / mid-save.
+const jobSig = (d) => JSON.stringify([d.job?.status, d.work?.started_at, d.work?.completed_at,
+  (d.photos || []).map((p) => p.id).sort(), Object.keys(d.checked || {}).sort()]);
+async function refreshOpenJob() {
+  const J = state.job;
+  if (!J || J.loading || document.hidden || J.pendingUploads || J.pendingChecks?.size || document.querySelector(".sheet")) return;
+  try {
+    const d = await api(`/api/staff-job?id=${encodeURIComponent(J.id)}`);
+    if (state.job !== J || J.pendingUploads || J.pendingChecks?.size) return;
+    if (jobSig(d) === jobSig(J)) return;
+    Object.assign(J, { job: d.job, checklist: d.checklist, checked: d.checked, work: d.work, photos: d.photos, problems: d.problems, shots: d.shots });
+    renderJobKeepingForm();
+  } catch {}
+}
+setInterval(refreshOpenJob, 10000);
+setInterval(() => {
+  if (!document.hidden && !state.job && state.tab === "today" && !EMBED) loadDayJobs({ quiet: true });
+}, 30000);
 
 async function startJob() {
   try {

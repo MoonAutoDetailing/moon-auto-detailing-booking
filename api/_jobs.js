@@ -17,6 +17,7 @@ export const PHOTO_KINDS = ["before", "after", "issue"];
 export const PHOTO_SHOTS = [
   { key: "front_driver", area: "interior", label: "Front driver", tip: "Open the driver door. Seat, floor, center console, steering wheel and door panel all in frame." },
   { key: "front_passenger", area: "interior", label: "Front passenger", tip: "Open the passenger door. Seat, floor, center console, dashboard and door panel all in frame." },
+  { key: "center_console", area: "interior", label: "Center console & screen", tip: "From the back seat, between the front seats. Center console, cupholders, shifter and the dash screen/radio all in frame." },
   { key: "rear_driver", area: "interior", label: "Back driver side", tip: "Open the rear driver door. Back seat, floor, back of the front seat and door panel in frame." },
   { key: "rear_passenger", area: "interior", label: "Back passenger side", tip: "Open the rear passenger door. Back seat, floor, back of the front seat and door panel in frame." },
   { key: "third_driver", area: "interior", label: "3rd row, driver side", tip: "Only if the vehicle has a 3rd row. Seat and floor in frame.", optional: true },

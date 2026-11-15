@@ -57,8 +57,17 @@ export default async function handler(req, res) {
         } else if (!existing.started_at) {
           await sb.from("job_completions").update({ started_at: now, started_by: staff.id, updated_at: now }).eq("booking_id", id);
         }
+      } else if (body.action === "check") {
+        // One step at a time (atomic in the database) so people working the same job never
+        // overwrite each other's ticks.
+        if (!body.step_id) return res.status(400).json({ error: "Missing step_id" });
+        const { error: ckErr } = await sb.rpc("job_check_step", {
+          p_booking: id, p_step: String(body.step_id), p_on: body.checked === true, p_staff: staff.id,
+        });
+        if (ckErr) throw ckErr;
       } else if (body.action === "checklist") {
-        const checklist = {};
+        // Older whole-list save: merged into what's stored, never replacing other people's ticks.
+        const checklist = { ...(existing?.checklist || {}) };
         for (const [k, v] of Object.entries(body.checklist || {})) if (v === true) checklist[k] = true;
         if (existing) {
           const { error: upErr } = await sb.from("job_completions").update({ checklist, updated_at: now }).eq("booking_id", id);
@@ -102,7 +111,7 @@ export default async function handler(req, res) {
       checklist: jobSteps,
       checked,
       work: work
-        ? { started_at: work.started_at, completed_at: work.completed_at, completed_by: work.completed_by }
+        ? { started_at: work.started_at, started_by: work.started_by, completed_at: work.completed_at, completed_by: work.completed_by }
         : null,
       photos: signed.map(({ storage_path, ...p }) => ({ ...p, mine: p.staff_id === staff.id })),
       min_photos: minPhotos(),
