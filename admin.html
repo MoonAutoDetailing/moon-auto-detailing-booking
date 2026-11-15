@@ -3837,6 +3837,7 @@ card.style.borderLeft = "4px solid var(--moon-primary)";
     </dl>
     ${Array.isArray(b.job_payments) && b.job_payments.length ? `<div class="ux-note"><strong>Collected:</strong> ${money(b.job_payments.reduce((t, p) => t + Number(p.amount_collected || 0), 0))}${b.job_payments[0].payment_method ? " via " + escC(b.job_payments[0].payment_method) : ""}${b.job_payments.some(p => Number(p.tip_amount) > 0) ? ` · tip ${money(b.job_payments.reduce((t, p) => t + Number(p.tip_amount || 0), 0))}` : ""}</div>` : ""}
     ${(b.customer_notes != null && String(b.customer_notes).trim() !== "") ? `<div class="ux-note"><strong>Customer note:</strong> ${escC(String(b.customer_notes).trim())}</div>` : ""}
+    ${b.booked_by_staff?.full_name ? `<div class="ux-note"><strong>Booked by:</strong> ${escC(b.booked_by_staff.full_name)} (crew app)</div>` : ""}
   </div>
 `;
 

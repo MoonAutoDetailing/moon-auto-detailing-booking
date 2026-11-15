@@ -49,6 +49,7 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
   customer_notes,
   job_flag,
   crew_notes,
+  booked_by_staff:booked_by ( full_name ),
 
   customers:customer_id (
     full_name,

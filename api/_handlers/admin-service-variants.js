@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import verifyAdmin from "../_verifyAdmin.js";
+import { verifyBookingStaff } from "../_verifyAdmin.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -9,7 +9,7 @@ function requireEnv(name) {
 
 export default async function handler(req, res) {
   try {
-    await verifyAdmin(req);
+    await verifyBookingStaff(req); // employees book customers too (crew app)
   } catch (err) {
     return res.status(401).json({ error: "Unauthorized" });
   }

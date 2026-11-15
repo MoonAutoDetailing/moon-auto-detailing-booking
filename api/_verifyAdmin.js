@@ -11,7 +11,7 @@
 // recorded_by.
 
 import crypto from "crypto";
-import { ADMIN_ROLES, isStaffToken, verifyStaff, AuthError } from "./_staffAuth.js";
+import { ADMIN_ROLES, isStaffToken, verifyStaff, AuthError, getSessionToken } from "./_staffAuth.js";
 
 function requireEnv(name) {
   const v = process.env[name];
@@ -70,4 +70,18 @@ export default async function verifyAdmin(req) {
   if (!legacyLoginEnabled()) throw new Error("Legacy admin login disabled");
   verifyLegacyToken(token);
   return { ok: true, admin: { id: "legacy-admin", name: "Owner (shared password)", role: "owner" } };
+}
+
+/**
+ * For the endpoints behind booking a customer (search customers, their vehicles, services,
+ * add a customer or vehicle): any active team member, employees included, from the crew app
+ * (x-staff-session) or the admin; otherwise the usual admin check (legacy owner login).
+ */
+export async function verifyBookingStaff(req) {
+  const token = getSessionToken(req);
+  if (isStaffToken(token)) {
+    const staff = await verifyStaff(req);
+    return { ok: true, admin: { id: staff.id, name: staff.full_name, role: staff.role } };
+  }
+  return verifyAdmin(req);
 }

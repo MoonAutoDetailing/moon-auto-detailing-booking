@@ -109,6 +109,7 @@ const ROUTES = {
   "send-reschedule-link-email": () => import("./_handlers/send-reschedule-link-email.js"),
   "send-test-email": () => import("./_handlers/send-test-email.js"),
   "staff-availability": () => import("./_handlers/staff-availability.js"),
+  "staff-book": () => import("./_handlers/staff-book.js"),
   "staff-clock": () => import("./_handlers/staff-clock.js"),
   "staff-complete-job": () => import("./_handlers/staff-complete-job.js"),
   "staff-expenses": () => import("./_handlers/staff-expenses.js"),

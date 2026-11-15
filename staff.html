@@ -73,7 +73,15 @@ body.embed nav.tabs button {
 }
 body.embed nav.tabs button.active { background: rgba(138,184,230,0.18); }
 body.embed nav.tabs button .ico { height: auto; margin: 0; }
-body.embed nav.tabs [data-tab="schedule"], body.embed nav.tabs [data-tab="expenses"] { display: none; }
+body.embed nav.tabs [data-tab="schedule"], body.embed nav.tabs [data-tab="expenses"], body.embed nav.tabs [data-tab="book"] { display: none; }
+/* Book a customer */
+.pick { display: block; width: 100%; text-align: left; padding: 10px 12px; margin-bottom: 6px; border-radius: 10px; border: 1px solid var(--line); background: rgba(255,255,255,0.04); color: inherit; font: inherit; cursor: pointer; }
+.pick small { display: block; color: var(--muted); font-size: 12.5px; }
+.pick.on { border-color: var(--moon-primary); background: rgba(138,184,230,0.14); }
+.slots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+.slots .pick { text-align: center; margin: 0; padding: 10px 4px; }
+.step-done { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 body.embed [data-standalone] { display: none !important; }
 .ui-icon { display: inline-block; vertical-align: -0.2em; flex: none; }
 .banner { display: flex; gap: 8px; align-items: flex-start; }
@@ -241,6 +249,7 @@ form.mini { margin-top: 8px; padding-top: 4px; }
   <button type="button" data-tab="today" class="active"><span class="ico" data-icon="car"></span>Jobs</button>
   <button type="button" data-tab="schedule"><span class="ico" data-icon="calendar"></span>Schedule</button>
   <button type="button" data-tab="availability"><span class="ico" data-icon="clock"></span>Availability</button>
+  <button type="button" data-tab="book"><span class="ico" data-icon="plus"></span>Book</button>
   <button type="button" data-tab="expenses"><span class="ico" data-icon="receipt"></span>Expenses</button>
   <button type="button" data-tab="account"><span class="ico" data-icon="user"></span>Me</button>
 </nav>
@@ -356,7 +365,204 @@ function render() {
   if (state.tab === "schedule") return renderSchedule();
   if (state.tab === "availability") return renderAvailability();
   if (state.tab === "expenses") return renderExpenses();
+  if (state.tab === "book") return renderBook();
   return renderAccount();
+}
+
+/* ---------------- Book a customer ---------------- */
+// Employees book customers as requests: a manager confirms them in the admin. Only open
+// times (same availability and travel check as the booking page), standard prices, and an
+// optional discount code; the server enforces all of it (/api/staff-book).
+
+const bk = { customer: null, results: [], newCustomer: false, vehicles: [], addresses: [], vehicle: null, newVehicle: false,
+  variants: null, variant: null, address: "", date: "", slots: null, slot: null, slotMinutes: null, busy: false, msg: "" };
+const resetBook = () => Object.assign(bk, { customer: null, results: [], newCustomer: false, vehicles: [], addresses: [], vehicle: null, newVehicle: false,
+  variant: null, address: "", date: "", slots: null, slot: null, slotMinutes: null, busy: false, msg: "" });
+const vehicleName = (v) => [v.year, v.make, v.model].filter(Boolean).join(" ") || "Vehicle";
+const SIZE_LABEL = { compact: "Compact (car)", midsized: "Midsized (small SUV / truck)", oversized: "Oversized (large SUV / van)" };
+
+async function renderBook() {
+  if (!bk.variants) {
+    app.innerHTML = `<div class="empty">Loading…</div>`;
+    try { bk.variants = (await api("/api/admin-service-variants")).service_variants || []; }
+    catch (err) { app.innerHTML = `<div class="empty">${esc(err.message)}</div>`; return; }
+  }
+  const sizes = bk.vehicle ? bk.variants.filter((v) => v.vehicle_size === bk.vehicle.vehicle_size) : [];
+  const step = (n, title, body) => `<div class="panel"><h3>${n} · ${esc(title)}</h3>${body}</div>`;
+
+  const customerHtml = bk.customer
+    ? `<div class="step-done"><div><strong>${esc(bk.customer.full_name)}</strong><br><span class="muted" style="font-size:13px;">${esc([bk.customer.phone, bk.customer.email].filter(Boolean).join(" · "))}</span></div>
+       <button class="btn small" type="button" data-bk="change-customer">Change</button></div>`
+    : bk.newCustomer
+      ? `<form data-bk-form="customer">
+           <div class="row2"><div><label class="field">First name</label><input class="in" name="first_name" required autocomplete="off" /></div>
+           <div><label class="field">Last name</label><input class="in" name="last_name" autocomplete="off" /></div></div>
+           <label class="field">Phone</label><input class="in" name="phone" type="tel" required autocomplete="off" />
+           <label class="field">Email (optional)</label><input class="in" name="email" type="email" inputmode="email" autocomplete="off" />
+           <div class="actions"><button class="btn primary" type="submit">Add customer</button><button class="btn" type="button" data-bk="search-mode">Search instead</button></div>
+         </form>`
+      : `<input class="in" id="bkSearch" type="search" placeholder="Name, phone or email" autocomplete="off" />
+         <div id="bkResults" style="margin-top:8px;">${bk.results.map((c, i) => `<button type="button" class="pick" data-pick-customer="${i}"><strong>${esc(c.full_name)}</strong><small>${esc([c.phone, c.email].filter(Boolean).join(" · "))}</small></button>`).join("")}</div>
+         <button class="btn block" type="button" data-bk="new-customer" style="margin-top:6px;">${icon("plus", 16)} New customer</button>`;
+
+  const vehicleHtml = !bk.customer ? `<p class="muted" style="margin:0;font-size:14px;">Pick the customer first.</p>`
+    : bk.vehicle
+      ? `<div class="step-done"><div><strong>${esc(vehicleName(bk.vehicle))}</strong><br><span class="muted" style="font-size:13px;">${esc(SIZE_LABEL[bk.vehicle.vehicle_size] || bk.vehicle.vehicle_size)}</span></div>
+         <button class="btn small" type="button" data-bk="change-vehicle">Change</button></div>`
+      : bk.newVehicle
+        ? `<form data-bk-form="vehicle">
+             <div class="row2"><div><label class="field">Year</label><input class="in" name="year" inputmode="numeric" maxlength="4" /></div>
+             <div><label class="field">Make</label><input class="in" name="make" /></div></div>
+             <label class="field">Model</label><input class="in" name="model" />
+             <label class="field">Size</label>
+             <select class="in" name="vehicle_size" required><option value="">Choose…</option>${Object.entries(SIZE_LABEL).map(([k, l]) => `<option value="${k}">${esc(l)}</option>`).join("")}</select>
+             <div class="actions"><button class="btn primary" type="submit">Add vehicle</button>${bk.vehicles.length ? `<button class="btn" type="button" data-bk="vehicle-list">Back</button>` : ""}</div>
+           </form>`
+        : `${bk.vehicles.map((v, i) => `<button type="button" class="pick" data-pick-vehicle="${i}"><strong>${esc(vehicleName(v))}</strong><small>${esc(SIZE_LABEL[v.vehicle_size] || v.vehicle_size || "")}</small></button>`).join("")}
+           <button class="btn block" type="button" data-bk="new-vehicle">${icon("plus", 16)} Add a vehicle</button>`;
+
+  const serviceHtml = !bk.vehicle ? `<p class="muted" style="margin:0;font-size:14px;">Pick the vehicle first.</p>`
+    : sizes.map((v) => `<button type="button" class="pick ${bk.variant?.service_variant_id === v.service_variant_id ? "on" : ""}" data-pick-variant="${esc(v.service_variant_id)}">
+        <strong>${esc(v.service_label)}</strong><small>${money(v.price)} · about ${Math.round((v.duration_minutes || 0) / 60 * 10) / 10} hrs</small></button>`).join("") || `<p class="muted">No services for this vehicle size.</p>`;
+
+  const whenHtml = !bk.variant ? `<p class="muted" style="margin:0;font-size:14px;">Pick the service first.</p>` : `
+    <label class="field">Service address</label>
+    <input class="in" id="bkAddress" value="${esc(bk.address)}" placeholder="Street, town" autocomplete="off" />
+    ${bk.addresses.length ? `<div style="margin-top:6px;">${bk.addresses.map((a, i) => `<button type="button" class="chip" data-pick-address="${i}" style="margin:0 6px 6px 0;border:none;cursor:pointer;">${esc(a)}</button>`).join("")}</div>` : ""}
+    <label class="field">Day</label>
+    <input class="in" id="bkDate" type="date" value="${esc(bk.date)}" min="${esc(state.today || new Date().toLocaleDateString("en-CA", { timeZone: "America/New_York" }))}" />
+    <button class="btn block" type="button" data-bk="times" style="margin-top:10px;" ${bk.busy ? "disabled" : ""}>${bk.busy && !bk.slots ? "Checking…" : "Show open times"}</button>
+    ${bk.slots ? (bk.slots.length
+      ? `<div class="slots">${bk.slots.map((t) => `<button type="button" class="pick ${bk.slot === t ? "on" : ""}" data-pick-slot="${esc(t)}">${esc(timeOf(t))}</button>`).join("")}</div>`
+      : `<p class="muted" style="margin:8px 0 0;font-size:14px;">${esc(bk.msg || "No open times that day. Try another day.")}</p>`) : ""}`;
+
+  const finishHtml = !bk.slot ? `<p class="muted" style="margin:0;font-size:14px;">Pick a time first.</p>` : `
+    <form data-bk-form="book">
+      <label class="field">Discount code (optional)</label><input class="in" name="discount_code" autocomplete="off" style="text-transform:uppercase;" />
+      <label class="field">Notes from the customer (optional)</label><textarea class="in" name="customer_notes" rows="2"></textarea>
+      <p class="muted" style="margin:10px 0 0;font-size:13px;">${esc(bk.variant.service_label)} · ${esc(dayLabel(bk.date))} at ${esc(timeOf(bk.slot))} · ${money(bk.variant.price)} plus travel. A manager confirms it; the customer gets a "request received" email now and the confirmation after.</p>
+      <button class="btn primary block" type="submit" style="margin-top:12px;" ${bk.busy ? "disabled" : ""}>${bk.busy ? "Sending…" : "Send booking request"}</button>
+    </form>`;
+
+  app.innerHTML = step(1, "Customer", customerHtml) + step(2, "Vehicle", vehicleHtml) + step(3, "Service", serviceHtml) + step(4, "Where & when", whenHtml) + step(5, "Send", finishHtml);
+  wireBook();
+}
+
+function wireBook() {
+  const on = (sel, fn) => app.querySelectorAll(sel).forEach((el) => (el.onclick = () => fn(el)));
+  const redraw = () => renderBook();
+  let searchTimer = null;
+  const search = app.querySelector("#bkSearch");
+  if (search) {
+    search.oninput = () => {
+      clearTimeout(searchTimer);
+      const q = search.value.trim();
+      searchTimer = setTimeout(async () => {
+        if (q.length < 2) { bk.results = []; app.querySelector("#bkResults").innerHTML = ""; return; }
+        try {
+          bk.results = (await api(`/api/admin-search-customers?q=${encodeURIComponent(q)}`)).customers || [];
+          const box = app.querySelector("#bkResults");
+          if (box) box.innerHTML = bk.results.length
+            ? bk.results.map((c, i) => `<button type="button" class="pick" data-pick-customer="${i}"><strong>${esc(c.full_name)}</strong><small>${esc([c.phone, c.email].filter(Boolean).join(" · "))}</small></button>`).join("")
+            : `<p class="muted" style="margin:0 0 6px;font-size:14px;">No match — add them as a new customer.</p>`;
+          on("[data-pick-customer]", (el) => pickCustomer(bk.results[Number(el.dataset.pickCustomer)]));
+        } catch (err) { toast(err.message, true); }
+      }, 300);
+    };
+  }
+  on("[data-pick-customer]", (el) => pickCustomer(bk.results[Number(el.dataset.pickCustomer)]));
+  on('[data-bk="new-customer"]', () => { bk.newCustomer = true; redraw(); });
+  on('[data-bk="search-mode"]', () => { bk.newCustomer = false; redraw(); });
+  on('[data-bk="change-customer"]', () => { resetBook(); redraw(); });
+  on('[data-bk="new-vehicle"]', () => { bk.newVehicle = true; redraw(); });
+  on('[data-bk="vehicle-list"]', () => { bk.newVehicle = false; redraw(); });
+  on('[data-bk="change-vehicle"]', () => { Object.assign(bk, { vehicle: null, variant: null, slots: null, slot: null }); redraw(); });
+  on("[data-pick-vehicle]", (el) => { bk.vehicle = bk.vehicles[Number(el.dataset.pickVehicle)]; bk.variant = null; bk.slots = null; bk.slot = null; redraw(); });
+  on("[data-pick-variant]", (el) => { bk.variant = bk.variants.find((v) => v.service_variant_id === el.dataset.pickVariant); bk.slots = null; bk.slot = null; redraw(); });
+  on("[data-pick-address]", (el) => { bk.address = bk.addresses[Number(el.dataset.pickAddress)]; bk.slots = null; bk.slot = null; redraw(); });
+  on("[data-pick-slot]", (el) => { bk.slot = el.dataset.pickSlot; redraw(); });
+  const addr = app.querySelector("#bkAddress");
+  if (addr) addr.onchange = () => { bk.address = addr.value.trim(); bk.slots = null; bk.slot = null; };
+  const date = app.querySelector("#bkDate");
+  if (date) date.onchange = () => { bk.date = date.value; bk.slots = null; bk.slot = null; };
+  on('[data-bk="times"]', loadTimes);
+
+  app.querySelector('[data-bk-form="customer"]')?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.target).entries());
+    try {
+      const { customer } = await api("/api/admin-create-customer", { method: "POST", body: f });
+      bk.newCustomer = false;
+      await pickCustomer(customer);
+    } catch (err) { toast(err.message, true); }
+  });
+  app.querySelector('[data-bk-form="vehicle"]')?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.target).entries());
+    try {
+      const { vehicle } = await api("/api/admin-create-vehicle", { method: "POST", body: { ...f, customer_id: bk.customer.id } });
+      bk.vehicles.unshift(vehicle);
+      Object.assign(bk, { vehicle, newVehicle: false, variant: null, slots: null, slot: null });
+      redraw();
+    } catch (err) { toast(err.message, true); }
+  });
+  app.querySelector('[data-bk-form="book"]')?.addEventListener("submit", submitBooking);
+}
+
+async function pickCustomer(customer) {
+  Object.assign(bk, { customer, results: [], vehicle: null, newVehicle: false, variant: null, slots: null, slot: null });
+  try {
+    const data = await api(`/api/admin-customer-vehicles?customer_id=${encodeURIComponent(customer.id)}`);
+    bk.vehicles = data.vehicles || [];
+    bk.addresses = data.addresses || [];
+    if (!bk.address && bk.addresses[0]) bk.address = bk.addresses[0];
+    bk.newVehicle = !bk.vehicles.length;
+  } catch (err) { toast(err.message, true); }
+  renderBook();
+}
+
+async function loadTimes() {
+  bk.address = (app.querySelector("#bkAddress")?.value || bk.address).trim();
+  bk.date = app.querySelector("#bkDate")?.value || bk.date;
+  if (!bk.address) return toast("Enter the service address.", true);
+  if (!bk.date) return toast("Pick a day.", true);
+  bk.busy = true; bk.slots = null; bk.slot = null;
+  renderBook();
+  try {
+    const params = new URLSearchParams({ day: bk.date, duration_minutes: String(bk.variant.duration_minutes), service_address: bk.address, service_variant_id: bk.variant.service_variant_id });
+    const data = await api(`/api/get-availability?${params}`);
+    bk.slots = data.slots || [];
+    bk.msg = data.message || "";
+    bk.slotMinutes = data.solo_effective_duration_minutes || bk.variant.duration_minutes;
+  } catch (err) { bk.slots = []; bk.msg = err.message; }
+  bk.busy = false;
+  renderBook();
+}
+
+async function submitBooking(e) {
+  e.preventDefault();
+  const f = Object.fromEntries(new FormData(e.target).entries());
+  const start = new Date(bk.slot);
+  bk.busy = true;
+  e.target.querySelector("button[type=submit]").disabled = true;
+  try {
+    await api("/api/staff-book", { method: "POST", body: {
+      customer_id: bk.customer.id, vehicle_id: bk.vehicle.id, service_variant_id: bk.variant.service_variant_id,
+      scheduled_start: start.toISOString(), scheduled_end: new Date(start.getTime() + bk.slotMinutes * 60000).toISOString(),
+      service_address: bk.address, customer_notes: f.customer_notes, discount_code: (f.discount_code || "").trim().toUpperCase(),
+    } });
+    const who = bk.customer.full_name, when = `${dayLabel(bk.date)} at ${timeOf(bk.slot)}`;
+    resetBook();
+    app.innerHTML = `<div class="panel"><h3>${icon("check", 18)} Request sent</h3>
+      <p style="margin:0 0 12px;">${esc(who)} · ${esc(when)}. A manager will confirm it, then it shows up on the schedule and the customer gets their confirmation.</p>
+      <button class="btn primary block" type="button" id="bkAgain">Book another</button></div>`;
+    app.querySelector("#bkAgain").onclick = () => renderBook();
+  } catch (err) {
+    bk.busy = false;
+    toast(err.message, true);
+    if (/no longer available/i.test(err.message)) { bk.slots = null; bk.slot = null; }
+    renderBook();
+  }
 }
 
 /* ---------------- Jobs (one day) ---------------- */
