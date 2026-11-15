@@ -11,7 +11,8 @@ const OFF_COLS = "id, start_date, end_date, reason, status, review_note, created
  * GET → { weekly: [7 rows, Sunday first], exceptions, time_off }
  * PUT { weekly: [{ weekday, available, start_time, end_time, note }] } → replaces the weekly pattern
  * POST { kind: "exception", on_date, available, start_time?, end_time?, note? } → one-day change
- * POST { kind: "time_off", start_date, end_date, reason? } → request time off (manager approves)
+ * POST { kind: "time_off", start_date, end_date, reason? } → request time off. Employees' go to a
+ *      manager or the owner, managers' to the owner; the owner's own is approved straight away.
  * DELETE ?exception_id= | ?time_off_id= → remove an exception / cancel a pending request
  */
 export default async function handler(req, res) {
@@ -102,14 +103,17 @@ export default async function handler(req, res) {
         if (!isDate(body.start_date) || !isDate(body.end_date)) return res.status(400).json({ error: "Pick start and end dates" });
         if (body.start_date < today) return res.status(400).json({ error: "Time off can't start in the past" });
         if (body.end_date < body.start_date) return res.status(400).json({ error: "End date must be on or after the start date" });
+        // Nobody is above the owner, so their time off needs no review.
+        const selfApproved = staff.role === "owner";
         const { error: insErr } = await sb.from("time_off_requests").insert({
           staff_id: staff.id,
           start_date: body.start_date,
           end_date: body.end_date,
           reason: body.reason ? String(body.reason).slice(0, 300) : null,
+          ...(selfApproved ? { status: "approved", reviewed_by: staff.id, reviewed_at: new Date().toISOString() } : {}),
         });
         if (insErr) throw insErr;
-        return res.status(200).json(await load());
+        return res.status(200).json(selfApproved ? await loadAndSync() : await load());
       }
 
       return res.status(400).json({ error: "Unknown kind" });

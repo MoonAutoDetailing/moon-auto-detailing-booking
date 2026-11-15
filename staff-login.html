@@ -100,16 +100,18 @@ function showMessage(text, isError) {
   msg.className = "msg" + (isError ? " error" : "");
 }
 
-// Employees use the crew app (token kept on the phone); owners/managers use the admin page
-// (token in sessionStorage, same as the existing admin login).
+// Everyone gets the crew app session (token kept on the phone). Employees land in the crew
+// app; owners/managers also get the admin session (sessionStorage) and land on the admin page,
+// unless they came from the crew app (?next=crew), e.g. a crew-app home-screen icon.
 function goHome({ token, staff }) {
+  try { localStorage.setItem("moon_staff_session", token); } catch {}
   if (staff.role === "employee") {
-    try { localStorage.setItem("moon_staff_session", token); } catch {}
     window.location.replace("/staff.html");
   } else {
     sessionStorage.setItem("moon_admin_session", token);
     sessionStorage.setItem("moon_admin_staff", JSON.stringify(staff));
-    window.location.replace("/admin.html");
+    const next = new URLSearchParams(location.search).get("next");
+    window.location.replace(next === "crew" ? "/staff.html" : "/admin.html");
   }
 }
 

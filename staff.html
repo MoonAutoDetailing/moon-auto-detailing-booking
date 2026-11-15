@@ -219,9 +219,20 @@ import { icon } from "/ui-icons.js";
 document.querySelectorAll("[data-icon]").forEach((el) => { el.innerHTML = icon(el.dataset.icon, 22); });
 // Crew app. All data comes from /api/staff-* with the x-staff-session header; the token
 // lives in localStorage so the crew stays signed in on their phone (12-hour sessions).
+// Managers and the owner arrive from the admin page with their tab's admin session, which
+// is the same kind of team token, so it's reused (and kept) here.
 const TOKEN_KEY = "moon_staff_session";
 let token = null;
 try { token = localStorage.getItem(TOKEN_KEY); } catch {}
+if (!token) {
+  try {
+    const adminToken = sessionStorage.getItem("moon_admin_session");
+    if (adminToken && adminToken.startsWith("v2.")) {
+      token = adminToken;
+      localStorage.setItem(TOKEN_KEY, token);
+    }
+  } catch {}
+}
 
 const app = document.getElementById("app");
 const state = { me: null, tab: "today", date: null, today: null, job: null, saveTimer: null };
@@ -236,7 +247,7 @@ const SCOPE_LABEL = { general: "Arrival & handoff", interior: "Interior", exteri
 
 function signOut() {
   try { localStorage.removeItem(TOKEN_KEY); } catch {}
-  window.location.replace("/staff-login.html");
+  window.location.replace("/staff-login.html?next=crew");
 }
 
 async function api(url, options = {}) {
@@ -404,7 +415,7 @@ function renderClock(extra = {}) {
           <strong>${open ? "On the clock" : "Off the clock"}</strong>
           <span>${open
             ? `Since ${esc(timeOf(open.clock_in_at))} · <span data-elapsed>${fmtDuration(Date.now() - since)}</span>`
-            : "Clock in when you arrive at home base"} · ${weekHours.toFixed(2)} hrs this week</span>
+            : state.me?.role === "employee" ? "Clock in when you arrive at home base" : "Clock in wherever you start work"} · ${weekHours.toFixed(2)} hrs this week</span>
         </div>
         <button class="btn ${open ? "" : "primary"}" type="button" data-clock>${open ? "Clock out" : "Clock in"}</button>
       </div>
@@ -438,7 +449,7 @@ async function clockIn(pin, knownPosition) {
   try {
     clockState = await api("/api/staff-clock", { method: "POST", body: { action: "in", ...(position || {}), pin: pin || undefined } });
     renderClock();
-    toast(clockState.verify_method === "pin" ? "Clocked in (manager approved)." : "Clocked in. Have a good day!");
+    toast(clockState.verify_method === "pin" ? "Clocked in (approved with PIN)." : "Clocked in. Have a good day!");
   } catch (err) {
     if (err.data?.needs_pin) {
       renderClock({ needsPin: true, why: err.message + (position ? "" : " Turn on Location for this site in your browser settings to clock in by GPS."), position });
@@ -682,10 +693,13 @@ function drawAvailability(data) {
       const offEnd = kind === "off" ? body.end_date : offStart;
       if (offStart && offEnd) {
         const check = await api(`/api/staff-availability?impact_start=${encodeURIComponent(offStart)}&impact_end=${encodeURIComponent(offEnd)}`);
-        if (check.warning && !(await sheetConfirm(`Heads up:\n${check.warning}\n\nYour manager will see this. ${kind === "off" ? "Request" : "Save"} anyway?`, { okLabel: kind === "off" ? "Request anyway" : "Save anyway" }))) return;
+        if (check.warning && !(await sheetConfirm(`Heads up:\n${check.warning}\n\n${state.me?.role === "owner" ? "" : state.me?.role === "manager" ? "The owner will see this. " : "Your manager will see this. "}${kind === "off" && state.me?.role !== "owner" ? "Request" : "Save"} anyway?`, { okLabel: kind === "off" ? "Request anyway" : "Save anyway" }))) return;
       }
       const next = await api("/api/staff-availability", { method: "POST", body });
-      toast(kind === "off" ? "Time off requested. A manager will review it." : "Saved.");
+      toast(kind !== "off" ? "Saved."
+      : state.me?.role === "owner" ? "Time off saved."
+      : state.me?.role === "manager" ? "Time off requested. The owner will review it."
+      : "Time off requested. A manager will review it.");
       apply(next);
     } catch (err) { toast(err.message, true); }
   });

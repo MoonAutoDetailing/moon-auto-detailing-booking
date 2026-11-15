@@ -5,6 +5,9 @@ import { nyDayRange } from "../_jobs.js";
 import { checkGeofence, validPosition, payWeek, summarizeWeek, clockSettings } from "../_timeclock.js";
 import geocodeAddress from "../_routing/geocodeAddress.js";
 
+// Managers and the owner work from anywhere (errands, estimates, jobs), so they skip the base check.
+const CLOCK_ANYWHERE_ROLES = ["manager", "owner"];
+
 const ENTRY_COLS = "id, clock_in_at, clock_out_at, verify_method, in_site, in_distance_m, notes";
 
 /**
@@ -85,8 +88,9 @@ async function status(sb, staffId) {
 
 /**
  * GET → { open_entry, today_entries, week }.
- * POST { action: "in", lat, lng, accuracy, pin? } → clock in (GPS at home base, or a
- *      manager PIN; responds 403 { needs_pin: true } when neither).
+ * POST { action: "in", lat, lng, accuracy, pin? } → clock in. Employees: GPS at home base, or a
+ *      manager PIN (responds 403 { needs_pin: true } when neither). Managers and the owner may
+ *      clock in anywhere (recorded as "anywhere" with their location when available).
  * POST { action: "out", lat?, lng?, accuracy? } → clock out (location recorded, not required).
  */
 export default async function handler(req, res) {
@@ -127,6 +131,8 @@ export default async function handler(req, res) {
 
       if (fence.ok) {
         verify_method = "gps";
+      } else if (CLOCK_ANYWHERE_ROLES.includes(staff.role)) {
+        verify_method = "anywhere";
       } else if (body.pin) {
         const limit = rateLimit(req, { key: `clock-pin:${staff.id}`, limit: 5, windowMs: 15 * 60 * 1000 });
         if (!limit.allowed) return res.status(429).json({ error: "Too many PIN attempts. Wait a few minutes or call your manager." });

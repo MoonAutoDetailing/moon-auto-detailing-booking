@@ -2722,6 +2722,8 @@ async function performLogin(email, password) {
   ADMIN_SESSION = data.token;
   sessionStorage.setItem("moon_admin_session", ADMIN_SESSION);
   sessionStorage.setItem("moon_admin_staff", JSON.stringify(data.staff));
+  // Same token signs managers/owner into the crew app (clock in, Start job, time off).
+  try { localStorage.setItem("moon_staff_session", data.token); } catch {}
   return { staff: data.staff };
 }
 
@@ -2838,6 +2840,7 @@ function clearAdminSession() {
   sessionStorage.removeItem("moon_admin_staff");
   sessionStorage.removeItem("moon_admin_view");
   sessionStorage.removeItem("moon_admin_area");
+  try { localStorage.removeItem("moon_staff_session"); } catch {}
 }
 
 function showLoginOverlay() {
@@ -4363,6 +4366,14 @@ function renderTodayView() {
     <button type="button" class="ux-stat ux-stat-link${pending.length ? " ux-stat-warn" : ""}" data-go="pending"><span>Needs confirming</span><strong>${pending.length}</strong></button>`;
   strip.querySelector("[data-go]").onclick = () => { bookingsSegment = "pending"; handleViewSwitch("bookings"); };
   viewContainer.appendChild(strip);
+  // Managers and the owner work jobs too: the crew app has their clock, Start job and time off.
+  if (getAdminStaff()) {
+    viewContainer.insertAdjacentHTML("beforeend", `
+      <div class="ux-list"><a class="ux-list-item" href="/staff.html">
+        <span class="ux-list-icon">${icon("smartphone", 20)}</span>
+        <span class="ux-list-label"><strong>My day in the crew app</strong><small>Clock in, start a detail (photos and checklist), request time off</small></span>
+        <span class="ux-chev">${icon("chevronRight", 18)}</span></a></div>`);
+  }
   const attention = document.createElement("section");
   attention.className = "ux-attention";
   viewContainer.appendChild(attention);
@@ -6590,6 +6601,7 @@ function renderView(viewName) {
     const method = (e) => e.verify_method === "gps"
       ? `${icon("map", 13)} GPS${e.in_distance_m != null ? ` · ${e.in_distance_m} m from site` : ""}`
       : e.verify_method === "pin" ? `<span class="ux-warn-text">${icon("user", 13)} Manager PIN${e.verified_by_name ? " · " + esc(e.verified_by_name) : ""}</span>`
+      : e.verify_method === "anywhere" ? `${icon("map", 13)} Away from base (manager/owner)${e.in_distance_m != null ? ` · ${(e.in_distance_m / 1609.34).toFixed(1)} mi from base` : ""}`
       : `${icon("plus", 13)} Added by manager`;
 
     let weekDate = null;
